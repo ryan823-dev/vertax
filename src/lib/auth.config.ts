@@ -1,6 +1,14 @@
 import type { NextAuthConfig } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 
+// Cross-platform JWT configuration (shared with Vertax)
+// Both Tower and Vertax must use the same JWT_SECRET
+export const CROSS_PLATFORM_JWT_CONFIG = {
+  secret: process.env.JWT_SECRET || "vertax-jwt-secret-change-in-production",
+  issuer: "vertax.top",
+  audience: "vertax-platform",
+};
+
 // This config is safe for Edge runtime (no Prisma imports)
 // The actual authorize logic is in auth.ts
 export const authConfig: NextAuthConfig = {
@@ -29,6 +37,11 @@ export const authConfig: NextAuthConfig = {
         token.roleId = (user as Record<string, unknown>).roleId as string;
         token.roleName = (user as Record<string, unknown>).roleName as string;
         token.permissions = (user as Record<string, unknown>).permissions as string[];
+        
+        // Store cross-platform compatible payload for Vertax
+        // This makes the token work with Vertax's middleware/auth.ts
+        token.userId = user.id; // Vertax uses 'userId' instead of 'id'
+        token.role = (user as Record<string, unknown>).roleName as string; // Vertax uses 'role' instead of 'roleName'
       }
       return token;
     },

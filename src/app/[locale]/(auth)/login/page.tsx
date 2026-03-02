@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { signIn, useSession } from "next-auth/react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -16,13 +16,102 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Bot } from "lucide-react";
+import { Bot, ExternalLink } from "lucide-react";
+
+// Base domain for cross-platform authentication
+const BASE_DOMAIN = process.env.NEXT_PUBLIC_BASE_DOMAIN || "vertax.top";
+
+/**
+ * Check if a redirect URL is a valid Vertax subdomain
+ */
+function isValidVertaxRedirect(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    const hostname = parsed.hostname;
+    
+    // Allow subdomains of the base domain (but not tower.*)
+    if (hostname.endsWith(`.${BASE_DOMAIN}`) && !hostname.startsWith("tower.")) {
+      return true;
+    }
+    
+    // Allow localhost for development
+    if (hostname === "localhost" || hostname.startsWith("127.0.0.1")) {
+      return true;
+    }
+    
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Extract tenant slug from a Vertax subdomain URL
+ */
+function getTenantSlugFromUrl(url: string): string | null {
+  try {
+    const parsed = new URL(url);
+    const hostname = parsed.hostname;
+    
+    if (hostname.endsWith(`.${BASE_DOMAIN}`)) {
+      const subdomain = hostname.slice(0, -(BASE_DOMAIN.length + 1));
+      if (subdomain && subdomain !== "tower" && subdomain !== "www") {
+        return subdomain;
+      }
+    }
+    
+    return null;
+  } catch {
+    return null;
+  }
+}
 
 export default function LoginPage() {
   const t = useTranslations("auth");
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { data: session, status } = useSession();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  
+  // Get redirect URL from query params
+  const redirectUrl = searchParams.get("redirect");
+  const isExternalRedirect = redirectUrl && isValidVertaxRedirect(redirectUrl);
+  const targetTenant = redirectUrl ? getTenantSlugFromUrl(redirectUrl) : null;
+
+  // If already logged in and there's a valid redirect, handle it
+  useEffect(() => {
+    if (status === "authenticated" && session?.user && isExternalRedirect) {
+      // User is already logged in, redirect to target with token
+      handleCrossDomainRedirect();
+    }
+  }, [status, session, isExternalRedirect]);
+
+  async function handleCrossDomainRedirect() {
+    if (!redirectUrl || !isExternalRedirect) return;
+    
+    try {
+      // Generate cross-platform token via API
+      const response = await fetch("/api/auth/cross-platform-token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetUrl: redirectUrl }),
+      });
+      
+      if (response.ok) {
+        const { token } = await response.json();
+        // Redirect with token in query parameter (will be exchanged for cookie on Vertax side)
+        const separator = redirectUrl.includes("?") ? "&" : "?";
+        window.location.href = `${redirectUrl}${separator}token=${token}`;
+      } else {
+        // Fallback: redirect without token (will prompt login again on Vertax)
+        window.location.href = redirectUrl;
+      }
+    } catch {
+      // Fallback: redirect without token
+      window.location.href = redirectUrl;
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -43,8 +132,15 @@ export default function LoginPage() {
       setError(t("invalidCredentials"));
       setLoading(false);
     } else {
-      router.push("/zh-CN/dashboard");
-      router.refresh();
+      // Successfully logged in
+      if (isExternalRedirect) {
+        // Cross-domain redirect to Vertax subdomain
+        await handleCrossDomainRedirect();
+      } else {
+        // Normal redirect to dashboard
+        router.push("/zh-CN/dashboard");
+        router.refresh();
+      }
     }
   }
 
@@ -58,6 +154,18 @@ export default function LoginPage() {
         <CardDescription>{t("loginDesc")}</CardDescription>
       </CardHeader>
       <CardContent>
+        {/* Show redirect notice if redirecting to Vertax */}
+        {isExternalRedirect && targetTenant && (
+          <div className="mb-4 rounded-md bg-blue-50 p-3 text-sm text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+            <div className="flex items-center gap-2">
+              <ExternalLink className="h-4 w-4" />
+              <span>
+                {t("redirectNotice") || `登录后将跳转到 ${targetTenant} 工作台`}
+              </span>
+            </div>
+          </div>
+        )}
+        
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
             <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
