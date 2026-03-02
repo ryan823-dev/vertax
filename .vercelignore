@@ -1,0 +1,32 @@
+# Sub-projects (not part of this Next.js app)
+machrio/
+mroport.com/
+paintcell/
+paintcell-site/
+ryan823-project/
+vetsphere/
+-/
+
+# Scripts and tools
+scripts/
+doc_tools/
+skills/
+vibe_images/
+
+# IDE / agent config
+.agents/
+.qoder/
+.trae/
+.vercel-tmp/
+
+# Data files
+*.xlsx
+*.docx
+*.pptx
+
+# Python
+__pycache__/
+*.pyc
+
+# Prisma migrations (generated on deploy)
+prisma/migrations/
