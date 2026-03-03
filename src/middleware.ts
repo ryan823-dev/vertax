@@ -24,6 +24,12 @@ export default auth((req) => {
   const tenantInfo = resolveTenant(hostname);
   const isCustomerView = tenantInfo.viewMode === "customer";
 
+  // Helper to create redirect URL preserving the original host
+  const createRedirectUrl = (path: string) => {
+    const protocol = req.headers.get("x-forwarded-proto") || "https";
+    return new URL(path, `${protocol}://${hostname}`);
+  };
+
   // Allow API auth routes
   if (pathname.startsWith("/api/auth")) {
     return NextResponse.next();
@@ -39,15 +45,15 @@ export default auth((req) => {
     if (isDemoMode || req.auth) {
       // Customer view → customer home, Operations view → dashboard
       const targetPath = isCustomerView ? "/zh-CN/c/home" : "/zh-CN/dashboard";
-      return NextResponse.redirect(new URL(targetPath, req.url));
+      return NextResponse.redirect(createRedirectUrl(targetPath));
     }
-    return NextResponse.redirect(new URL("/zh-CN/login", req.url));
+    return NextResponse.redirect(createRedirectUrl("/zh-CN/login"));
   }
   
   // For customer domains, redirect /dashboard to /c/home
   if (isCustomerView && pathname.includes("/dashboard")) {
     const newPath = pathname.replace("/dashboard", "/c/home");
-    return NextResponse.redirect(new URL(newPath, req.url));
+    return NextResponse.redirect(createRedirectUrl(newPath));
   }
 
   // In demo mode, skip auth checks entirely
@@ -61,14 +67,15 @@ export default auth((req) => {
 
   // If not authenticated and not on public path, redirect to login
   if (!req.auth && !isPublicPath) {
-    const loginUrl = new URL("/zh-CN/login", req.url);
+    const loginUrl = createRedirectUrl("/zh-CN/login");
     loginUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
   // If authenticated and on login/register, redirect to dashboard
   if (req.auth && (pathnameWithoutLocale === "/login" || pathnameWithoutLocale === "/register")) {
-    return NextResponse.redirect(new URL("/zh-CN/dashboard", req.url));
+    const targetPath = isCustomerView ? "/zh-CN/c/home" : "/zh-CN/dashboard";
+    return NextResponse.redirect(createRedirectUrl(targetPath));
   }
 
   return intlMiddleware(req);
