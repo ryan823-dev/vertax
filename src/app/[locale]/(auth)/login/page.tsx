@@ -140,9 +140,10 @@ export default function LoginPage() {
         // Determine redirect based on current domain
         const hostname = window.location.hostname;
         const isTowerDomain = hostname === "tower.vertax.top" || hostname === "tower.vertax.cn";
+        const isVercelPreview = hostname.includes("vercel.app");
         const isCustomerDomain = hostname.endsWith(".vertax.top") && !isTowerDomain;
         
-        // Customer view → /c/home, Operations view → /dashboard
+        // Customer view → /c/home, Operations view (tower or vercel preview) → /dashboard
         const targetPath = isCustomerDomain ? "/zh-CN/c/home" : "/zh-CN/dashboard";
         router.push(targetPath);
         router.refresh();
