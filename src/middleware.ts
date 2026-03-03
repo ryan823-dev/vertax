@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import createMiddleware from "next-intl/middleware";
 import { routing } from "@/i18n/routing";
 import { authConfig } from "@/lib/auth.config";
+import { resolveTenant } from "@/lib/tenant-resolver";
 
 const intlMiddleware = createMiddleware(routing);
 
@@ -12,8 +13,16 @@ const publicPaths = ["/login", "/register", "/api/auth"];
 
 const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 
+// Tower domains (operations view)
+const TOWER_DOMAINS = ["tower.vertax.top", "tower.vertax.cn"];
+
 export default auth((req) => {
   const { pathname } = req.nextUrl;
+  const hostname = req.headers.get("host") || "localhost";
+  
+  // Resolve tenant and view mode from domain
+  const tenantInfo = resolveTenant(hostname);
+  const isCustomerView = tenantInfo.viewMode === "customer";
 
   // Allow API auth routes
   if (pathname.startsWith("/api/auth")) {
@@ -25,12 +34,20 @@ export default auth((req) => {
     return NextResponse.next();
   }
 
-  // Redirect root to dashboard
+  // Redirect root based on view mode
   if (pathname === "/" || pathname === "/zh-CN" || pathname === "/en") {
     if (isDemoMode || req.auth) {
-      return NextResponse.redirect(new URL("/zh-CN/dashboard", req.url));
+      // Customer view → customer home, Operations view → dashboard
+      const targetPath = isCustomerView ? "/zh-CN/c/home" : "/zh-CN/dashboard";
+      return NextResponse.redirect(new URL(targetPath, req.url));
     }
     return NextResponse.redirect(new URL("/zh-CN/login", req.url));
+  }
+  
+  // For customer domains, redirect /dashboard to /c/home
+  if (isCustomerView && pathname.includes("/dashboard")) {
+    const newPath = pathname.replace("/dashboard", "/c/home");
+    return NextResponse.redirect(new URL(newPath, req.url));
   }
 
   // In demo mode, skip auth checks entirely

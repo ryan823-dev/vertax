@@ -116,6 +116,43 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+/* Customer View Theme (Ivory/Navy/Gold) */
+.customer-theme {
+  --background: #F7F3EA;
+  --foreground: #111827;
+  --card: #FFFCF6;
+  --card-foreground: #111827;
+  --popover: #FFFCF6;
+  --popover-foreground: #111827;
+  --primary: #C7A56A;
+  --primary-foreground: #0B1B2B;
+  --secondary: #10263B;
+  --secondary-foreground: #F7F3EA;
+  --muted: #E7E0D3;
+  --muted-foreground: #64748b;
+  --accent: #C7A56A;
+  --accent-foreground: #0B1B2B;
+  --border: #E7E0D3;
+  --input: #E7E0D3;
+  --ring: #C7A56A;
+  --sidebar: #0B1B2B;
+  --sidebar-foreground: #94a3b8;
+  --sidebar-primary: #C7A56A;
+  --sidebar-primary-foreground: #0B1B2B;
+  --sidebar-accent: #10263B;
+  --sidebar-accent-foreground: #F7F3EA;
+  --sidebar-border: #10263B;
+  --sidebar-ring: #C7A56A;
+  
+  /* Custom customer colors */
+  --ivory: #F7F3EA;
+  --ivory-surface: #FFFCF6;
+  --navy-800: #10263B;
+  --navy-900: #0B1B2B;
+  --gold: #C7A56A;
+  --customer-border: #E7E0D3;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -124,3 +161,18 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Customer theme utilities */
+.bg-ivory { background-color: var(--ivory); }
+.bg-ivory-surface { background-color: var(--ivory-surface); }
+.bg-navy-800 { background-color: var(--navy-800); }
+.bg-navy-900 { background-color: var(--navy-900); }
+.bg-gold { background-color: var(--gold); }
+.text-gold { color: var(--gold); }
+.text-navy-900 { color: var(--navy-900); }
+.border-navy-800 { border-color: var(--navy-800); }
+.border-customer { border-color: var(--customer-border); }
+
+/* Scrollbar hide utility */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
