@@ -12,6 +12,7 @@ export const CROSS_PLATFORM_JWT_CONFIG = {
 // This config is safe for Edge runtime (no Prisma imports)
 // The actual authorize logic is in auth.ts
 export const authConfig: NextAuthConfig = {
+  trustHost: true, // Trust x-forwarded-host header for custom domains
   session: { strategy: "jwt" },
   pages: {
     signIn: "/zh-CN/login",
