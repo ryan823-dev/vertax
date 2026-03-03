@@ -32,10 +32,16 @@ model Tenant {
   categories     ContentCategory[]
   websiteConfig  WebsiteConfig?
   activities     Activity[]
-  assetFolders   AssetFolder[]
-  assets         Asset[]
-  apiKeys        ApiKey[]
-  companyProfile CompanyProfile?
+  assetFolders      AssetFolder[]
+  assets            Asset[]
+  apiKeys           ApiKey[]
+  companyProfile    CompanyProfile?
+  assetChunks       AssetChunk[]
+  evidences         Evidence[]
+  brandGuidelines   BrandGuideline[]
+  icpSegments       ICPSegment[]
+  personas          Persona[]
+  messagingMatrices MessagingMatrix[]
 }
 
 model WebsiteConfig {
@@ -76,6 +82,7 @@ model User {
   ownedLeads  Lead[]
   activities  Activity[]
   assets      Asset[]
+  evidences   Evidence[]
 
   @@index([tenantId])
   @@index([email])
@@ -440,9 +447,24 @@ model Activity {
   @@index([createdAt])
 }
 
-// ==================== MODULE 5: ASSET HUB ====================
-
 // ==================== MODULE 6: KNOWLEDGE ENGINE ====================
+
+// ==================== ENUMS (Knowledge) ====================
+
+enum EvidenceType {
+  claim
+  statistic
+  testimonial
+  case_study
+  certification
+}
+
+enum GuidelineCategory {
+  tone
+  terminology
+  visual
+  messaging
+}
 
 model CompanyProfile {
   id       String @id @default(cuid())
@@ -471,6 +493,10 @@ model CompanyProfile {
   analysisSource Json    @default("[]") // 分析使用的素材ID列表
   aiModel        String? // 使用的AI模型
   rawAnalysis    String? @db.Text // AI原始分析结果
+
+  // Phase 2 扩展
+  sectionEdits   Json    @default("{}") // { sectionKey: { content, editedAt, editedBy } }
+  evidenceRefs   Json    @default("{}") // { sectionKey: string[] }
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -533,10 +559,144 @@ model Asset {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
+  chunks    AssetChunk[]
+
   @@index([tenantId])
   @@index([tenantId, fileCategory])
   @@index([tenantId, status])
   @@index([folderId])
   @@index([uploadedById])
   @@index([createdAt])
+}
+
+// ==================== ASSET CHUNKS (文本分块) ====================
+
+model AssetChunk {
+  id         String   @id @default(cuid())
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  assetId    String
+  asset      Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  content    String   @db.Text
+  chunkIndex Int
+  pageNumber Int?
+  charStart  Int?
+  charEnd    Int?
+  tokenCount Int?
+
+  createdAt  DateTime @default(now())
+
+  evidences  Evidence[]
+
+  @@index([assetId])
+  @@index([tenantId])
+  @@index([assetId, chunkIndex])
+}
+
+// ==================== EVIDENCE (证据库) ====================
+
+model Evidence {
+  id            String       @id @default(cuid())
+  tenantId      String
+  tenant        Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  title         String
+  content       String       @db.Text
+  type          EvidenceType @default(claim)
+  sourceLocator Json         @default("{}")
+  chunkId       String?
+  chunk         AssetChunk?  @relation(fields: [chunkId], references: [id], onDelete: SetNull)
+  assetId       String?
+  tags          String[]
+  status        String       @default("active")
+  metadata      Json         @default("{}")
+  createdById   String
+  createdBy     User         @relation(fields: [createdById], references: [id])
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  deletedAt     DateTime?
+
+  @@index([tenantId])
+  @@index([tenantId, type])
+  @@index([chunkId])
+  @@index([assetId])
+}
+
+// ==================== BRAND GUIDELINES (品牌规范) ====================
+
+model BrandGuideline {
+  id        String            @id @default(cuid())
+  tenantId  String
+  tenant    Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  category  GuidelineCategory
+  title     String
+  content   String            @db.Text
+  examples  Json              @default("[]")
+  isActive  Boolean           @default(true)
+  order     Int               @default(0)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, category])
+}
+
+// ==================== ICP & PERSONA (画像中心) ====================
+
+model ICPSegment {
+  id          String    @id @default(cuid())
+  tenantId    String
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name        String
+  industry    String?
+  companySize String?
+  regions     String[]
+  description String?   @db.Text
+  criteria    Json      @default("{}")
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  personas    Persona[]
+
+  @@index([tenantId])
+}
+
+model Persona {
+  id              String        @id @default(cuid())
+  tenantId        String
+  tenant          Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  segmentId       String?
+  segment         ICPSegment?   @relation(fields: [segmentId], references: [id], onDelete: SetNull)
+  name            String
+  title           String
+  seniority       String?
+  concerns        String[]
+  messagingPrefs  Json          @default("{}")
+  evidenceRefs    String[]
+  order           Int           @default(0)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  messagingMatrix MessagingMatrix[]
+
+  @@index([tenantId])
+  @@index([segmentId])
+}
+
+model MessagingMatrix {
+  id           String   @id @default(cuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  personaId    String
+  persona      Persona  @relation(fields: [personaId], references: [id], onDelete: Cascade)
+  valueProp    String
+  message      String   @db.Text
+  channel      String?
+  evidenceRefs String[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([personaId])
 }

@@ -33,6 +33,7 @@
   "exclude": [
     "node_modules",
     "prisma/seed.ts",
+    "temp_clone",
     "-",
     "machrio",
     "mroport.com",

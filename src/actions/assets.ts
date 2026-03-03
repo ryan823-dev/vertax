@@ -15,6 +15,8 @@ import {
   formatFileSize,
   getFileExtension,
 } from "@/lib/utils/file-utils";
+import { extractTextFromAsset } from "@/lib/utils/text-extract";
+import { splitTextIntoChunks } from "@/lib/utils/chunk-utils";
 import type {
   FileUploadInput,
   AssetUploadSession,
@@ -32,7 +34,10 @@ import type {
   FolderTree,
   FileCategory,
   AssetPurpose,
+  AssetWithProcessingStatus,
+  KnowledgeAssetListResponse,
 } from "@/types/assets";
+import type { AssetProcessingMeta, ChunkData, ChunkListResponse } from "@/types/knowledge";
 
 // ==================== 认证辅助 ====================
 
@@ -702,4 +707,311 @@ export async function permanentlyDeleteAssets(ids: string[]): Promise<void> {
   });
 
   revalidatePath("/zh-CN/assets");
+}
+
+// ==================== 知识引擎：资产处理 ====================
+
+/**
+ * 解析 Asset metadata 中的处理状态
+ */
+function parseProcessingMeta(metadata: unknown): AssetProcessingMeta {
+  const meta = (metadata || {}) as Record<string, unknown>;
+  return {
+    processingStatus: (meta.processingStatus as AssetProcessingMeta['processingStatus']) || 'unprocessed',
+    processingError: meta.processingError as string | undefined,
+    processedAt: meta.processedAt as string | undefined,
+    chunkCount: meta.chunkCount as number | undefined,
+  };
+}
+
+/**
+ * 触发资产文本处理：提取文本 → 分块 → 写入 AssetChunk
+ */
+export async function triggerAssetProcessing(assetId: string): Promise<AssetProcessingMeta> {
+  const session = await getSession();
+
+  const asset = await db.asset.findFirst({
+    where: {
+      id: assetId,
+      tenantId: session.user.tenantId,
+      status: "active",
+    },
+  });
+
+  if (!asset) {
+    throw new Error("资产不存在或不可处理");
+  }
+
+  // 更新状态为 processing
+  const currentMeta = (asset.metadata || {}) as Record<string, unknown>;
+  await db.asset.update({
+    where: { id: assetId },
+    data: {
+      metadata: { ...currentMeta, processingStatus: 'processing', processingError: undefined },
+    },
+  });
+
+  try {
+    // 提取文本
+    const text = await extractTextFromAsset(asset.storageKey, asset.mimeType);
+
+    if (!text || text.length < 10 || text.startsWith('[')) {
+      throw new Error('文本提取失败或内容过少');
+    }
+
+    // 分块
+    const chunks = splitTextIntoChunks(text);
+
+    if (chunks.length === 0) {
+      throw new Error('文本分块结果为空');
+    }
+
+    // 清除旧的 chunks（重新处理场景）
+    await db.assetChunk.deleteMany({
+      where: { assetId },
+    });
+
+    // 批量写入 AssetChunk
+    await db.assetChunk.createMany({
+      data: chunks.map((chunk) => ({
+        tenantId: session.user.tenantId,
+        assetId,
+        content: chunk.content,
+        chunkIndex: chunk.chunkIndex,
+        charStart: chunk.charStart,
+        charEnd: chunk.charEnd,
+        tokenCount: chunk.tokenCount,
+      })),
+    });
+
+    // 更新状态为 ready
+    const successMeta: AssetProcessingMeta = {
+      processingStatus: 'ready',
+      processedAt: new Date().toISOString(),
+      chunkCount: chunks.length,
+    };
+
+    await db.asset.update({
+      where: { id: assetId },
+      data: {
+        metadata: { ...currentMeta, ...successMeta },
+      },
+    });
+
+    revalidatePath("/zh-CN/knowledge");
+    return successMeta;
+  } catch (error) {
+    // 更新状态为 failed
+    const failMeta: AssetProcessingMeta = {
+      processingStatus: 'failed',
+      processingError: error instanceof Error ? error.message : '处理失败',
+    };
+
+    await db.asset.update({
+      where: { id: assetId },
+      data: {
+        metadata: { ...currentMeta, ...failMeta },
+      },
+    });
+
+    revalidatePath("/zh-CN/knowledge");
+    return failMeta;
+  }
+}
+
+/**
+ * 获取资产的文本分块列表
+ */
+export async function getAssetChunks(
+  assetId: string,
+  pagination: AssetPagination = { page: 1, pageSize: 20 }
+): Promise<ChunkListResponse> {
+  const session = await getSession();
+
+  const where = {
+    assetId,
+    tenantId: session.user.tenantId,
+  };
+
+  const [items, total] = await Promise.all([
+    db.assetChunk.findMany({
+      where,
+      orderBy: { chunkIndex: "asc" },
+      skip: (pagination.page - 1) * pagination.pageSize,
+      take: pagination.pageSize,
+      select: {
+        id: true,
+        content: true,
+        chunkIndex: true,
+        pageNumber: true,
+        charStart: true,
+        charEnd: true,
+        tokenCount: true,
+      },
+    }),
+    db.assetChunk.count({ where }),
+  ]);
+
+  return {
+    items: items as ChunkData[],
+    total,
+    page: pagination.page,
+    pageSize: pagination.pageSize,
+    totalPages: Math.ceil(total / pagination.pageSize),
+  };
+}
+
+/**
+ * 全文搜索资产内容（跨 chunks）
+ */
+export async function searchAssetContent(
+  query: string,
+  filters?: { fileCategory?: string; processingStatus?: string },
+  pagination: AssetPagination = { page: 1, pageSize: 20 }
+): Promise<{
+  items: Array<{
+    chunk: ChunkData;
+    asset: { id: string; originalName: string; fileCategory: string };
+  }>;
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}> {
+  const session = await getSession();
+
+  if (!query || query.trim().length === 0) {
+    return { items: [], total: 0, page: 1, pageSize: pagination.pageSize, totalPages: 0 };
+  }
+
+  const where: Record<string, unknown> = {
+    tenantId: session.user.tenantId,
+    content: { contains: query, mode: "insensitive" },
+  };
+
+  if (filters?.fileCategory) {
+    where.asset = { fileCategory: filters.fileCategory };
+  }
+
+  const [chunks, total] = await Promise.all([
+    db.assetChunk.findMany({
+      where,
+      include: {
+        asset: {
+          select: { id: true, originalName: true, fileCategory: true },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      skip: (pagination.page - 1) * pagination.pageSize,
+      take: pagination.pageSize,
+    }),
+    db.assetChunk.count({ where }),
+  ]);
+
+  return {
+    items: chunks.map((c) => ({
+      chunk: {
+        id: c.id,
+        content: c.content,
+        chunkIndex: c.chunkIndex,
+        pageNumber: c.pageNumber,
+        charStart: c.charStart,
+        charEnd: c.charEnd,
+        tokenCount: c.tokenCount,
+      },
+      asset: c.asset,
+    })),
+    total,
+    page: pagination.page,
+    pageSize: pagination.pageSize,
+    totalPages: Math.ceil(total / pagination.pageSize),
+  };
+}
+
+/**
+ * 获取知识引擎素材列表（附带处理状态）
+ */
+export async function getKnowledgeAssets(
+  filters: AssetFilters & { processingStatus?: AssetProcessingMeta['processingStatus'] } = {},
+  pagination: AssetPagination = { page: 1, pageSize: 48 },
+  sort: AssetSort = { field: "createdAt", direction: "desc" }
+): Promise<KnowledgeAssetListResponse> {
+  const session = await getSession();
+
+  const where: Record<string, unknown> = {
+    tenantId: session.user.tenantId,
+    status: "active",
+    OR: [
+      { fileCategory: "document" },
+      {
+        mimeType: {
+          in: [
+            "text/plain",
+            "text/markdown",
+            "text/html",
+            "text/csv",
+            "application/pdf",
+            "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          ],
+        },
+      },
+    ],
+  };
+
+  if (filters.fileCategory) {
+    where.fileCategory = filters.fileCategory;
+    delete where.OR;
+  }
+
+  if (filters.search) {
+    where.AND = [
+      {
+        OR: [
+          { originalName: { contains: filters.search, mode: "insensitive" } },
+          { title: { contains: filters.search, mode: "insensitive" } },
+        ],
+      },
+    ];
+  }
+
+  if (filters.tags && filters.tags.length > 0) {
+    where.tags = { hasSome: filters.tags };
+  }
+
+  const [rawItems, total] = await Promise.all([
+    db.asset.findMany({
+      where,
+      include: {
+        folder: true,
+        uploadedBy: { select: { id: true, name: true, email: true } },
+      },
+      orderBy: { [sort.field]: sort.direction },
+      skip: (pagination.page - 1) * pagination.pageSize,
+      take: pagination.pageSize,
+    }),
+    db.asset.count({ where }),
+  ]);
+
+  let items: AssetWithProcessingStatus[] = rawItems.map((asset) => ({
+    ...asset,
+    processingMeta: parseProcessingMeta(asset.metadata),
+  })) as unknown as AssetWithProcessingStatus[];
+
+  if (filters.processingStatus) {
+    items = items.filter(
+      (item) => item.processingMeta.processingStatus === filters.processingStatus
+    );
+  }
+
+  return {
+    items,
+    total: filters.processingStatus ? items.length : total,
+    page: pagination.page,
+    pageSize: pagination.pageSize,
+    totalPages: Math.ceil(
+      (filters.processingStatus ? items.length : total) / pagination.pageSize
+    ),
+  };
 }

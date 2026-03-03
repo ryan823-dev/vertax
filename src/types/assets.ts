@@ -1,4 +1,5 @@
 import type { Asset, AssetFolder, User } from "@/generated/prisma/client";
+import type { AssetProcessingMeta } from "@/types/knowledge";
 
 // ==================== 基础类型 ====================
 
@@ -134,6 +135,25 @@ export interface AssetMetadata {
   // width, height 同上
   // 文档
   pages?: number;
+  // 知识处理状态
+  processingStatus?: AssetProcessingMeta['processingStatus'];
+  processingError?: string;
+  processedAt?: string;
+  chunkCount?: number;
   // 通用
   [key: string]: unknown;
+}
+
+// ==================== 知识引擎扩展 ====================
+
+export interface AssetWithProcessingStatus extends AssetWithFolder {
+  processingMeta: AssetProcessingMeta;
+}
+
+export interface KnowledgeAssetListResponse {
+  items: AssetWithProcessingStatus[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
 }

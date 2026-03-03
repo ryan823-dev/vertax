@@ -4,7 +4,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { analyzeCompanyProfile } from "@/lib/ai-client";
-import { generatePresignedGetUrl } from "@/lib/oss";
+import { extractTextFromAsset } from "@/lib/utils/text-extract";
 
 // ==================== 认证辅助 ====================
 
@@ -140,49 +140,6 @@ export async function getAnalyzableAssets(): Promise<
     ...a,
     fileSize: Number(a.fileSize),
   }));
-}
-
-// ==================== 从 OSS 提取文本内容 ====================
-
-async function extractTextFromAsset(
-  storageKey: string,
-  mimeType: string
-): Promise<string> {
-  // 生成临时下载URL
-  const url = await generatePresignedGetUrl(storageKey, 600); // 10分钟有效
-
-  // 下载文件
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Failed to download file: ${response.status}`);
-  }
-
-  // 纯文本类文件直接读取
-  if (
-    mimeType.startsWith("text/") ||
-    mimeType === "application/json" ||
-    mimeType === "text/markdown"
-  ) {
-    return await response.text();
-  }
-
-  // PDF - 使用 pdf-parse（如果可用）
-  if (mimeType === "application/pdf") {
-    try {
-      const buffer = Buffer.from(await response.arrayBuffer());
-      // 动态导入 pdf-parse，使用 any 绕过类型检查
-      const pdfModule = await import("pdf-parse") as unknown as { default?: (buffer: Buffer) => Promise<{ text: string }> };
-      const pdfParse = pdfModule.default || (pdfModule as unknown as (buffer: Buffer) => Promise<{ text: string }>);
-      const data = await pdfParse(buffer);
-      return data.text;
-    } catch (error) {
-      console.warn("PDF parsing failed, skipping:", error);
-      return `[PDF文件: 文本提取失败]`;
-    }
-  }
-
-  // 其他格式暂不支持文本提取
-  return `[${mimeType}: 暂不支持文本提取]`;
 }
 
 // ==================== AI 分析生成能力画像 ====================
