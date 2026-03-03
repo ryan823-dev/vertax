@@ -18,6 +18,8 @@ import {
   Building2,
   BookOpen,
   Users2,
+  FileEdit,
+  Layers,
 } from 'lucide-react';
 
 export enum CustomerNavItem {
@@ -79,7 +81,17 @@ export function CustomerSidebar({ tenantName = '客户企业', tenantSlug = 'ten
           ],
         },
         { id: CustomerNavItem.OutreachRadar, label: '获客雷达', icon: Radar, href: '/c/radar', health: 'emerald' as const },
-        { id: CustomerNavItem.MarketingDrive, label: '营销系统', icon: BarChart3, href: '/c/marketing', health: 'amber' as const },
+        {
+          id: CustomerNavItem.MarketingDrive,
+          label: '营销系统',
+          icon: BarChart3,
+          href: '/c/marketing',
+          health: 'amber' as const,
+          subItems: [
+            { label: '内容规划', href: '/c/marketing/briefs', icon: FileEdit },
+            { label: '内容管理', href: '/c/marketing/contents', icon: Layers },
+          ],
+        },
       ] as NavItemConfig[],
     },
     {

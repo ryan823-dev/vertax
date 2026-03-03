@@ -31,6 +31,7 @@ import {
   type RadarStats,
   type ICPData,
 } from '@/actions/radar';
+import { SkillPanel } from '@/components/skills';
 
 export default function RadarPage() {
   const [isLoading, setIsLoading] = useState(true);
@@ -445,6 +446,20 @@ export default function RadarPage() {
                   </div>
                 </div>
               )}
+
+              {/* AI Skills Panel */}
+              <div className="bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3] p-6">
+                <SkillPanel
+                  engine="radar"
+                  entityType="Company"
+                  entityId={selectedLead.id}
+                  input={{ companyName: selectedLead.companyName, industry: selectedLead.industry }}
+                  onSkillComplete={(skillName, versionId) => {
+                    console.log(`Skill ${skillName} completed with version ${versionId}`);
+                    loadData();
+                  }}
+                />
+              </div>
             </>
           ) : (
             <div className="bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3] p-8 text-center">

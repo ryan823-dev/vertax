@@ -42,6 +42,10 @@ model Tenant {
   icpSegments       ICPSegment[]
   personas          Persona[]
   messagingMatrices MessagingMatrix[]
+  // Phase 3
+  artifactVersions   ArtifactVersion[]
+  contentBriefs      ContentBrief[]
+  chatConversations  ChatConversation[]
 }
 
 model WebsiteConfig {
@@ -83,6 +87,13 @@ model User {
   activities  Activity[]
   assets      Asset[]
   evidences   Evidence[]
+  // Phase 3
+  artifactVersions  ArtifactVersion[]
+  contentBriefs     ContentBrief[]
+  artifactComments  ArtifactComment[]
+  tasksCreated      ArtifactTask[]     @relation("TaskCreator")
+  tasksAssigned     ArtifactTask[]     @relation("TaskAssignee")
+  chatConversations ChatConversation[]
 
   @@index([tenantId])
   @@index([email])
@@ -284,11 +295,19 @@ model SeoContent {
   updatedAt       DateTime        @updatedAt
   deletedAt       DateTime?
 
+  // Phase 3 扩展
+  briefId      String?
+  brief        ContentBrief?  @relation(fields: [briefId], references: [id], onDelete: SetNull)
+  outline      Json?          // { sections: [{ heading, keyPoints }] }
+  evidenceRefs String[]       // 引用的 Evidence id
+  schemaJson   Json?          // Schema.org 结构化数据
+
   @@unique([tenantId, slug])
   @@index([tenantId])
   @@index([categoryId])
   @@index([authorId])
   @@index([status])
+  @@index([briefId])
 }
 
 // ==================== MODULE 3: SOCIAL MEDIA ====================
@@ -441,6 +460,11 @@ model Activity {
   metadata   Json     @default("{}")
   createdAt  DateTime @default(now())
 
+  // Phase 3 扩展
+  eventCategory String?  // "knowledge"|"marketing"|"review"|"chat"|"system"
+  severity      String?  // "info"|"warn"|"error"
+  context       Json?    // { versionId, briefId, previousStatus, ... }
+
   @@index([tenantId])
   @@index([userId])
   @@index([entityType, entityId])
@@ -464,6 +488,18 @@ enum GuidelineCategory {
   terminology
   visual
   messaging
+}
+
+// ==================== Phase 3: Artifact Versioning ====================
+
+enum ArtifactStatus {
+  draft
+  in_review
+  client_feedback
+  revised
+  approved
+  published   // UI隐藏，后续启用
+  archived
 }
 
 model CompanyProfile {
@@ -679,6 +715,7 @@ model Persona {
   updatedAt       DateTime      @updatedAt
 
   messagingMatrix MessagingMatrix[]
+  contentBriefs   ContentBrief[]
 
   @@index([tenantId])
   @@index([segmentId])
@@ -699,4 +736,553 @@ model MessagingMatrix {
 
   @@index([tenantId])
   @@index([personaId])
+}
+
+// ==================== Phase 3: ARTIFACT VERSIONING ====================
+
+model ArtifactVersion {
+  id          String         @id @default(cuid())
+  tenantId    String
+  tenant      Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  entityType  String         // "CompanyProfile"|"Evidence"|"BrandGuideline"|"Persona"|"ContentBrief"|"SeoContent"
+  entityId    String
+  version     Int            // 从 1 自增
+  status      ArtifactStatus @default(draft)
+  content     Json           // 实体完整快照
+  meta        Json           @default("{}") // { changeNote, generatedBy: "ai"|"human", wordCount }
+  createdById String
+  createdBy   User           @relation(fields: [createdById], references: [id])
+  createdAt   DateTime       @default(now())
+
+  comments ArtifactComment[]
+  tasks    ArtifactTask[]
+
+  @@unique([entityType, entityId, version])
+  @@index([tenantId])
+  @@index([entityType, entityId])
+  @@index([tenantId, status])
+}
+
+// ==================== Phase 3: CONTENT BRIEF ====================
+
+model ContentBrief {
+  id              String    @id @default(cuid())
+  tenantId        String
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  title           String
+  targetPersonaId String?
+  targetPersona   Persona?  @relation(fields: [targetPersonaId], references: [id], onDelete: SetNull)
+  targetKeywords  String[]
+  intent          String    // "informational"|"commercial"|"transactional"|"navigational"
+  cta             String?
+  evidenceIds     String[]  // 引用的 Evidence id 列表
+  notes           String?   @db.Text
+  status          String    @default("draft") // "draft"|"ready"|"in_progress"|"done"
+  createdById     String
+  createdBy       User      @relation(fields: [createdById], references: [id])
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  contentPieces SeoContent[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([targetPersonaId])
+}
+
+// ==================== Phase 3: ARTIFACT COLLABORATION ====================
+
+model ArtifactComment {
+  id         String           @id @default(cuid())
+  tenantId   String
+  versionId  String
+  version    ArtifactVersion  @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  content    String           @db.Text
+  authorId   String
+  author     User             @relation(fields: [authorId], references: [id])
+  parentId   String?
+  parent     ArtifactComment? @relation("CommentReplies", fields: [parentId], references: [id])
+  replies    ArtifactComment[] @relation("CommentReplies")
+  resolvedAt DateTime?
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  // Phase 3 协作壳：锚点定位
+  anchorType   String?   // "jsonPath"|"textRange"|"blockId"|"rowId"
+  anchorValue  String?   // e.g. "coreProducts[0]", "block-uuid-xxx"
+  anchorLabel  String?   // 人类可读标签，如"核心产品·第1项"
+
+  // 评论转任务关联
+  linkedTask   ArtifactTask? @relation("CommentTask")
+
+  @@index([versionId])
+  @@index([tenantId])
+  @@index([parentId])
+}
+
+model ArtifactTask {
+  id          String           @id @default(cuid())
+  tenantId    String
+  versionId   String
+  version     ArtifactVersion  @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  title       String
+  assigneeId  String?
+  assignee    User?            @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  status      String           @default("open") // "open"|"in_progress"|"done"|"cancelled"
+  priority    String           @default("normal") // "urgent"|"normal"|"low"
+  dueDate     DateTime?
+  createdById String
+  createdBy   User             @relation("TaskCreator", fields: [createdById], references: [id])
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  // Phase 3 协作壳：来源评论关联
+  sourceCommentId String?          @unique
+  sourceComment   ArtifactComment? @relation("CommentTask", fields: [sourceCommentId], references: [id], onDelete: SetNull)
+
+  @@index([versionId])
+  @@index([tenantId, status])
+  @@index([assigneeId])
+}
+
+// ==================== Phase 3: DECISION CENTER CHAT ====================
+
+model ChatConversation {
+  id              String        @id @default(cuid())
+  tenantId        String
+  tenant          Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title           String?
+  contextSnapshot Json?         // debug 用：记录构建时的上下文摘要
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  messages ChatMessage[]
+
+  @@index([tenantId, userId])
+}
+
+model ChatMessage {
+  id             String           @id @default(cuid())
+  conversationId String
+  conversation   ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           String           // "user"|"assistant"|"system"
+  content        String           @db.Text
+  references     Json?            // [{ evidenceId, title, excerpt }]
+  tokens         Int?
+  createdAt      DateTime         @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+// ==================== MODULE 7: RADAR (获客雷达) ====================
+
+// ==================== ENUMS (Radar) ====================
+
+enum ChannelType {
+  TENDER      // 招标/采购
+  MAPS        // 地图 POI
+  DIRECTORY   // 行业名录/协会
+  TRADESHOW   // 展会
+  HIRING      // 招聘信号
+  ECOSYSTEM   // 生态伙伴
+  CUSTOM      // 自定义
+}
+
+enum AdapterType {
+  API           // 官方 REST/GraphQL API
+  RSS           // RSS/Atom feed
+  AI_SEARCH     // AI + 搜索引擎
+  CSV_IMPORT    // CSV 导入
+  MANUAL        // 手动录入
+}
+
+enum RadarStoragePolicy {
+  ID_ONLY           // 只存 ID，详情按需拉取
+  TTL_CACHE         // 缓存 N 天后清理
+  SNAPSHOT_IMPORT   // 导入时快照永久存储
+}
+
+enum CandidateType {
+  COMPANY      // 公司
+  OPPORTUNITY  // 机会（招标/项目）
+  CONTACT      // 联系人
+}
+
+enum CandidateStatus {
+  NEW          // 新发现
+  REVIEWING    // 审核中
+  QUALIFIED    // 已合格化
+  IMPORTED     // 已导入线索库
+  EXCLUDED     // 已排除
+  EXPIRED      // 已过期
+}
+
+enum RadarTaskStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum OpportunityStage {
+  IDENTIFIED    // 已识别
+  QUALIFYING    // 资格评估中
+  PURSUING      // 跟进中
+  PROPOSAL      // 已提案
+  NEGOTIATION   // 谈判中
+  WON           // 赢单
+  LOST          // 丢单
+}
+
+// ==================== 数据源目录 ====================
+
+model RadarSource {
+  id              String   @id @default(cuid())
+  tenantId        String?  // null = 系统级公共源
+  
+  // 分类
+  channelType     ChannelType
+  
+  // 基础信息
+  name            String
+  code            String   @unique
+  description     String?
+  logoUrl         String?
+  websiteUrl      String?
+  
+  // 覆盖范围
+  countries       String[] // ISO codes, 空 = 全球
+  regions         String[] // EU | LATAM | MENA | APAC 等
+  
+  // 接入配置
+  adapterType     AdapterType
+  adapterConfig   Json     @default("{}") // API endpoint, auth, field mapping 等
+  
+  // 合规与策略
+  isOfficial      Boolean  @default(false)  // 是否官方源
+  requiresAuth    Boolean  @default(false)
+  termsUrl        String?
+  storagePolicy   RadarStoragePolicy @default(TTL_CACHE)
+  ttlDays         Int      @default(90)
+  attributionRequired Boolean @default(true)
+  
+  // 速率限制
+  rateLimit       Json     @default("{}") // { requests, windowMs }
+  
+  // 状态
+  isEnabled       Boolean  @default(true)
+  lastSyncAt      DateTime?
+  syncStats       Json?    // { totalFetched, lastError, avgResponseTime }
+  
+  // 关系
+  candidates      RadarCandidate[]
+  tasks           RadarTask[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([channelType, isEnabled])
+}
+
+// ==================== 发现任务 ====================
+
+model RadarTask {
+  id              String   @id @default(cuid())
+  tenantId        String
+  
+  // 任务配置
+  name            String?
+  sourceId        String
+  source          RadarSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  
+  // 画像引用（可追溯）
+  targetingRef    Json?    // { segmentId?, personaId?, specVersionId? }
+  channelMapRef   String?  // 引用 ArtifactVersion id
+  
+  // 查询计划
+  queryConfig     Json     // 搜索参数：keywords, categories, regions, dateRange
+  
+  // 执行状态
+  status          RadarTaskStatus @default(PENDING)
+  startedAt       DateTime?
+  completedAt     DateTime?
+  cancelToken     String?
+  
+  // 统计
+  stats           Json?    // { fetched, new, duplicate, errors, duration }
+  errorMessage    String?
+  
+  // 触发方式
+  triggeredBy     String   // userId | "scheduler" | "manual"
+  scheduleRule    String?  // cron expression for recurring
+  
+  // 关系
+  candidates      RadarCandidate[]
+  
+  createdAt       DateTime @default(now())
+  
+  @@index([tenantId, status])
+  @@index([sourceId, status])
+}
+
+// ==================== 统一候选池 ====================
+
+model RadarCandidate {
+  id              String   @id @default(cuid())
+  tenantId        String
+  
+  // 来源追溯（必须）
+  sourceId        String
+  source          RadarSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  taskId          String?
+  task            RadarTask? @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  
+  // 候选类型
+  candidateType   CandidateType
+  
+  // 外部标识
+  externalId      String   // place_id, notice_id, etc.
+  sourceUrl       String   // 必须有，用于追溯
+  
+  // 通用字段
+  displayName     String
+  description     String?  @db.Text
+  
+  // 公司字段（candidateType=COMPANY）
+  website         String?
+  phone           String?
+  email           String?
+  address         String?
+  country         String?
+  city            String?
+  industry        String?
+  companySize     String?
+  
+  // 机会字段（candidateType=OPPORTUNITY，即招标）
+  deadline        DateTime?
+  estimatedValue  Float?
+  currency        String?
+  buyerName       String?
+  buyerCountry    String?
+  buyerType       String?  // government | enterprise | ngo | international_org
+  categoryCode    String?  // CPV / UNSPSC
+  categoryName    String?
+  
+  // 联系人字段（candidateType=CONTACT）
+  contactRole     String?
+  linkedCandidateId String? // 关联到哪个公司候选
+  
+  // ICP 匹配（核心）
+  matchScore      Float?
+  matchExplain    Json?    // { rules: [...], reasons: [...], query, channel }
+  
+  // AI 处理
+  aiSummary       String?  @db.Text
+  aiRelevance     Json?    // { score, reasons[], matchedKeywords[] }
+  
+  // 状态
+  status          CandidateStatus @default(NEW)
+  qualifyTier     String?  // A | B | C | excluded
+  qualifyReason   String?
+  qualifiedAt     DateTime?
+  qualifiedBy     String?
+  
+  // 导入追踪
+  importedToType  String?  // ProspectCompany | Opportunity
+  importedToId    String?
+  importedAt      DateTime?
+  importedBy      String?
+  
+  // TTL 策略
+  rawData         Json?
+  expireAt        DateTime?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@unique([sourceId, externalId])
+  @@index([tenantId, candidateType, status])
+  @@index([tenantId, qualifyTier])
+  @@index([tenantId, sourceId])
+  @@index([taskId])
+  @@index([expireAt])
+}
+
+// ==================== 正式线索公司 ====================
+
+model ProspectCompany {
+  id              String   @id @default(cuid())
+  tenantId        String
+  
+  // 公司信息
+  name            String
+  website         String?
+  phone           String?
+  email           String?
+  address         String?
+  country         String?
+  city            String?
+  industry        String?
+  companySize     String?
+  description     String?  @db.Text
+  
+  // 分类与标签
+  tier            String?  // A | B | C
+  tags            String[]
+  
+  // 来源追溯
+  sourceType      String?  // tender | maps | directory | tradeshow | hiring | manual
+  sourceCandidateId String? // 来自哪个候选
+  sourceUrl       String?
+  
+  // 跟进状态
+  status          String   @default("new") // new | contacted | qualified | converted | lost
+  assignedTo      String?
+  lastContactedAt DateTime?
+  nextActionDate  DateTime?
+  notes           String?  @db.Text
+  
+  // 关系
+  contacts        ProspectContact[]
+  opportunities   Opportunity[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
+  
+  @@index([tenantId, status])
+  @@index([tenantId, tier])
+  @@index([tenantId, industry])
+  @@index([assignedTo])
+}
+
+// ==================== 正式联系人 ====================
+
+model ProspectContact {
+  id              String   @id @default(cuid())
+  tenantId        String
+  
+  // 关联公司
+  companyId       String?
+  company         ProspectCompany? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  
+  // 联系人信息
+  name            String
+  email           String?
+  phone           String?
+  role            String?
+  department      String?
+  seniority       String?  // C-level | VP | Director | Manager | Staff
+  linkedInUrl     String?
+  
+  // 来源
+  sourceCandidateId String?
+  sourceUrl       String?
+  
+  // 状态
+  status          String   @default("new")
+  notes           String?  @db.Text
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
+  
+  @@index([tenantId, companyId])
+  @@index([tenantId, status])
+  @@index([email])
+}
+
+// ==================== 正式机会（招标转化后） ====================
+
+model Opportunity {
+  id              String   @id @default(cuid())
+  tenantId        String
+  
+  // 关联公司
+  companyId       String?
+  company         ProspectCompany? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  
+  // 来源
+  sourceType      String   // tender | project | referral | inbound
+  sourceCandidateId String?
+  sourceUrl       String?
+  
+  // 核心信息
+  title           String
+  description     String?  @db.Text
+  
+  // 时间与金额
+  deadline        DateTime?
+  estimatedValue  Float?
+  currency        String?
+  
+  // 分类
+  categoryCode    String?
+  categoryName    String?
+  
+  // 阶段管理
+  stage           OpportunityStage @default(IDENTIFIED)
+  probability     Int?     // 0-100
+  lostReason      String?
+  wonAt           DateTime?
+  lostAt          DateTime?
+  
+  // 跟进
+  assignedTo      String?
+  nextAction      String?
+  nextActionDate  DateTime?
+  notes           String?  @db.Text
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
+  
+  @@index([tenantId, stage])
+  @@index([tenantId, deadline])
+  @@index([companyId])
+  @@index([assignedTo])
+}
+
+// ==================== 搜索配置（定时监控） ====================
+
+model RadarSearchProfile {
+  id              String   @id @default(cuid())
+  tenantId        String
+  
+  name            String
+  description     String?
+  
+  // 关联画像
+  segmentId       String?  // 关联 ICPSegment
+  personaId       String?  // 关联 Persona
+  
+  // 搜索配置
+  keywords        Json     @default("{}") // { en: [], zh: [], es: [], ar: [] }
+  negativeKeywords Json?   // 排除词
+  
+  // 目标区域
+  targetCountries String[]
+  targetRegions   String[]
+  
+  // 行业/分类过滤
+  industryCodes   String[]
+  categoryFilters String[] // CPV/UNSPSC codes
+  
+  // 渠道配置
+  enabledChannels ChannelType[]
+  sourceIds       String[] // 指定的 source ids
+  
+  // 调度
+  isActive        Boolean  @default(true)
+  scheduleRule    String   @default("0 6 * * *") // 默认每天早6点
+  lastRunAt       DateTime?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([tenantId, isActive])
 }
