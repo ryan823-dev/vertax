@@ -1,17 +1,30 @@
 "use client";
 
+/**
+ * 证据库页面 - 从素材中提取营销证据
+ * 
+ * 重构重点：
+ * - 集成 EngineHeader + Stepper
+ * - 输入来源提示
+ * - 明确前置条件
+ */
+
 import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import {
   Plus, Loader2, Search, RefreshCw, ShieldCheck, Sparkles,
-  Pencil, Trash2, ExternalLink, Filter,
+  Pencil, Trash2, ExternalLink, Filter, FileStack, AlertCircle,
 } from 'lucide-react';
 import {
   getEvidences, createEvidence, updateEvidence,
   deleteEvidence, batchGenerateEvidences,
 } from '@/actions/evidence';
 import { getKnowledgeAssets } from '@/actions/assets';
+import { getKnowledgePipelineStatus } from '@/actions/pipeline';
+import { EngineHeader } from '@/components/knowledge/engine-header';
 import type { EvidenceData, EvidenceTypeValue, CreateEvidenceInput } from '@/types/knowledge';
 import type { AssetWithProcessingStatus } from '@/types/assets';
+import type { PipelineStatus } from '@/lib/knowledge/pipeline';
 
 const TYPE_CONFIG: Record<EvidenceTypeValue, { label: string; color: string; bg: string }> = {
   claim: { label: '产品主张', color: 'text-blue-600', bg: 'bg-blue-50 border-blue-200' },
@@ -31,6 +44,9 @@ function EvidenceTypeTag({ type }: { type: EvidenceTypeValue }) {
 }
 
 export default function EvidencePage() {
+  // Pipeline status
+  const [pipelineStatus, setPipelineStatus] = useState<PipelineStatus | null>(null);
+  
   const [isLoading, setIsLoading] = useState(true);
   const [evidences, setEvidences] = useState<EvidenceData[]>([]);
   const [total, setTotal] = useState(0);
@@ -40,9 +56,7 @@ export default function EvidencePage() {
 
   // Create dialog
   const [showCreate, setShowCreate] = useState(false);
-  const [createForm, setCreateForm] = useState<CreateEvidenceInput>({
-    title: '', content: '', type: 'claim',
-  });
+  const [createForm, setCreateForm] = useState<CreateEvidenceInput>({ title: '', content: '', type: 'claim' });
   const [isCreating, setIsCreating] = useState(false);
 
   // Batch generate
@@ -57,6 +71,16 @@ export default function EvidencePage() {
   const [editTitle, setEditTitle] = useState('');
   const [editContent, setEditContent] = useState('');
 
+  // Load pipeline status
+  const loadPipelineStatus = useCallback(async () => {
+    try {
+      const status = await getKnowledgePipelineStatus();
+      setPipelineStatus(status);
+    } catch {
+      // silent
+    }
+  }, []);
+
   const loadEvidences = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -69,7 +93,10 @@ export default function EvidencePage() {
     } catch { /* silent */ } finally { setIsLoading(false); }
   }, [search, typeFilter, page]);
 
-  useEffect(() => { loadEvidences(); }, [loadEvidences]);
+  useEffect(() => { 
+    loadPipelineStatus();
+    loadEvidences(); 
+  }, [loadPipelineStatus, loadEvidences]);
 
   const handleCreate = async () => {
     if (!createForm.title || !createForm.content) return;
@@ -79,6 +106,7 @@ export default function EvidencePage() {
       setShowCreate(false);
       setCreateForm({ title: '', content: '', type: 'claim' });
       loadEvidences();
+      loadPipelineStatus();
     } catch { /* silent */ } finally { setIsCreating(false); }
   };
 
@@ -86,6 +114,7 @@ export default function EvidencePage() {
     try {
       await deleteEvidence(id);
       loadEvidences();
+      loadPipelineStatus();
     } catch { /* silent */ }
   };
 
@@ -113,6 +142,7 @@ export default function EvidencePage() {
       const result = await batchGenerateEvidences(selectedAssetId);
       setBatchResult(result);
       loadEvidences();
+      loadPipelineStatus();
     } catch { /* silent */ } finally { setIsBatchGenerating(false); }
   };
 
@@ -123,120 +153,185 @@ export default function EvidencePage() {
     setPage(1);
   };
 
+  // Check prerequisites
+  const canGenerate = pipelineStatus && pipelineStatus.counts.assetsParsed >= 1;
+
+  // Primary CTA config
+  const getPrimaryCTA = () => {
+    if (!canGenerate) {
+      return {
+        label: '生成证据',
+        onClick: openBatchDialog,
+        disabled: true,
+      };
+    }
+    return {
+      label: '生成证据',
+      onClick: openBatchDialog,
+      loading: isBatchGenerating,
+    };
+  };
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-[#0B1B2B]">证据库</h1>
-          <p className="text-sm text-slate-500 mt-1">从素材中提取营销证据，用于支撑企业认知和内容生成</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button onClick={() => loadEvidences()} className="p-2 text-slate-400 hover:text-[#C7A56A] rounded-lg hover:bg-[#F7F3EA] transition-colors">
-            <RefreshCw size={18} />
-          </button>
-          <button onClick={openBatchDialog} className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-[#0B1B2B] border border-[#E7E0D3] rounded-xl hover:bg-[#F7F3EA] transition-colors">
-            <Sparkles size={16} />
-            AI 批量生成
-          </button>
-          <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 px-4 py-2 bg-[#0B1B2B] text-[#C7A56A] rounded-xl text-sm font-medium hover:bg-[#10263B] transition-colors">
-            <Plus size={16} />
-            新建证据
-          </button>
-        </div>
-      </div>
+    <div className="space-y-0">
+      {/* Engine Header with Stepper */}
+      {pipelineStatus && (
+        <EngineHeader
+          title="证据库"
+          description="从已解析素材中提取营销证据，支撑企业认知和内容生成"
+          steps={pipelineStatus.steps}
+          counts={pipelineStatus.counts}
+          currentStep={pipelineStatus.currentStep}
+          primaryAction={getPrimaryCTA()}
+        />
+      )}
 
-      {/* Toolbar */}
-      <div className="flex items-center gap-4">
-        <div className="relative w-72">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text" value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            placeholder="搜索证据..."
-            className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-[#E7E0D3] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C7A56A]/30 focus:border-[#C7A56A] text-[#0B1B2B]"
-          />
-        </div>
-        <div className="flex items-center gap-1">
-          <Filter size={14} className="text-slate-400 mr-1" />
-          {(Object.keys(TYPE_CONFIG) as EvidenceTypeValue[]).map((type) => (
-            <button
-              key={type}
-              onClick={() => toggleTypeFilter(type)}
-              className={`px-2.5 py-1 text-[10px] font-medium rounded-full border transition-colors ${
-                typeFilter.includes(type)
-                  ? TYPE_CONFIG[type].bg + ' ' + TYPE_CONFIG[type].color
-                  : 'border-[#E7E0D3] text-slate-400 hover:text-slate-600'
-              }`}
-            >
-              {TYPE_CONFIG[type].label}
-            </button>
-          ))}
-        </div>
-        <span className="text-xs text-slate-400 ml-auto">{total} 条证据</span>
-      </div>
-
-      {/* Evidence Grid */}
-      {isLoading ? (
-        <div className="flex items-center justify-center py-16"><Loader2 size={28} className="text-[#C7A56A] animate-spin" /></div>
-      ) : evidences.length === 0 ? (
-        <div className="text-center py-16 bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3]">
-          <ShieldCheck size={40} className="text-slate-300 mx-auto mb-3" />
-          <p className="text-sm text-slate-500">暂无证据</p>
-          <p className="text-xs text-slate-400 mt-1">从已处理的素材中提取证据，或手动创建</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {evidences.map((ev) => (
-            <div key={ev.id} className="p-4 border border-[#E7E0D3] rounded-xl bg-[#FFFCF6] hover:border-[#C7A56A]/40 transition-all">
-              {editingId === ev.id ? (
-                <div className="space-y-3">
-                  <input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="w-full px-3 py-1.5 text-sm border border-[#E7E0D3] rounded-lg bg-white text-[#0B1B2B]" />
-                  <textarea value={editContent} onChange={(e) => setEditContent(e.target.value)} rows={3} className="w-full px-3 py-1.5 text-xs border border-[#E7E0D3] rounded-lg bg-white text-[#0B1B2B]" />
-                  <div className="flex gap-2">
-                    <button onClick={() => handleEdit(ev.id)} className="px-3 py-1 text-xs bg-[#0B1B2B] text-[#C7A56A] rounded-lg">保存</button>
-                    <button onClick={() => setEditingId(null)} className="px-3 py-1 text-xs border border-[#E7E0D3] rounded-lg text-slate-500">取消</button>
-                  </div>
+      <div className="p-5 space-y-5">
+        {/* Input Source Hint */}
+        <div className="bg-white rounded-xl border border-[#E7E0D3] p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <FileStack size={16} className="text-slate-400" />
+                <span className="text-xs text-slate-500">输入来源：</span>
+                <span className="text-xs font-medium text-[#0B1B2B]">
+                  已解析素材 {pipelineStatus?.counts.assetsParsed || 0} 个
+                </span>
+              </div>
+              {!canGenerate && (
+                <div className="flex items-center gap-2 text-amber-600 text-xs">
+                  <AlertCircle size={14} />
+                  <span>请先完成资料解析</span>
+                  <Link href="/c/knowledge/assets" className="text-[#C7A56A] hover:underline">去资料库</Link>
                 </div>
-              ) : (
-                <>
-                  <div className="flex items-center gap-2 mb-2">
-                    <EvidenceTypeTag type={ev.type} />
-                    <h4 className="text-sm font-medium text-[#0B1B2B] truncate flex-1">{ev.title}</h4>
-                  </div>
-                  <p className="text-xs text-slate-600 leading-relaxed mb-3 line-clamp-3">{ev.content}</p>
-                  {ev.assetName && (
-                    <div className="flex items-center gap-1 text-[10px] text-slate-400 mb-2">
-                      <ExternalLink size={10} />
-                      <span>来源：{ev.assetName}</span>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => { setEditingId(ev.id); setEditTitle(ev.title); setEditContent(ev.content); }} className="p-1.5 text-slate-400 hover:text-[#C7A56A] rounded-lg hover:bg-[#F7F3EA] transition-colors">
-                      <Pencil size={14} />
-                    </button>
-                    <button onClick={() => handleDelete(ev.id)} className="p-1.5 text-slate-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors">
-                      <Trash2 size={14} />
-                    </button>
-                    {ev.tags.length > 0 && (
-                      <div className="flex gap-1 ml-auto">
-                        {ev.tags.map((t) => (
-                          <span key={t} className="px-1.5 py-0.5 text-[9px] bg-[#F7F3EA] text-slate-500 rounded">{t}</span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </>
               )}
             </div>
-          ))}
+            <div className="flex items-center gap-2">
+              <button onClick={() => loadEvidences()} className="p-2 text-slate-400 hover:text-[#C7A56A] rounded-lg hover:bg-[#F7F3EA] transition-colors">
+                <RefreshCw size={16} />
+              </button>
+              <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-slate-600 border border-[#E7E0D3] rounded-lg hover:bg-[#F7F3EA] transition-colors">
+                <Plus size={14} />
+                手动添加
+              </button>
+            </div>
+          </div>
         </div>
-      )}
+
+        {/* Toolbar */}
+        <div className="flex items-center gap-4">
+          <div className="relative w-72">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text" value={search}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              placeholder="搜索证据..."
+              className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-[#E7E0D3] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C7A56A]/30 focus:border-[#C7A56A] text-[#0B1B2B]"
+            />
+          </div>
+          <div className="flex items-center gap-1">
+            <Filter size={14} className="text-slate-400 mr-1" />
+            {(Object.keys(TYPE_CONFIG) as EvidenceTypeValue[]).map((type) => (
+              <button
+                key={type}
+                onClick={() => toggleTypeFilter(type)}
+                className={`px-2.5 py-1 text-[10px] font-medium rounded-full border transition-colors ${
+                  typeFilter.includes(type)
+                    ? TYPE_CONFIG[type].bg + ' ' + TYPE_CONFIG[type].color
+                    : 'border-[#E7E0D3] text-slate-400 hover:text-slate-600'
+                }`}
+              >
+                {TYPE_CONFIG[type].label}
+              </button>
+            ))}
+          </div>
+          <span className="text-xs text-slate-400 ml-auto">{total} 条证据</span>
+        </div>
+
+        {/* Evidence Grid */}
+        {isLoading ? (
+          <div className="flex items-center justify-center py-16"><Loader2 size={28} className="text-[#C7A56A] animate-spin" /></div>
+        ) : evidences.length === 0 ? (
+          <div className="text-center py-12 bg-white rounded-xl border border-[#E7E0D3]">
+            <ShieldCheck size={40} className="text-slate-300 mx-auto mb-3" />
+            <p className="text-sm text-slate-500 mb-2">暂无证据</p>
+            {canGenerate ? (
+              <>
+                <p className="text-xs text-slate-400 mb-4">从已处理的素材中提取证据</p>
+                <button
+                  onClick={openBatchDialog}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-[#0B1B2B] text-[#C7A56A] rounded-xl text-sm font-medium hover:bg-[#10263B] transition-colors"
+                >
+                  <Sparkles size={16} />
+                  生成证据
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-xs text-slate-400 mb-4">需要先完成资料解析</p>
+                <Link
+                  href="/c/knowledge/assets"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-[#0B1B2B] text-[#C7A56A] rounded-xl text-sm font-medium hover:bg-[#10263B] transition-colors"
+                >
+                  <FileStack size={16} />
+                  去资料库上传
+                </Link>
+              </>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {evidences.map((ev) => (
+              <div key={ev.id} className="p-4 border border-[#E7E0D3] rounded-xl bg-white hover:border-[#C7A56A]/40 transition-all">
+                {editingId === ev.id ? (
+                  <div className="space-y-3">
+                    <input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="w-full px-3 py-1.5 text-sm border border-[#E7E0D3] rounded-lg bg-white text-[#0B1B2B]" />
+                    <textarea value={editContent} onChange={(e) => setEditContent(e.target.value)} rows={3} className="w-full px-3 py-1.5 text-xs border border-[#E7E0D3] rounded-lg bg-white text-[#0B1B2B]" />
+                    <div className="flex gap-2">
+                      <button onClick={() => handleEdit(ev.id)} className="px-3 py-1 text-xs bg-[#0B1B2B] text-[#C7A56A] rounded-lg">保存</button>
+                      <button onClick={() => setEditingId(null)} className="px-3 py-1 text-xs border border-[#E7E0D3] rounded-lg text-slate-500">取消</button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-2 mb-2">
+                      <EvidenceTypeTag type={ev.type} />
+                      <h4 className="text-sm font-medium text-[#0B1B2B] truncate flex-1">{ev.title}</h4>
+                    </div>
+                    <p className="text-xs text-slate-600 leading-relaxed mb-3 line-clamp-3">{ev.content}</p>
+                    {ev.assetName && (
+                      <div className="flex items-center gap-1 text-[10px] text-slate-400 mb-2">
+                        <ExternalLink size={10} />
+                        <span>来源：{ev.assetName}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => { setEditingId(ev.id); setEditTitle(ev.title); setEditContent(ev.content); }} className="p-1.5 text-slate-400 hover:text-[#C7A56A] rounded-lg hover:bg-[#F7F3EA] transition-colors">
+                        <Pencil size={14} />
+                      </button>
+                      <button onClick={() => handleDelete(ev.id)} className="p-1.5 text-slate-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors">
+                        <Trash2 size={14} />
+                      </button>
+                      {ev.tags.length > 0 && (
+                        <div className="flex gap-1 ml-auto">
+                          {ev.tags.map((t) => (
+                            <span key={t} className="px-1.5 py-0.5 text-[9px] bg-[#F7F3EA] text-slate-500 rounded">{t}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Create Dialog */}
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setShowCreate(false)}>
-          <div className="bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3] shadow-xl w-[480px] p-6" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl border border-[#E7E0D3] shadow-xl w-[480px] p-6" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-bold text-[#0B1B2B] mb-4">新建证据</h3>
             <div className="space-y-4">
               <div>
@@ -272,7 +367,7 @@ export default function EvidencePage() {
       {/* Batch Generate Dialog */}
       {showBatchDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setShowBatchDialog(false)}>
-          <div className="bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3] shadow-xl w-[480px] p-6" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl border border-[#E7E0D3] shadow-xl w-[480px] p-6" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-bold text-[#0B1B2B] mb-2">AI 批量生成证据</h3>
             <p className="text-xs text-slate-500 mb-4">选择一个已处理的素材，AI 将从每个文本片段中提取证据</p>
             {batchResult ? (

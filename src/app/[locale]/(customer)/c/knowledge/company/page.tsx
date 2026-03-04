@@ -1,54 +1,36 @@
 "use client";
 
+/**
+ * 企业档案页面 - 知识引擎核心产出
+ * 
+ * 重构重点：
+ * - 集成 EngineHeader + Stepper
+ * - 简化布局，去掉大面积空白
+ * - 明确前置条件与一键生成
+ * - 内容区 + 侧边目录架构
+ */
+
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { 
-  Upload, 
-  FileText, 
-  Loader2, 
-  Sparkles, 
-  CheckCircle2,
-  FileSpreadsheet,
-  Presentation,
-  Building2,
-  Target,
-  Award,
-  Users,
-  Zap,
-  TrendingUp,
-  Globe2,
-  RefreshCw,
-  AlertCircle,
-  FolderOpen,
-  Clock,
-  Pencil,
-  Check,
-  X,
-  Lock,
-  MessageSquarePlus,
-  BarChart3,
-  Radar,
-  ArrowRight,
+  Upload, FileText, Loader2, Sparkles, CheckCircle2,
+  Building2, Target, Award, Zap, TrendingUp, Globe2,
+  RefreshCw, AlertCircle, Clock, Pencil, Check, X,
+  Lock, MessageSquarePlus, BarChart3, Radar, ArrowRight,
+  Users, FileStack,
 } from 'lucide-react';
 import { 
-  getCompanyProfile, 
-  getAnalyzableAssets, 
-  analyzeAssets,
-  updateCompanyProfile,
-  type CompanyProfileData 
+  getCompanyProfile, getAnalyzableAssets, analyzeAssets,
+  updateCompanyProfile, type CompanyProfileData 
 } from '@/actions/knowledge';
+import { getKnowledgePipelineStatus } from '@/actions/pipeline';
 import { syncMarketingFromKnowledge, syncRadarFromKnowledge } from '@/actions/sync';
 import { toast } from 'sonner';
 import { getLatestVersion, createVersion } from '@/actions/versions';
 import { CollaborativeShell } from '@/components/collaboration';
+import { EngineHeader, EmptyStateGuide } from '@/components/knowledge/engine-header';
 import type { AnchorSpec, ArtifactStatusValue } from '@/types/artifact';
-
-// Supported file formats display
-const SUPPORTED_FORMATS = [
-  { label: '文档', icon: FileText, color: 'text-blue-500', bgColor: 'bg-blue-50' },
-  { label: '演示文稿', icon: Presentation, color: 'text-orange-500', bgColor: 'bg-orange-50' },
-  { label: '表格', icon: FileSpreadsheet, color: 'text-emerald-500', bgColor: 'bg-emerald-50' },
-];
+import type { PipelineStatus } from '@/lib/knowledge/pipeline';
 
 type AssetItem = {
   id: string;
@@ -59,7 +41,6 @@ type AssetItem = {
   createdAt: Date;
 };
 
-// Section configuration for profile display
 const PROFILE_SECTIONS = [
   { key: 'companyIntro', label: '企业简介', icon: Building2, type: 'text' },
   { key: 'coreProducts', label: '核心产品', icon: Award, type: 'array' },
@@ -68,28 +49,54 @@ const PROFILE_SECTIONS = [
   { key: 'differentiators', label: '差异化优势', icon: TrendingUp, type: 'array' },
 ] as const;
 
+const NAV_ITEMS = [
+  { key: 'overview', label: '企业概览' },
+  { key: 'products', label: '核心产品' },
+  { key: 'advantages', label: '竞争优势' },
+  { key: 'icp', label: '目标客户' },
+];
+
 export default function CompanyKnowledgePage() {
+  // Pipeline status
+  const [pipelineStatus, setPipelineStatus] = useState<PipelineStatus | null>(null);
+  
+  // Data states
   const [isLoading, setIsLoading] = useState(true);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [assets, setAssets] = useState<AssetItem[]>([]);
   const [selectedAssetIds, setSelectedAssetIds] = useState<string[]>([]);
   const [profile, setProfile] = useState<CompanyProfileData | null>(null);
+  
+  // Edit states
   const [editingSection, setEditingSection] = useState<string | null>(null);
   const [editBuffer, setEditBuffer] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   
-  // 协作相关状态
+  // Collaboration states
   const [currentVersionId, setCurrentVersionId] = useState<string | null>(null);
   const [isReadOnly, setIsReadOnly] = useState(false);
   const [activeAnchor, setActiveAnchor] = useState<AnchorSpec | null>(null);
   const [highlightedSection, setHighlightedSection] = useState<string | null>(null);
   
-  // 同步状态
+  // Sync states
   const [isSyncingMarketing, setIsSyncingMarketing] = useState(false);
   const [isSyncingRadar, setIsSyncingRadar] = useState(false);
+  
+  // Active nav section
+  const [activeNav, setActiveNav] = useState('overview');
 
-  // 加载数据
+  // Load pipeline status
+  const loadPipelineStatus = useCallback(async () => {
+    try {
+      const status = await getKnowledgePipelineStatus();
+      setPipelineStatus(status);
+    } catch {
+      // silent
+    }
+  }, []);
+
+  // Load data
   const loadData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -101,7 +108,6 @@ export default function CompanyKnowledgePage() {
       setProfile(profileData);
       setAssets(assetsData);
 
-      // 加载最新版本信息
       if (profileData?.id) {
         try {
           const latestVersion = await getLatestVersion('CompanyProfile', profileData.id);
@@ -111,7 +117,6 @@ export default function CompanyKnowledgePage() {
             setIsReadOnly(status === 'approved' || status === 'archived');
           }
         } catch {
-          // 如果没有版本，创建初始版本
           if (profileData) {
             const newVersion = await createVersion(
               'CompanyProfile',
@@ -132,19 +137,28 @@ export default function CompanyKnowledgePage() {
   }, []);
 
   useEffect(() => {
+    loadPipelineStatus();
     loadData();
-  }, [loadData]);
+  }, [loadPipelineStatus, loadData]);
 
-  // AI 分析
+  // AI Analysis
   const handleAnalyze = async () => {
-    if (selectedAssetIds.length === 0) return;
+    if (selectedAssetIds.length === 0 && assets.length > 0) {
+      // Auto-select all if none selected
+      setSelectedAssetIds(assets.map(a => a.id));
+      return;
+    }
+    
+    const idsToAnalyze = selectedAssetIds.length > 0 ? selectedAssetIds : assets.map(a => a.id);
+    if (idsToAnalyze.length === 0) return;
     
     setIsAnalyzing(true);
     setError(null);
     try {
-      const result = await analyzeAssets(selectedAssetIds);
+      const result = await analyzeAssets(idsToAnalyze);
       setProfile(result);
       setSelectedAssetIds([]);
+      loadPipelineStatus();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'AI分析失败');
     } finally {
@@ -152,40 +166,7 @@ export default function CompanyKnowledgePage() {
     }
   };
 
-  // 切换素材选择
-  const toggleAssetSelection = (assetId: string) => {
-    setSelectedAssetIds(prev => 
-      prev.includes(assetId) 
-        ? prev.filter(id => id !== assetId)
-        : [...prev, assetId]
-    );
-  };
-
-  // 格式化文件大小
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-  };
-
-  // 计算知识完整度
-  const calculateCompleteness = () => {
-    if (!profile) return 0;
-    let score = 0;
-    if (profile.companyName) score += 10;
-    if (profile.companyIntro) score += 10;
-    if (profile.coreProducts?.length > 0) score += 15;
-    if (profile.techAdvantages?.length > 0) score += 15;
-    if (profile.scenarios?.length > 0) score += 10;
-    if (profile.differentiators?.length > 0) score += 10;
-    if (profile.targetIndustries?.length > 0) score += 10;
-    if (profile.targetRegions?.length > 0) score += 5;
-    if (profile.buyerPersonas?.length > 0) score += 10;
-    if (profile.painPoints?.length > 0) score += 5;
-    return Math.min(score, 100);
-  };
-
-  // 开始编辑某个 section
+  // Edit functions
   const startEditing = (sectionKey: string) => {
     if (!profile || isReadOnly) return;
     const value = profile[sectionKey as keyof CompanyProfileData];
@@ -197,7 +178,6 @@ export default function CompanyKnowledgePage() {
     setEditingSection(sectionKey);
   };
 
-  // 保存编辑
   const saveEdit = async () => {
     if (!editingSection || !profile) return;
     setIsSaving(true);
@@ -215,8 +195,9 @@ export default function CompanyKnowledgePage() {
       setProfile(updated);
       setEditingSection(null);
       setEditBuffer('');
+      loadPipelineStatus();
     } catch (err) {
-      setError(err instanceof Error ? err.message : '保存失败，请检查JSON格式');
+      setError(err instanceof Error ? err.message : '保存失败');
     } finally {
       setIsSaving(false);
     }
@@ -227,25 +208,14 @@ export default function CompanyKnowledgePage() {
     setEditBuffer('');
   };
 
-  // 同步到营销系统
+  // Sync functions
   const handleSyncMarketing = async () => {
     if (!profile) return;
     setIsSyncingMarketing(true);
     try {
       const result = await syncMarketingFromKnowledge();
       if (result.success) {
-        toast.success('已同步到营销系统', {
-          description: `生成 TopicCluster v${result.topicClusterVersionId?.slice(-6)}`,
-          action: {
-            label: '查看',
-            onClick: () => window.location.href = '/c/marketing/topics',
-          },
-        });
-        if (result.openQuestions?.length) {
-          toast.info(`发现 ${result.openQuestions.length} 个待确认问题`, {
-            description: '已创建任务，请在任务中心查看',
-          });
-        }
+        toast.success('已同步到营销系统');
       } else {
         toast.error('同步失败', { description: result.error });
       }
@@ -256,25 +226,13 @@ export default function CompanyKnowledgePage() {
     }
   };
 
-  // 同步到获客雷达
   const handleSyncRadar = async () => {
     if (!profile) return;
     setIsSyncingRadar(true);
     try {
       const result = await syncRadarFromKnowledge();
       if (result.success) {
-        toast.success('已同步到获客雷达', {
-          description: `生成 TargetingSpec + ChannelMap`,
-          action: {
-            label: '查看',
-            onClick: () => window.location.href = '/c/radar/targeting',
-          },
-        });
-        if (result.openQuestions?.length) {
-          toast.info(`发现 ${result.openQuestions.length} 个待确认问题`, {
-            description: '已创建任务，请在任务中心查看',
-          });
-        }
+        toast.success('已同步到获客雷达');
       } else {
         toast.error('同步失败', { description: result.error });
       }
@@ -285,27 +243,57 @@ export default function CompanyKnowledgePage() {
     }
   };
 
+  // Calculate completeness
+  const calculateCompleteness = () => {
+    if (!profile) return 0;
+    let score = 0;
+    if (profile.companyName) score += 10;
+    if (profile.companyIntro) score += 15;
+    if (profile.coreProducts?.length > 0) score += 20;
+    if (profile.techAdvantages?.length > 0) score += 15;
+    if (profile.scenarios?.length > 0) score += 10;
+    if (profile.differentiators?.length > 0) score += 10;
+    if (profile.targetIndustries?.length > 0) score += 10;
+    if (profile.buyerPersonas?.length > 0) score += 10;
+    return Math.min(score, 100);
+  };
+
   const completeness = calculateCompleteness();
 
-  // 锚点相关函数
+  // Determine CTA config based on pipeline status
+  const getPrimaryCTA = () => {
+    if (!pipelineStatus) return undefined;
+    
+    const { counts } = pipelineStatus;
+    const canGenerate = counts.assetsParsed >= 1 || counts.evidenceCount >= 1;
+    
+    if (!profile || !profile.companyName) {
+      return {
+        label: '一键生成企业档案',
+        onClick: handleAnalyze,
+        disabled: !canGenerate,
+        loading: isAnalyzing,
+        hint: counts.evidenceCount < 3 ? '建议先补齐证据(≥3)以获得更好效果' : undefined,
+      };
+    }
+    
+    return {
+      label: '更新企业档案',
+      onClick: handleAnalyze,
+      disabled: !canGenerate,
+      loading: isAnalyzing,
+    };
+  };
+
+  // Anchor functions for collaboration
   const handleAnchorClick = (anchor: AnchorSpec) => {
     setHighlightedSection(anchor.value);
-    // 3秒后清除高亮
     setTimeout(() => setHighlightedSection(null), 3000);
   };
 
   const handleStatusChange = (newStatus: ArtifactStatusValue) => {
     setIsReadOnly(newStatus === 'approved' || newStatus === 'archived');
     loadData();
-  };
-
-  const setAnchorForSection = (sectionKey: string, sectionLabel: string) => {
-    if (isReadOnly) return;
-    setActiveAnchor({
-      type: 'jsonPath',
-      value: sectionKey,
-      label: sectionLabel,
-    });
   };
 
   const getSectionHighlightClass = (sectionKey: string) => {
@@ -323,256 +311,243 @@ export default function CompanyKnowledgePage() {
     );
   }
 
+  // Check prerequisites
+  const hasPrerequisites = pipelineStatus && (
+    pipelineStatus.counts.assetsParsed >= 1 || pipelineStatus.counts.evidenceCount >= 1
+  );
+
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-[#0B1B2B]">企业认知</h1>
-          <p className="text-sm text-slate-500 mt-1">上传企业资料，AI自动提炼企业能力画像，支持逐段编辑</p>
-        </div>
-        <div className="flex items-center gap-3">
-          {/* Sync Buttons */}
-          {profile && (
-            <div className="flex items-center gap-2 mr-4">
-              <button
-                onClick={handleSyncMarketing}
-                disabled={isSyncingMarketing || completeness < 30}
-                className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-[#0B1B2B] to-[#10263B] text-[#C7A56A] rounded-xl text-xs font-medium hover:shadow-lg hover:shadow-[#C7A56A]/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                title={completeness < 30 ? '知识完整度需达到30%' : '同步到营销系统'}
-              >
-                {isSyncingMarketing ? (
-                  <Loader2 size={14} className="animate-spin" />
-                ) : (
-                  <BarChart3 size={14} />
-                )}
-                <span>营销系统</span>
-                <ArrowRight size={12} />
-              </button>
-              <button
-                onClick={handleSyncRadar}
-                disabled={isSyncingRadar || completeness < 30}
-                className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-[#0B1B2B] to-[#10263B] text-emerald-400 rounded-xl text-xs font-medium hover:shadow-lg hover:shadow-emerald-500/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                title={completeness < 30 ? '知识完整度需达到30%' : '同步到获客雷达'}
-              >
-                {isSyncingRadar ? (
-                  <Loader2 size={14} className="animate-spin" />
-                ) : (
-                  <Radar size={14} />
-                )}
-                <span>获客雷达</span>
-                <ArrowRight size={12} />
-              </button>
-            </div>
-          )}
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-slate-400">知识完整度</span>
-            <div className="w-32 h-2 bg-[#E7E0D3] rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-[#C7A56A] rounded-full transition-all duration-500" 
-                style={{ width: `${completeness}%` }}
-              />
-            </div>
-            <span className="text-sm font-bold text-[#C7A56A]">{completeness}%</span>
-          </div>
-          <button 
-            onClick={loadData}
-            className="p-2 text-slate-400 hover:text-[#C7A56A] transition-colors"
-            title="刷新数据"
-          >
-            <RefreshCw size={18} />
-          </button>
-        </div>
-      </div>
-
-      {/* Error Alert */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
-          <AlertCircle className="text-red-500 shrink-0" size={20} />
-          <p className="text-sm text-red-700">{error}</p>
-          <button onClick={() => setError(null)} className="ml-auto text-red-400 hover:text-red-600">
-            <X size={16} />
-          </button>
-        </div>
+    <div className="space-y-0">
+      {/* Engine Header with Stepper */}
+      {pipelineStatus && (
+        <EngineHeader
+          title="企业档案"
+          description="AI 自动从资料和证据中提炼企业能力画像"
+          steps={pipelineStatus.steps}
+          counts={pipelineStatus.counts}
+          currentStep={pipelineStatus.currentStep}
+          primaryAction={getPrimaryCTA()}
+        />
       )}
 
-      {/* Read-only Banner */}
-      {isReadOnly && (
-        <div className="bg-[#C7A56A]/10 border border-[#C7A56A]/30 rounded-xl p-4 flex items-center gap-3">
-          <Lock className="text-[#C7A56A] shrink-0" size={20} />
-          <div className="flex-1">
-            <p className="text-sm font-medium text-[#0B1B2B]">此版本已批准 · 内容已锁定</p>
-            <p className="text-xs text-slate-500">如需修改，请在协作面板中创建新版本</p>
-          </div>
-        </div>
-      )}
-
-      <div className="grid grid-cols-[280px_1fr_320px] gap-6">
-        {/* Left: Document Management */}
-        <div className="space-y-6">
-          {/* Upload Zone - Link to Assets */}
-          <div className="bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3] p-6">
-            <h3 className="font-bold text-[#0B1B2B] mb-4">上传企业资料</h3>
-            <Link 
-              href="/c/knowledge/assets"
-              className="block border-2 border-dashed border-[#E7E0D3] rounded-xl p-8 text-center hover:border-[#C7A56A]/50 transition-colors cursor-pointer"
-            >
-              <Upload className="w-8 h-8 text-slate-400 mx-auto mb-3" />
-              <p className="text-sm text-slate-600">前往素材资源管理</p>
-              <p className="text-xs text-slate-400 mt-1">支持 PDF、Word、PPT、Excel</p>
-            </Link>
-
-            {/* Supported formats */}
-            <div className="mt-4 flex gap-2">
-              {SUPPORTED_FORMATS.map((format) => (
-                <div key={format.label} className={`flex items-center gap-1 px-2 py-1 rounded ${format.bgColor}`}>
-                  <format.icon size={12} className={format.color} />
-                  <span className="text-[10px] text-slate-600">{format.label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Document List */}
-          <div className="bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3] p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-[#0B1B2B]">可分析素材</h3>
-              <span className="text-xs text-slate-400">{assets.length} 个文件</span>
-            </div>
-            
-            {assets.length === 0 ? (
-              <div className="text-center py-8">
-                <FolderOpen className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-                <p className="text-sm text-slate-500">暂无可分析的素材</p>
-                <Link href="/c/knowledge/assets" className="text-xs text-[#C7A56A] hover:underline mt-2 inline-block">
-                  前往上传
-                </Link>
-              </div>
-            ) : (
-              <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                {assets.map((asset) => (
-                  <div 
-                    key={asset.id}
-                    onClick={() => toggleAssetSelection(asset.id)}
-                    className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                      selectedAssetIds.includes(asset.id)
-                        ? 'border-[#C7A56A] bg-[#C7A56A]/5'
-                        : 'border-[#E7E0D3] hover:border-[#C7A56A]/30'
-                    }`}
-                  >
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-blue-50">
-                      <FileText size={16} className="text-blue-500" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-[#0B1B2B] truncate">{asset.originalName}</p>
-                      <p className="text-[10px] text-slate-400">
-                        {formatFileSize(asset.fileSize)} · {new Date(asset.createdAt).toLocaleDateString('zh-CN')}
-                      </p>
-                    </div>
-                    {selectedAssetIds.includes(asset.id) && (
-                      <CheckCircle2 size={16} className="text-[#C7A56A] shrink-0" />
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Analyze Button */}
-            <button
-              onClick={handleAnalyze}
-              disabled={selectedAssetIds.length === 0 || isAnalyzing}
-              className="w-full mt-4 py-3 bg-[#0B1B2B] text-[#C7A56A] rounded-xl font-medium text-sm hover:bg-[#10263B] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {isAnalyzing ? (
-                <>
-                  <Loader2 size={16} className="animate-spin" />
-                  AI分析中...
-                </>
-              ) : (
-                <>
-                  <Sparkles size={16} />
-                  AI分析生成画像 ({selectedAssetIds.length})
-                </>
-              )}
+      <div className="p-5">
+        {/* Error Alert */}
+        {error && (
+          <div className="mb-4 bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
+            <AlertCircle className="text-red-500 shrink-0" size={20} />
+            <p className="text-sm text-red-700">{error}</p>
+            <button onClick={() => setError(null)} className="ml-auto text-red-400 hover:text-red-600">
+              <X size={16} />
             </button>
           </div>
-        </div>
+        )}
 
-        {/* Center: Company Profile (企业能力画像) */}
-        <div className="space-y-6">
-          {!profile ? (
-            <div className="bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3] p-12 text-center">
-              <Building2 size={48} className="text-slate-300 mx-auto mb-4" />
-              <h3 className="text-lg font-bold text-[#0B1B2B] mb-2">尚未生成企业能力画像</h3>
-              <p className="text-sm text-slate-500 mb-4">选择左侧素材，点击&quot;AI分析&quot;自动生成</p>
-            </div>
-          ) : (
-            <>
-              {/* Profile Header */}
-              <div className="bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3] p-6">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-12 h-12 bg-gradient-to-br from-[#C7A56A] to-[#C7A56A]/80 rounded-xl flex items-center justify-center">
-                    <Building2 size={24} className="text-[#0B1B2B]" />
+        {/* No Profile - Show Empty State */}
+        {(!profile || !profile.companyName) && (
+          <div className="bg-white rounded-xl border border-[#E7E0D3] p-8">
+            {!hasPrerequisites ? (
+              // Blocked - need to upload assets first
+              <div className="text-center py-8">
+                <div className="w-16 h-16 rounded-2xl bg-amber-50 flex items-center justify-center mx-auto mb-4">
+                  <AlertCircle size={28} className="text-amber-500" />
+                </div>
+                <h3 className="text-lg font-bold text-[#0B1B2B] mb-2">尚未生成企业档案</h3>
+                <p className="text-sm text-slate-500 mb-2">需要先完成以下步骤：</p>
+                <div className="flex items-center justify-center gap-6 my-6">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      pipelineStatus?.counts.assetsParsed && pipelineStatus.counts.assetsParsed >= 1 
+                        ? 'bg-emerald-100 text-emerald-600' 
+                        : 'bg-slate-100 text-slate-400'
+                    }`}>
+                      <FileStack size={18} />
+                    </div>
+                    <span className="text-xs text-slate-500">
+                      已解析素材: {pipelineStatus?.counts.assetsParsed || 0}
+                    </span>
                   </div>
-                  <div>
-                    <h2 className="text-xl font-bold text-[#0B1B2B]">{profile.companyName || '企业名称'}</h2>
-                    <p className="text-sm text-slate-500">企业能力画像</p>
-                  </div>
-                  <div className="ml-auto flex items-center gap-2">
-                    {profile.lastAnalyzedAt && (
-                      <span className="text-xs text-slate-400 flex items-center gap-1">
-                        <Clock size={12} />
-                        {new Date(profile.lastAnalyzedAt).toLocaleString('zh-CN')}
-                      </span>
-                    )}
-                    <span className="px-3 py-1 bg-emerald-50 text-emerald-600 text-xs rounded-full">
-                      {profile.aiModel || 'AI生成'}
+                  <span className="text-slate-300">或</span>
+                  <div className="flex flex-col items-center gap-2">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      pipelineStatus?.counts.evidenceCount && pipelineStatus.counts.evidenceCount >= 1 
+                        ? 'bg-emerald-100 text-emerald-600' 
+                        : 'bg-slate-100 text-slate-400'
+                    }`}>
+                      <CheckCircle2 size={18} />
+                    </div>
+                    <span className="text-xs text-slate-500">
+                      已有证据: {pipelineStatus?.counts.evidenceCount || 0}
                     </span>
                   </div>
                 </div>
-
-                {/* Company Intro - Editable */}
-                <div className="relative group">
-                  {editingSection === 'companyIntro' ? (
-                    <div className="space-y-2">
-                      <textarea
-                        value={editBuffer}
-                        onChange={(e) => setEditBuffer(e.target.value)}
-                        className="w-full p-4 bg-white border border-[#C7A56A] rounded-xl text-sm text-slate-700 leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-[#C7A56A]/30"
-                        rows={4}
-                      />
-                      <div className="flex justify-end gap-2">
-                        <button
-                          onClick={cancelEdit}
-                          className="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-700 rounded-lg border border-slate-200"
-                        >
-                          <X size={12} className="inline mr-1" />取消
-                        </button>
-                        <button
-                          onClick={saveEdit}
-                          disabled={isSaving}
-                          className="px-3 py-1.5 text-xs text-white bg-[#C7A56A] hover:bg-[#b89555] rounded-lg disabled:opacity-50"
-                        >
-                          {isSaving ? <Loader2 size={12} className="inline mr-1 animate-spin" /> : <Check size={12} className="inline mr-1" />}
-                          保存
-                        </button>
-                      </div>
-                    </div>
+                <Link
+                  href="/c/knowledge/assets"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-[#0B1B2B] text-[#C7A56A] rounded-xl text-sm font-medium hover:bg-[#10263B] transition-colors"
+                >
+                  <Upload size={16} />
+                  去资料库上传
+                </Link>
+              </div>
+            ) : (
+              // Can generate
+              <div className="text-center py-8">
+                <div className="w-16 h-16 rounded-2xl bg-[#F7F3EA] flex items-center justify-center mx-auto mb-4">
+                  <Building2 size={28} className="text-[#C7A56A]" />
+                </div>
+                <h3 className="text-lg font-bold text-[#0B1B2B] mb-2">准备生成企业档案</h3>
+                <p className="text-sm text-slate-500 mb-4">
+                  已有 {pipelineStatus?.counts.assetsParsed || 0} 个已解析素材，
+                  {pipelineStatus?.counts.evidenceCount || 0} 条证据
+                </p>
+                {pipelineStatus?.counts.evidenceCount && pipelineStatus.counts.evidenceCount < 3 && (
+                  <p className="text-xs text-amber-600 mb-4">
+                    建议先补齐证据(≥3条)以获得更好的分析效果
+                  </p>
+                )}
+                <button
+                  onClick={handleAnalyze}
+                  disabled={isAnalyzing}
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-[#0B1B2B] text-[#C7A56A] rounded-xl text-sm font-medium hover:bg-[#10263B] transition-colors disabled:opacity-50"
+                >
+                  {isAnalyzing ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      AI 分析中...
+                    </>
                   ) : (
-                    <div
-                      onClick={() => startEditing('companyIntro')}
-                      className="p-4 bg-[#F7F3EA] rounded-xl cursor-pointer hover:ring-2 hover:ring-[#C7A56A]/20 transition-all"
-                    >
-                      <p className="text-sm text-slate-600 leading-relaxed">
-                        {profile.companyIntro || '点击编辑企业简介...'}
-                      </p>
-                      <Pencil size={14} className="absolute top-3 right-3 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
+                    <>
+                      <Sparkles size={16} />
+                      一键生成企业档案
+                    </>
                   )}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Has Profile - Show Content */}
+        {profile && profile.companyName && (
+          <div className="grid grid-cols-[200px_1fr_280px] gap-5">
+            {/* Left: Section Nav */}
+            <div className="space-y-2">
+              <div className="bg-white rounded-xl border border-[#E7E0D3] p-3">
+                <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-2 px-2">目录</p>
+                {NAV_ITEMS.map((item) => (
+                  <button
+                    key={item.key}
+                    onClick={() => setActiveNav(item.key)}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                      activeNav === item.key
+                        ? 'bg-[#F7F3EA] text-[#0B1B2B] font-medium'
+                        : 'text-slate-500 hover:text-[#0B1B2B] hover:bg-[#F7F3EA]/50'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Completeness */}
+              <div className="bg-white rounded-xl border border-[#E7E0D3] p-4">
+                <p className="text-xs text-slate-400 mb-2">知识完整度</p>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 h-2 bg-[#E7E0D3] rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-[#C7A56A] rounded-full transition-all duration-500" 
+                      style={{ width: `${completeness}%` }}
+                    />
+                  </div>
+                  <span className="text-sm font-bold text-[#C7A56A]">{completeness}%</span>
                 </div>
               </div>
 
-              {/* Profile Sections - Editable Grid */}
+              {/* Sync Buttons */}
+              {completeness >= 30 && (
+                <div className="bg-white rounded-xl border border-[#E7E0D3] p-3 space-y-2">
+                  <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider px-1">同步到</p>
+                  <button
+                    onClick={handleSyncMarketing}
+                    disabled={isSyncingMarketing}
+                    className="w-full flex items-center gap-2 px-3 py-2 bg-[#0B1B2B] text-[#C7A56A] rounded-lg text-xs font-medium hover:bg-[#10263B] transition-colors disabled:opacity-50"
+                  >
+                    {isSyncingMarketing ? <Loader2 size={12} className="animate-spin" /> : <BarChart3 size={12} />}
+                    营销系统
+                    <ArrowRight size={10} className="ml-auto" />
+                  </button>
+                  <button
+                    onClick={handleSyncRadar}
+                    disabled={isSyncingRadar}
+                    className="w-full flex items-center gap-2 px-3 py-2 bg-[#0B1B2B] text-emerald-400 rounded-lg text-xs font-medium hover:bg-[#10263B] transition-colors disabled:opacity-50"
+                  >
+                    {isSyncingRadar ? <Loader2 size={12} className="animate-spin" /> : <Radar size={12} />}
+                    获客雷达
+                    <ArrowRight size={10} className="ml-auto" />
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Center: Profile Content */}
+            <div className="space-y-4">
+              {/* Read-only Banner */}
+              {isReadOnly && (
+                <div className="bg-[#C7A56A]/10 border border-[#C7A56A]/30 rounded-xl p-3 flex items-center gap-3">
+                  <Lock className="text-[#C7A56A] shrink-0" size={16} />
+                  <p className="text-xs text-[#0B1B2B]">此版本已批准，内容已锁定。如需修改请在协作面板中创建新版本。</p>
+                </div>
+              )}
+
+              {/* Company Header */}
+              <div className="bg-white rounded-xl border border-[#E7E0D3] p-5">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-[#C7A56A] to-[#C7A56A]/80 rounded-xl flex items-center justify-center">
+                    <Building2 size={24} className="text-[#0B1B2B]" />
+                  </div>
+                  <div className="flex-1">
+                    <h2 className="text-xl font-bold text-[#0B1B2B]">{profile.companyName}</h2>
+                    <p className="text-sm text-slate-500">企业能力画像</p>
+                  </div>
+                  {profile.lastAnalyzedAt && (
+                    <span className="text-xs text-slate-400 flex items-center gap-1">
+                      <Clock size={12} />
+                      {new Date(profile.lastAnalyzedAt).toLocaleString('zh-CN')}
+                    </span>
+                  )}
+                </div>
+
+                {/* Company Intro - Editable */}
+                {editingSection === 'companyIntro' ? (
+                  <div className="space-y-2">
+                    <textarea
+                      value={editBuffer}
+                      onChange={(e) => setEditBuffer(e.target.value)}
+                      className="w-full p-4 bg-[#F7F3EA] border border-[#C7A56A] rounded-xl text-sm text-slate-700 leading-relaxed resize-none focus:outline-none"
+                      rows={4}
+                    />
+                    <div className="flex justify-end gap-2">
+                      <button onClick={cancelEdit} className="px-3 py-1.5 text-xs text-slate-500 rounded-lg border border-slate-200">
+                        取消
+                      </button>
+                      <button onClick={saveEdit} disabled={isSaving} className="px-3 py-1.5 text-xs text-white bg-[#C7A56A] rounded-lg disabled:opacity-50">
+                        {isSaving ? '保存中...' : '保存'}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    onClick={() => !isReadOnly && startEditing('companyIntro')}
+                    className={`p-4 bg-[#F7F3EA] rounded-xl ${!isReadOnly ? 'cursor-pointer hover:ring-2 hover:ring-[#C7A56A]/20' : ''} transition-all group relative ${getSectionHighlightClass('companyIntro')}`}
+                  >
+                    <p className="text-sm text-slate-600 leading-relaxed">
+                      {profile.companyIntro || '点击编辑企业简介...'}
+                    </p>
+                    {!isReadOnly && <Pencil size={14} className="absolute top-3 right-3 text-slate-300 opacity-0 group-hover:opacity-100" />}
+                  </div>
+                )}
+              </div>
+
+              {/* Profile Sections Grid */}
               <div className="grid grid-cols-2 gap-4">
                 {PROFILE_SECTIONS.filter(s => s.key !== 'companyIntro').map((section) => {
                   const SectionIcon = section.icon;
@@ -583,29 +558,18 @@ export default function CompanyKnowledgePage() {
                   return (
                     <div 
                       key={section.key} 
-                      className={`bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3] p-4 relative group ${getSectionHighlightClass(section.key)}`}
-                      data-section-key={section.key}
+                      className={`bg-white rounded-xl border border-[#E7E0D3] p-4 group relative ${getSectionHighlightClass(section.key)}`}
                     >
                       <div className="flex items-center gap-2 mb-3">
                         <SectionIcon size={16} className="text-[#C7A56A]" />
-                        <h4 className="font-bold text-[#0B1B2B] text-sm">{section.label}</h4>
+                        <h4 className="font-bold text-[#0B1B2B] text-sm flex-1">{section.label}</h4>
                         {!isEditing && !isReadOnly && (
-                          <>
-                            <button
-                              onClick={() => setAnchorForSection(section.key, section.label)}
-                              className="p-1 text-slate-300 opacity-0 group-hover:opacity-100 hover:text-blue-500 transition-all"
-                              title="添加评论"
-                            >
-                              <MessageSquarePlus size={13} />
-                            </button>
-                            <button
-                              onClick={() => startEditing(section.key)}
-                              className="p-1 text-slate-300 opacity-0 group-hover:opacity-100 hover:text-[#C7A56A] transition-all"
-                              title="编辑此部分"
-                            >
-                              <Pencil size={13} />
-                            </button>
-                          </>
+                          <button
+                            onClick={() => startEditing(section.key)}
+                            className="p-1 text-slate-300 opacity-0 group-hover:opacity-100 hover:text-[#C7A56A] transition-all"
+                          >
+                            <Pencil size={13} />
+                          </button>
                         )}
                       </div>
 
@@ -614,85 +578,38 @@ export default function CompanyKnowledgePage() {
                           <textarea
                             value={editBuffer}
                             onChange={(e) => setEditBuffer(e.target.value)}
-                            className="w-full p-3 bg-white border border-[#C7A56A] rounded-lg text-xs text-slate-700 font-mono leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-[#C7A56A]/30"
-                            rows={8}
+                            className="w-full p-3 bg-[#F7F3EA] border border-[#C7A56A] rounded-lg text-xs font-mono resize-none focus:outline-none"
+                            rows={6}
                             placeholder="JSON 数组格式"
                           />
                           <div className="flex justify-end gap-2">
-                            <button
-                              onClick={cancelEdit}
-                              className="px-2.5 py-1 text-[11px] text-slate-500 hover:text-slate-700 rounded border border-slate-200"
-                            >
-                              取消
-                            </button>
-                            <button
-                              onClick={saveEdit}
-                              disabled={isSaving}
-                              className="px-2.5 py-1 text-[11px] text-white bg-[#C7A56A] hover:bg-[#b89555] rounded disabled:opacity-50"
-                            >
+                            <button onClick={cancelEdit} className="px-2.5 py-1 text-[11px] text-slate-500 rounded border border-slate-200">取消</button>
+                            <button onClick={saveEdit} disabled={isSaving} className="px-2.5 py-1 text-[11px] text-white bg-[#C7A56A] rounded disabled:opacity-50">
                               {isSaving ? '保存中...' : '保存'}
                             </button>
                           </div>
                         </div>
                       ) : (
-                        <>
-                          {section.key === 'coreProducts' && (
-                            <ul className="space-y-2">
-                              {(items as Array<{ name: string; description?: string }>).length > 0 ? (
-                                (items as Array<{ name: string; description?: string }>).map((item, i) => (
-                                  <li key={i} className="text-xs text-slate-600">
-                                    <span className="font-medium text-[#0B1B2B]">{item.name}</span>
-                                    {item.description && <p className="text-slate-400 mt-0.5">{item.description}</p>}
-                                  </li>
-                                ))
-                              ) : (
-                                <p className="text-xs text-slate-400">暂无数据，点击编辑添加</p>
-                              )}
-                            </ul>
+                        <div className="space-y-1.5 max-h-[160px] overflow-y-auto">
+                          {items.length > 0 ? (
+                            items.map((item: unknown, i: number) => {
+                              const obj = item as Record<string, string> | null;
+                              if (!obj || typeof obj !== 'object') return null;
+                              return (
+                                <div key={i} className="text-xs text-slate-600">
+                                  <span className="font-medium text-[#0B1B2B]">
+                                    {obj.name || obj.title || obj.point || obj.industry || ''}
+                                  </span>
+                                  {(obj.description || obj.scenario || obj.howWeHelp) && (
+                                    <p className="text-slate-400 mt-0.5">{obj.description || obj.scenario || obj.howWeHelp}</p>
+                                  )}
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <p className="text-xs text-slate-400">暂无数据，点击编辑添加</p>
                           )}
-                          {section.key === 'techAdvantages' && (
-                            <ul className="space-y-2">
-                              {(items as Array<{ title: string; description?: string }>).length > 0 ? (
-                                (items as Array<{ title: string; description?: string }>).map((item, i) => (
-                                  <li key={i} className="text-xs text-slate-600">
-                                    <span className="font-medium text-[#0B1B2B]">{item.title}</span>
-                                    {item.description && <p className="text-slate-400 mt-0.5">{item.description}</p>}
-                                  </li>
-                                ))
-                              ) : (
-                                <p className="text-xs text-slate-400">暂无数据，点击编辑添加</p>
-                              )}
-                            </ul>
-                          )}
-                          {section.key === 'scenarios' && (
-                            <div className="space-y-2">
-                              {(items as Array<{ industry: string; scenario: string }>).length > 0 ? (
-                                (items as Array<{ industry: string; scenario: string }>).map((item, i) => (
-                                  <div key={i} className="text-xs">
-                                    <span className="px-2 py-1 bg-[#F7F3EA] text-[#0B1B2B] rounded mr-1">{item.industry}</span>
-                                    <span className="text-slate-500">{item.scenario}</span>
-                                  </div>
-                                ))
-                              ) : (
-                                <p className="text-xs text-slate-400">暂无数据，点击编辑添加</p>
-                              )}
-                            </div>
-                          )}
-                          {section.key === 'differentiators' && (
-                            <ul className="space-y-2">
-                              {(items as Array<{ point: string; description?: string }>).length > 0 ? (
-                                (items as Array<{ point: string; description?: string }>).map((item, i) => (
-                                  <li key={i} className="text-xs text-slate-600">
-                                    <span className="font-medium text-[#0B1B2B]">{item.point}</span>
-                                    {item.description && <p className="text-slate-400 mt-0.5">{item.description}</p>}
-                                  </li>
-                                ))
-                              ) : (
-                                <p className="text-xs text-slate-400">暂无数据，点击编辑添加</p>
-                              )}
-                            </ul>
-                          )}
-                        </>
+                        </div>
                       )}
                     </div>
                   );
@@ -700,38 +617,33 @@ export default function CompanyKnowledgePage() {
               </div>
 
               {/* ICP Section */}
-              <div className="bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3] p-6">
+              <div className="bg-white rounded-xl border border-[#E7E0D3] p-5">
                 <h3 className="font-bold text-[#0B1B2B] mb-4 flex items-center gap-2">
                   <Users size={18} className="text-[#C7A56A]" />
                   目标客户画像 (ICP)
                 </h3>
                 
                 <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div className="p-4 bg-[#F7F3EA] rounded-xl">
+                  <div className="p-3 bg-[#F7F3EA] rounded-xl">
                     <p className="text-xs text-slate-500 mb-2">目标行业</p>
                     <div className="flex flex-wrap gap-1.5">
                       {profile.targetIndustries?.length > 0 ? (
                         profile.targetIndustries.map((item, i) => (
-                          <span key={i} className="px-2 py-1 bg-white text-xs text-[#0B1B2B] rounded border border-[#E7E0D3]">
-                            {item}
-                          </span>
+                          <span key={i} className="px-2 py-1 bg-white text-xs text-[#0B1B2B] rounded border border-[#E7E0D3]">{item}</span>
                         ))
                       ) : (
                         <span className="text-xs text-slate-400">暂无数据</span>
                       )}
                     </div>
                   </div>
-                  <div className="p-4 bg-[#F7F3EA] rounded-xl">
+                  <div className="p-3 bg-[#F7F3EA] rounded-xl">
                     <p className="text-xs text-slate-500 mb-2 flex items-center gap-1">
-                      <Globe2 size={12} />
-                      目标区域
+                      <Globe2 size={12} />目标区域
                     </p>
                     <div className="flex flex-wrap gap-1.5">
                       {profile.targetRegions?.length > 0 ? (
                         profile.targetRegions.map((item, i) => (
-                          <span key={i} className="px-2 py-1 bg-white text-xs text-[#0B1B2B] rounded border border-[#E7E0D3]">
-                            {item}
-                          </span>
+                          <span key={i} className="px-2 py-1 bg-white text-xs text-[#0B1B2B] rounded border border-[#E7E0D3]">{item}</span>
                         ))
                       ) : (
                         <span className="text-xs text-slate-400">暂无数据</span>
@@ -740,69 +652,45 @@ export default function CompanyKnowledgePage() {
                   </div>
                 </div>
 
-                {/* Buyer Personas */}
                 {profile.buyerPersonas?.length > 0 && (
-                  <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div className="grid grid-cols-2 gap-3">
                     {profile.buyerPersonas.map((persona, i) => (
-                      <div key={i} className="p-4 border border-[#E7E0D3] rounded-xl">
+                      <div key={i} className="p-3 border border-[#E7E0D3] rounded-xl">
                         <p className="font-medium text-[#0B1B2B] text-sm">{persona.role}</p>
                         {persona.title && <p className="text-xs text-slate-500">{persona.title}</p>}
                         {persona.concerns?.length > 0 && (
-                          <>
-                            <p className="text-[10px] text-slate-500 mt-2 mb-1">关注点：</p>
-                            <div className="flex flex-wrap gap-1">
-                              {persona.concerns.map((concern, j) => (
-                                <span key={j} className="px-2 py-0.5 bg-amber-50 text-amber-600 text-[10px] rounded">
-                                  {concern}
-                                </span>
-                              ))}
-                            </div>
-                          </>
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {persona.concerns.map((concern, j) => (
+                              <span key={j} className="px-2 py-0.5 bg-amber-50 text-amber-600 text-[10px] rounded">{concern}</span>
+                            ))}
+                          </div>
                         )}
                       </div>
                     ))}
                   </div>
                 )}
-
-                {/* Pain Points */}
-                {profile.painPoints?.length > 0 && (
-                  <div className="p-4 border border-[#E7E0D3] rounded-xl">
-                    <p className="text-xs font-medium text-[#0B1B2B] mb-2">客户痛点与解决方案</p>
-                    <div className="space-y-2">
-                      {profile.painPoints.map((item, i) => (
-                        <div key={i} className="flex items-start gap-2 text-xs">
-                          <span className="px-2 py-0.5 bg-red-50 text-red-600 rounded shrink-0">
-                            {item.pain}
-                          </span>
-                          <span className="text-slate-500">&rarr;</span>
-                          <span className="text-slate-600">{item.howWeHelp}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
-            </>
-          )}
-        </div>
+            </div>
 
-        {/* Right: Collaborative Shell */}
-        <div className="space-y-6">
-          {profile?.id && currentVersionId && (
-            <CollaborativeShell
-              entityType="CompanyProfile"
-              entityId={profile.id}
-              versionId={currentVersionId}
-              anchorType="jsonPath"
-              activeAnchor={activeAnchor}
-              onAnchorClick={handleAnchorClick}
-              onStatusChange={handleStatusChange}
-              onVersionChange={(verId) => setCurrentVersionId(verId)}
-              variant="light"
-              className="sticky top-6"
-            />
-          )}
-        </div>
+            {/* Right: Collaboration Panel */}
+            <div>
+              {profile?.id && currentVersionId && (
+                <CollaborativeShell
+                  entityType="CompanyProfile"
+                  entityId={profile.id}
+                  versionId={currentVersionId}
+                  anchorType="jsonPath"
+                  activeAnchor={activeAnchor}
+                  onAnchorClick={handleAnchorClick}
+                  onStatusChange={handleStatusChange}
+                  onVersionChange={(verId) => setCurrentVersionId(verId)}
+                  variant="light"
+                  className="sticky top-20"
+                />
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

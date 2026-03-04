@@ -18,7 +18,6 @@ import {
   Layers,
   CheckCircle2,
   History,
-  ArrowLeft,
   Pencil,
   Save,
   Plus,
@@ -31,8 +30,12 @@ import {
   syncMarketingFromKnowledge,
 } from '@/actions/sync';
 import { updateVersionContent } from '@/actions/versions';
+import { getGrowthPipelineStatus } from '@/actions/growth-pipeline';
 import { CollaborativeShell } from '@/components/collaboration';
+import { GrowthHeader, GrowthSecretaryPanel } from '@/components/marketing/growth-header';
+import { TopicClusterStarter } from '@/components/marketing/topic-cluster-starter';
 import { toast } from 'sonner';
+import type { GrowthPipelineStatus } from '@/lib/marketing/growth-pipeline';
 
 // Content type badge colors
 const CONTENT_TYPE_COLORS: Record<string, { bg: string; text: string }> = {
@@ -115,6 +118,20 @@ export default function TopicClustersPage() {
   // CollaborativeShell
   const [showShell, setShowShell] = useState(false);
 
+  // 流水线状态
+  const [pipelineStatus, setPipelineStatus] = useState<GrowthPipelineStatus | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // 加载流水线状态
+  const loadPipelineStatus = useCallback(async () => {
+    try {
+      const status = await getGrowthPipelineStatus();
+      setPipelineStatus(status);
+    } catch (err) {
+      console.error('Failed to load pipeline status:', err);
+    }
+  }, []);
+
   // 加载数据
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -123,6 +140,7 @@ export default function TopicClustersPage() {
       const [latest, history] = await Promise.all([
         getLatestTopicCluster(),
         getArtifactVersionHistory('TopicCluster', 10),
+        loadPipelineStatus(),
       ]);
       setCurrentVersion(latest as VersionData | null);
       setVersions(history);
@@ -133,7 +151,14 @@ export default function TopicClustersPage() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [loadPipelineStatus]);
+
+  // 刷新流水线状态
+  const handleRefreshPipeline = async () => {
+    setIsRefreshing(true);
+    await loadPipelineStatus();
+    setIsRefreshing(false);
+  };
 
   useEffect(() => {
     loadData();
@@ -280,6 +305,7 @@ export default function TopicClustersPage() {
 
   const topicCluster = isEditing ? editData?.topicCluster : currentVersion?.content?.topicCluster;
   const displayContent = isEditing ? editData : currentVersion?.content;
+  const hasTopicCluster = !!topicCluster;
 
   if (isLoading) {
     return (
@@ -289,97 +315,25 @@ export default function TopicClustersPage() {
     );
   }
 
-  return (
-    <div className="flex gap-6">
-      {/* Main Content */}
-      <div className={`flex-1 space-y-6 ${showShell ? 'max-w-[calc(100%-320px)]' : ''}`}>
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link 
-              href="/c/marketing" 
-              className="p-2 text-slate-400 hover:text-[#C7A56A] transition-colors rounded-lg hover:bg-[#F7F3EA]"
-            >
-              <ArrowLeft size={20} />
-            </Link>
-            <div>
-              <h1 className="text-2xl font-bold text-[#0B1B2B]">主题集群</h1>
-              <p className="text-sm text-slate-500 mt-1">
-                基于知识引擎自动生成的内容规划，覆盖 TOFU → MOFU → BOFU 全漏斗
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            {currentVersion && !isEditing && (
-              <>
-                <button
-                  onClick={() => setShowShell(!showShell)}
-                  className={`px-3 py-2 text-sm rounded-lg transition-colors ${
-                    showShell 
-                      ? 'bg-[#C7A56A] text-[#0B1B2B]' 
-                      : 'text-slate-500 hover:bg-[#F7F3EA]'
-                  }`}
-                >
-                  协作
-                </button>
-                <button
-                  onClick={() => setShowVersionHistory(!showVersionHistory)}
-                  className="flex items-center gap-2 px-3 py-2 text-slate-500 hover:text-[#C7A56A] transition-colors rounded-lg hover:bg-[#F7F3EA]"
-                >
-                  <History size={16} />
-                  <span className="text-xs">v{currentVersion.version}</span>
-                </button>
-                <button
-                  onClick={enterEditMode}
-                  className="flex items-center gap-2 px-3 py-2 text-slate-500 hover:text-[#C7A56A] transition-colors rounded-lg hover:bg-[#F7F3EA]"
-                >
-                  <Pencil size={16} />
-                  编辑
-                </button>
-              </>
-            )}
-            {isEditing ? (
-              <>
-                <button
-                  onClick={cancelEdit}
-                  className="px-4 py-2 text-slate-500 hover:text-slate-700 transition-colors"
-                >
-                  取消
-                </button>
-                <button
-                  onClick={saveEdit}
-                  disabled={isSaving}
-                  className="flex items-center gap-2 px-4 py-2 bg-[#0B1B2B] text-[#C7A56A] rounded-xl text-sm font-medium hover:bg-[#10263B] transition-colors disabled:opacity-50"
-                >
-                  {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                  保存
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  onClick={handleRegenerate}
-                  disabled={isSyncing}
-                  className="flex items-center gap-2 px-4 py-2 bg-[#0B1B2B] text-[#C7A56A] rounded-xl text-sm font-medium hover:bg-[#10263B] transition-colors disabled:opacity-50"
-                >
-                  {isSyncing ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-                  重新生成
-                </button>
-                <button 
-                  onClick={loadData}
-                  className="p-2 text-slate-400 hover:text-[#C7A56A] transition-colors"
-                  title="刷新数据"
-                >
-                  <RefreshCw size={18} />
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-
+  // 如果没有 TopicCluster，显示启动向导
+  if (!hasTopicCluster && pipelineStatus) {
+    return (
+      <div className="min-h-screen bg-[#FAFAFA]">
+        {/* Growth Header */}
+        <GrowthHeader
+          title="内容增长工作台"
+          description="主题集群 · 构建 TOFU → MOFU → BOFU 全漏斗内容规划"
+          steps={pipelineStatus.steps}
+          counts={pipelineStatus.counts}
+          currentStep={pipelineStatus.currentStep}
+          primaryCTA={pipelineStatus.primaryCTA}
+          isRefreshing={isRefreshing}
+          onRefresh={handleRefreshPipeline}
+        />
+        
         {/* Error Alert */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
+          <div className="mx-6 mt-4 bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
             <AlertCircle className="text-red-500 shrink-0" size={20} />
             <p className="text-sm text-red-700">{error}</p>
             <button onClick={() => setError(null)} className="ml-auto text-red-400 hover:text-red-600">
@@ -387,335 +341,440 @@ export default function TopicClustersPage() {
             </button>
           </div>
         )}
-
-        {/* Version History Panel */}
-        {showVersionHistory && versions.length > 0 && !isEditing && (
-          <div className="bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3] p-4">
-            <h3 className="text-sm font-bold text-[#0B1B2B] mb-3 flex items-center gap-2">
-              <History size={14} className="text-[#C7A56A]" />
-              版本历史
-            </h3>
-            <div className="flex gap-2 overflow-x-auto pb-2">
-              {versions.map((v) => (
-                <button
-                  key={v.id}
-                  className={`shrink-0 px-3 py-2 rounded-lg border text-xs transition-all ${
-                    currentVersion?.id === v.id
-                      ? 'border-[#C7A56A] bg-[#C7A56A]/10 text-[#0B1B2B]'
-                      : 'border-[#E7E0D3] hover:border-[#C7A56A]/50 text-slate-500'
-                  }`}
-                >
-                  <div className="font-medium">v{v.version}</div>
-                  <div className="text-[10px] text-slate-400 mt-0.5">
-                    {new Date(v.createdAt).toLocaleDateString('zh-CN')}
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* No Data State */}
-        {!topicCluster ? (
-          <div className="bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3] p-12 text-center">
-            <Target size={48} className="text-slate-300 mx-auto mb-4" />
-            <h3 className="text-lg font-bold text-[#0B1B2B] mb-2">尚未生成主题集群</h3>
-            <p className="text-sm text-slate-500 mb-6">
-              请先在知识引擎完善企业认知，然后点击「同步到营销系统」自动生成
-            </p>
-            <Link
-              href="/c/knowledge/company"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-[#0B1B2B] text-[#C7A56A] rounded-xl text-sm font-medium hover:bg-[#10263B] transition-colors"
-            >
-              前往知识引擎
-              <ChevronRight size={16} />
-            </Link>
-          </div>
-        ) : (
-          <>
-            {/* Topic Cluster Header */}
-            <div className="bg-gradient-to-r from-[#0B1B2B] to-[#10263B] rounded-2xl p-6 text-white">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      value={topicCluster.name}
-                      onChange={(e) => updateClusterName(e.target.value)}
-                      className="text-xl font-bold bg-white/10 border border-white/20 rounded-lg px-3 py-1 w-full max-w-md focus:outline-none focus:border-[#C7A56A]"
-                    />
-                  ) : (
-                    <h2 className="text-xl font-bold">{topicCluster.name}</h2>
-                  )}
-                  <p className="text-sm text-slate-400 mt-1">
-                    {topicCluster.clusters?.length || 0} 个内容支柱 · 
-                    {topicCluster.clusters?.reduce((acc, c) => acc + (c.contentMap?.length || 0), 0) || 0} 个内容规划
-                  </p>
-                </div>
-                {displayContent?.confidence !== undefined && (
-                  <div className="text-right">
-                    <div className="text-[10px] text-slate-400 uppercase tracking-wider">置信度</div>
-                    <div className="text-2xl font-bold text-[#C7A56A]">
-                      {Math.round((displayContent.confidence || 0) * 100)}%
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Open Questions */}
-            {displayContent?.openQuestions && displayContent.openQuestions.length > 0 && (
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-                <h4 className="text-sm font-medium text-amber-800 mb-2 flex items-center gap-2">
-                  <HelpCircle size={14} />
-                  待确认问题 ({displayContent.openQuestions.length})
-                </h4>
-                <ul className="space-y-1">
-                  {displayContent.openQuestions.map((q, i) => (
-                    <li key={i} className="text-xs text-amber-700 flex items-start gap-2">
-                      <span className="text-amber-400">•</span>
-                      {q}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Add Cluster Button (Edit Mode) */}
-            {isEditing && (
-              <button
-                onClick={addCluster}
-                className="w-full p-3 border-2 border-dashed border-[#E7E0D3] rounded-xl text-slate-400 hover:border-[#C7A56A] hover:text-[#C7A56A] transition-colors flex items-center justify-center gap-2"
-              >
-                <Plus size={16} />
-                添加内容支柱
-              </button>
-            )}
-
-            {/* Clusters */}
-            <div className="space-y-4">
-              {topicCluster.clusters?.map((cluster, idx) => (
-                <div 
-                  key={idx}
-                  className="bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3] overflow-hidden"
-                >
-                  {/* Cluster Header */}
-                  <div className="flex items-center p-5 hover:bg-[#F7F3EA] transition-colors">
-                    {isEditing && (
-                      <div className="mr-3 text-slate-300 cursor-move">
-                        <GripVertical size={16} />
-                      </div>
-                    )}
-                    <button
-                      onClick={() => setExpandedCluster(expandedCluster === idx ? null : idx)}
-                      className="flex-1 flex items-center justify-between"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-gradient-to-br from-[#C7A56A] to-[#C7A56A]/70 rounded-xl flex items-center justify-center">
-                          <Layers size={18} className="text-[#0B1B2B]" />
-                        </div>
-                        <div className="text-left">
-                          {isEditing ? (
-                            <input
-                              type="text"
-                              value={cluster.pillar}
-                              onChange={(e) => updatePillar(idx, 'pillar', e.target.value)}
-                              onClick={(e) => e.stopPropagation()}
-                              className="font-bold text-[#0B1B2B] bg-transparent border-b border-transparent hover:border-[#C7A56A] focus:border-[#C7A56A] focus:outline-none"
-                            />
-                          ) : (
-                            <h3 className="font-bold text-[#0B1B2B]">{cluster.pillar}</h3>
-                          )}
-                          <p className="text-xs text-slate-500 mt-0.5">
-                            {cluster.intent} · {cluster.contentMap?.length || 0} 个内容
-                          </p>
-                        </div>
-                      </div>
-                      <ChevronRight 
-                        size={20} 
-                        className={`text-slate-400 transition-transform ${expandedCluster === idx ? 'rotate-90' : ''}`}
-                      />
-                    </button>
-                    {isEditing && topicCluster.clusters.length > 1 && (
-                      <button
-                        onClick={() => removeCluster(idx)}
-                        className="ml-2 p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Cluster Content Map */}
-                  {expandedCluster === idx && cluster.contentMap && (
-                    <div className="border-t border-[#E7E0D3] p-5">
-                      <div className="grid gap-3">
-                        {cluster.contentMap.map((item, itemIdx) => {
-                          const typeColor = CONTENT_TYPE_COLORS[item.type] || { bg: 'bg-slate-50', text: 'text-slate-600' };
-                          const funnelColor = FUNNEL_COLORS[item.funnel] || { bg: 'bg-slate-100', text: 'text-slate-700' };
-                          
-                          return (
-                            <div 
-                              key={itemIdx}
-                              className={`flex items-start gap-4 p-4 bg-white rounded-xl border border-[#E7E0D3] ${isEditing ? '' : 'hover:border-[#C7A56A]/30'} transition-colors`}
-                            >
-                              <div className="shrink-0">
-                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${typeColor.bg}`}>
-                                  {item.type === 'BuyingGuide' && <BookOpen size={14} className={typeColor.text} />}
-                                  {item.type === 'Whitepaper' && <FileText size={14} className={typeColor.text} />}
-                                  {item.type === 'FAQ' && <HelpCircle size={14} className={typeColor.text} />}
-                                  {item.type === 'QnA' && <HelpCircle size={14} className={typeColor.text} />}
-                                  {item.type === 'KnowledgeBase' && <Layers size={14} className={typeColor.text} />}
-                                  {item.type === 'Comparison' && <BarChart3 size={14} className={typeColor.text} />}
-                                  {item.type === 'UseCasePage' && <Target size={14} className={typeColor.text} />}
-                                </div>
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                {isEditing ? (
-                                  <div className="space-y-2">
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                      <select
-                                        value={item.type}
-                                        onChange={(e) => updateContentMapItem(idx, itemIdx, 'type', e.target.value)}
-                                        className="px-2 py-0.5 text-[10px] font-medium rounded border border-slate-200 bg-white"
-                                      >
-                                        {CONTENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                                      </select>
-                                      <select
-                                        value={item.funnel}
-                                        onChange={(e) => updateContentMapItem(idx, itemIdx, 'funnel', e.target.value)}
-                                        className="px-2 py-0.5 text-[10px] font-medium rounded border border-slate-200 bg-white"
-                                      >
-                                        {FUNNEL_STAGES.map(f => <option key={f} value={f}>{f}</option>)}
-                                      </select>
-                                      <select
-                                        value={item.intent}
-                                        onChange={(e) => updateContentMapItem(idx, itemIdx, 'intent', e.target.value)}
-                                        className="px-2 py-0.5 text-[10px] font-medium rounded border border-slate-200 bg-white"
-                                      >
-                                        {INTENT_TYPES.map(i => <option key={i} value={i}>{i}</option>)}
-                                      </select>
-                                    </div>
-                                    <input
-                                      type="text"
-                                      value={item.title}
-                                      onChange={(e) => updateContentMapItem(idx, itemIdx, 'title', e.target.value)}
-                                      className="w-full font-medium text-[#0B1B2B] text-sm bg-transparent border-b border-slate-200 focus:border-[#C7A56A] focus:outline-none"
-                                      placeholder="内容标题"
-                                    />
-                                    <textarea
-                                      value={item.briefGoal}
-                                      onChange={(e) => updateContentMapItem(idx, itemIdx, 'briefGoal', e.target.value)}
-                                      className="w-full text-xs text-slate-500 bg-transparent border border-slate-200 rounded p-2 focus:border-[#C7A56A] focus:outline-none resize-none"
-                                      rows={2}
-                                      placeholder="内容目标描述"
-                                    />
-                                  </div>
-                                ) : (
-                                  <>
-                                    <div className="flex items-center gap-2 mb-1">
-                                      <span className={`px-2 py-0.5 text-[10px] font-medium rounded ${typeColor.bg} ${typeColor.text}`}>
-                                        {item.type}
-                                      </span>
-                                      <span className={`px-2 py-0.5 text-[10px] font-medium rounded ${funnelColor.bg} ${funnelColor.text}`}>
-                                        {item.funnel}
-                                      </span>
-                                      <span className="px-2 py-0.5 text-[10px] font-medium rounded bg-slate-100 text-slate-600">
-                                        {item.intent}
-                                      </span>
-                                    </div>
-                                    <h4 className="font-medium text-[#0B1B2B] text-sm">{item.title}</h4>
-                                    <p className="text-xs text-slate-500 mt-1">{item.briefGoal}</p>
-                                    {item.mustUseEvidenceIds?.length > 0 && (
-                                      <div className="flex items-center gap-1 mt-2">
-                                        <CheckCircle2 size={10} className="text-emerald-500" />
-                                        <span className="text-[10px] text-slate-400">
-                                          引用 {item.mustUseEvidenceIds.length} 条证据
-                                        </span>
-                                      </div>
-                                    )}
-                                  </>
-                                )}
-                              </div>
-                              {isEditing ? (
-                                <button
-                                  onClick={() => removeContentItem(idx, itemIdx)}
-                                  className="shrink-0 p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                >
-                                  <Trash2 size={14} />
-                                </button>
-                              ) : (
-                                <Link
-                                  href="/c/marketing/strategy"
-                                  className="shrink-0 px-3 py-1.5 text-xs text-[#C7A56A] hover:bg-[#C7A56A]/10 rounded-lg transition-colors"
-                                >
-                                  生成内容
-                                </Link>
-                              )}
-                            </div>
-                          );
-                        })}
-                        
-                        {/* Add Content Item Button */}
-                        {isEditing && (
-                          <button
-                            onClick={() => addContentItem(idx)}
-                            className="p-3 border-2 border-dashed border-[#E7E0D3] rounded-xl text-slate-400 hover:border-[#C7A56A] hover:text-[#C7A56A] transition-colors flex items-center justify-center gap-2"
-                          >
-                            <Plus size={14} />
-                            添加内容项
-                          </button>
-                        )}
-                      </div>
-
-                      {/* Required Evidence */}
-                      {cluster.requiredEvidenceIds?.length > 0 && (
-                        <div className="mt-4 pt-4 border-t border-[#E7E0D3]">
-                          <p className="text-[10px] text-slate-400 flex items-center gap-1">
-                            <CheckCircle2 size={10} />
-                            此支柱需要 {cluster.requiredEvidenceIds.length} 条证据支撑
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {/* Meta Info */}
-            {currentVersion && !isEditing && (
-              <div className="flex items-center justify-center gap-4 text-xs text-slate-400 pt-4">
-                <span className="flex items-center gap-1">
-                  <Clock size={12} />
-                  {new Date(currentVersion.createdAt).toLocaleString('zh-CN')}
-                </span>
-                {currentVersion.createdBy && (
-                  <span>由 {currentVersion.createdBy} 生成</span>
-                )}
-              </div>
-            )}
-          </>
-        )}
-      </div>
-
-      {/* CollaborativeShell Sidebar */}
-      {showShell && currentVersion && (
-        <div className="w-80 shrink-0">
-          <CollaborativeShell
-            entityType="TopicCluster"
-            entityId={currentVersion.entityId}
-            versionId={currentVersion.id}
-            anchorType="jsonPath"
-            variant="light"
-            className="sticky top-4"
-            onVersionChange={(verId) => {
-              // Could load specific version here
-              console.log('Version changed:', verId);
+        
+        {/* 启动向导 */}
+        <div className="max-w-4xl mx-auto p-6">
+          <TopicClusterStarter 
+            counts={pipelineStatus.counts} 
+            onSuccess={() => {
+              loadData();
             }}
           />
         </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[#FAFAFA]">
+      {/* Growth Header - 有数据时显示 */}
+      {pipelineStatus && (
+        <GrowthHeader
+          title="内容增长工作台"
+          description="主题集群 · 构建 TOFU → MOFU → BOFU 全漏斗内容规划"
+          steps={pipelineStatus.steps}
+          counts={pipelineStatus.counts}
+          currentStep={pipelineStatus.currentStep}
+          primaryCTA={pipelineStatus.primaryCTA}
+          isRefreshing={isRefreshing}
+          onRefresh={handleRefreshPipeline}
+        />
       )}
+      
+      <div className="flex gap-6 p-6">
+        {/* Main Content */}
+        <div className={`flex-1 space-y-6 ${showShell ? 'max-w-[calc(100%-600px)]' : ''}`}>
+          {/* 操作工具栏 */}
+          <div className="flex items-center justify-between bg-white rounded-xl border border-[#E7E0D3] p-3">
+            <div className="flex items-center gap-3">
+              {currentVersion && !isEditing && (
+                <>
+                  <button
+                    onClick={() => setShowShell(!showShell)}
+                    className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
+                      showShell 
+                        ? 'bg-[#C7A56A] text-[#0B1B2B]' 
+                        : 'text-slate-500 hover:bg-[#F7F3EA]'
+                    }`}
+                  >
+                    协作
+                  </button>
+                  <button
+                    onClick={() => setShowVersionHistory(!showVersionHistory)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-500 hover:text-[#C7A56A] transition-colors rounded-lg hover:bg-[#F7F3EA]"
+                  >
+                    <History size={14} />
+                    v{currentVersion.version}
+                  </button>
+                  <button
+                    onClick={enterEditMode}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-500 hover:text-[#C7A56A] transition-colors rounded-lg hover:bg-[#F7F3EA]"
+                  >
+                    <Pencil size={14} />
+                    编辑
+                  </button>
+                </>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {isEditing ? (
+                <>
+                  <button
+                    onClick={cancelEdit}
+                    className="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-700 transition-colors"
+                  >
+                    取消
+                  </button>
+                  <button
+                    onClick={saveEdit}
+                    disabled={isSaving}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0B1B2B] text-[#C7A56A] rounded-lg text-xs font-medium hover:bg-[#10263B] transition-colors disabled:opacity-50"
+                  >
+                    {isSaving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+                    保存
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={handleRegenerate}
+                    disabled={isSyncing}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0B1B2B] text-[#C7A56A] rounded-lg text-xs font-medium hover:bg-[#10263B] transition-colors disabled:opacity-50"
+                  >
+                    {isSyncing ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                    重新生成
+                  </button>
+                  <button 
+                    onClick={loadData}
+                    className="p-1.5 text-slate-400 hover:text-[#C7A56A] transition-colors"
+                    title="刷新数据"
+                  >
+                    <RefreshCw size={14} />
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Error Alert */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
+              <AlertCircle className="text-red-500 shrink-0" size={20} />
+              <p className="text-sm text-red-700">{error}</p>
+              <button onClick={() => setError(null)} className="ml-auto text-red-400 hover:text-red-600">
+                <X size={16} />
+              </button>
+            </div>
+          )}
+
+          {/* Version History Panel */}
+          {showVersionHistory && versions.length > 0 && !isEditing && (
+            <div className="bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3] p-4">
+              <h3 className="text-sm font-bold text-[#0B1B2B] mb-3 flex items-center gap-2">
+                <History size={14} className="text-[#C7A56A]" />
+                版本历史
+              </h3>
+              <div className="flex gap-2 overflow-x-auto pb-2">
+                {versions.map((v) => (
+                  <button
+                    key={v.id}
+                    className={`shrink-0 px-3 py-2 rounded-lg border text-xs transition-all ${
+                      currentVersion?.id === v.id
+                        ? 'border-[#C7A56A] bg-[#C7A56A]/10 text-[#0B1B2B]'
+                        : 'border-[#E7E0D3] hover:border-[#C7A56A]/50 text-slate-500'
+                    }`}
+                  >
+                    <div className="font-medium">v{v.version}</div>
+                    <div className="text-[10px] text-slate-400 mt-0.5">
+                      {new Date(v.createdAt).toLocaleDateString('zh-CN')}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {topicCluster && (
+            <>
+              {/* Topic Cluster Header */}
+              <div className="bg-gradient-to-r from-[#0B1B2B] to-[#10263B] rounded-2xl p-6 text-white">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={topicCluster.name}
+                        onChange={(e) => updateClusterName(e.target.value)}
+                        className="text-xl font-bold bg-white/10 border border-white/20 rounded-lg px-3 py-1 w-full max-w-md focus:outline-none focus:border-[#C7A56A]"
+                      />
+                    ) : (
+                      <h2 className="text-xl font-bold">{topicCluster.name}</h2>
+                    )}
+                    <p className="text-sm text-slate-400 mt-1">
+                      {topicCluster.clusters?.length || 0} 个内容支柱 · 
+                      {topicCluster.clusters?.reduce((acc, c) => acc + (c.contentMap?.length || 0), 0) || 0} 个内容规划
+                    </p>
+                  </div>
+                  {displayContent?.confidence !== undefined && (
+                    <div className="text-right">
+                      <div className="text-[10px] text-slate-400 uppercase tracking-wider">置信度</div>
+                      <div className="text-2xl font-bold text-[#C7A56A]">
+                        {Math.round((displayContent.confidence || 0) * 100)}%
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Open Questions */}
+              {displayContent?.openQuestions && displayContent.openQuestions.length > 0 && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                  <h4 className="text-sm font-medium text-amber-800 mb-2 flex items-center gap-2">
+                    <HelpCircle size={14} />
+                    待确认问题 ({displayContent.openQuestions.length})
+                  </h4>
+                  <ul className="space-y-1">
+                    {displayContent.openQuestions.map((q, i) => (
+                      <li key={i} className="text-xs text-amber-700 flex items-start gap-2">
+                        <span className="text-amber-400">•</span>
+                        {q}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Add Cluster Button (Edit Mode) */}
+              {isEditing && (
+                <button
+                  onClick={addCluster}
+                  className="w-full p-3 border-2 border-dashed border-[#E7E0D3] rounded-xl text-slate-400 hover:border-[#C7A56A] hover:text-[#C7A56A] transition-colors flex items-center justify-center gap-2"
+                >
+                  <Plus size={16} />
+                  添加内容支柱
+                </button>
+              )}
+
+              {/* Clusters */}
+              <div className="space-y-4">
+                {topicCluster.clusters?.map((cluster, idx) => (
+                  <div 
+                    key={idx}
+                    className="bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3] overflow-hidden"
+                  >
+                    {/* Cluster Header */}
+                    <div className="flex items-center p-5 hover:bg-[#F7F3EA] transition-colors">
+                      {isEditing && (
+                        <div className="mr-3 text-slate-300 cursor-move">
+                          <GripVertical size={16} />
+                        </div>
+                      )}
+                      <button
+                        onClick={() => setExpandedCluster(expandedCluster === idx ? null : idx)}
+                        className="flex-1 flex items-center justify-between"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 bg-gradient-to-br from-[#C7A56A] to-[#C7A56A]/70 rounded-xl flex items-center justify-center">
+                            <Layers size={18} className="text-[#0B1B2B]" />
+                          </div>
+                          <div className="text-left">
+                            {isEditing ? (
+                              <input
+                                type="text"
+                                value={cluster.pillar}
+                                onChange={(e) => updatePillar(idx, 'pillar', e.target.value)}
+                                onClick={(e) => e.stopPropagation()}
+                                className="font-bold text-[#0B1B2B] bg-transparent border-b border-transparent hover:border-[#C7A56A] focus:border-[#C7A56A] focus:outline-none"
+                              />
+                            ) : (
+                              <h3 className="font-bold text-[#0B1B2B]">{cluster.pillar}</h3>
+                            )}
+                            <p className="text-xs text-slate-500 mt-0.5">
+                              {cluster.intent} · {cluster.contentMap?.length || 0} 个内容
+                            </p>
+                          </div>
+                        </div>
+                        <ChevronRight 
+                          size={20} 
+                          className={`text-slate-400 transition-transform ${expandedCluster === idx ? 'rotate-90' : ''}`}
+                        />
+                      </button>
+                      {isEditing && topicCluster.clusters.length > 1 && (
+                        <button
+                          onClick={() => removeCluster(idx)}
+                          className="ml-2 p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Cluster Content Map */}
+                    {expandedCluster === idx && cluster.contentMap && (
+                      <div className="border-t border-[#E7E0D3] p-5">
+                        <div className="grid gap-3">
+                          {cluster.contentMap.map((item, itemIdx) => {
+                            const typeColor = CONTENT_TYPE_COLORS[item.type] || { bg: 'bg-slate-50', text: 'text-slate-600' };
+                            const funnelColor = FUNNEL_COLORS[item.funnel] || { bg: 'bg-slate-100', text: 'text-slate-700' };
+                            
+                            return (
+                              <div 
+                                key={itemIdx}
+                                className={`flex items-start gap-4 p-4 bg-white rounded-xl border border-[#E7E0D3] ${isEditing ? '' : 'hover:border-[#C7A56A]/30'} transition-colors`}
+                              >
+                                <div className="shrink-0">
+                                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${typeColor.bg}`}>
+                                    {item.type === 'BuyingGuide' && <BookOpen size={14} className={typeColor.text} />}
+                                    {item.type === 'Whitepaper' && <FileText size={14} className={typeColor.text} />}
+                                    {item.type === 'FAQ' && <HelpCircle size={14} className={typeColor.text} />}
+                                    {item.type === 'QnA' && <HelpCircle size={14} className={typeColor.text} />}
+                                    {item.type === 'KnowledgeBase' && <Layers size={14} className={typeColor.text} />}
+                                    {item.type === 'Comparison' && <BarChart3 size={14} className={typeColor.text} />}
+                                    {item.type === 'UseCasePage' && <Target size={14} className={typeColor.text} />}
+                                  </div>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  {isEditing ? (
+                                    <div className="space-y-2">
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <select
+                                          value={item.type}
+                                          onChange={(e) => updateContentMapItem(idx, itemIdx, 'type', e.target.value)}
+                                          className="px-2 py-0.5 text-[10px] font-medium rounded border border-slate-200 bg-white"
+                                        >
+                                          {CONTENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                                        </select>
+                                        <select
+                                          value={item.funnel}
+                                          onChange={(e) => updateContentMapItem(idx, itemIdx, 'funnel', e.target.value)}
+                                          className="px-2 py-0.5 text-[10px] font-medium rounded border border-slate-200 bg-white"
+                                        >
+                                          {FUNNEL_STAGES.map(f => <option key={f} value={f}>{f}</option>)}
+                                        </select>
+                                        <select
+                                          value={item.intent}
+                                          onChange={(e) => updateContentMapItem(idx, itemIdx, 'intent', e.target.value)}
+                                          className="px-2 py-0.5 text-[10px] font-medium rounded border border-slate-200 bg-white"
+                                        >
+                                          {INTENT_TYPES.map(i => <option key={i} value={i}>{i}</option>)}
+                                        </select>
+                                      </div>
+                                      <input
+                                        type="text"
+                                        value={item.title}
+                                        onChange={(e) => updateContentMapItem(idx, itemIdx, 'title', e.target.value)}
+                                        className="w-full font-medium text-[#0B1B2B] text-sm bg-transparent border-b border-slate-200 focus:border-[#C7A56A] focus:outline-none"
+                                        placeholder="内容标题"
+                                      />
+                                      <textarea
+                                        value={item.briefGoal}
+                                        onChange={(e) => updateContentMapItem(idx, itemIdx, 'briefGoal', e.target.value)}
+                                        className="w-full text-xs text-slate-500 bg-transparent border border-slate-200 rounded p-2 focus:border-[#C7A56A] focus:outline-none resize-none"
+                                        rows={2}
+                                        placeholder="内容目标描述"
+                                      />
+                                    </div>
+                                  ) : (
+                                    <>
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <span className={`px-2 py-0.5 text-[10px] font-medium rounded ${typeColor.bg} ${typeColor.text}`}>
+                                          {item.type}
+                                        </span>
+                                        <span className={`px-2 py-0.5 text-[10px] font-medium rounded ${funnelColor.bg} ${funnelColor.text}`}>
+                                          {item.funnel}
+                                        </span>
+                                        <span className="px-2 py-0.5 text-[10px] font-medium rounded bg-slate-100 text-slate-600">
+                                          {item.intent}
+                                        </span>
+                                      </div>
+                                      <h4 className="font-medium text-[#0B1B2B] text-sm">{item.title}</h4>
+                                      <p className="text-xs text-slate-500 mt-1">{item.briefGoal}</p>
+                                      {item.mustUseEvidenceIds?.length > 0 && (
+                                        <div className="flex items-center gap-1 mt-2">
+                                          <CheckCircle2 size={10} className="text-emerald-500" />
+                                          <span className="text-[10px] text-slate-400">
+                                            引用 {item.mustUseEvidenceIds.length} 条证据
+                                          </span>
+                                        </div>
+                                      )}
+                                    </>
+                                  )}
+                                </div>
+                                {isEditing ? (
+                                  <button
+                                    onClick={() => removeContentItem(idx, itemIdx)}
+                                    className="shrink-0 p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                ) : (
+                                  <Link
+                                    href="/c/marketing/strategy"
+                                    className="shrink-0 px-3 py-1.5 text-xs text-[#C7A56A] hover:bg-[#C7A56A]/10 rounded-lg transition-colors"
+                                  >
+                                    生成内容
+                                  </Link>
+                                )}
+                              </div>
+                            );
+                          })}
+                          
+                          {/* Add Content Item Button */}
+                          {isEditing && (
+                            <button
+                              onClick={() => addContentItem(idx)}
+                              className="p-3 border-2 border-dashed border-[#E7E0D3] rounded-xl text-slate-400 hover:border-[#C7A56A] hover:text-[#C7A56A] transition-colors flex items-center justify-center gap-2"
+                            >
+                              <Plus size={14} />
+                              添加内容项
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Required Evidence */}
+                        {cluster.requiredEvidenceIds?.length > 0 && (
+                          <div className="mt-4 pt-4 border-t border-[#E7E0D3]">
+                            <p className="text-[10px] text-slate-400 flex items-center gap-1">
+                              <CheckCircle2 size={10} />
+                              此支柱需要 {cluster.requiredEvidenceIds.length} 条证据支撑
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Meta Info */}
+              {currentVersion && !isEditing && (
+                <div className="flex items-center justify-center gap-4 text-xs text-slate-400 pt-4">
+                  <span className="flex items-center gap-1">
+                    <Clock size={12} />
+                    {new Date(currentVersion.createdAt).toLocaleString('zh-CN')}
+                  </span>
+                  {currentVersion.createdBy && (
+                    <span>由 {currentVersion.createdBy} 生成</span>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Right Sidebar: Secretary Panel + CollaborativeShell */}
+        <div className="w-80 shrink-0 space-y-4">
+          {/* 秘书催办栏 */}
+          {pipelineStatus && !isEditing && (
+            <GrowthSecretaryPanel counts={pipelineStatus.counts} />
+          )}
+          
+          {/* CollaborativeShell */}
+          {showShell && currentVersion && (
+            <CollaborativeShell
+              entityType="TopicCluster"
+              entityId={currentVersion.entityId}
+              versionId={currentVersion.id}
+              anchorType="jsonPath"
+              variant="light"
+              className="sticky top-4"
+              onVersionChange={(verId) => {
+                console.log('Version changed:', verId);
+              }}
+            />
+          )}
+        </div>
+      </div>
     </div>
   );
 }

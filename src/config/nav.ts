@@ -220,11 +220,11 @@ export const navConfig: NavItem[] = [
     group: 'channel',
     healthSource: 'knowledge.status',
     subItems: [
-      { key: 'company', label: '企业档案', href: '/c/knowledge/company', icon: Building2, order: 1 },
+      { key: 'assets', label: '资料库', href: '/c/knowledge/assets', icon: FileStack, order: 1 },
       { key: 'evidence', label: '证据库', href: '/c/knowledge/evidence', icon: ShieldCheck, order: 2 },
-      { key: 'profiles', label: '买家画像', href: '/c/knowledge/profiles', icon: Users2, order: 3 },
-      { key: 'assets', label: '资料库', href: '/c/knowledge/assets', icon: FileStack, order: 4 },
-      { key: 'guidelines', label: '品牌手册', href: '/c/knowledge/guidelines', icon: BookOpen, order: 5 },
+      { key: 'company', label: '企业档案', href: '/c/knowledge/company', icon: Building2, order: 3 },
+      { key: 'guidelines', label: '品牌手册', href: '/c/knowledge/guidelines', icon: BookOpen, order: 4 },
+      { key: 'profiles', label: '买家画像', href: '/c/knowledge/profiles', icon: Users2, order: 5 },
     ],
   },
 ];
