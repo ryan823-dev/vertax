@@ -323,7 +323,7 @@ export default function TopicClustersPage() {
   // 如果没有 TopicCluster，显示启动向导（即使 pipeline 加载失败也显示）
   if (!hasTopicCluster && pipelineLoaded) {
     return (
-      <div className="min-h-screen bg-[#FAFAFA]">
+      <div className="min-h-screen bg-[#0B1018]">
         {/* Growth Header - 只在 pipeline 数据可用时显示 */}
         {pipelineStatus && (
           <GrowthHeader
@@ -363,7 +363,7 @@ export default function TopicClustersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA]">
+    <div className="min-h-screen bg-[#0B1018]">
       {/* Growth Header - 有数据时显示 */}
       {pipelineStatus && (
         <GrowthHeader
