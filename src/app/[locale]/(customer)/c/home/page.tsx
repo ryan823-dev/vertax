@@ -146,11 +146,11 @@ export default function CEOCockpitPage() {
                   </div>
                   <div>
                     <h1 className="text-light text-xl font-bold tracking-tight">
-                      出海战略助理 | <span className="text-gold">CEO VIEW</span>
+                      VertaX AI · <span className="text-gold">出海获客智能体</span>
                     </h1>
                     <p className="text-light-muted text-xs flex items-center gap-2 mt-1">
                       <span className="status-dot status-dot-success" />
-                      AI ENGINE · 实时数据流
+                      AI驱动 · 全球市场情报 · 智能外贸决策
                     </p>
                   </div>
                 </div>
