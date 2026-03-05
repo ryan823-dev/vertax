@@ -35,8 +35,35 @@ import type { GrowthPipelineCounts } from '@/lib/marketing/growth-pipeline';
 // 类型定义
 // ============================================
 
+/** 当 pipeline 状态加载失败时使用的空白默认值 */
+const EMPTY_COUNTS: GrowthPipelineCounts = {
+  topicClusterExists: false,
+  topicClusterVersion: 0,
+  topicClusterUpdatedAt: null,
+  clustersCount: 0,
+  contentMapCount: 0,
+  briefsTotal: 0,
+  briefsDraft: 0,
+  briefsReady: 0,
+  briefsInProgress: 0,
+  briefsDone: 0,
+  draftsTotal: 0,
+  draftsPublished: 0,
+  draftsPending: 0,
+  evidenceCount: 0,
+  missingProofCount: 0,
+  publishPacksTotal: 0,
+  publishPacksPending: 0,
+  publishPacksPublished: 0,
+  knowledgeCompleteness: 0,
+  hasCompanyProfile: false,
+  hasPersonas: false,
+  hasEvidence: false,
+  lastUpdatedAt: null,
+};
+
 interface StarterProps {
-  counts: GrowthPipelineCounts;
+  counts?: GrowthPipelineCounts | null;
   onSuccess: () => void;
 }
 
@@ -46,7 +73,8 @@ type StarterPath = 'sync' | 'manual' | 'import' | null;
 // 主组件
 // ============================================
 
-export function TopicClusterStarter({ counts, onSuccess }: StarterProps) {
+export function TopicClusterStarter({ counts: countsProp, onSuccess }: StarterProps) {
+  const counts = countsProp ?? EMPTY_COUNTS;
   const [selectedPath, setSelectedPath] = useState<StarterPath>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   

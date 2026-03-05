@@ -122,6 +122,9 @@ export default function TopicClustersPage() {
   const [pipelineStatus, setPipelineStatus] = useState<GrowthPipelineStatus | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  // pipeline 是否加载完毕（不论成功失败）
+  const [pipelineLoaded, setPipelineLoaded] = useState(false);
+
   // 加载流水线状态
   const loadPipelineStatus = useCallback(async () => {
     try {
@@ -129,6 +132,8 @@ export default function TopicClustersPage() {
       setPipelineStatus(status);
     } catch (err) {
       console.error('Failed to load pipeline status:', err);
+    } finally {
+      setPipelineLoaded(true);
     }
   }, []);
 
@@ -315,21 +320,23 @@ export default function TopicClustersPage() {
     );
   }
 
-  // 如果没有 TopicCluster，显示启动向导
-  if (!hasTopicCluster && pipelineStatus) {
+  // 如果没有 TopicCluster，显示启动向导（即使 pipeline 加载失败也显示）
+  if (!hasTopicCluster && pipelineLoaded) {
     return (
       <div className="min-h-screen bg-[#FAFAFA]">
-        {/* Growth Header */}
-        <GrowthHeader
-          title="内容增长工作台"
-          description="主题集群 · 构建 TOFU → MOFU → BOFU 全漏斗内容规划"
-          steps={pipelineStatus.steps}
-          counts={pipelineStatus.counts}
-          currentStep={pipelineStatus.currentStep}
-          primaryCTA={pipelineStatus.primaryCTA}
-          isRefreshing={isRefreshing}
-          onRefresh={handleRefreshPipeline}
-        />
+        {/* Growth Header - 只在 pipeline 数据可用时显示 */}
+        {pipelineStatus && (
+          <GrowthHeader
+            title="内容增长工作台"
+            description="主题集群 · 构建 TOFU → MOFU → BOFU 全漏斗内容规划"
+            steps={pipelineStatus.steps}
+            counts={pipelineStatus.counts}
+            currentStep={pipelineStatus.currentStep}
+            primaryCTA={pipelineStatus.primaryCTA}
+            isRefreshing={isRefreshing}
+            onRefresh={handleRefreshPipeline}
+          />
+        )}
         
         {/* Error Alert */}
         {error && (
@@ -345,7 +352,7 @@ export default function TopicClustersPage() {
         {/* 启动向导 */}
         <div className="max-w-4xl mx-auto p-6">
           <TopicClusterStarter 
-            counts={pipelineStatus.counts} 
+            counts={pipelineStatus?.counts} 
             onSuccess={() => {
               loadData();
             }}
