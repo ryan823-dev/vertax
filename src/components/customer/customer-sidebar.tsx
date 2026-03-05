@@ -169,10 +169,10 @@ export function CustomerSidebar({
                 {tenantSlug?.substring(0, 2).toUpperCase() || 'TD'}
               </div>
               <div className="flex-1 overflow-hidden">
-                <p className="text-[11px] font-medium text-[rgba(255,255,255,0.7)] truncate">{tenantSlug}.vertax.top</p>
+                <p className="text-[11px] font-medium text-[rgba(212,175,55,0.85)] truncate">VertaX AI Engine</p>
                 <div className="flex items-center gap-1 mt-0.5">
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#22C55E]" />
-                  <p className="text-[9px] text-[rgba(255,255,255,0.4)]">执行引擎在线</p>
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#22C55E] animate-pulse" />
+                  <p className="text-[9px] text-[rgba(255,255,255,0.45)]">智能引擎运行中</p>
                 </div>
               </div>
             </div>

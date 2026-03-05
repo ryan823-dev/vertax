@@ -315,7 +315,7 @@ export default function TopicClustersPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 text-[#C7A56A] animate-spin" />
+        <Loader2 className="w-8 h-8 text-[#D4AF37] animate-spin" />
       </div>
     );
   }
@@ -381,8 +381,15 @@ export default function TopicClustersPage() {
       <div className="flex gap-6 p-6">
         {/* Main Content */}
         <div className={`flex-1 space-y-6 ${showShell ? 'max-w-[calc(100%-600px)]' : ''}`}>
-          {/* 操作工具栏 */}
-          <div className="flex items-center justify-between bg-white rounded-xl border border-[#E7E0D3] p-3">
+          {/* 操作工具栏 - 深蓝舞台风格 */}
+          <div className="rounded-2xl overflow-hidden" style={{
+            background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)',
+            boxShadow: '0 8px 32px -8px rgba(0,0,0,0.45)',
+          }}>
+            <div className="absolute inset-x-0 top-0 h-0 pointer-events-none" style={{
+              background: 'radial-gradient(ellipse 70% 60% at 50% -20%, rgba(212,175,55,0.14) 0%, transparent 65%)',
+            }} />
+            <div className="flex items-center justify-between p-3">
             <div className="flex items-center gap-3">
               {currentVersion && !isEditing && (
                 <>
@@ -390,22 +397,22 @@ export default function TopicClustersPage() {
                     onClick={() => setShowShell(!showShell)}
                     className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
                       showShell 
-                        ? 'bg-[#C7A56A] text-[#0B1B2B]' 
-                        : 'text-slate-500 hover:bg-[#F7F3EA]'
+                        ? 'bg-[#D4AF37] text-[#0B1220]' 
+                        : 'text-slate-400 hover:text-[#D4AF37]'
                     }`}
                   >
                     协作
                   </button>
                   <button
                     onClick={() => setShowVersionHistory(!showVersionHistory)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-500 hover:text-[#C7A56A] transition-colors rounded-lg hover:bg-[#F7F3EA]"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-400 hover:text-[#D4AF37] transition-colors rounded-lg"
                   >
                     <History size={14} />
                     v{currentVersion.version}
                   </button>
                   <button
                     onClick={enterEditMode}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-500 hover:text-[#C7A56A] transition-colors rounded-lg hover:bg-[#F7F3EA]"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-400 hover:text-[#D4AF37] transition-colors rounded-lg"
                   >
                     <Pencil size={14} />
                     编辑
@@ -418,14 +425,15 @@ export default function TopicClustersPage() {
                 <>
                   <button
                     onClick={cancelEdit}
-                    className="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-700 transition-colors"
+                    className="px-3 py-1.5 text-xs text-slate-400 hover:text-slate-200 transition-colors"
                   >
                     取消
                   </button>
                   <button
                     onClick={saveEdit}
                     disabled={isSaving}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0B1B2B] text-[#C7A56A] rounded-lg text-xs font-medium hover:bg-[#10263B] transition-colors disabled:opacity-50"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+                    style={{ background: '#D4AF37', color: '#0B1220', boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)' }}
                   >
                     {isSaving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
                     保存
@@ -436,20 +444,22 @@ export default function TopicClustersPage() {
                   <button
                     onClick={handleRegenerate}
                     disabled={isSyncing}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0B1B2B] text-[#C7A56A] rounded-lg text-xs font-medium hover:bg-[#10263B] transition-colors disabled:opacity-50"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+                    style={{ background: '#D4AF37', color: '#0B1220', boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)' }}
                   >
                     {isSyncing ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
                     重新生成
                   </button>
                   <button 
                     onClick={loadData}
-                    className="p-1.5 text-slate-400 hover:text-[#C7A56A] transition-colors"
+                    className="p-1.5 text-slate-400 hover:text-[#D4AF37] transition-colors"
                     title="刷新数据"
                   >
                     <RefreshCw size={14} />
                   </button>
                 </>
               )}
+            </div>
             </div>
           </div>
 
@@ -466,9 +476,9 @@ export default function TopicClustersPage() {
 
           {/* Version History Panel */}
           {showVersionHistory && versions.length > 0 && !isEditing && (
-            <div className="bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3] p-4">
+            <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-4">
               <h3 className="text-sm font-bold text-[#0B1B2B] mb-3 flex items-center gap-2">
-                <History size={14} className="text-[#C7A56A]" />
+                <History size={14} className="text-[#D4AF37]" />
                 版本历史
               </h3>
               <div className="flex gap-2 overflow-x-auto pb-2">
@@ -477,8 +487,8 @@ export default function TopicClustersPage() {
                     key={v.id}
                     className={`shrink-0 px-3 py-2 rounded-lg border text-xs transition-all ${
                       currentVersion?.id === v.id
-                        ? 'border-[#C7A56A] bg-[#C7A56A]/10 text-[#0B1B2B]'
-                        : 'border-[#E7E0D3] hover:border-[#C7A56A]/50 text-slate-500'
+                        ? 'border-[#D4AF37] bg-[#D4AF37]/10 text-[#0B1B2B]'
+                        : 'border-[#E8E0D0] hover:border-[#D4AF37]/50 text-slate-500'
                     }`}
                   >
                     <div className="font-medium">v{v.version}</div>
@@ -502,7 +512,7 @@ export default function TopicClustersPage() {
                         type="text"
                         value={topicCluster.name}
                         onChange={(e) => updateClusterName(e.target.value)}
-                        className="text-xl font-bold bg-white/10 border border-white/20 rounded-lg px-3 py-1 w-full max-w-md focus:outline-none focus:border-[#C7A56A]"
+                        className="text-xl font-bold bg-white/10 border border-white/20 rounded-lg px-3 py-1 w-full max-w-md focus:outline-none focus:border-[#D4AF37]"
                       />
                     ) : (
                       <h2 className="text-xl font-bold">{topicCluster.name}</h2>
@@ -515,7 +525,7 @@ export default function TopicClustersPage() {
                   {displayContent?.confidence !== undefined && (
                     <div className="text-right">
                       <div className="text-[10px] text-slate-400 uppercase tracking-wider">置信度</div>
-                      <div className="text-2xl font-bold text-[#C7A56A]">
+                      <div className="text-2xl font-bold text-[#D4AF37]">
                         {Math.round((displayContent.confidence || 0) * 100)}%
                       </div>
                     </div>
@@ -545,7 +555,7 @@ export default function TopicClustersPage() {
               {isEditing && (
                 <button
                   onClick={addCluster}
-                  className="w-full p-3 border-2 border-dashed border-[#E7E0D3] rounded-xl text-slate-400 hover:border-[#C7A56A] hover:text-[#C7A56A] transition-colors flex items-center justify-center gap-2"
+                  className="w-full p-3 border-2 border-dashed border-[#E8E0D0] rounded-xl text-slate-400 hover:border-[#D4AF37] hover:text-[#D4AF37] transition-colors flex items-center justify-center gap-2"
                 >
                   <Plus size={16} />
                   添加内容支柱
@@ -557,10 +567,10 @@ export default function TopicClustersPage() {
                 {topicCluster.clusters?.map((cluster, idx) => (
                   <div 
                     key={idx}
-                    className="bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3] overflow-hidden"
+                    className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] overflow-hidden"
                   >
                     {/* Cluster Header */}
-                    <div className="flex items-center p-5 hover:bg-[#F7F3EA] transition-colors">
+                    <div className="flex items-center p-5 hover:bg-[#F0EBD8] transition-colors">
                       {isEditing && (
                         <div className="mr-3 text-slate-300 cursor-move">
                           <GripVertical size={16} />
@@ -571,7 +581,7 @@ export default function TopicClustersPage() {
                         className="flex-1 flex items-center justify-between"
                       >
                         <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 bg-gradient-to-br from-[#C7A56A] to-[#C7A56A]/70 rounded-xl flex items-center justify-center">
+                          <div className="w-10 h-10 bg-gradient-to-br from-[#D4AF37] to-[#D4AF37]/70 rounded-xl flex items-center justify-center">
                             <Layers size={18} className="text-[#0B1B2B]" />
                           </div>
                           <div className="text-left">
@@ -581,7 +591,7 @@ export default function TopicClustersPage() {
                                 value={cluster.pillar}
                                 onChange={(e) => updatePillar(idx, 'pillar', e.target.value)}
                                 onClick={(e) => e.stopPropagation()}
-                                className="font-bold text-[#0B1B2B] bg-transparent border-b border-transparent hover:border-[#C7A56A] focus:border-[#C7A56A] focus:outline-none"
+                                className="font-bold text-[#0B1B2B] bg-transparent border-b border-transparent hover:border-[#D4AF37] focus:border-[#D4AF37] focus:outline-none"
                               />
                             ) : (
                               <h3 className="font-bold text-[#0B1B2B]">{cluster.pillar}</h3>
@@ -608,16 +618,16 @@ export default function TopicClustersPage() {
 
                     {/* Cluster Content Map */}
                     {expandedCluster === idx && cluster.contentMap && (
-                      <div className="border-t border-[#E7E0D3] p-5">
+                      <div className="border-t border-[#E8E0D0] p-5">
                         <div className="grid gap-3">
                           {cluster.contentMap.map((item, itemIdx) => {
-                            const typeColor = CONTENT_TYPE_COLORS[item.type] || { bg: 'bg-slate-50', text: 'text-slate-600' };
+                            const typeColor = CONTENT_TYPE_COLORS[item.type] || { bg: 'bg-[#F7F3E8]', text: 'text-slate-600' };
                             const funnelColor = FUNNEL_COLORS[item.funnel] || { bg: 'bg-slate-100', text: 'text-slate-700' };
                             
                             return (
                               <div 
                                 key={itemIdx}
-                                className={`flex items-start gap-4 p-4 bg-white rounded-xl border border-[#E7E0D3] ${isEditing ? '' : 'hover:border-[#C7A56A]/30'} transition-colors`}
+                                className={`flex items-start gap-4 p-4 bg-[#FFFCF7] rounded-xl border border-[#E8E0D0] ${isEditing ? '' : 'hover:border-[#D4AF37]/30'} transition-colors`}
                               >
                                 <div className="shrink-0">
                                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${typeColor.bg}`}>
@@ -637,21 +647,21 @@ export default function TopicClustersPage() {
                                         <select
                                           value={item.type}
                                           onChange={(e) => updateContentMapItem(idx, itemIdx, 'type', e.target.value)}
-                                          className="px-2 py-0.5 text-[10px] font-medium rounded border border-slate-200 bg-white"
+                                          className="px-2 py-0.5 text-[10px] font-medium rounded border border-[#E8E0D0] bg-[#FFFCF7]"
                                         >
                                           {CONTENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                                         </select>
                                         <select
                                           value={item.funnel}
                                           onChange={(e) => updateContentMapItem(idx, itemIdx, 'funnel', e.target.value)}
-                                          className="px-2 py-0.5 text-[10px] font-medium rounded border border-slate-200 bg-white"
+                                          className="px-2 py-0.5 text-[10px] font-medium rounded border border-[#E8E0D0] bg-[#FFFCF7]"
                                         >
                                           {FUNNEL_STAGES.map(f => <option key={f} value={f}>{f}</option>)}
                                         </select>
                                         <select
                                           value={item.intent}
                                           onChange={(e) => updateContentMapItem(idx, itemIdx, 'intent', e.target.value)}
-                                          className="px-2 py-0.5 text-[10px] font-medium rounded border border-slate-200 bg-white"
+                                          className="px-2 py-0.5 text-[10px] font-medium rounded border border-[#E8E0D0] bg-[#FFFCF7]"
                                         >
                                           {INTENT_TYPES.map(i => <option key={i} value={i}>{i}</option>)}
                                         </select>
@@ -660,13 +670,13 @@ export default function TopicClustersPage() {
                                         type="text"
                                         value={item.title}
                                         onChange={(e) => updateContentMapItem(idx, itemIdx, 'title', e.target.value)}
-                                        className="w-full font-medium text-[#0B1B2B] text-sm bg-transparent border-b border-slate-200 focus:border-[#C7A56A] focus:outline-none"
+                                        className="w-full font-medium text-[#0B1B2B] text-sm bg-transparent border-b border-slate-200 focus:border-[#D4AF37] focus:outline-none"
                                         placeholder="内容标题"
                                       />
                                       <textarea
                                         value={item.briefGoal}
                                         onChange={(e) => updateContentMapItem(idx, itemIdx, 'briefGoal', e.target.value)}
-                                        className="w-full text-xs text-slate-500 bg-transparent border border-slate-200 rounded p-2 focus:border-[#C7A56A] focus:outline-none resize-none"
+                                        className="w-full text-xs text-slate-500 bg-transparent border border-slate-200 rounded p-2 focus:border-[#D4AF37] focus:outline-none resize-none"
                                         rows={2}
                                         placeholder="内容目标描述"
                                       />
@@ -707,7 +717,7 @@ export default function TopicClustersPage() {
                                 ) : (
                                   <Link
                                     href="/c/marketing/strategy"
-                                    className="shrink-0 px-3 py-1.5 text-xs text-[#C7A56A] hover:bg-[#C7A56A]/10 rounded-lg transition-colors"
+                                    className="shrink-0 px-3 py-1.5 text-xs text-[#D4AF37] hover:bg-[#D4AF37]/10 rounded-lg transition-colors"
                                   >
                                     生成内容
                                   </Link>
@@ -720,7 +730,7 @@ export default function TopicClustersPage() {
                           {isEditing && (
                             <button
                               onClick={() => addContentItem(idx)}
-                              className="p-3 border-2 border-dashed border-[#E7E0D3] rounded-xl text-slate-400 hover:border-[#C7A56A] hover:text-[#C7A56A] transition-colors flex items-center justify-center gap-2"
+                              className="p-3 border-2 border-dashed border-[#E8E0D0] rounded-xl text-slate-400 hover:border-[#D4AF37] hover:text-[#D4AF37] transition-colors flex items-center justify-center gap-2"
                             >
                               <Plus size={14} />
                               添加内容项
@@ -730,7 +740,7 @@ export default function TopicClustersPage() {
 
                         {/* Required Evidence */}
                         {cluster.requiredEvidenceIds?.length > 0 && (
-                          <div className="mt-4 pt-4 border-t border-[#E7E0D3]">
+                          <div className="mt-4 pt-4 border-t border-[#E8E0D0]">
                             <p className="text-[10px] text-slate-400 flex items-center gap-1">
                               <CheckCircle2 size={10} />
                               此支柱需要 {cluster.requiredEvidenceIds.length} 条证据支撑

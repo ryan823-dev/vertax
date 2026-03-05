@@ -51,7 +51,7 @@ export function KnowledgeAssetCard({ asset, onViewChunks, onProcessingUpdate }: 
   };
 
   return (
-    <div className="p-4 border border-[#E7E0D3] rounded-xl bg-[#FFFCF6] hover:border-[#C7A56A]/40 transition-all group">
+    <div className="p-4 border border-[#E7E0D3] rounded-xl bg-[#FFFCF6] hover:border-[#D4AF37]/40 transition-all group">
       <div className="flex items-start gap-3">
         <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${fileIcon.bg} shrink-0`}>
           <Icon size={20} className={fileIcon.color} />
@@ -81,7 +81,7 @@ export function KnowledgeAssetCard({ asset, onViewChunks, onProcessingUpdate }: 
           <button
             onClick={handleProcess}
             disabled={isProcessing}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#0B1B2B] bg-[#C7A56A]/10 border border-[#C7A56A]/30 rounded-lg hover:bg-[#C7A56A]/20 transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#0B1B2B] bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded-lg hover:bg-[#D4AF37]/20 transition-colors disabled:opacity-50"
           >
             {isProcessing ? (
               <Loader2 size={12} className="animate-spin" />

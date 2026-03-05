@@ -82,8 +82,8 @@ export function ShellCommentsTab({
     : "text-slate-400";
 
   const inputStyles = variant === "light"
-    ? "bg-[#F7F3EA] border-[#E7E0D3] text-[#0B1B2B] placeholder:text-slate-400 focus:border-[#C7A56A]"
-    : "bg-[#10263B]/50 border-[#10263B] text-white placeholder:text-slate-500 focus:border-[#C7A56A]";
+    ? "bg-[#F7F3EA] border-[#E7E0D3] text-[#0B1B2B] placeholder:text-slate-400 focus:border-[#D4AF37]"
+    : "bg-[#10263B]/50 border-[#10263B] text-white placeholder:text-slate-500 focus:border-[#D4AF37]";
 
   const unresolvedComments = comments.filter((c) => !c.resolvedAt);
   const resolvedComments = comments.filter((c) => c.resolvedAt);
@@ -98,7 +98,7 @@ export function ShellCommentsTab({
           {/* Active Anchor Indicator */}
           {activeAnchor && (
             <div className={`flex items-center gap-1.5 mb-2 px-2 py-1 rounded-lg text-xs ${
-              variant === "light" ? "bg-[#C7A56A]/10 text-[#C7A56A]" : "bg-[#C7A56A]/20 text-[#C7A56A]"
+              variant === "light" ? "bg-[#D4AF37]/10 text-[#D4AF37]" : "bg-[#D4AF37]/20 text-[#D4AF37]"
             }`}>
               <MapPin size={12} />
               <span>将锚定到: {activeAnchor.label}</span>
@@ -119,7 +119,7 @@ export function ShellCommentsTab({
             onChange={(e) => setNewComment(e.target.value)}
             placeholder={replyingTo ? "输入回复..." : "添加评论..."}
             rows={3}
-            className={`w-full p-2 rounded-lg border text-sm resize-none focus:outline-none focus:ring-1 focus:ring-[#C7A56A]/50 ${inputStyles}`}
+            className={`w-full p-2 rounded-lg border text-sm resize-none focus:outline-none focus:ring-1 focus:ring-[#D4AF37]/50 ${inputStyles}`}
           />
           <div className="flex justify-end mt-2">
             <button
@@ -128,7 +128,7 @@ export function ShellCommentsTab({
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors
                 ${variant === "light"
                   ? "bg-[#0B1B2B] text-white hover:bg-[#10263B]"
-                  : "bg-[#C7A56A] text-[#0B1B2B] hover:bg-[#B8965B]"
+                  : "bg-[#D4AF37] text-[#0B1B2B] hover:bg-[#B8965B]"
                 }
                 disabled:opacity-50
               `}

@@ -188,13 +188,13 @@ export default function EvidencePage() {
 
       <div className="p-5 space-y-5">
         {/* Input Source Hint */}
-        <div className="bg-white rounded-xl border border-[#E7E0D3] p-4">
+        <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <FileStack size={16} className="text-slate-400" />
                 <span className="text-xs text-slate-500">输入来源：</span>
-                <span className="text-xs font-medium text-[#0B1B2B]">
+                <span className="text-xs font-medium text-[#0B1220]">
                   已解析素材 {pipelineStatus?.counts.assetsParsed || 0} 个
                 </span>
               </div>
@@ -202,15 +202,15 @@ export default function EvidencePage() {
                 <div className="flex items-center gap-2 text-amber-600 text-xs">
                   <AlertCircle size={14} />
                   <span>请先完成资料解析</span>
-                  <Link href="/c/knowledge/assets" className="text-[#C7A56A] hover:underline">去资料库</Link>
+                  <Link href="/c/knowledge/assets" className="text-[#D4AF37] hover:underline">去资料库</Link>
                 </div>
               )}
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={() => loadEvidences()} className="p-2 text-slate-400 hover:text-[#C7A56A] rounded-lg hover:bg-[#F7F3EA] transition-colors">
+              <button onClick={() => loadEvidences()} className="p-2 text-slate-400 hover:text-[#D4AF37] rounded-lg hover:bg-[#F0EBD8] transition-colors">
                 <RefreshCw size={16} />
               </button>
-              <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-slate-600 border border-[#E7E0D3] rounded-lg hover:bg-[#F7F3EA] transition-colors">
+              <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-slate-600 border border-[#E8E0D0] rounded-lg hover:bg-[#F0EBD8] transition-colors">
                 <Plus size={14} />
                 手动添加
               </button>
@@ -226,7 +226,7 @@ export default function EvidencePage() {
               type="text" value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
               placeholder="搜索证据..."
-              className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-[#E7E0D3] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C7A56A]/30 focus:border-[#C7A56A] text-[#0B1B2B]"
+              className="w-full pl-9 pr-3 py-2 text-sm bg-[#FFFCF7] border border-[#E8E0D0] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/30 focus:border-[#D4AF37] text-[#0B1220]"
             />
           </div>
           <div className="flex items-center gap-1">
@@ -238,7 +238,7 @@ export default function EvidencePage() {
                 className={`px-2.5 py-1 text-[10px] font-medium rounded-full border transition-colors ${
                   typeFilter.includes(type)
                     ? TYPE_CONFIG[type].bg + ' ' + TYPE_CONFIG[type].color
-                    : 'border-[#E7E0D3] text-slate-400 hover:text-slate-600'
+                    : 'border-[#E8E0D0] text-slate-400 hover:text-slate-600'
                 }`}
               >
                 {TYPE_CONFIG[type].label}
@@ -250,9 +250,9 @@ export default function EvidencePage() {
 
         {/* Evidence Grid */}
         {isLoading ? (
-          <div className="flex items-center justify-center py-16"><Loader2 size={28} className="text-[#C7A56A] animate-spin" /></div>
+          <div className="flex items-center justify-center py-16"><Loader2 size={28} className="text-[#D4AF37] animate-spin" /></div>
         ) : evidences.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-xl border border-[#E7E0D3]">
+          <div className="text-center py-12 bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0]">
             <ShieldCheck size={40} className="text-slate-300 mx-auto mb-3" />
             <p className="text-sm text-slate-500 mb-2">暂无证据</p>
             {canGenerate ? (
@@ -260,7 +260,7 @@ export default function EvidencePage() {
                 <p className="text-xs text-slate-400 mb-4">从已处理的素材中提取证据</p>
                 <button
                   onClick={openBatchDialog}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-[#0B1B2B] text-[#C7A56A] rounded-xl text-sm font-medium hover:bg-[#10263B] transition-colors"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-[#D4AF37] text-[#0B1220] rounded-xl text-sm font-medium hover:bg-[#D4AF37]/90 transition-colors shadow-[0_4px_16px_-2px_rgba(212,175,55,0.35)]"
                 >
                   <Sparkles size={16} />
                   生成证据
@@ -271,7 +271,7 @@ export default function EvidencePage() {
                 <p className="text-xs text-slate-400 mb-4">需要先完成资料解析</p>
                 <Link
                   href="/c/knowledge/assets"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-[#0B1B2B] text-[#C7A56A] rounded-xl text-sm font-medium hover:bg-[#10263B] transition-colors"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-[#D4AF37] text-[#0B1220] rounded-xl text-sm font-medium hover:bg-[#D4AF37]/90 transition-colors shadow-[0_4px_16px_-2px_rgba(212,175,55,0.35)]"
                 >
                   <FileStack size={16} />
                   去资料库上传
@@ -282,21 +282,21 @@ export default function EvidencePage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {evidences.map((ev) => (
-              <div key={ev.id} className="p-4 border border-[#E7E0D3] rounded-xl bg-white hover:border-[#C7A56A]/40 transition-all">
+              <div key={ev.id} className="p-4 border border-[#E8E0D0] rounded-2xl bg-[#F7F3E8] hover:border-[#D4AF37]/40 transition-all">
                 {editingId === ev.id ? (
                   <div className="space-y-3">
-                    <input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="w-full px-3 py-1.5 text-sm border border-[#E7E0D3] rounded-lg bg-white text-[#0B1B2B]" />
-                    <textarea value={editContent} onChange={(e) => setEditContent(e.target.value)} rows={3} className="w-full px-3 py-1.5 text-xs border border-[#E7E0D3] rounded-lg bg-white text-[#0B1B2B]" />
+                    <input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="w-full px-3 py-1.5 text-sm border border-[#E8E0D0] rounded-lg bg-[#FFFCF7] text-[#0B1220]" />
+                    <textarea value={editContent} onChange={(e) => setEditContent(e.target.value)} rows={3} className="w-full px-3 py-1.5 text-xs border border-[#E8E0D0] rounded-lg bg-[#FFFCF7] text-[#0B1220]" />
                     <div className="flex gap-2">
-                      <button onClick={() => handleEdit(ev.id)} className="px-3 py-1 text-xs bg-[#0B1B2B] text-[#C7A56A] rounded-lg">保存</button>
-                      <button onClick={() => setEditingId(null)} className="px-3 py-1 text-xs border border-[#E7E0D3] rounded-lg text-slate-500">取消</button>
+                      <button onClick={() => handleEdit(ev.id)} className="px-3 py-1 text-xs bg-[#D4AF37] text-[#0B1220] rounded-lg">保存</button>
+                      <button onClick={() => setEditingId(null)} className="px-3 py-1 text-xs border border-[#E8E0D0] rounded-lg text-slate-500">取消</button>
                     </div>
                   </div>
                 ) : (
                   <>
                     <div className="flex items-center gap-2 mb-2">
                       <EvidenceTypeTag type={ev.type} />
-                      <h4 className="text-sm font-medium text-[#0B1B2B] truncate flex-1">{ev.title}</h4>
+                      <h4 className="text-sm font-medium text-[#0B1220] truncate flex-1">{ev.title}</h4>
                     </div>
                     <p className="text-xs text-slate-600 leading-relaxed mb-3 line-clamp-3">{ev.content}</p>
                     {ev.assetName && (
@@ -306,7 +306,7 @@ export default function EvidencePage() {
                       </div>
                     )}
                     <div className="flex items-center gap-2">
-                      <button onClick={() => { setEditingId(ev.id); setEditTitle(ev.title); setEditContent(ev.content); }} className="p-1.5 text-slate-400 hover:text-[#C7A56A] rounded-lg hover:bg-[#F7F3EA] transition-colors">
+                      <button onClick={() => { setEditingId(ev.id); setEditTitle(ev.title); setEditContent(ev.content); }} className="p-1.5 text-slate-400 hover:text-[#D4AF37] rounded-lg hover:bg-[#F0EBD8] transition-colors">
                         <Pencil size={14} />
                       </button>
                       <button onClick={() => handleDelete(ev.id)} className="p-1.5 text-slate-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors">
@@ -315,7 +315,7 @@ export default function EvidencePage() {
                       {ev.tags.length > 0 && (
                         <div className="flex gap-1 ml-auto">
                           {ev.tags.map((t) => (
-                            <span key={t} className="px-1.5 py-0.5 text-[9px] bg-[#F7F3EA] text-slate-500 rounded">{t}</span>
+                            <span key={t} className="px-1.5 py-0.5 text-[9px] bg-[#F0EBD8] text-slate-500 rounded">{t}</span>
                           ))}
                         </div>
                       )}
@@ -356,7 +356,7 @@ export default function EvidencePage() {
             </div>
             <div className="flex justify-end gap-2 mt-6">
               <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-sm border border-[#E7E0D3] rounded-xl text-slate-500 hover:bg-[#F7F3EA] transition-colors">取消</button>
-              <button onClick={handleCreate} disabled={isCreating || !createForm.title || !createForm.content} className="px-4 py-2 text-sm bg-[#0B1B2B] text-[#C7A56A] rounded-xl font-medium hover:bg-[#10263B] transition-colors disabled:opacity-50">
+              <button onClick={handleCreate} disabled={isCreating || !createForm.title || !createForm.content} className="px-4 py-2 text-sm bg-[#0B1B2B] text-[#D4AF37] rounded-xl font-medium hover:bg-[#10263B] transition-colors disabled:opacity-50">
                 {isCreating ? '创建中...' : '创建'}
               </button>
             </div>
@@ -380,7 +380,7 @@ export default function EvidencePage() {
                   <p className="text-sm text-slate-400 text-center py-4">没有已处理的素材</p>
                 ) : readyAssets.map((a) => (
                   <button key={a.id} onClick={() => setSelectedAssetId(a.id)}
-                    className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${selectedAssetId === a.id ? 'border-[#C7A56A] bg-[#C7A56A]/5' : 'border-[#E7E0D3] hover:border-[#C7A56A]/30'}`}>
+                    className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${selectedAssetId === a.id ? 'border-[#D4AF37] bg-[#D4AF37]/5' : 'border-[#E7E0D3] hover:border-[#D4AF37]/30'}`}>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-[#0B1B2B] truncate">{a.originalName}</p>
                       <p className="text-[10px] text-slate-400">{a.processingMeta.chunkCount} 个片段</p>
@@ -394,7 +394,7 @@ export default function EvidencePage() {
                 {batchResult ? '关闭' : '取消'}
               </button>
               {!batchResult && (
-                <button onClick={handleBatchGenerate} disabled={!selectedAssetId || isBatchGenerating} className="px-4 py-2 text-sm bg-[#0B1B2B] text-[#C7A56A] rounded-xl font-medium disabled:opacity-50">
+                <button onClick={handleBatchGenerate} disabled={!selectedAssetId || isBatchGenerating} className="px-4 py-2 text-sm bg-[#0B1B2B] text-[#D4AF37] rounded-xl font-medium disabled:opacity-50">
                   {isBatchGenerating ? <span className="flex items-center gap-2"><Loader2 size={14} className="animate-spin" />生成中...</span> : '开始生成'}
                 </button>
               )}

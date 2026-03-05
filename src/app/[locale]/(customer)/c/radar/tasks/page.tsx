@@ -153,50 +153,53 @@ export default function RadarTasksPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+        <Loader2 className="w-8 h-8 text-[#D4AF37] animate-spin" />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link 
-            href="/c/radar" 
-            className="p-2 text-slate-400 hover:text-emerald-500 transition-colors rounded-lg hover:bg-emerald-50"
-          >
-            <ArrowLeft size={20} />
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-[#0B1B2B]">发现任务</h1>
-            <p className="text-sm text-slate-500 mt-1">
-              管理和执行获客雷达的数据发现任务
-            </p>
+      {/* Header - 深蓝舞台指令台 */}
+      <div className="relative rounded-2xl overflow-hidden" style={{ background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)', boxShadow: '0 8px 32px -8px rgba(0,0,0,0.45)' }}>
+        <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 70% 60% at 50% -20%, rgba(212,175,55,0.14) 0%, transparent 65%)' }} />
+        <div className="relative flex items-center justify-between px-6 py-5">
+          <div className="flex items-center gap-4">
+            <Link 
+              href="/c/radar" 
+              className="p-2 text-slate-400 hover:text-[#D4AF37] transition-colors rounded-lg hover:bg-white/5"
+            >
+              <ArrowLeft size={20} />
+            </Link>
+            <div>
+              <h1 className="text-2xl font-bold text-white">发现任务</h1>
+              <p className="text-sm text-slate-400 mt-1">
+                管理和执行获客雷达的数据发现任务
+              </p>
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleInitSources}
-            className="px-3 py-2 text-slate-500 hover:text-emerald-500 transition-colors rounded-lg hover:bg-emerald-50 text-sm"
-          >
-            初始化数据源
-          </button>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-[#0B1B2B] text-emerald-400 rounded-xl text-sm font-medium hover:bg-[#10263B] transition-colors"
-          >
-            <Plus size={16} />
-            新建任务
-          </button>
-          <button 
-            onClick={loadData}
-            className="p-2 text-slate-400 hover:text-emerald-500 transition-colors"
-            title="刷新"
-          >
-            <RefreshCw size={18} />
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleInitSources}
+              className="px-3 py-2 text-slate-400 hover:text-[#D4AF37] transition-colors rounded-lg hover:bg-white/5 text-sm"
+            >
+              初始化数据源
+            </button>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-[#D4AF37] text-[#0B1220] rounded-xl text-sm font-medium hover:bg-[#C5A030] transition-colors"
+            >
+              <Plus size={16} />
+              新建任务
+            </button>
+            <button 
+              onClick={loadData}
+              className="p-2 text-slate-400 hover:text-[#D4AF37] transition-colors"
+              title="刷新"
+            >
+              <RefreshCw size={18} />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -220,7 +223,7 @@ export default function RadarTasksPage() {
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value as RadarTaskStatus | '')}
-          className="px-3 py-1.5 text-xs border border-[#E7E0D3] rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+          className="px-3 py-1.5 text-xs border border-[#E8E0D0] rounded-lg bg-[#FFFCF7] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/30"
         >
           <option value="">全部状态</option>
           {Object.entries(STATUS_CONFIG).map(([key, val]) => (
@@ -230,7 +233,7 @@ export default function RadarTasksPage() {
         <select
           value={channelFilter}
           onChange={(e) => setChannelFilter(e.target.value as ChannelType | '')}
-          className="px-3 py-1.5 text-xs border border-[#E7E0D3] rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+          className="px-3 py-1.5 text-xs border border-[#E8E0D0] rounded-lg bg-[#FFFCF7] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/30"
         >
           <option value="">全部渠道</option>
           {Object.entries(CHANNEL_CONFIG).map(([key, val]) => (
@@ -244,7 +247,7 @@ export default function RadarTasksPage() {
 
       {/* Data Sources Overview */}
       {sources.length > 0 && (
-        <div className="bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3] p-5">
+        <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-5">
           <h3 className="text-sm font-bold text-[#0B1B2B] mb-3">可用数据源</h3>
           <div className="flex flex-wrap gap-2">
             {sources.map(source => {
@@ -253,7 +256,7 @@ export default function RadarTasksPage() {
               return (
                 <div 
                   key={source.id}
-                  className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border border-[#E7E0D3]"
+                  className="flex items-center gap-2 px-3 py-2 bg-[#FFFCF7] rounded-lg border border-[#E8E0D0]"
                 >
                   <ChannelIcon size={14} className={channelConf?.color || 'text-slate-500'} />
                   <span className="text-xs font-medium text-[#0B1B2B]">{source.name}</span>
@@ -269,19 +272,24 @@ export default function RadarTasksPage() {
 
       {/* Task List */}
       {filteredTasks.length === 0 ? (
-        <div className="bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3] p-12 text-center">
-          <Search size={48} className="text-slate-300 mx-auto mb-4" />
-          <h3 className="text-lg font-bold text-[#0B1B2B] mb-2">暂无发现任务</h3>
-          <p className="text-sm text-slate-500 mb-6">
-            点击「新建任务」开始探测潜在客户
-          </p>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-[#0B1B2B] text-emerald-400 rounded-xl text-sm font-medium hover:bg-[#10263B] transition-colors"
-          >
-            <Plus size={16} />
-            新建任务
-          </button>
+        <div className="relative rounded-2xl overflow-hidden p-12 text-center" style={{ background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)', boxShadow: '0 8px 32px -8px rgba(0,0,0,0.45)' }}>
+          <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 70% 60% at 50% -20%, rgba(212,175,55,0.14) 0%, transparent 65%)' }} />
+          <div className="relative">
+            <div className="w-16 h-16 rounded-2xl bg-[#D4AF37]/10 flex items-center justify-center mx-auto mb-4">
+              <Search size={32} className="text-[#D4AF37]" />
+            </div>
+            <h3 className="text-lg font-bold text-white mb-2">暂无发现任务</h3>
+            <p className="text-sm text-slate-400 mb-6">
+              点击「新建任务」开始探测潜在客户
+            </p>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[#D4AF37] text-[#0B1220] rounded-xl text-sm font-medium hover:bg-[#C5A030] transition-colors"
+            >
+              <Plus size={16} />
+              新建任务
+            </button>
+          </div>
         </div>
       ) : (
         <div className="space-y-3">
@@ -297,11 +305,11 @@ export default function RadarTasksPage() {
             return (
               <div 
                 key={task.id}
-                className="bg-[#FFFCF6] rounded-xl border border-[#E7E0D3] p-4 hover:border-emerald-200 transition-colors"
+                className="bg-[#F7F3E8] rounded-xl border border-[#E8E0D0] p-4 hover:border-[#D4AF37]/50 transition-colors"
               >
                 <div className="flex items-start gap-4">
                   {/* Channel Icon */}
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center bg-slate-100`}>
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center bg-[#F0EBD8]`}>
                     <ChannelIcon size={18} className={channelConf?.color || 'text-slate-500'} />
                   </div>
                   
@@ -325,7 +333,7 @@ export default function RadarTasksPage() {
                     {queryConfig?.keywords?.length ? (
                       <div className="flex flex-wrap gap-1 mb-2">
                         {queryConfig.keywords.slice(0, 5).map((kw, i) => (
-                          <span key={i} className="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] rounded">
+                          <span key={i} className="px-2 py-0.5 bg-[#F0EBD8] text-slate-600 text-[10px] rounded">
                             {kw}
                           </span>
                         ))}
@@ -367,7 +375,7 @@ export default function RadarTasksPage() {
                       <button
                         onClick={() => handleRunTask(task.id)}
                         disabled={isRunning}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-medium hover:bg-emerald-600 transition-colors disabled:opacity-50"
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-[#D4AF37] text-[#0B1220] rounded-lg text-xs font-medium hover:bg-[#C5A030] transition-colors disabled:opacity-50"
                       >
                         {isRunning ? (
                           <Loader2 size={12} className="animate-spin" />
@@ -389,7 +397,7 @@ export default function RadarTasksPage() {
                     {task.status === 'COMPLETED' && (
                       <Link
                         href="/c/radar/candidates"
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg text-xs font-medium transition-colors"
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-[#D4AF37] hover:bg-[#D4AF37]/10 rounded-lg text-xs font-medium transition-colors"
                       >
                         查看结果
                         <ChevronRight size={12} />
@@ -399,7 +407,7 @@ export default function RadarTasksPage() {
                       <button
                         onClick={() => handleRunTask(task.id)}
                         disabled={isRunning}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-slate-600 hover:bg-slate-100 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-slate-600 hover:bg-[#F0EBD8] rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
                       >
                         <RefreshCw size={12} />
                         重试
@@ -512,8 +520,8 @@ function CreateTaskModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl w-full max-w-lg mx-4 overflow-hidden">
-        <div className="px-6 py-4 border-b border-[#E7E0D3]">
+      <div className="bg-[#FFFCF7] rounded-2xl w-full max-w-lg mx-4 overflow-hidden">
+        <div className="px-6 py-4 bg-[#F0EBD8] border-b border-[#E8E0D0]">
           <h3 className="text-lg font-bold text-[#0B1B2B]">新建发现任务</h3>
         </div>
         
@@ -526,7 +534,7 @@ function CreateTaskModal({
             <select
               value={selectedSourceId}
               onChange={(e) => setSelectedSourceId(e.target.value)}
-              className="w-full px-4 py-2 border border-[#E7E0D3] rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+              className="w-full px-4 py-2 border border-[#E8E0D0] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/30"
             >
               <option value="">选择数据源...</option>
               {sources.map(source => (
@@ -539,13 +547,13 @@ function CreateTaskModal({
           
           {/* Use TargetingSpec Toggle */}
           {targetingSpec && (
-            <div className="flex items-center gap-3 p-3 bg-emerald-50 rounded-xl">
+            <div className="flex items-center gap-3 p-3 bg-[#D4AF37]/10 rounded-xl">
               <input
                 type="checkbox"
                 id="useTargetingSpec"
                 checked={useTargetingSpec}
                 onChange={(e) => setUseTargetingSpec(e.target.checked)}
-                className="w-4 h-4 text-emerald-500 rounded"
+                className="w-4 h-4 text-[#D4AF37] rounded"
               />
               <label htmlFor="useTargetingSpec" className="text-sm text-[#0B1B2B]">
                 使用 TargetingSpec 自动填充查询参数
@@ -565,7 +573,7 @@ function CreateTaskModal({
                   value={keywords}
                   onChange={(e) => setKeywords(e.target.value)}
                   placeholder="例如: industrial robot, automation, CNC"
-                  className="w-full px-4 py-2 border border-[#E7E0D3] rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                  className="w-full px-4 py-2 border border-[#E8E0D0] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/30"
                 />
               </div>
               
@@ -578,7 +586,7 @@ function CreateTaskModal({
                   value={countries}
                   onChange={(e) => setCountries(e.target.value)}
                   placeholder="例如: US, DE, JP"
-                  className="w-full px-4 py-2 border border-[#E7E0D3] rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                  className="w-full px-4 py-2 border border-[#E8E0D0] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/30"
                 />
               </div>
               
@@ -591,14 +599,14 @@ function CreateTaskModal({
                   value={industries}
                   onChange={(e) => setIndustries(e.target.value)}
                   placeholder="例如: 汽车制造, 电子, 机械"
-                  className="w-full px-4 py-2 border border-[#E7E0D3] rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                  className="w-full px-4 py-2 border border-[#E8E0D0] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/30"
                 />
               </div>
             </>
           )}
         </div>
         
-        <div className="px-6 py-4 border-t border-[#E7E0D3] flex justify-end gap-3">
+        <div className="px-6 py-4 border-t border-[#E8E0D0] flex justify-end gap-3">
           <button
             onClick={onClose}
             className="px-4 py-2 text-slate-500 hover:text-slate-700 rounded-xl transition-colors"
@@ -608,7 +616,7 @@ function CreateTaskModal({
           <button
             onClick={handleCreate}
             disabled={isCreating || !selectedSourceId}
-            className="flex items-center gap-2 px-4 py-2 bg-[#0B1B2B] text-emerald-400 rounded-xl text-sm font-medium hover:bg-[#10263B] transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 bg-[#0B1220] text-[#D4AF37] rounded-xl text-sm font-medium hover:bg-[#152030] transition-colors disabled:opacity-50"
           >
             {isCreating ? (
               <Loader2 size={16} className="animate-spin" />

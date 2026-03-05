@@ -218,7 +218,7 @@ export default function RadarCandidatesPage() {
   if (isLoading || !pipelineStatus) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 text-[#C7A56A] animate-spin" />
+        <Loader2 className="w-8 h-8 text-[#D4AF37] animate-spin" />
       </div>
     );
   }
@@ -262,7 +262,7 @@ export default function RadarCandidatesPage() {
         )}
 
         {/* Status Filter Bar */}
-        <div className="flex items-center gap-2 bg-white rounded-xl border border-[#E7E0D3] p-2">
+        <div className="flex items-center gap-2 bg-[#FFFCF7] rounded-xl border border-[#E8E0D0] p-2">
           {STATUS_FILTERS.map((filter) => {
             const count = filter.count === 'total' 
               ? total 
@@ -277,7 +277,7 @@ export default function RadarCandidatesPage() {
                 onClick={() => setFilters(prev => ({ ...prev, status: filter.value as CandidateStatus | '' }))}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                   isActive 
-                    ? 'bg-[#0B1B2B] text-[#C7A56A]' 
+                    ? 'bg-[#0B1220] text-[#D4AF37]' 
                     : 'hover:bg-slate-100 text-slate-600'
                 }`}
               >
@@ -287,7 +287,7 @@ export default function RadarCandidatesPage() {
                 {filter.label}
                 {count !== null && (
                   <span className={`text-xs px-1.5 py-0.5 rounded ${
-                    isActive ? 'bg-[#C7A56A]/20' : 'bg-slate-100'
+                    isActive ? 'bg-[#D4AF37]/20' : 'bg-slate-100'
                   }`}>
                     {count}
                   </span>
@@ -315,7 +315,7 @@ export default function RadarCandidatesPage() {
           <select
             value={filters.candidateType}
             onChange={(e) => setFilters(prev => ({ ...prev, candidateType: e.target.value as CandidateType | '' }))}
-            className="px-3 py-1.5 bg-slate-100 border-0 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#C7A56A]"
+            className="px-3 py-1.5 bg-slate-100 border-0 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
           >
             <option value="">所有类型</option>
             <option value="COMPANY">公司</option>
@@ -331,7 +331,7 @@ export default function RadarCandidatesPage() {
               value={filters.search}
               onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
               placeholder="搜索..."
-              className="w-40 pl-9 pr-3 py-1.5 bg-slate-100 border-0 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#C7A56A]"
+              className="w-40 pl-9 pr-3 py-1.5 bg-slate-100 border-0 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
             />
           </div>
         </div>
@@ -339,7 +339,7 @@ export default function RadarCandidatesPage() {
         {/* Batch Actions Bar */}
         {selectedIds.size > 0 && (
           <div className="flex items-center gap-3 px-4 py-3 bg-[#0B1B2B] rounded-xl">
-            <span className="text-[#C7A56A] text-sm font-medium">
+            <span className="text-[#D4AF37] text-sm font-medium">
               已选择 {selectedIds.size} 项
             </span>
             <div className="flex-1" />
@@ -379,14 +379,14 @@ export default function RadarCandidatesPage() {
         {/* Main Content */}
         <div className="grid grid-cols-12 gap-6">
           {/* Candidates List */}
-          <div className="col-span-7 bg-white rounded-2xl border border-[#E7E0D3] overflow-hidden">
+          <div className="col-span-7 bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] overflow-hidden">
             {/* List Header */}
-            <div className="flex items-center gap-3 px-4 py-3 border-b border-[#E7E0D3] bg-slate-50">
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-[#E8E0D0] bg-[#F0EBD8]">
               <input
                 type="checkbox"
                 checked={selectedIds.size === candidates.length && candidates.length > 0}
                 onChange={toggleSelectAll}
-                className="w-4 h-4 rounded border-slate-300 text-[#C7A56A] focus:ring-[#C7A56A]"
+                className="w-4 h-4 rounded border-slate-300 text-[#D4AF37] focus:ring-[#D4AF37]"
               />
               <span className="text-sm font-medium text-[#0B1B2B]">候选列表</span>
               <span className="text-xs text-slate-400">
@@ -399,8 +399,8 @@ export default function RadarCandidatesPage() {
               <div className="text-center py-16 px-6">
                 {emptyStateType === 'no_task' && (
                   <>
-                    <div className="w-16 h-16 rounded-2xl bg-[#F7F3EA] flex items-center justify-center mx-auto mb-4">
-                      <Search size={28} className="text-slate-300" />
+                    <div className="w-16 h-16 rounded-2xl bg-[#F0EBD8] flex items-center justify-center mx-auto mb-4" style={{background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.3)'}}>
+                      <Search size={28} className="text-[#D4AF37]" />
                     </div>
                     <h3 className="text-lg font-bold text-[#0B1B2B] mb-2">暂无候选数据</h3>
                     <p className="text-sm text-slate-500 mb-4">
@@ -408,7 +408,8 @@ export default function RadarCandidatesPage() {
                     </p>
                     <Link 
                       href="/c/radar/tasks"
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-[#0B1B2B] text-[#C7A56A] rounded-xl text-sm font-medium hover:bg-[#10263B] transition-colors"
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium hover:opacity-90 transition-colors"
+                      style={{background: '#D4AF37', color: '#0B1220', boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)'}}
                     >
                       前往发现任务
                       <ArrowRight size={14} />
@@ -417,8 +418,8 @@ export default function RadarCandidatesPage() {
                 )}
                 {emptyStateType === 'no_results' && (
                   <>
-                    <div className="w-16 h-16 rounded-2xl bg-amber-50 flex items-center justify-center mx-auto mb-4">
-                      <Filter size={28} className="text-amber-400" />
+                    <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.3)'}}>
+                      <Filter size={28} className="text-[#D4AF37]" />
                     </div>
                     <h3 className="text-lg font-bold text-[#0B1B2B] mb-2">无匹配结果</h3>
                     <p className="text-sm text-slate-500 mb-4">
@@ -437,7 +438,7 @@ export default function RadarCandidatesPage() {
             
             {/* Candidates List */}
             {candidates.length > 0 && (
-              <div className="divide-y divide-[#E7E0D3] max-h-[calc(100vh-320px)] overflow-y-auto">
+              <div className="divide-y divide-[#E8E0D0] max-h-[calc(100vh-320px)] overflow-y-auto">
                 {candidates.map((candidate) => {
                   const statusInfo = getStatusLabel(candidate.status);
                   const TypeIcon = getTypeIcon(candidate.candidateType);
@@ -450,8 +451,8 @@ export default function RadarCandidatesPage() {
                       onClick={() => setSelectedCandidate(isSelected ? null : candidate)}
                       className={`flex items-center gap-3 p-4 cursor-pointer transition-all ${
                         isSelected 
-                          ? 'bg-[#C7A56A]/5' 
-                          : 'hover:bg-slate-50'
+                          ? 'bg-[#D4AF37]/5' 
+                          : 'hover:bg-[#F0EBD8]'
                       }`}
                     >
                       <input
@@ -462,11 +463,11 @@ export default function RadarCandidatesPage() {
                           toggleSelect(candidate.id);
                         }}
                         onClick={(e) => e.stopPropagation()}
-                        className="w-4 h-4 rounded border-slate-300 text-[#C7A56A] focus:ring-[#C7A56A]"
+                        className="w-4 h-4 rounded border-slate-300 text-[#D4AF37] focus:ring-[#D4AF37]"
                       />
                       
-                      <div className="w-10 h-10 bg-[#F7F3EA] rounded-xl flex items-center justify-center shrink-0">
-                        <TypeIcon size={18} className="text-[#C7A56A]" />
+                      <div className="w-10 h-10 bg-[#F0EBD8] rounded-xl flex items-center justify-center shrink-0" style={{background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.3)'}}>
+                        <TypeIcon size={18} className="text-[#D4AF37]" />
                       </div>
                       
                       <div className="flex-1 min-w-0">
@@ -524,7 +525,7 @@ export default function RadarCandidatesPage() {
                       )}
                       
                       <ChevronRight size={16} className={`shrink-0 transition-colors ${
-                        isSelected ? 'text-[#C7A56A]' : 'text-slate-300'
+                        isSelected ? 'text-[#D4AF37]' : 'text-slate-300'
                       }`} />
                     </div>
                   );
@@ -538,9 +539,9 @@ export default function RadarCandidatesPage() {
             {selectedCandidate ? (
               <>
                 {/* Basic Info Card */}
-                <div className="bg-white rounded-2xl border border-[#E7E0D3] p-5">
+                <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-5">
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-[#C7A56A] to-[#C7A56A]/80 rounded-xl flex items-center justify-center">
+                    <div className="w-12 h-12 bg-gradient-to-br from-[#D4AF37] to-[#D4AF37]/80 rounded-xl flex items-center justify-center">
                       {selectedCandidate.candidateType === 'OPPORTUNITY' ? (
                         <FileText size={24} className="text-[#0B1B2B]" />
                       ) : (
@@ -556,7 +557,7 @@ export default function RadarCandidatesPage() {
                             href={selectedCandidate.sourceUrl} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="text-[#C7A56A] hover:underline"
+                            className="text-[#D4AF37] hover:underline"
                             onClick={(e) => e.stopPropagation()}
                           >
                             <ExternalLink size={12} />
@@ -568,7 +569,7 @@ export default function RadarCandidatesPage() {
 
                   {/* Match Score */}
                   {selectedCandidate.matchScore !== null && (
-                    <div className="mb-4 p-3 bg-[#F7F3EA] rounded-xl">
+                    <div className="mb-4 p-3 bg-[#F0EBD8] rounded-xl">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-xs text-slate-500">ICP 匹配度</span>
                         <span className={`text-xl font-bold ${
@@ -607,7 +608,7 @@ export default function RadarCandidatesPage() {
                       </div>
                     )}
                     {selectedCandidate.email && (
-                      <a href={`mailto:${selectedCandidate.email}`} className="flex items-center gap-2 text-slate-600 hover:text-[#C7A56A]">
+                      <a href={`mailto:${selectedCandidate.email}`} className="flex items-center gap-2 text-slate-600 hover:text-[#D4AF37]">
                         <Mail size={14} className="text-slate-400 shrink-0" />
                         <span className="truncate">{selectedCandidate.email}</span>
                       </a>
@@ -635,9 +636,9 @@ export default function RadarCandidatesPage() {
 
                 {/* AI Summary */}
                 {selectedCandidate.aiSummary && (
-                  <div className="bg-white rounded-2xl border border-[#E7E0D3] p-5">
+                  <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-5">
                     <h4 className="flex items-center gap-2 text-sm font-bold text-[#0B1B2B] mb-3">
-                      <Sparkles size={14} className="text-[#C7A56A]" />
+                      <Sparkles size={14} className="text-[#D4AF37]" />
                       AI 分析
                     </h4>
                     <p className="text-xs text-slate-600 leading-relaxed">
@@ -647,7 +648,7 @@ export default function RadarCandidatesPage() {
                 )}
 
                 {/* Actions */}
-                <div className="bg-white rounded-2xl border border-[#E7E0D3] p-5">
+                <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-5">
                   <h4 className="text-sm font-bold text-[#0B1B2B] mb-3">操作</h4>
                   
                   {/* Qualify Tier */}
@@ -685,7 +686,7 @@ export default function RadarCandidatesPage() {
                   {selectedCandidate.status === 'QUALIFIED' && selectedCandidate.qualifyTier && (
                     <button
                       onClick={() => handleImport(selectedCandidate)}
-                      className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#0B1B2B] text-[#C7A56A] rounded-xl text-sm font-medium hover:bg-[#10263B] transition-colors"
+                      className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#0B1B2B] text-[#D4AF37] rounded-xl text-sm font-medium hover:bg-[#10263B] transition-colors"
                     >
                       <Download size={16} />
                       导入到{selectedCandidate.candidateType === 'OPPORTUNITY' ? '机会池' : '线索库'}
@@ -703,9 +704,9 @@ export default function RadarCandidatesPage() {
               </>
             ) : (
               /* No Selection */
-              <div className="bg-white rounded-2xl border border-[#E7E0D3] p-8 text-center">
-                <div className="w-16 h-16 rounded-2xl bg-[#F7F3EA] flex items-center justify-center mx-auto mb-4">
-                  <Search size={28} className="text-slate-300" />
+              <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-8 text-center">
+                <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.3)'}}>
+                  <Search size={28} className="text-[#D4AF37]" />
                 </div>
                 <h3 className="text-sm font-bold text-[#0B1B2B] mb-2">选择候选查看详情</h3>
                 <p className="text-xs text-slate-500">

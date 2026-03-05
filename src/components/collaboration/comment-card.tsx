@@ -54,7 +54,7 @@ export function CommentCard({
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
-            variant === "light" ? "bg-[#C7A56A]/20 text-[#C7A56A]" : "bg-[#C7A56A]/30 text-[#C7A56A]"
+            variant === "light" ? "bg-[#D4AF37]/20 text-[#D4AF37]" : "bg-[#D4AF37]/30 text-[#D4AF37]"
           }`}>
             {comment.authorName?.charAt(0) || "U"}
           </div>

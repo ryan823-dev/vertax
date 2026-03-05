@@ -194,7 +194,7 @@ export default function RadarChannelsPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 text-[#C7A56A] animate-spin" />
+        <Loader2 className="w-8 h-8 text-[#D4AF37] animate-spin" />
       </div>
     );
   }
@@ -202,18 +202,21 @@ export default function RadarChannelsPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-[#0B1B2B]">渠道地图</h1>
-          <p className="text-sm text-slate-500 mt-1">多渠道发现潜在客户，基于 ICP 评估各渠道可行性</p>
+      <div style={{background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)', boxShadow: '0 8px 32px -8px rgba(0,0,0,0.45)'}} className="rounded-2xl p-6 relative overflow-hidden">
+        <div style={{background: 'radial-gradient(ellipse 70% 60% at 50% -20%, rgba(212,175,55,0.14) 0%, transparent 65%)'}} className="absolute inset-0 pointer-events-none" />
+        <div className="relative flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-white">渠道地图</h1>
+            <p className="text-sm text-slate-400 mt-1">多渠道发现潜在客户，基于 ICP 评估各渠道可行性</p>
+          </div>
+          <button 
+            onClick={loadData}
+            className="p-2 text-slate-400 hover:text-[#D4AF37] transition-colors"
+            title="刷新"
+          >
+            <RefreshCw size={18} />
+          </button>
         </div>
-        <button 
-          onClick={loadData}
-          className="p-2 text-slate-400 hover:text-[#C7A56A] transition-colors"
-          title="刷新"
-        >
-          <RefreshCw size={18} />
-        </button>
       </div>
 
       {/* Error Alert */}
@@ -231,12 +234,12 @@ export default function RadarChannelsPage() {
       {stats && (
         <div className="grid grid-cols-4 gap-4">
           {[
-            { label: '候选总数', value: stats.totalCandidates, icon: Search, color: 'text-[#C7A56A]' },
+            { label: '候选总数', value: stats.totalCandidates, icon: Search, color: 'text-[#D4AF37]' },
             { label: '待处理', value: stats.newCandidates, icon: Zap, color: 'text-blue-500' },
             { label: '已合格化', value: stats.qualifiedCandidates, icon: CheckCircle2, color: 'text-emerald-500' },
             { label: '运行中任务', value: stats.runningTasks, icon: Play, color: 'text-amber-500' },
           ].map((stat) => (
-            <div key={stat.label} className="bg-[#FFFCF6] rounded-xl border border-[#E7E0D3] p-4">
+            <div key={stat.label} className="bg-[#FFFCF7] rounded-xl border border-[#E8E0D0] p-4">
               <div className="flex items-center gap-2 mb-2">
                 <stat.icon size={16} className={stat.color} />
                 <span className="text-xs text-slate-500">{stat.label}</span>
@@ -248,12 +251,13 @@ export default function RadarChannelsPage() {
       )}
 
       {/* Search Config Panel */}
-      <div className="bg-gradient-to-r from-[#0B1B2B] to-[#152942] rounded-2xl p-6">
-        <h3 className="text-white font-medium mb-4 flex items-center gap-2">
-          <Search size={18} className="text-[#C7A56A]" />
+      <div style={{background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)', boxShadow: '0 8px 32px -8px rgba(0,0,0,0.45)'}} className="rounded-2xl p-6 relative overflow-hidden">
+        <div style={{background: 'radial-gradient(ellipse 70% 60% at 50% -20%, rgba(212,175,55,0.14) 0%, transparent 65%)'}} className="absolute inset-0 pointer-events-none" />
+        <h3 className="text-white font-medium mb-4 flex items-center gap-2 relative">
+          <Search size={18} className="text-[#D4AF37]" />
           配置搜索条件
         </h3>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4 relative">
           <div>
             <label className="text-xs text-slate-400 mb-1 block">关键词（用逗号分隔）</label>
             <input
@@ -261,7 +265,7 @@ export default function RadarChannelsPage() {
               value={searchKeywords}
               onChange={(e) => setSearchKeywords(e.target.value)}
               placeholder="例如：industrial robot, automation"
-              className="w-full px-4 py-2.5 bg-white/10 border border-white/20 rounded-xl text-white placeholder:text-slate-400 focus:outline-none focus:border-[#C7A56A]/50"
+              className="w-full px-4 py-2.5 bg-white/10 border border-white/20 rounded-xl text-white placeholder:text-slate-400 focus:outline-none focus:border-[#D4AF37]/50"
             />
           </div>
           <div>
@@ -271,7 +275,7 @@ export default function RadarChannelsPage() {
               value={targetCountries}
               onChange={(e) => setTargetCountries(e.target.value)}
               placeholder="例如：US, DE, FR"
-              className="w-full px-4 py-2.5 bg-white/10 border border-white/20 rounded-xl text-white placeholder:text-slate-400 focus:outline-none focus:border-[#C7A56A]/50"
+              className="w-full px-4 py-2.5 bg-white/10 border border-white/20 rounded-xl text-white placeholder:text-slate-400 focus:outline-none focus:border-[#D4AF37]/50"
             />
           </div>
         </div>
@@ -286,11 +290,11 @@ export default function RadarChannelsPage() {
           const Icon = config.icon;
           
           return (
-            <div key={channelType} className="bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3] p-6">
+            <div key={channelType} className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
               {/* Channel Header */}
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm ${config.color}`}>
+                  <div className={`w-10 h-10 bg-[#F0EBD8] rounded-xl flex items-center justify-center shadow-sm ${config.color}`}>
                     <Icon size={20} />
                   </div>
                   <div>
@@ -325,8 +329,8 @@ export default function RadarChannelsPage() {
                       onClick={() => setSelectedSource(isSelected ? null : source)}
                       className={`p-4 border rounded-xl cursor-pointer transition-all ${
                         isSelected 
-                          ? 'border-[#C7A56A] bg-[#C7A56A]/5' 
-                          : 'border-[#E7E0D3] hover:border-[#C7A56A]/50 bg-white'
+                          ? 'border-[#D4AF37] bg-[#D4AF37]/5' 
+                          : 'border-[#E8E0D0] hover:border-[#D4AF37]/50 bg-[#FFFCF7]'
                       }`}
                     >
                       <div className="flex items-start justify-between">
@@ -364,7 +368,7 @@ export default function RadarChannelsPage() {
                               target="_blank"
                               rel="noopener noreferrer"
                               onClick={(e) => e.stopPropagation()}
-                              className="p-1.5 text-slate-400 hover:text-[#C7A56A] transition-colors"
+                              className="p-1.5 text-slate-400 hover:text-[#D4AF37] transition-colors"
                             >
                               <ExternalLink size={14} />
                             </a>
@@ -374,7 +378,7 @@ export default function RadarChannelsPage() {
                               e.stopPropagation();
                               handleCheckHealth(source.id);
                             }}
-                            className="p-1.5 text-slate-400 hover:text-[#C7A56A] transition-colors"
+                            className="p-1.5 text-slate-400 hover:text-[#D4AF37] transition-colors"
                             title="检查状态"
                           >
                             <RefreshCw size={14} />
@@ -384,14 +388,14 @@ export default function RadarChannelsPage() {
 
                       {/* Expanded Actions */}
                       {isSelected && (
-                        <div className="mt-4 pt-4 border-t border-[#E7E0D3]">
+                        <div className="mt-4 pt-4 border-t border-[#E8E0D0]">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               handleRunTask(source);
                             }}
                             disabled={isRunning === source.id || !source.isEnabled}
-                            className="w-full py-2.5 bg-[#0B1B2B] text-[#C7A56A] rounded-lg text-sm font-medium hover:bg-[#10263B] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                            className="w-full py-2.5 bg-[#0B1B2B] text-[#D4AF37] rounded-lg text-sm font-medium hover:bg-[#10263B] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                           >
                             {isRunning === source.id ? (
                               <>
@@ -421,10 +425,12 @@ export default function RadarChannelsPage() {
 
       {/* Empty State */}
       {sources.length === 0 && (
-        <div className="text-center py-16">
-          <Globe size={48} className="text-slate-300 mx-auto mb-4" />
-          <p className="text-slate-500">暂无可用数据源</p>
-          <p className="text-xs text-slate-400 mt-2">系统正在初始化数据源...</p>
+        <div className="text-center py-16 rounded-2xl" style={{background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)'}}>
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.3)'}}>
+            <Globe size={28} className="text-[#D4AF37]" />
+          </div>
+          <p className="text-slate-400">暂无可用数据源</p>
+          <p className="text-xs text-slate-500 mt-2">系统正在初始化数据源...</p>
         </div>
       )}
     </div>

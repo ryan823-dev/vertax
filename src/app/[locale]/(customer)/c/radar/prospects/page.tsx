@@ -174,32 +174,35 @@ export default function RadarProspectsPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 text-[#C7A56A] animate-spin" />
+        <Loader2 className="w-8 h-8 text-[#D4AF37] animate-spin" />
       </div>
     );
   }
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-[#0B1B2B]">线索库</h1>
-          <p className="text-sm text-slate-500 mt-1">管理已导入的潜在客户，生成个性化外联方案</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button 
-            onClick={() => setShowFilters(!showFilters)}
-            className={`p-2 rounded-lg transition-colors ${showFilters ? 'bg-[#C7A56A]/10 text-[#C7A56A]' : 'text-slate-400 hover:text-[#C7A56A]'}`}
-          >
-            <Filter size={18} />
-          </button>
-          <button 
-            onClick={loadData}
-            className="p-2 text-slate-400 hover:text-[#C7A56A] transition-colors"
-          >
-            <RefreshCw size={18} />
-          </button>
+      {/* Header - 深蓝舞台指令台 */}
+      <div className="relative rounded-2xl overflow-hidden" style={{ background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)', boxShadow: '0 8px 32px -8px rgba(0,0,0,0.45)' }}>
+        <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 70% 60% at 50% -20%, rgba(212,175,55,0.14) 0%, transparent 65%)' }} />
+        <div className="relative flex items-center justify-between px-6 py-5">
+          <div>
+            <h1 className="text-2xl font-bold text-white">线索库</h1>
+            <p className="text-sm text-slate-400 mt-1">管理已导入的潜在客户，生成个性化外联方案</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => setShowFilters(!showFilters)}
+              className={`p-2 rounded-lg transition-colors ${showFilters ? 'bg-[#D4AF37]/20 text-[#D4AF37]' : 'text-slate-400 hover:text-[#D4AF37]'}`}
+            >
+              <Filter size={18} />
+            </button>
+            <button 
+              onClick={loadData}
+              className="p-2 text-slate-400 hover:text-[#D4AF37] transition-colors"
+            >
+              <RefreshCw size={18} />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -215,13 +218,13 @@ export default function RadarProspectsPage() {
       )}
 
       {/* Stats Bar */}
-      <div className="flex items-center gap-6 px-4 py-3 bg-[#F7F3EA] rounded-xl">
+      <div className="flex items-center gap-6 px-4 py-3 bg-[#F0EBD8] rounded-xl">
         <div className="flex items-center gap-2">
-          <Users size={16} className="text-[#C7A56A]" />
+          <Users size={16} className="text-[#D4AF37]" />
           <span className="text-xs text-slate-500">线索总数</span>
           <span className="font-bold text-[#0B1B2B]">{total}</span>
         </div>
-        <div className="w-px h-4 bg-[#E7E0D3]" />
+        <div className="w-px h-4 bg-[#E8E0D0]" />
         <div className="flex items-center gap-2">
           <Target size={14} className="text-emerald-500" />
           <span className="text-xs text-slate-500">A级</span>
@@ -247,14 +250,14 @@ export default function RadarProspectsPage() {
 
       {/* Filters */}
       {showFilters && (
-        <div className="bg-[#FFFCF6] rounded-xl border border-[#E7E0D3] p-4">
+        <div className="bg-[#F7F3E8] rounded-xl border border-[#E8E0D0] p-4">
           <div className="grid grid-cols-3 gap-4">
             <div>
               <label className="text-xs text-slate-500 mb-1 block">状态</label>
               <select
                 value={filters.status}
                 onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-                className="w-full px-3 py-2 border border-[#E7E0D3] rounded-lg text-sm focus:outline-none focus:border-[#C7A56A]"
+                className="w-full px-3 py-2 border border-[#E8E0D0] rounded-lg text-sm focus:outline-none focus:border-[#D4AF37]"
               >
                 <option value="">全部</option>
                 <option value="new">新线索</option>
@@ -268,7 +271,7 @@ export default function RadarProspectsPage() {
               <select
                 value={filters.tier}
                 onChange={(e) => setFilters({ ...filters, tier: e.target.value })}
-                className="w-full px-3 py-2 border border-[#E7E0D3] rounded-lg text-sm focus:outline-none focus:border-[#C7A56A]"
+                className="w-full px-3 py-2 border border-[#E8E0D0] rounded-lg text-sm focus:outline-none focus:border-[#D4AF37]"
               >
                 <option value="">全部</option>
                 <option value="A">A 级</option>
@@ -285,7 +288,7 @@ export default function RadarProspectsPage() {
                   value={filters.search}
                   onChange={(e) => setFilters({ ...filters, search: e.target.value })}
                   placeholder="搜索公司名称..."
-                  className="w-full pl-9 pr-3 py-2 border border-[#E7E0D3] rounded-lg text-sm focus:outline-none focus:border-[#C7A56A]"
+                  className="w-full pl-9 pr-3 py-2 border border-[#E8E0D0] rounded-lg text-sm focus:outline-none focus:border-[#D4AF37]"
                 />
               </div>
             </div>
@@ -295,21 +298,26 @@ export default function RadarProspectsPage() {
 
       <div className="grid grid-cols-3 gap-6">
         {/* Companies List */}
-        <div className="col-span-1 bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3] p-6">
+        <div className="col-span-1 bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
           <h3 className="font-bold text-[#0B1B2B] mb-4">线索列表</h3>
           
           {companies.length === 0 ? (
-            <div className="text-center py-16">
-              <Building2 size={48} className="text-slate-300 mx-auto mb-4" />
-              <p className="text-slate-500">暂无线索数据</p>
-              <p className="text-xs text-slate-400 mt-2">前往「候选池」导入线索</p>
-              <Link 
-                href="/c/radar/candidates"
-                className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-[#0B1B2B] text-[#C7A56A] rounded-xl text-sm font-medium hover:bg-[#10263B] transition-colors"
-              >
-                前往候选池
-                <ChevronRight size={14} />
-              </Link>
+            <div className="relative rounded-2xl overflow-hidden py-16 text-center" style={{ background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)' }}>
+              <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 70% 60% at 50% -20%, rgba(212,175,55,0.14) 0%, transparent 65%)' }} />
+              <div className="relative">
+                <div className="w-16 h-16 rounded-2xl bg-[#D4AF37]/10 flex items-center justify-center mx-auto mb-4">
+                  <Building2 size={32} className="text-[#D4AF37]" />
+                </div>
+                <p className="text-slate-300">暂无线索数据</p>
+                <p className="text-xs text-slate-500 mt-2">前往「候选池」导入线索</p>
+                <Link 
+                  href="/c/radar/candidates"
+                  className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-[#D4AF37] text-[#0B1220] rounded-xl text-sm font-medium hover:bg-[#C5A030] transition-colors"
+                >
+                  前往候选池
+                  <ChevronRight size={14} />
+                </Link>
+              </div>
             </div>
           ) : (
             <div className="space-y-2 max-h-[600px] overflow-y-auto">
@@ -327,12 +335,12 @@ export default function RadarProspectsPage() {
                     }}
                     className={`p-3 border rounded-xl cursor-pointer transition-all ${
                       isSelected 
-                        ? 'border-[#C7A56A] bg-[#C7A56A]/5' 
-                        : 'border-[#E7E0D3] hover:border-[#C7A56A]/50 bg-white'
+                        ? 'border-[#D4AF37] bg-[#D4AF37]/5' 
+                        : 'border-[#E8E0D0] hover:border-[#D4AF37]/50 bg-[#FFFCF7]'
                     }`}
                   >
                     <div className="flex items-center gap-2 mb-1">
-                      <Building2 size={14} className="text-[#C7A56A]" />
+                      <Building2 size={14} className="text-[#D4AF37]" />
                       <h4 className="font-medium text-[#0B1B2B] text-sm truncate flex-1">
                         {company.name}
                       </h4>
@@ -362,13 +370,13 @@ export default function RadarProspectsPage() {
           {selectedCompany ? (
             <>
               {/* Tabs */}
-              <div className="bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3] p-2 flex gap-2">
+              <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-2 flex gap-2">
                 <button
                   onClick={() => setActiveTab('info')}
                   className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all ${
                     activeTab === 'info'
-                      ? 'bg-[#0B1B2B] text-[#C7A56A]'
-                      : 'text-slate-500 hover:text-[#0B1B2B]'
+                      ? 'bg-[#0B1220] text-[#D4AF37]'
+                      : 'text-[#4A5568] hover:text-[#0B1B2B]'
                   }`}
                 >
                   基本信息
@@ -377,8 +385,8 @@ export default function RadarProspectsPage() {
                   onClick={() => setActiveTab('outreach')}
                   className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 ${
                     activeTab === 'outreach'
-                      ? 'bg-[#0B1B2B] text-[#C7A56A]'
-                      : 'text-slate-500 hover:text-[#0B1B2B]'
+                      ? 'bg-[#0B1220] text-[#D4AF37]'
+                      : 'text-[#4A5568] hover:text-[#0B1B2B]'
                   }`}
                 >
                   <Sparkles size={14} />
@@ -388,9 +396,9 @@ export default function RadarProspectsPage() {
 
               {activeTab === 'info' ? (
                 /* Basic Info Tab */
-                <div className="bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3] p-6">
+                <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
                   <div className="flex items-center gap-3 mb-6">
-                    <div className="w-12 h-12 bg-gradient-to-br from-[#C7A56A] to-[#C7A56A]/80 rounded-xl flex items-center justify-center">
+                    <div className="w-12 h-12 bg-gradient-to-br from-[#D4AF37] to-[#D4AF37]/80 rounded-xl flex items-center justify-center">
                       <Building2 size={24} className="text-[#0B1B2B]" />
                     </div>
                     <div className="flex-1">
@@ -429,7 +437,7 @@ export default function RadarProspectsPage() {
                       </div>
                     )}
                     {selectedCompany.email && (
-                      <a href={`mailto:${selectedCompany.email}`} className="flex items-center gap-2 text-slate-600 hover:text-[#C7A56A]">
+                      <a href={`mailto:${selectedCompany.email}`} className="flex items-center gap-2 text-slate-600 hover:text-[#D4AF37]">
                         <Mail size={14} className="text-slate-400" />
                         <span className="truncate">{selectedCompany.email}</span>
                       </a>
@@ -439,7 +447,7 @@ export default function RadarProspectsPage() {
                         href={selectedCompany.website.startsWith('http') ? selectedCompany.website : `https://${selectedCompany.website}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-2 text-slate-600 hover:text-[#C7A56A] col-span-2"
+                        className="flex items-center gap-2 text-slate-600 hover:text-[#D4AF37] col-span-2"
                       >
                         <ExternalLink size={14} className="text-slate-400" />
                         <span className="truncate">{selectedCompany.website}</span>
@@ -449,7 +457,7 @@ export default function RadarProspectsPage() {
 
                   {/* Description */}
                   {selectedCompany.description && (
-                    <div className="mt-4 pt-4 border-t border-[#E7E0D3]">
+                    <div className="mt-4 pt-4 border-t border-[#E8E0D0]">
                       <h4 className="text-xs text-slate-500 mb-2">公司简介</h4>
                       <p className="text-sm text-slate-600 leading-relaxed">
                         {selectedCompany.description}
@@ -458,11 +466,11 @@ export default function RadarProspectsPage() {
                   )}
 
                   {/* Generate OutreachPack Button */}
-                  <div className="mt-6 pt-4 border-t border-[#E7E0D3]">
+                  <div className="mt-6 pt-4 border-t border-[#E8E0D0]">
                     <button
                       onClick={() => handleGenerateOutreach(selectedCompany)}
                       disabled={isGenerating}
-                      className="w-full py-3 bg-gradient-to-r from-[#0B1B2B] to-[#10263B] text-[#C7A56A] rounded-xl text-sm font-medium hover:from-[#10263B] hover:to-[#152E4A] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                      className="w-full py-3 bg-[#D4AF37] text-[#0B1220] rounded-xl text-sm font-medium hover:bg-[#C5A030] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                     >
                       {isGenerating ? (
                         <>
@@ -482,17 +490,20 @@ export default function RadarProspectsPage() {
                 /* Outreach Tab */
                 <div className="space-y-4">
                   {isGenerating ? (
-                    <div className="bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3] p-12 text-center">
-                      <Loader2 size={40} className="text-[#C7A56A] mx-auto mb-4 animate-spin" />
-                      <p className="text-slate-600">AI 正在为 {selectedCompany.name} 生成外联方案...</p>
-                      <p className="text-xs text-slate-400 mt-2">基于企业画像和证据库定制化生成</p>
+                    <div className="relative rounded-2xl overflow-hidden p-12 text-center" style={{ background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)', boxShadow: '0 8px 32px -8px rgba(0,0,0,0.45)' }}>
+                      <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 70% 60% at 50% -20%, rgba(212,175,55,0.14) 0%, transparent 65%)' }} />
+                      <div className="relative">
+                        <Loader2 size={40} className="text-[#D4AF37] mx-auto mb-4 animate-spin" />
+                        <p className="text-slate-300">AI 正在为 {selectedCompany.name} 生成外联方案...</p>
+                        <p className="text-xs text-slate-500 mt-2">基于企业画像和证据库定制化生成</p>
+                      </div>
                     </div>
                   ) : outreachPack ? (
                     <>
                       {/* Opening Lines */}
-                      <div className="bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3] p-6">
+                      <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
                         <div className="flex items-center gap-2 mb-4">
-                          <MessageSquare size={18} className="text-[#C7A56A]" />
+                          <MessageSquare size={18} className="text-[#D4AF37]" />
                           <h4 className="font-bold text-[#0B1B2B]">开场白</h4>
                           <span className="text-xs text-slate-400 ml-auto">
                             {outreachPack.outreachPack.openings.length} 条
@@ -500,17 +511,17 @@ export default function RadarProspectsPage() {
                         </div>
                         <div className="space-y-3">
                           {outreachPack.outreachPack.openings.map((opening, idx) => (
-                            <div key={idx} className="bg-white rounded-xl border border-[#E7E0D3] p-4 group">
+                            <div key={idx} className="bg-[#FFFCF7] rounded-xl border border-[#E8E0D0] p-4 group">
                               <p className="text-sm text-slate-700 leading-relaxed">{opening.text}</p>
                               <div className="flex items-center justify-between mt-3">
                                 {opening.evidenceIds.length > 0 && (
-                                  <span className="text-[10px] text-[#C7A56A]">
+                                  <span className="text-[10px] text-[#D4AF37]">
                                     引用: {opening.evidenceIds.join(', ')}
                                   </span>
                                 )}
                                 <button
                                   onClick={() => handleCopy(opening.text, `opening-${idx}`)}
-                                  className="ml-auto p-1.5 text-slate-400 hover:text-[#C7A56A] transition-colors"
+                                  className="ml-auto p-1.5 text-slate-400 hover:text-[#D4AF37] transition-colors"
                                 >
                                   {copiedId === `opening-${idx}` ? (
                                     <Check size={14} className="text-emerald-500" />
@@ -525,9 +536,9 @@ export default function RadarProspectsPage() {
                       </div>
 
                       {/* Email Templates */}
-                      <div className="bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3] p-6">
+                      <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
                         <div className="flex items-center gap-2 mb-4">
-                          <Mail size={18} className="text-[#C7A56A]" />
+                          <Mail size={18} className="text-[#D4AF37]" />
                           <h4 className="font-bold text-[#0B1B2B]">邮件模板</h4>
                           <span className="text-xs text-slate-400 ml-auto">
                             {outreachPack.outreachPack.emails.length} 封
@@ -535,15 +546,15 @@ export default function RadarProspectsPage() {
                         </div>
                         <div className="space-y-4">
                           {outreachPack.outreachPack.emails.map((email, idx) => (
-                            <div key={idx} className="bg-white rounded-xl border border-[#E7E0D3] overflow-hidden">
-                              <div className="bg-[#F7F3EA] px-4 py-2 flex items-center justify-between">
+                            <div key={idx} className="bg-[#FFFCF7] rounded-xl border border-[#E8E0D0] overflow-hidden">
+                              <div className="bg-[#F0EBD8] px-4 py-2 flex items-center justify-between">
                                 <div>
                                   <span className="text-xs text-slate-500">主题:</span>
                                   <span className="text-sm font-medium text-[#0B1B2B] ml-2">{email.subject}</span>
                                 </div>
                                 <button
                                   onClick={() => handleCopy(`Subject: ${email.subject}\n\n${email.body}`, `email-${idx}`)}
-                                  className="p-1.5 text-slate-400 hover:text-[#C7A56A] transition-colors"
+                                  className="p-1.5 text-slate-400 hover:text-[#D4AF37] transition-colors"
                                 >
                                   {copiedId === `email-${idx}` ? (
                                     <Check size={14} className="text-emerald-500" />
@@ -557,7 +568,7 @@ export default function RadarProspectsPage() {
                                   {email.body}
                                 </p>
                                 {email.evidenceIds.length > 0 && (
-                                  <p className="text-[10px] text-[#C7A56A] mt-3 pt-3 border-t border-[#E7E0D3]">
+                                  <p className="text-[10px] text-[#D4AF37] mt-3 pt-3 border-t border-[#E8E0D0]">
                                     引用证据: {email.evidenceIds.join(', ')}
                                   </p>
                                 )}
@@ -568,9 +579,9 @@ export default function RadarProspectsPage() {
                       </div>
 
                       {/* WhatsApp Templates */}
-                      <div className="bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3] p-6">
+                      <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
                         <div className="flex items-center gap-2 mb-4">
-                          <Send size={18} className="text-[#C7A56A]" />
+                          <Send size={18} className="text-[#D4AF37]" />
                           <h4 className="font-bold text-[#0B1B2B]">WhatsApp 消息</h4>
                           <span className="text-xs text-slate-400 ml-auto">
                             {outreachPack.outreachPack.whatsapps.length} 条
@@ -597,14 +608,14 @@ export default function RadarProspectsPage() {
 
                       {/* Follow-up Playbook */}
                       {outreachPack.outreachPack.playbook.length > 0 && (
-                        <div className="bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3] p-6">
+                        <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
                           <div className="flex items-center gap-2 mb-4">
-                            <FileText size={18} className="text-[#C7A56A]" />
+                            <FileText size={18} className="text-[#D4AF37]" />
                             <h4 className="font-bold text-[#0B1B2B]">跟进剧本</h4>
                           </div>
                           <div className="space-y-4">
                             {outreachPack.outreachPack.playbook.map((entry, idx) => (
-                              <div key={idx} className="bg-white rounded-xl border border-[#E7E0D3] p-4">
+                              <div key={idx} className="bg-[#FFFCF7] rounded-xl border border-[#E8E0D0] p-4">
                                 <div className="flex items-center gap-2 mb-2">
                                   <span className={`text-xs px-2 py-0.5 rounded font-medium ${
                                     entry.replyType === 'interested' ? 'bg-emerald-100 text-emerald-700' :
@@ -623,7 +634,7 @@ export default function RadarProspectsPage() {
                                 {entry.nextStepTasks.length > 0 && (
                                   <div className="flex flex-wrap gap-2">
                                     {entry.nextStepTasks.map((task, tIdx) => (
-                                      <span key={tIdx} className="text-[10px] px-2 py-1 bg-[#F7F3EA] rounded text-slate-600">
+                                      <span key={tIdx} className="text-[10px] px-2 py-1 bg-[#F0EBD8] rounded text-slate-600">
                                         {task}
                                       </span>
                                     ))}
@@ -651,27 +662,37 @@ export default function RadarProspectsPage() {
                       )}
                     </>
                   ) : (
-                    <div className="bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3] p-12 text-center">
-                      <Sparkles size={48} className="text-slate-300 mx-auto mb-4" />
-                      <p className="text-slate-500">点击"生成个性化外联方案"开始</p>
-                      <p className="text-xs text-slate-400 mt-2">AI 将根据客户画像和你的企业证据库生成定制化外联内容</p>
-                      <button
-                        onClick={() => handleGenerateOutreach(selectedCompany)}
-                        className="mt-4 px-6 py-2.5 bg-[#0B1B2B] text-[#C7A56A] rounded-xl text-sm font-medium hover:bg-[#10263B] transition-colors inline-flex items-center gap-2"
-                      >
-                        <Sparkles size={14} />
-                        生成外联方案
-                      </button>
+                    <div className="relative rounded-2xl overflow-hidden p-12 text-center" style={{ background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)', boxShadow: '0 8px 32px -8px rgba(0,0,0,0.45)' }}>
+                      <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 70% 60% at 50% -20%, rgba(212,175,55,0.14) 0%, transparent 65%)' }} />
+                      <div className="relative">
+                        <div className="w-16 h-16 rounded-2xl bg-[#D4AF37]/10 flex items-center justify-center mx-auto mb-4">
+                          <Sparkles size={32} className="text-[#D4AF37]" />
+                        </div>
+                        <p className="text-slate-300">点击"生成个性化外联方案"开始</p>
+                        <p className="text-xs text-slate-500 mt-2">AI 将根据客户画像和你的企业证据库生成定制化外联内容</p>
+                        <button
+                          onClick={() => handleGenerateOutreach(selectedCompany)}
+                          className="mt-4 px-6 py-2.5 bg-[#D4AF37] text-[#0B1220] rounded-xl text-sm font-medium hover:bg-[#C5A030] transition-colors inline-flex items-center gap-2"
+                        >
+                          <Sparkles size={14} />
+                          生成外联方案
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
               )}
             </>
           ) : (
-            <div className="bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3] p-12 text-center">
-              <Users size={48} className="text-slate-300 mx-auto mb-4" />
-              <p className="text-slate-500">选择一个线索查看详情</p>
-              <p className="text-xs text-slate-400 mt-2">生成个性化的外联方案</p>
+            <div className="relative rounded-2xl overflow-hidden p-12 text-center" style={{ background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)', boxShadow: '0 8px 32px -8px rgba(0,0,0,0.45)' }}>
+              <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 70% 60% at 50% -20%, rgba(212,175,55,0.14) 0%, transparent 65%)' }} />
+              <div className="relative">
+                <div className="w-16 h-16 rounded-2xl bg-[#D4AF37]/10 flex items-center justify-center mx-auto mb-4">
+                  <Users size={32} className="text-[#D4AF37]" />
+                </div>
+                <p className="text-slate-300">选择一个线索查看详情</p>
+                <p className="text-xs text-slate-500 mt-2">生成个性化的外联方案</p>
+              </div>
             </div>
           )}
         </div>

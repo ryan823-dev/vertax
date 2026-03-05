@@ -663,3 +663,45 @@
 
 .animate-pulse-gold { animation: pulse-gold 2s ease-in-out infinite; }
 .animate-fade-in { animation: fade-in 0.4s ease-out; }
+
+/* ==================================================
+   模块页面通用组件（各业务模块统一视觉）
+   ================================================== */
+
+/* 模块卡片 - 象牙白底，与驾驶舱一致 */
+.module-card {
+  background: #F7F3E8;
+  border: 1px solid var(--border-cream);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 2px 12px -4px rgba(0,0,0,0.06);
+}
+
+/* 模块表面 - 更浅象牙底（嵌套卡片用） */
+.module-surface {
+  background: #FFFCF7;
+  border: 1px solid var(--border-cream);
+  border-radius: var(--radius-md);
+}
+
+/* 模块顶栏 - 奶油色毛玻璃 */
+.module-header-bar {
+  background: rgba(247,243,232,0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-cream);
+}
+
+/* 深蓝底+金字按钮（模块通用主操作） */
+.btn-navy-gold {
+  background: var(--bg-navy);
+  color: var(--gold-primary);
+  font-weight: 600;
+  border: 1px solid var(--border-navy-strong);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+.btn-navy-gold:hover {
+  background: var(--bg-navy-light);
+  border-color: var(--border-gold);
+  box-shadow: 0 2px 12px -2px rgba(212,175,55,0.2);
+}

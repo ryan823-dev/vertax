@@ -298,7 +298,7 @@ export default function CompanyKnowledgePage() {
 
   const getSectionHighlightClass = (sectionKey: string) => {
     if (highlightedSection === sectionKey) {
-      return 'ring-2 ring-[#C7A56A] ring-offset-2 transition-all duration-300';
+      return 'ring-2 ring-[#D4AF37] ring-offset-2 transition-all duration-300';
     }
     return '';
   };
@@ -306,7 +306,7 @@ export default function CompanyKnowledgePage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 text-[#C7A56A] animate-spin" />
+        <Loader2 className="w-8 h-8 text-[#D4AF37] animate-spin" />
       </div>
     );
   }
@@ -344,14 +344,14 @@ export default function CompanyKnowledgePage() {
 
         {/* No Profile - Show Empty State */}
         {(!profile || !profile.companyName) && (
-          <div className="bg-white rounded-xl border border-[#E7E0D3] p-8">
+          <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-8">
             {!hasPrerequisites ? (
               // Blocked - need to upload assets first
               <div className="text-center py-8">
-                <div className="w-16 h-16 rounded-2xl bg-amber-50 flex items-center justify-center mx-auto mb-4">
-                  <AlertCircle size={28} className="text-amber-500" />
+                <div className="w-16 h-16 rounded-2xl bg-[rgba(212,175,55,0.12)] border border-[rgba(212,175,55,0.3)] flex items-center justify-center mx-auto mb-4">
+                  <AlertCircle size={28} className="text-[#D4AF37]" />
                 </div>
-                <h3 className="text-lg font-bold text-[#0B1B2B] mb-2">尚未生成企业档案</h3>
+                <h3 className="text-lg font-bold text-[#0B1220] mb-2">尚未生成企业档案</h3>
                 <p className="text-sm text-slate-500 mb-2">需要先完成以下步骤：</p>
                 <div className="flex items-center justify-center gap-6 my-6">
                   <div className="flex flex-col items-center gap-2">
@@ -382,7 +382,7 @@ export default function CompanyKnowledgePage() {
                 </div>
                 <Link
                   href="/c/knowledge/assets"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-[#0B1B2B] text-[#C7A56A] rounded-xl text-sm font-medium hover:bg-[#10263B] transition-colors"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-[#D4AF37] text-[#0B1220] rounded-xl text-sm font-medium hover:bg-[#D4AF37]/90 transition-colors shadow-[0_4px_16px_-2px_rgba(212,175,55,0.35)]"
                 >
                   <Upload size={16} />
                   去资料库上传
@@ -391,10 +391,10 @@ export default function CompanyKnowledgePage() {
             ) : (
               // Can generate
               <div className="text-center py-8">
-                <div className="w-16 h-16 rounded-2xl bg-[#F7F3EA] flex items-center justify-center mx-auto mb-4">
-                  <Building2 size={28} className="text-[#C7A56A]" />
+                <div className="w-16 h-16 rounded-2xl bg-[rgba(212,175,55,0.12)] border border-[rgba(212,175,55,0.3)] flex items-center justify-center mx-auto mb-4">
+                  <Building2 size={28} className="text-[#D4AF37]" />
                 </div>
-                <h3 className="text-lg font-bold text-[#0B1B2B] mb-2">准备生成企业档案</h3>
+                <h3 className="text-lg font-bold text-[#0B1220] mb-2">准备生成企业档案</h3>
                 <p className="text-sm text-slate-500 mb-4">
                   已有 {pipelineStatus?.counts.assetsParsed || 0} 个已解析素材，
                   {pipelineStatus?.counts.evidenceCount || 0} 条证据
@@ -407,7 +407,7 @@ export default function CompanyKnowledgePage() {
                 <button
                   onClick={handleAnalyze}
                   disabled={isAnalyzing}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-[#0B1B2B] text-[#C7A56A] rounded-xl text-sm font-medium hover:bg-[#10263B] transition-colors disabled:opacity-50"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-[#D4AF37] text-[#0B1220] rounded-xl text-sm font-medium hover:bg-[#D4AF37]/90 transition-colors disabled:opacity-50 shadow-[0_4px_16px_-2px_rgba(212,175,55,0.35)]"
                 >
                   {isAnalyzing ? (
                     <>
@@ -431,7 +431,7 @@ export default function CompanyKnowledgePage() {
           <div className="grid grid-cols-[200px_1fr_280px] gap-5">
             {/* Left: Section Nav */}
             <div className="space-y-2">
-              <div className="bg-white rounded-xl border border-[#E7E0D3] p-3">
+              <div className="bg-[#F0EBD8] rounded-2xl border-b border-[#E8E0D0] p-3" style={{ background: '#F0EBD8', borderBottom: '1px solid #E8E0D0' }}>
                 <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-2 px-2">目录</p>
                 {NAV_ITEMS.map((item) => (
                   <button
@@ -439,8 +439,8 @@ export default function CompanyKnowledgePage() {
                     onClick={() => setActiveNav(item.key)}
                     className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
                       activeNav === item.key
-                        ? 'bg-[#F7F3EA] text-[#0B1B2B] font-medium'
-                        : 'text-slate-500 hover:text-[#0B1B2B] hover:bg-[#F7F3EA]/50'
+                        ? 'bg-[#0B1220] text-[#D4AF37] font-medium'
+                        : 'text-slate-500 hover:text-[#0B1220] hover:bg-[#F0EBD8]/50'
                     }`}
                   >
                     {item.label}
@@ -449,27 +449,27 @@ export default function CompanyKnowledgePage() {
               </div>
 
               {/* Completeness */}
-              <div className="bg-white rounded-xl border border-[#E7E0D3] p-4">
+              <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-4">
                 <p className="text-xs text-slate-400 mb-2">知识完整度</p>
                 <div className="flex items-center gap-2">
                   <div className="flex-1 h-2 bg-[#E7E0D3] rounded-full overflow-hidden">
                     <div 
-                      className="h-full bg-[#C7A56A] rounded-full transition-all duration-500" 
+                      className="h-full bg-[#D4AF37] rounded-full transition-all duration-500" 
                       style={{ width: `${completeness}%` }}
                     />
                   </div>
-                  <span className="text-sm font-bold text-[#C7A56A]">{completeness}%</span>
+                  <span className="text-sm font-bold text-[#D4AF37]">{completeness}%</span>
                 </div>
               </div>
 
               {/* Sync Buttons */}
               {completeness >= 30 && (
-                <div className="bg-white rounded-xl border border-[#E7E0D3] p-3 space-y-2">
+                <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-3 space-y-2">
                   <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider px-1">同步到</p>
                   <button
                     onClick={handleSyncMarketing}
                     disabled={isSyncingMarketing}
-                    className="w-full flex items-center gap-2 px-3 py-2 bg-[#0B1B2B] text-[#C7A56A] rounded-lg text-xs font-medium hover:bg-[#10263B] transition-colors disabled:opacity-50"
+                    className="w-full flex items-center gap-2 px-3 py-2 bg-[#0B1220] text-[#D4AF37] rounded-lg text-xs font-medium hover:bg-[#0B1220]/90 transition-colors disabled:opacity-50"
                   >
                     {isSyncingMarketing ? <Loader2 size={12} className="animate-spin" /> : <BarChart3 size={12} />}
                     营销系统
@@ -478,7 +478,7 @@ export default function CompanyKnowledgePage() {
                   <button
                     onClick={handleSyncRadar}
                     disabled={isSyncingRadar}
-                    className="w-full flex items-center gap-2 px-3 py-2 bg-[#0B1B2B] text-emerald-400 rounded-lg text-xs font-medium hover:bg-[#10263B] transition-colors disabled:opacity-50"
+                    className="w-full flex items-center gap-2 px-3 py-2 bg-[#0B1220] text-emerald-400 rounded-lg text-xs font-medium hover:bg-[#0B1220]/90 transition-colors disabled:opacity-50"
                   >
                     {isSyncingRadar ? <Loader2 size={12} className="animate-spin" /> : <Radar size={12} />}
                     获客雷达
@@ -492,20 +492,20 @@ export default function CompanyKnowledgePage() {
             <div className="space-y-4">
               {/* Read-only Banner */}
               {isReadOnly && (
-                <div className="bg-[#C7A56A]/10 border border-[#C7A56A]/30 rounded-xl p-3 flex items-center gap-3">
-                  <Lock className="text-[#C7A56A] shrink-0" size={16} />
+                <div className="bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded-xl p-3 flex items-center gap-3">
+                  <Lock className="text-[#D4AF37] shrink-0" size={16} />
                   <p className="text-xs text-[#0B1B2B]">此版本已批准，内容已锁定。如需修改请在协作面板中创建新版本。</p>
                 </div>
               )}
 
               {/* Company Header */}
-              <div className="bg-white rounded-xl border border-[#E7E0D3] p-5">
+              <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-5">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-[#C7A56A] to-[#C7A56A]/80 rounded-xl flex items-center justify-center">
+                  <div className="w-12 h-12 bg-gradient-to-br from-[#D4AF37] to-[#D4AF37]/80 rounded-xl flex items-center justify-center">
                     <Building2 size={24} className="text-[#0B1B2B]" />
                   </div>
                   <div className="flex-1">
-                    <h2 className="text-xl font-bold text-[#0B1B2B]">{profile.companyName}</h2>
+                    <h2 className="text-xl font-bold text-[#0B1220]">{profile.companyName}</h2>
                     <p className="text-sm text-slate-500">企业能力画像</p>
                   </div>
                   {profile.lastAnalyzedAt && (
@@ -522,14 +522,14 @@ export default function CompanyKnowledgePage() {
                     <textarea
                       value={editBuffer}
                       onChange={(e) => setEditBuffer(e.target.value)}
-                      className="w-full p-4 bg-[#F7F3EA] border border-[#C7A56A] rounded-xl text-sm text-slate-700 leading-relaxed resize-none focus:outline-none"
+                      className="w-full p-4 bg-[#F0EBD8] border border-[#D4AF37] rounded-xl text-sm text-slate-700 leading-relaxed resize-none focus:outline-none"
                       rows={4}
                     />
                     <div className="flex justify-end gap-2">
                       <button onClick={cancelEdit} className="px-3 py-1.5 text-xs text-slate-500 rounded-lg border border-slate-200">
                         取消
                       </button>
-                      <button onClick={saveEdit} disabled={isSaving} className="px-3 py-1.5 text-xs text-white bg-[#C7A56A] rounded-lg disabled:opacity-50">
+                      <button onClick={saveEdit} disabled={isSaving} className="px-3 py-1.5 text-xs text-[#0B1220] bg-[#D4AF37] rounded-lg disabled:opacity-50">
                         {isSaving ? '保存中...' : '保存'}
                       </button>
                     </div>
@@ -537,7 +537,7 @@ export default function CompanyKnowledgePage() {
                 ) : (
                   <div
                     onClick={() => !isReadOnly && startEditing('companyIntro')}
-                    className={`p-4 bg-[#F7F3EA] rounded-xl ${!isReadOnly ? 'cursor-pointer hover:ring-2 hover:ring-[#C7A56A]/20' : ''} transition-all group relative ${getSectionHighlightClass('companyIntro')}`}
+                    className={`p-4 bg-[#F0EBD8] rounded-xl ${!isReadOnly ? 'cursor-pointer hover:ring-2 hover:ring-[#D4AF37]/20' : ''} transition-all group relative ${getSectionHighlightClass('companyIntro')}`}
                   >
                     <p className="text-sm text-slate-600 leading-relaxed">
                       {profile.companyIntro || '点击编辑企业简介...'}
@@ -558,15 +558,15 @@ export default function CompanyKnowledgePage() {
                   return (
                     <div 
                       key={section.key} 
-                      className={`bg-white rounded-xl border border-[#E7E0D3] p-4 group relative ${getSectionHighlightClass(section.key)}`}
+                      className={`bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-4 group relative ${getSectionHighlightClass(section.key)}`}
                     >
                       <div className="flex items-center gap-2 mb-3">
-                        <SectionIcon size={16} className="text-[#C7A56A]" />
-                        <h4 className="font-bold text-[#0B1B2B] text-sm flex-1">{section.label}</h4>
+                        <SectionIcon size={16} className="text-[#D4AF37]" />
+                        <h4 className="font-bold text-[#0B1220] text-sm flex-1">{section.label}</h4>
                         {!isEditing && !isReadOnly && (
                           <button
                             onClick={() => startEditing(section.key)}
-                            className="p-1 text-slate-300 opacity-0 group-hover:opacity-100 hover:text-[#C7A56A] transition-all"
+                            className="p-1 text-slate-300 opacity-0 group-hover:opacity-100 hover:text-[#D4AF37] transition-all"
                           >
                             <Pencil size={13} />
                           </button>
@@ -578,13 +578,13 @@ export default function CompanyKnowledgePage() {
                           <textarea
                             value={editBuffer}
                             onChange={(e) => setEditBuffer(e.target.value)}
-                            className="w-full p-3 bg-[#F7F3EA] border border-[#C7A56A] rounded-lg text-xs font-mono resize-none focus:outline-none"
+                            className="w-full p-3 bg-[#F0EBD8] border border-[#D4AF37] rounded-lg text-xs font-mono resize-none focus:outline-none"
                             rows={6}
                             placeholder="JSON 数组格式"
                           />
                           <div className="flex justify-end gap-2">
                             <button onClick={cancelEdit} className="px-2.5 py-1 text-[11px] text-slate-500 rounded border border-slate-200">取消</button>
-                            <button onClick={saveEdit} disabled={isSaving} className="px-2.5 py-1 text-[11px] text-white bg-[#C7A56A] rounded disabled:opacity-50">
+                            <button onClick={saveEdit} disabled={isSaving} className="px-2.5 py-1 text-[11px] text-[#0B1220] bg-[#D4AF37] rounded disabled:opacity-50">
                               {isSaving ? '保存中...' : '保存'}
                             </button>
                           </div>
@@ -617,33 +617,33 @@ export default function CompanyKnowledgePage() {
               </div>
 
               {/* ICP Section */}
-              <div className="bg-white rounded-xl border border-[#E7E0D3] p-5">
-                <h3 className="font-bold text-[#0B1B2B] mb-4 flex items-center gap-2">
-                  <Users size={18} className="text-[#C7A56A]" />
+              <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-5">
+                <h3 className="font-bold text-[#0B1220] mb-4 flex items-center gap-2">
+                  <Users size={18} className="text-[#D4AF37]" />
                   目标客户画像 (ICP)
                 </h3>
                 
                 <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div className="p-3 bg-[#F7F3EA] rounded-xl">
+                  <div className="p-3 bg-[#F0EBD8] rounded-xl">
                     <p className="text-xs text-slate-500 mb-2">目标行业</p>
                     <div className="flex flex-wrap gap-1.5">
                       {profile.targetIndustries?.length > 0 ? (
                         profile.targetIndustries.map((item, i) => (
-                          <span key={i} className="px-2 py-1 bg-white text-xs text-[#0B1B2B] rounded border border-[#E7E0D3]">{item}</span>
+                          <span key={i} className="px-2 py-1 bg-[#FFFCF7] text-xs text-[#0B1220] rounded border border-[#E8E0D0]">{item}</span>
                         ))
                       ) : (
                         <span className="text-xs text-slate-400">暂无数据</span>
                       )}
                     </div>
                   </div>
-                  <div className="p-3 bg-[#F7F3EA] rounded-xl">
+                  <div className="p-3 bg-[#F0EBD8] rounded-xl">
                     <p className="text-xs text-slate-500 mb-2 flex items-center gap-1">
                       <Globe2 size={12} />目标区域
                     </p>
                     <div className="flex flex-wrap gap-1.5">
                       {profile.targetRegions?.length > 0 ? (
                         profile.targetRegions.map((item, i) => (
-                          <span key={i} className="px-2 py-1 bg-white text-xs text-[#0B1B2B] rounded border border-[#E7E0D3]">{item}</span>
+                          <span key={i} className="px-2 py-1 bg-[#FFFCF7] text-xs text-[#0B1220] rounded border border-[#E8E0D0]">{item}</span>
                         ))
                       ) : (
                         <span className="text-xs text-slate-400">暂无数据</span>
@@ -655,8 +655,8 @@ export default function CompanyKnowledgePage() {
                 {profile.buyerPersonas?.length > 0 && (
                   <div className="grid grid-cols-2 gap-3">
                     {profile.buyerPersonas.map((persona, i) => (
-                      <div key={i} className="p-3 border border-[#E7E0D3] rounded-xl">
-                        <p className="font-medium text-[#0B1B2B] text-sm">{persona.role}</p>
+                      <div key={i} className="p-3 border border-[#E8E0D0] rounded-xl bg-[#FFFCF7]">
+                        <p className="font-medium text-[#0B1220] text-sm">{persona.role}</p>
                         {persona.title && <p className="text-xs text-slate-500">{persona.title}</p>}
                         {persona.concerns?.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-2">

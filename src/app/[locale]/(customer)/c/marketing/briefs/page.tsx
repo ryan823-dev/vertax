@@ -66,7 +66,7 @@ const INTENT_LABELS: Record<string, string> = {
 };
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  draft: { label: "草稿", color: "bg-slate-500" },
+  draft: { label: "草稿", color: "bg-[#F7F3E8]0" },
   ready: { label: "就绪", color: "bg-blue-500" },
   in_progress: { label: "进行中", color: "bg-amber-500" },
   done: { label: "已完成", color: "bg-emerald-500" },
@@ -182,18 +182,27 @@ export default function BriefsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#070E15]">
-      {/* Header */}
-      <div className="border-b border-[#10263B]/50 bg-[#0B1B2B]/50">
-        <div className="px-8 py-6">
-          <div className="flex items-center justify-between">
+    <div className="min-h-screen bg-[#F7F3E8]">
+      {/* Header - 指令台 深蓝舞台风格 */}
+      <div className="border-b border-[#E8E0D0]">
+        <div className="px-8 py-6" style={{
+          background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)',
+          boxShadow: '0 8px 32px -8px rgba(0,0,0,0.45)',
+          position: 'relative',
+          overflow: 'hidden',
+        }}>
+          <div style={{
+            position: 'absolute', inset: 0, pointerEvents: 'none',
+            background: 'radial-gradient(ellipse 70% 60% at 50% -20%, rgba(212,175,55,0.14) 0%, transparent 65%)',
+          }} />
+          <div className="relative flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#C7A56A]/20 to-[#C7A56A]/5 border border-[#C7A56A]/20 flex items-center justify-center">
-                <FileEdit className="w-6 h-6 text-[#C7A56A]" />
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.3)' }}>
+                <FileEdit className="w-6 h-6 text-[#D4AF37]" />
               </div>
               <div>
                 <h1 className="text-xl font-bold text-white">内容规划 (Brief)</h1>
-                <p className="text-sm text-slate-500 mt-0.5">规划内容方向，驱动 AI 生成精准内容</p>
+                <p className="text-sm text-slate-400 mt-0.5">规划内容方向，驱动 AI 生成精准内容</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -201,7 +210,7 @@ export default function BriefsPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => setShowAIDialog(true)}
-                className="border-[#C7A56A]/30 text-[#C7A56A] hover:bg-[#C7A56A]/10"
+                className="border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 bg-transparent"
               >
                 <Sparkles className="w-4 h-4 mr-2" />
                 AI 生成
@@ -209,7 +218,8 @@ export default function BriefsPage() {
               <Button
                 size="sm"
                 onClick={() => setShowCreateDialog(true)}
-                className="bg-[#C7A56A] text-[#0B1B2B] hover:bg-[#C7A56A]/90"
+                style={{ background: '#D4AF37', color: '#0B1220', boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)' }}
+                className="hover:opacity-90"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 新建规划
@@ -218,9 +228,9 @@ export default function BriefsPage() {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-5 gap-4 mt-6">
+          <div className="grid grid-cols-5 gap-4 mt-6 relative">
             {[
-              { label: "全部", value: stats.total, color: "text-slate-400" },
+              { label: "全部", value: stats.total, color: "text-slate-300" },
               { label: "草稿", value: stats.draft, color: "text-slate-400" },
               { label: "就绪", value: stats.ready, color: "text-blue-400" },
               { label: "进行中", value: stats.inProgress, color: "text-amber-400" },
@@ -228,7 +238,8 @@ export default function BriefsPage() {
             ].map((stat) => (
               <div
                 key={stat.label}
-                className="bg-[#10263B]/30 rounded-lg px-4 py-3 border border-[#10263B]/50"
+                className="rounded-lg px-4 py-3"
+                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
               >
                 <p className="text-xs text-slate-500">{stat.label}</p>
                 <p className={`text-2xl font-bold mt-1 ${stat.color}`}>{stat.value}</p>
@@ -239,23 +250,23 @@ export default function BriefsPage() {
       </div>
 
       {/* Filters */}
-      <div className="px-8 py-4 border-b border-[#10263B]/30">
+      <div className="px-8 py-4 border-b border-[#E8E0D0] bg-[#F0EBD8]">
         <div className="flex items-center gap-4">
           <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <Input
               placeholder="搜索关键词或标题..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 bg-[#10263B]/30 border-[#10263B] text-white placeholder:text-slate-600"
+              className="pl-9 bg-[#FFFCF7] border-[#E8E0D0] text-[#0B1B2B] placeholder:text-slate-400"
             />
           </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-32 bg-[#10263B]/30 border-[#10263B] text-white">
-              <Filter className="w-4 h-4 mr-2 text-slate-500" />
+            <SelectTrigger className="w-32 bg-[#FFFCF7] border-[#E8E0D0] text-[#0B1B2B]">
+              <Filter className="w-4 h-4 mr-2 text-slate-400" />
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="bg-[#0B1B2B] border-[#10263B]">
+            <SelectContent className="bg-[#FFFCF7] border-[#E8E0D0]">
               <SelectItem value="all">全部状态</SelectItem>
               <SelectItem value="draft">草稿</SelectItem>
               <SelectItem value="ready">就绪</SelectItem>
@@ -263,8 +274,8 @@ export default function BriefsPage() {
               <SelectItem value="done">已完成</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="ghost" size="icon" onClick={loadData} disabled={isLoading}>
-            <RefreshCw className={`w-4 h-4 text-slate-500 ${isLoading ? "animate-spin" : ""}`} />
+          <Button variant="ghost" size="icon" onClick={loadData} disabled={isLoading} className="text-slate-500 hover:text-[#D4AF37]">
+            <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
           </Button>
         </div>
       </div>
@@ -273,17 +284,23 @@ export default function BriefsPage() {
       <div className="px-8 py-6">
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-8 h-8 text-[#C7A56A] animate-spin" />
+            <Loader2 className="w-8 h-8 text-[#D4AF37] animate-spin" />
           </div>
         ) : briefs.length === 0 ? (
-          <div className="text-center py-20">
-            <FileEdit className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-slate-400">暂无内容规划</h3>
-            <p className="text-sm text-slate-600 mt-1">创建第一个 Brief 开始内容生产</p>
+          <div className="text-center py-20 rounded-2xl" style={{
+            background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)',
+            boxShadow: '0 8px 32px -8px rgba(0,0,0,0.45)',
+          }}>
+            <div className="w-16 h-16 mx-auto mb-4 rounded-xl flex items-center justify-center" style={{ background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.3)' }}>
+              <FileEdit className="w-8 h-8 text-[#D4AF37]" />
+            </div>
+            <h3 className="text-lg font-medium text-slate-300">暂无内容规划</h3>
+            <p className="text-sm text-slate-500 mt-1">创建第一个 Brief 开始内容生产</p>
             <Button
               size="sm"
               onClick={() => setShowCreateDialog(true)}
-              className="mt-4 bg-[#C7A56A] text-[#0B1B2B] hover:bg-[#C7A56A]/90"
+              className="mt-4 hover:opacity-90"
+              style={{ background: '#D4AF37', color: '#0B1220', boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)' }}
             >
               <Plus className="w-4 h-4 mr-2" />
               新建规划
@@ -296,12 +313,12 @@ export default function BriefsPage() {
               return (
                 <div
                   key={brief.id}
-                  className="bg-[#10263B]/30 border border-[#10263B]/50 rounded-xl p-5 hover:border-[#C7A56A]/30 transition-colors group"
+                  className="bg-[#FFFCF7] border border-[#E8E0D0] rounded-xl p-5 hover:border-[#D4AF37]/40 transition-colors group"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-3">
-                        <h3 className="text-base font-semibold text-white group-hover:text-[#C7A56A] transition-colors">
+                        <h3 className="text-base font-semibold text-[#0B1B2B] group-hover:text-[#D4AF37] transition-colors">
                           {brief.title}
                         </h3>
                         <span
@@ -316,7 +333,7 @@ export default function BriefsPage() {
                           {brief.targetKeywords.slice(0, 3).join(", ")}
                           {brief.targetKeywords.length > 3 && ` +${brief.targetKeywords.length - 3}`}
                         </span>
-                        <span className="px-2 py-0.5 bg-[#10263B] rounded text-xs">
+                        <span className="px-2 py-0.5 bg-[#F0EBD8] rounded text-xs text-slate-600">
                           {INTENT_LABELS[brief.intent] || brief.intent}
                         </span>
                         {brief.targetPersonaName && (
@@ -331,24 +348,24 @@ export default function BriefsPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-slate-500 hover:text-[#C7A56A]"
+                        className="text-slate-500 hover:text-[#D4AF37]"
                       >
                         生成内容
                         <ArrowRight className="w-4 h-4 ml-1" />
                       </Button>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="text-slate-500">
+                          <Button variant="ghost" size="icon" className="text-slate-400">
                             <MoreHorizontal className="w-4 h-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="bg-[#0B1B2B] border-[#10263B]">
-                          <DropdownMenuItem className="text-slate-300 focus:bg-[#10263B] focus:text-white">
+                        <DropdownMenuContent align="end" className="bg-[#FFFCF7] border-[#E8E0D0]">
+                          <DropdownMenuItem className="text-slate-600 focus:bg-[#F0EBD8] focus:text-[#0B1B2B]">
                             <Edit className="w-4 h-4 mr-2" />
                             编辑
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            className="text-red-400 focus:bg-red-500/10 focus:text-red-400"
+                            className="text-red-500 focus:bg-red-50 focus:text-red-500"
                             onClick={() => handleDelete(brief.id)}
                           >
                             <Trash2 className="w-4 h-4 mr-2" />
@@ -367,40 +384,40 @@ export default function BriefsPage() {
 
       {/* Create Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent className="bg-[#0B1B2B] border-[#10263B] text-white max-w-lg">
+        <DialogContent className="bg-[#FFFCF7] border-[#E8E0D0] text-[#0B1B2B] max-w-lg">
           <DialogHeader>
-            <DialogTitle className="text-lg font-bold">新建内容规划</DialogTitle>
+            <DialogTitle className="text-lg font-bold text-[#0B1B2B]">新建内容规划</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label className="text-slate-400">标题 *</Label>
+              <Label className="text-slate-500">标题 *</Label>
               <Input
                 placeholder="输入内容规划标题"
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                className="bg-[#10263B]/50 border-[#10263B] text-white"
+                className="bg-[#F7F3E8] border-[#E8E0D0] text-[#0B1B2B]"
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-slate-400">目标关键词 *（逗号分隔）</Label>
+              <Label className="text-slate-500">目标关键词 *（逗号分隔）</Label>
               <Input
                 placeholder="关键词1, 关键词2, 关键词3"
                 value={formData.targetKeywords}
                 onChange={(e) => setFormData({ ...formData, targetKeywords: e.target.value })}
-                className="bg-[#10263B]/50 border-[#10263B] text-white"
+                className="bg-[#F7F3E8] border-[#E8E0D0] text-[#0B1B2B]"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-slate-400">搜索意图</Label>
+                <Label className="text-slate-500">搜索意图</Label>
                 <Select
                   value={formData.intent}
                   onValueChange={(v) => setFormData({ ...formData, intent: v as SearchIntent })}
                 >
-                  <SelectTrigger className="bg-[#10263B]/50 border-[#10263B] text-white">
+                  <SelectTrigger className="bg-[#F7F3E8] border-[#E8E0D0] text-[#0B1B2B]">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-[#0B1B2B] border-[#10263B]">
+                  <SelectContent className="bg-[#FFFCF7] border-[#E8E0D0]">
                     <SelectItem value="informational">信息查询</SelectItem>
                     <SelectItem value="commercial">商业调研</SelectItem>
                     <SelectItem value="transactional">交易决策</SelectItem>
@@ -409,15 +426,15 @@ export default function BriefsPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label className="text-slate-400">关联 Persona</Label>
+                <Label className="text-slate-500">关联 Persona</Label>
                 <Select
                   value={formData.targetPersonaId}
                   onValueChange={(v) => setFormData({ ...formData, targetPersonaId: v })}
                 >
-                  <SelectTrigger className="bg-[#10263B]/50 border-[#10263B] text-white">
+                  <SelectTrigger className="bg-[#F7F3E8] border-[#E8E0D0] text-[#0B1B2B]">
                     <SelectValue placeholder="选择角色" />
                   </SelectTrigger>
-                  <SelectContent className="bg-[#0B1B2B] border-[#10263B]">
+                  <SelectContent className="bg-[#FFFCF7] border-[#E8E0D0]">
                     <SelectItem value="">无</SelectItem>
                     {personas.map((p) => (
                       <SelectItem key={p.id} value={p.id}>
@@ -429,24 +446,25 @@ export default function BriefsPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label className="text-slate-400">备注（可选）</Label>
+              <Label className="text-slate-500">备注（可选）</Label>
               <Textarea
                 placeholder="描述内容方向和要求..."
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                className="bg-[#10263B]/50 border-[#10263B] text-white resize-none"
+                className="bg-[#F7F3E8] border-[#E8E0D0] text-[#0B1B2B] resize-none"
                 rows={3}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setShowCreateDialog(false)}>
+            <Button variant="ghost" onClick={() => setShowCreateDialog(false)} className="text-slate-500">
               取消
             </Button>
             <Button
               onClick={handleCreate}
               disabled={isCreating}
-              className="bg-[#C7A56A] text-[#0B1B2B] hover:bg-[#C7A56A]/90"
+              style={{ background: '#D4AF37', color: '#0B1220', boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)' }}
+              className="hover:opacity-90"
             >
               {isCreating && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               创建
@@ -457,24 +475,26 @@ export default function BriefsPage() {
 
       {/* AI Generate Dialog */}
       <Dialog open={showAIDialog} onOpenChange={setShowAIDialog}>
-        <DialogContent className="bg-[#0B1B2B] border-[#10263B] text-white max-w-md">
+        <DialogContent className="bg-[#FFFCF7] border-[#E8E0D0] text-[#0B1B2B] max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-lg font-bold flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-[#C7A56A]" />
+            <DialogTitle className="text-lg font-bold flex items-center gap-2 text-[#0B1B2B]">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.3)' }}>
+                <Sparkles className="w-4 h-4 text-[#D4AF37]" />
+              </div>
               AI 生成内容规划
             </DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            <p className="text-sm text-slate-400 mb-4">
+            <p className="text-sm text-slate-500 mb-4">
               选择一个买家角色，AI 将根据其特征自动生成针对性的内容规划。
             </p>
             <div className="space-y-2">
-              <Label className="text-slate-400">选择买家角色</Label>
+              <Label className="text-slate-500">选择买家角色</Label>
               <Select value={selectedPersonaForAI} onValueChange={setSelectedPersonaForAI}>
-                <SelectTrigger className="bg-[#10263B]/50 border-[#10263B] text-white">
+                <SelectTrigger className="bg-[#F7F3E8] border-[#E8E0D0] text-[#0B1B2B]">
                   <SelectValue placeholder="选择角色" />
                 </SelectTrigger>
-                <SelectContent className="bg-[#0B1B2B] border-[#10263B]">
+                <SelectContent className="bg-[#FFFCF7] border-[#E8E0D0]">
                   {personas.map((p) => (
                     <SelectItem key={p.id} value={p.id}>
                       {p.name} - {p.title}
@@ -484,19 +504,20 @@ export default function BriefsPage() {
               </Select>
             </div>
             {personas.length === 0 && (
-              <p className="text-xs text-amber-400 mt-3">
+              <p className="text-xs text-amber-600 mt-3">
                 暂无买家角色，请先在知识引擎 &gt; 人设中心创建。
               </p>
             )}
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setShowAIDialog(false)}>
+            <Button variant="ghost" onClick={() => setShowAIDialog(false)} className="text-slate-500">
               取消
             </Button>
             <Button
               onClick={handleAIGenerate}
               disabled={isGenerating || !selectedPersonaForAI}
-              className="bg-[#C7A56A] text-[#0B1B2B] hover:bg-[#C7A56A]/90"
+              style={{ background: '#D4AF37', color: '#0B1220', boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)' }}
+              className="hover:opacity-90 disabled:opacity-50"
             >
               {isGenerating && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               生成规划

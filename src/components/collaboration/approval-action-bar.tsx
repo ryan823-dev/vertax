@@ -96,8 +96,8 @@ export function ApprovalActionBar({
             disabled={isLoading !== null}
             className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors
               ${variant === "light"
-                ? "bg-[#C7A56A] text-[#0B1B2B] hover:bg-[#B8965B]"
-                : "bg-[#C7A56A] text-[#0B1B2B] hover:bg-[#B8965B]"
+                ? "bg-[#D4AF37] text-[#0B1B2B] hover:bg-[#B8965B]"
+                : "bg-[#D4AF37] text-[#0B1B2B] hover:bg-[#B8965B]"
               }
               disabled:opacity-50
             `}
@@ -143,7 +143,7 @@ export function ApprovalActionBar({
               onChange={(e) => setRejectNote(e.target.value)}
               placeholder="请输入修改原因..."
               rows={4}
-              className={`w-full p-3 rounded-xl border text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#C7A56A]/50 ${
+              className={`w-full p-3 rounded-xl border text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50 ${
                 variant === "light"
                   ? "bg-[#F7F3EA] border-[#E7E0D3] text-[#0B1B2B] placeholder:text-slate-400"
                   : "bg-[#10263B]/50 border-[#10263B] text-white placeholder:text-slate-500"

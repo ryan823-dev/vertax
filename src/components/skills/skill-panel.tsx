@@ -153,7 +153,7 @@ export function SkillPanel({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <Loader2 className="w-6 h-6 text-[#C7A56A] animate-spin" />
+        <Loader2 className="w-6 h-6 text-[#D4AF37] animate-spin" />
       </div>
     );
   }
@@ -161,7 +161,7 @@ export function SkillPanel({
   return (
     <div className={className}>
       <div className="flex items-center gap-2 mb-4">
-        <Sparkles className="w-5 h-5 text-[#C7A56A]" />
+        <Sparkles className="w-5 h-5 text-[#D4AF37]" />
         <h3 className="font-bold text-[#0B1B2B]">
           AI Skills
         </h3>
@@ -182,7 +182,7 @@ export function SkillPanel({
             >
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
-                  <Icon className="w-4 h-4 text-[#C7A56A]" />
+                  <Icon className="w-4 h-4 text-[#D4AF37]" />
                 </div>
                 <div>
                   <p className="text-sm font-medium text-[#0B1B2B]">
@@ -208,7 +208,7 @@ export function SkillPanel({
                 }}
                 variant="ghost"
                 size="sm"
-                className="text-[#C7A56A] hover:text-[#b89555] hover:bg-[#C7A56A]/10"
+                className="text-[#D4AF37] hover:text-[#C5A030] hover:bg-[#D4AF37]/10"
               />
             </div>
           );

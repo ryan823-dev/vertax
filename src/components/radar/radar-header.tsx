@@ -63,7 +63,7 @@ function RadarStepper({
       return <AlertCircle size={16} className="text-red-400" />;
     }
     if (isCurrentStep) {
-      return <Circle size={16} className="text-[#C7A56A] fill-[#C7A56A]/20" />;
+      return <Circle size={16} className="text-[#D4AF37] fill-[#D4AF37]/20" />;
     }
     return <Circle size={16} className="text-slate-300" />;
   };
@@ -71,7 +71,7 @@ function RadarStepper({
   const getStepTextColor = (status: StepStatus, isCurrentStep: boolean) => {
     if (status === 'DONE') return 'text-emerald-600';
     if (status === 'BLOCKED') return 'text-red-500';
-    if (isCurrentStep) return 'text-[#C7A56A] font-medium';
+    if (isCurrentStep) return 'text-[#D4AF37] font-medium';
     return 'text-slate-400';
   };
 
@@ -149,12 +149,12 @@ export function RadarHeader({
       : null;
 
   return (
-    <div className="bg-white/80 backdrop-blur-sm border-b border-[#E7E0D3] px-5 py-3 sticky top-0 z-10">
+    <div className="module-header-bar px-5 py-3 sticky top-0 z-10">
       <div className="flex items-center justify-between gap-4">
         {/* Left: Title + Description */}
         <div className="shrink-0">
           <div className="flex items-center gap-2">
-            <Radar size={20} className="text-[#C7A56A]" />
+            <Radar size={20} className="text-[#D4AF37]" />
             <h1 className="text-lg font-bold text-[#0B1B2B]">{title}</h1>
           </div>
           <p className="text-xs text-slate-500 ml-7">{description}</p>
@@ -212,7 +212,7 @@ export function RadarHeader({
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
                   primaryCTA.disabled
                     ? 'bg-slate-100 text-slate-400 cursor-not-allowed pointer-events-none'
-                    : 'bg-[#0B1B2B] text-[#C7A56A] hover:bg-[#10263B] hover:shadow-lg hover:shadow-[#C7A56A]/10'
+                    : 'bg-[#0B1B2B] text-[#D4AF37] hover:bg-[#10263B] hover:shadow-lg hover:shadow-[#D4AF37]/10'
                 }`}
                 onClick={(e) => primaryCTA.disabled && e.preventDefault()}
               >
@@ -260,8 +260,8 @@ export function StatCard({
   const content = (
     <div className={`p-4 rounded-xl border transition-all ${
       highlight 
-        ? 'bg-[#F7F3EA] border-[#E7E0D3] hover:border-[#C7A56A]' 
-        : 'bg-white border-slate-200 hover:border-slate-300'
+        ? 'bg-[#F7F3E8] border-[#E8E0D0] hover:border-[#D4AF37]' 
+        : 'bg-[#FFFCF7] border-[#E8E0D0] hover:border-[#D4AF37]/50'
     } ${href ? 'cursor-pointer hover:shadow-md' : ''}`}>
       <div className="flex items-start justify-between mb-2">
         <div className={`p-2 rounded-lg ${highlight ? 'bg-white' : 'bg-slate-50'}`}>
@@ -308,9 +308,9 @@ export function RadarEmptyGuide({ currentStep, steps, primaryCTA }: RadarEmptyGu
   // 不同步骤的引导图标
   const getGuideIcon = () => {
     switch (currentStep) {
-      case 1: return <Radar size={28} className="text-[#C7A56A]" />;
-      case 2: return <Sparkles size={28} className="text-[#C7A56A]" />;
-      default: return <AlertCircle size={28} className="text-[#C7A56A]" />;
+      case 1: return <Radar size={28} className="text-[#D4AF37]" />;
+      case 2: return <Sparkles size={28} className="text-[#D4AF37]" />;
+      default: return <AlertCircle size={28} className="text-[#D4AF37]" />;
     }
   };
 
@@ -340,7 +340,7 @@ export function RadarEmptyGuide({ currentStep, steps, primaryCTA }: RadarEmptyGu
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
               primaryCTA.disabled
                 ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                : 'bg-[#0B1B2B] text-[#C7A56A] hover:bg-[#10263B]'
+                : 'bg-[#0B1B2B] text-[#D4AF37] hover:bg-[#10263B]'
             }`}
           >
             <Sparkles size={16} />
@@ -418,11 +418,11 @@ export function SecretaryPanel({ counts, errors }: SecretaryPanelProps) {
   }
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-      <div className="px-4 py-3 border-b border-slate-100 bg-slate-50">
+    <div className="module-card overflow-hidden">
+      <div className="px-4 py-3 border-b border-[#E8E0D0] bg-[#F7F3E8]">
         <h3 className="text-sm font-medium text-[#0B1B2B]">秘书提醒</h3>
       </div>
-      <div className="divide-y divide-slate-100">
+      <div className="divide-y divide-[#E8E0D0]">
         {items.map((item, idx) => (
           <div key={idx} className="p-3">
             {item.href ? (
@@ -438,14 +438,14 @@ export function SecretaryPanel({ counts, errors }: SecretaryPanelProps) {
                      <CheckCircle2 size={14} />}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-[#0B1B2B] group-hover:text-[#C7A56A] transition-colors">
+                    <div className="text-sm font-medium text-[#0B1B2B] group-hover:text-[#D4AF37] transition-colors">
                       {item.title}
                     </div>
                     <div className="text-xs text-slate-500 mt-0.5 line-clamp-2">
                       {item.description}
                     </div>
                   </div>
-                  <ChevronRight size={14} className="text-slate-300 group-hover:text-[#C7A56A] transition-colors mt-0.5" />
+                  <ChevronRight size={14} className="text-slate-300 group-hover:text-[#D4AF37] transition-colors mt-0.5" />
                 </div>
               </Link>
             ) : (

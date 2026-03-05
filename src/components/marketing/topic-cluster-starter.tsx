@@ -222,7 +222,7 @@ export function TopicClusterStarter({ counts: countsProp, onSuccess }: StarterPr
     <div className="bg-white rounded-2xl border border-[#E7E0D3] p-8">
       {/* Header */}
       <div className="text-center mb-8">
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#C7A56A] to-[#C7A56A]/70 flex items-center justify-center mx-auto mb-4">
+        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#D4AF37] to-[#D4AF37]/70 flex items-center justify-center mx-auto mb-4">
           <Layers size={28} className="text-[#0B1B2B]" />
         </div>
         <h2 className="text-xl font-bold text-[#0B1B2B] mb-2">启动内容增长</h2>
@@ -239,16 +239,16 @@ export function TopicClusterStarter({ counts: countsProp, onSuccess }: StarterPr
             onClick={() => setSelectedPath('sync')}
             className={`p-5 rounded-xl border-2 text-left transition-all ${
               canSyncFromKnowledge 
-                ? 'border-[#C7A56A] bg-[#F7F3EA] hover:shadow-md' 
+                ? 'border-[#D4AF37] bg-[#F7F3EA] hover:shadow-md' 
                 : 'border-slate-200 hover:border-slate-300'
             }`}
           >
             <div className="flex items-center gap-2 mb-3">
-              <div className={`p-2 rounded-lg ${canSyncFromKnowledge ? 'bg-[#C7A56A]/20' : 'bg-slate-100'}`}>
-                <Sparkles size={18} className={canSyncFromKnowledge ? 'text-[#C7A56A]' : 'text-slate-400'} />
+              <div className={`p-2 rounded-lg ${canSyncFromKnowledge ? 'bg-[#D4AF37]/20' : 'bg-slate-100'}`}>
+                <Sparkles size={18} className={canSyncFromKnowledge ? 'text-[#D4AF37]' : 'text-slate-400'} />
               </div>
               {canSyncFromKnowledge && (
-                <span className="text-[10px] px-2 py-0.5 bg-[#C7A56A] text-[#0B1B2B] rounded-full font-medium">
+                <span className="text-[10px] px-2 py-0.5 bg-[#D4AF37] text-[#0B1B2B] rounded-full font-medium">
                   推荐
                 </span>
               )}
@@ -282,7 +282,7 @@ export function TopicClusterStarter({ counts: countsProp, onSuccess }: StarterPr
           {/* 路径 2: 手动快速起步 */}
           <button
             onClick={() => setSelectedPath('manual')}
-            className="p-5 rounded-xl border-2 border-slate-200 text-left hover:border-[#C7A56A]/50 hover:shadow-md transition-all"
+            className="p-5 rounded-xl border-2 border-slate-200 text-left hover:border-[#D4AF37]/50 hover:shadow-md transition-all"
           >
             <div className="flex items-center gap-2 mb-3">
               <div className="p-2 rounded-lg bg-slate-100">
@@ -302,7 +302,7 @@ export function TopicClusterStarter({ counts: countsProp, onSuccess }: StarterPr
           {/* 路径 3: 导入参考材料 */}
           <button
             onClick={() => setSelectedPath('import')}
-            className="p-5 rounded-xl border-2 border-slate-200 text-left hover:border-[#C7A56A]/50 hover:shadow-md transition-all"
+            className="p-5 rounded-xl border-2 border-slate-200 text-left hover:border-[#D4AF37]/50 hover:shadow-md transition-all"
           >
             <div className="flex items-center gap-2 mb-3">
               <div className="p-2 rounded-lg bg-slate-100">
@@ -326,7 +326,7 @@ export function TopicClusterStarter({ counts: countsProp, onSuccess }: StarterPr
         <div className="max-w-lg mx-auto">
           <button
             onClick={() => setSelectedPath(null)}
-            className="flex items-center gap-1 text-sm text-slate-500 hover:text-[#C7A56A] mb-4"
+            className="flex items-center gap-1 text-sm text-slate-500 hover:text-[#D4AF37] mb-4"
           >
             <ChevronRight size={14} className="rotate-180" />
             返回选择
@@ -334,7 +334,7 @@ export function TopicClusterStarter({ counts: countsProp, onSuccess }: StarterPr
           
           <div className="bg-[#F7F3EA] rounded-xl p-6 mb-6">
             <h3 className="font-bold text-[#0B1B2B] mb-2 flex items-center gap-2">
-              <Sparkles size={18} className="text-[#C7A56A]" />
+              <Sparkles size={18} className="text-[#D4AF37]" />
               从知识引擎同步生成
             </h3>
             <p className="text-sm text-slate-600 mb-4">
@@ -392,7 +392,7 @@ export function TopicClusterStarter({ counts: countsProp, onSuccess }: StarterPr
           <button
             onClick={handleSyncFromKnowledge}
             disabled={isProcessing}
-            className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-[#0B1B2B] text-[#C7A56A] rounded-xl font-medium hover:bg-[#10263B] transition-colors disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-[#0B1B2B] text-[#D4AF37] rounded-xl font-medium hover:bg-[#10263B] transition-colors disabled:opacity-50"
           >
             {isProcessing ? (
               <>
@@ -414,7 +414,7 @@ export function TopicClusterStarter({ counts: countsProp, onSuccess }: StarterPr
         <div className="max-w-lg mx-auto">
           <button
             onClick={() => setSelectedPath(null)}
-            className="flex items-center gap-1 text-sm text-slate-500 hover:text-[#C7A56A] mb-4"
+            className="flex items-center gap-1 text-sm text-slate-500 hover:text-[#D4AF37] mb-4"
           >
             <ChevronRight size={14} className="rotate-180" />
             返回选择
@@ -431,7 +431,7 @@ export function TopicClusterStarter({ counts: countsProp, onSuccess }: StarterPr
                 {manualKeywords.map((kw) => (
                   <span 
                     key={kw}
-                    className="inline-flex items-center gap-1 px-2 py-1 bg-[#C7A56A]/20 text-[#0B1B2B] rounded text-sm"
+                    className="inline-flex items-center gap-1 px-2 py-1 bg-[#D4AF37]/20 text-[#0B1B2B] rounded text-sm"
                   >
                     {kw}
                     <button onClick={() => removeKeyword(kw)} className="hover:text-red-500">
@@ -447,7 +447,7 @@ export function TopicClusterStarter({ counts: countsProp, onSuccess }: StarterPr
                   onChange={(e) => setNewKeyword(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && addKeyword()}
                   placeholder="输入关键词后回车"
-                  className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#C7A56A]"
+                  className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#D4AF37]"
                 />
                 <button
                   onClick={addKeyword}
@@ -472,7 +472,7 @@ export function TopicClusterStarter({ counts: countsProp, onSuccess }: StarterPr
                     onClick={() => toggleCountry(code)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                       targetCountries.includes(code)
-                        ? 'bg-[#C7A56A] text-white'
+                        ? 'bg-[#D4AF37] text-white'
                         : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                     }`}
                   >
@@ -493,7 +493,7 @@ export function TopicClusterStarter({ counts: countsProp, onSuccess }: StarterPr
                 value={customerType}
                 onChange={(e) => setCustomerType(e.target.value)}
                 placeholder="如：制造业采购经理、电商卖家..."
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#C7A56A]"
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#D4AF37]"
               />
             </div>
           </div>
@@ -501,7 +501,7 @@ export function TopicClusterStarter({ counts: countsProp, onSuccess }: StarterPr
           <button
             onClick={handleManualStart}
             disabled={isProcessing || manualKeywords.length === 0}
-            className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-[#0B1B2B] text-[#C7A56A] rounded-xl font-medium hover:bg-[#10263B] transition-colors disabled:opacity-50 mt-6"
+            className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-[#0B1B2B] text-[#D4AF37] rounded-xl font-medium hover:bg-[#10263B] transition-colors disabled:opacity-50 mt-6"
           >
             {isProcessing ? (
               <>
@@ -523,7 +523,7 @@ export function TopicClusterStarter({ counts: countsProp, onSuccess }: StarterPr
         <div className="max-w-lg mx-auto">
           <button
             onClick={() => setSelectedPath(null)}
-            className="flex items-center gap-1 text-sm text-slate-500 hover:text-[#C7A56A] mb-4"
+            className="flex items-center gap-1 text-sm text-slate-500 hover:text-[#D4AF37] mb-4"
           >
             <ChevronRight size={14} className="rotate-180" />
             返回选择
@@ -542,7 +542,7 @@ export function TopicClusterStarter({ counts: countsProp, onSuccess }: StarterPr
                 onChange={(e) => setImportText(e.target.value)}
                 placeholder="粘贴以下任意内容：&#10;- 产品介绍文案&#10;- 竞品网站URL&#10;- 公司简介&#10;- 行业关键词列表"
                 rows={8}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#C7A56A] resize-none"
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#D4AF37] resize-none"
               />
               <p className="text-xs text-slate-400 mt-2">
                 注：系统不会抓取网页正文，仅将您输入的文本作为参考
@@ -553,7 +553,7 @@ export function TopicClusterStarter({ counts: countsProp, onSuccess }: StarterPr
           <button
             onClick={handleImportStart}
             disabled={isProcessing || !importText.trim()}
-            className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-[#0B1B2B] text-[#C7A56A] rounded-xl font-medium hover:bg-[#10263B] transition-colors disabled:opacity-50 mt-6"
+            className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-[#0B1B2B] text-[#D4AF37] rounded-xl font-medium hover:bg-[#10263B] transition-colors disabled:opacity-50 mt-6"
           >
             {isProcessing ? (
               <>

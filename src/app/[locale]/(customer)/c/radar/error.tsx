@@ -78,7 +78,7 @@ export default function RadarError({
         <div className="space-y-3">
           <button
             onClick={reset}
-            className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-[#0B1B2B] text-[#C7A56A] rounded-xl text-sm font-medium hover:bg-[#10263B] transition-colors"
+            className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-[#0B1B2B] text-[#D4AF37] rounded-xl text-sm font-medium hover:bg-[#10263B] transition-colors"
           >
             <RefreshCw size={16} />
             重新加载
@@ -95,13 +95,13 @@ export default function RadarError({
 
         {/* Help Links */}
         <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-center gap-4 text-xs text-slate-400">
-          <Link href="/c" className="hover:text-[#C7A56A]">工作台</Link>
+          <Link href="/c" className="hover:text-[#D4AF37]">工作台</Link>
           <span>·</span>
-          <Link href="/help" className="hover:text-[#C7A56A]">帮助中心</Link>
+          <Link href="/help" className="hover:text-[#D4AF37]">帮助中心</Link>
           <span>·</span>
           <button 
             onClick={() => window.location.reload()} 
-            className="hover:text-[#C7A56A]"
+            className="hover:text-[#D4AF37]"
           >
             刷新页面
           </button>

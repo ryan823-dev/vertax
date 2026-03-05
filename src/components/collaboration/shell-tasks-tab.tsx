@@ -80,8 +80,8 @@ export function ShellTasksTab({
     ? "bg-white border-[#E7E0D3]"
     : "bg-[#10263B]/30 border-[#10263B]/50";
   const inputStyles = variant === "light"
-    ? "bg-[#F7F3EA] border-[#E7E0D3] text-[#0B1B2B] placeholder:text-slate-400 focus:border-[#C7A56A]"
-    : "bg-[#10263B]/50 border-[#10263B] text-white placeholder:text-slate-500 focus:border-[#C7A56A]";
+    ? "bg-[#F7F3EA] border-[#E7E0D3] text-[#0B1B2B] placeholder:text-slate-400 focus:border-[#D4AF37]"
+    : "bg-[#10263B]/50 border-[#10263B] text-white placeholder:text-slate-500 focus:border-[#D4AF37]";
 
   const openTasks = tasks.filter((t) => t.status === "open");
   const inProgressTasks = tasks.filter((t) => t.status === "in_progress");
@@ -191,7 +191,7 @@ export function ShellTasksTab({
               onChange={(e) => setNewTaskTitle(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleCreateTask()}
               placeholder="快速添加任务..."
-              className={`flex-1 px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-1 focus:ring-[#C7A56A]/50 ${inputStyles}`}
+              className={`flex-1 px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-1 focus:ring-[#D4AF37]/50 ${inputStyles}`}
             />
             <button
               onClick={handleCreateTask}
@@ -199,7 +199,7 @@ export function ShellTasksTab({
               className={`p-2 rounded-lg transition-colors
                 ${variant === "light"
                   ? "bg-[#0B1B2B] text-white hover:bg-[#10263B]"
-                  : "bg-[#C7A56A] text-[#0B1B2B] hover:bg-[#B8965B]"
+                  : "bg-[#D4AF37] text-[#0B1B2B] hover:bg-[#B8965B]"
                 }
                 disabled:opacity-50
               `}

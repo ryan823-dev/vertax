@@ -78,7 +78,7 @@ export default function RadarPage() {
   if (isLoading && !pipelineLoaded) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 text-[#C7A56A] animate-spin" />
+        <Loader2 className="w-8 h-8 text-[#D4AF37] animate-spin" />
       </div>
     );
   }
@@ -99,18 +99,18 @@ export default function RadarPage() {
             </button>
           </div>
         )}
-        <div className="bg-white rounded-2xl border border-[#E7E0D3] p-5">
+        <div className="bg-[#FFFCF7] rounded-2xl border border-[#E8E0D0] p-5">
           <h3 className="font-bold text-[#0B1B2B] mb-4">快捷入口</h3>
           <div className="grid grid-cols-4 gap-4">
             {radarModules.map((mod) => (
               <Link
                 key={mod.label}
                 href={mod.href}
-                className="p-4 rounded-xl border border-[#E7E0D3] hover:border-[#C7A56A]/50 hover:shadow-md transition-all group bg-[#FFFCF6]"
+                className="p-4 rounded-xl border border-[#E8E0D0] hover:border-[#D4AF37]/50 hover:shadow-md transition-all group bg-[#FFFCF7]"
               >
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="w-9 h-9 bg-[#F7F3EA] rounded-lg flex items-center justify-center group-hover:bg-[#C7A56A]/10 transition-colors">
-                    <mod.icon size={18} className="text-[#C7A56A]" />
+                  <div className="w-9 h-9 bg-[#F0EBD8] rounded-lg flex items-center justify-center group-hover:bg-[#D4AF37]/10 transition-colors">
+                    <mod.icon size={18} className="text-[#D4AF37]" />
                   </div>
                   <h4 className="font-medium text-[#0B1B2B]">{mod.label}</h4>
                 </div>
@@ -176,14 +176,14 @@ export default function RadarPage() {
             />
             
             {/* 快速入门步骤 */}
-            <div className="mt-8 bg-white rounded-2xl border border-[#E7E0D3] p-6">
+            <div className="mt-8 bg-[#FFFCF7] rounded-2xl border border-[#E8E0D0] p-6">
               <h3 className="font-bold text-[#0B1B2B] mb-4">快速入门</h3>
               <div className="space-y-4">
                 {steps.map((step, idx) => (
                   <Link
                     key={step.key}
                     href={step.href}
-                    className="flex items-center gap-4 p-3 rounded-xl hover:bg-[#F7F3EA] transition-colors group"
+                    className="flex items-center gap-4 p-3 rounded-xl hover:bg-[#F0EBD8] transition-colors group"
                   >
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
                       step.status === 'DONE' 
@@ -191,7 +191,7 @@ export default function RadarPage() {
                         : step.status === 'BLOCKED'
                           ? 'bg-red-50 text-red-400'
                           : idx + 1 === currentStep
-                            ? 'bg-[#C7A56A]/20 text-[#C7A56A]'
+                            ? 'bg-[#D4AF37]/20 text-[#D4AF37]'
                             : 'bg-slate-100 text-slate-400'
                     }`}>
                       {step.status === 'DONE' ? <CheckCircle2 size={16} /> : idx + 1}
@@ -202,7 +202,7 @@ export default function RadarPage() {
                         <div className="text-xs text-slate-500 mt-0.5">{step.blocker}</div>
                       )}
                     </div>
-                    <ChevronRight size={16} className="text-slate-300 group-hover:text-[#C7A56A] transition-colors" />
+                    <ChevronRight size={16} className="text-slate-300 group-hover:text-[#D4AF37] transition-colors" />
                   </Link>
                 ))}
               </div>
@@ -239,13 +239,13 @@ export default function RadarPage() {
                 <StatCard
                   label="已导入"
                   value={counts.candidatesImported7d}
-                  icon={<CheckCircle2 size={18} className="text-[#C7A56A]" />}
+                  icon={<CheckCircle2 size={18} className="text-[#D4AF37]" />}
                   href="/c/radar/prospects"
                 />
               </div>
 
               {/* Module Quick Access */}
-              <div className="bg-white rounded-2xl border border-[#E7E0D3] p-5">
+              <div className="bg-[#FFFCF7] rounded-2xl border border-[#E8E0D0] p-5">
                 <h3 className="font-bold text-[#0B1B2B] mb-4">快捷入口</h3>
                 <div className="grid grid-cols-4 gap-4">
                   {radarModules.map((mod) => {
@@ -254,7 +254,7 @@ export default function RadarPage() {
                       <Link
                         key={mod.label}
                         href={mod.href}
-                        className="relative p-4 rounded-xl border border-[#E7E0D3] hover:border-[#C7A56A]/50 hover:shadow-md transition-all group bg-[#FFFCF6]"
+                        className="relative p-4 rounded-xl border border-[#E8E0D0] hover:border-[#D4AF37]/50 hover:shadow-md transition-all group bg-[#FFFCF7]"
                       >
                         {badge && (
                           <span className="absolute -top-2 -right-2 min-w-[20px] h-5 px-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
@@ -262,8 +262,8 @@ export default function RadarPage() {
                           </span>
                         )}
                         <div className="flex items-center gap-3 mb-2">
-                          <div className="w-9 h-9 bg-[#F7F3EA] rounded-lg flex items-center justify-center group-hover:bg-[#C7A56A]/10 transition-colors">
-                            <mod.icon size={18} className="text-[#C7A56A]" />
+                          <div className="w-9 h-9 bg-[#F0EBD8] rounded-lg flex items-center justify-center group-hover:bg-[#D4AF37]/10 transition-colors">
+                            <mod.icon size={18} className="text-[#D4AF37]" />
                           </div>
                           <h4 className="font-medium text-[#0B1B2B]">{mod.label}</h4>
                         </div>
@@ -275,11 +275,12 @@ export default function RadarPage() {
               </div>
 
               {/* Current Step Action Card */}
-              <div className="bg-gradient-to-r from-[#0B1B2B] to-[#152942] rounded-2xl p-6">
+              <div style={{background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)', boxShadow: '0 8px 32px -8px rgba(0,0,0,0.45)'}} className="rounded-2xl p-6 relative overflow-hidden">
+                <div style={{background: 'radial-gradient(ellipse 70% 60% at 50% -20%, rgba(212,175,55,0.14) 0%, transparent 65%)'}} className="absolute inset-0 pointer-events-none" />
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <Radar size={20} className="text-[#C7A56A]" />
+                      <Radar size={20} className="text-[#D4AF37]" />
                       <span className="text-xs text-slate-400">当前步骤</span>
                     </div>
                     <h3 className="text-xl font-bold text-white mb-1">
@@ -295,7 +296,7 @@ export default function RadarPage() {
                     className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium transition-all ${
                       primaryCTA.disabled
                         ? 'bg-slate-600 text-slate-400 cursor-not-allowed'
-                        : 'bg-[#C7A56A] text-[#0B1B2B] hover:bg-[#D4B57A]'
+                        : 'bg-[#D4AF37] text-[#0B1B2B] hover:bg-[#D4B57A]'
                     }`}
                   >
                     <Sparkles size={16} />
@@ -314,7 +315,7 @@ export default function RadarPage() {
                           : step.status === 'BLOCKED'
                             ? 'bg-red-400'
                             : idx + 1 === currentStep
-                              ? 'bg-[#C7A56A]'
+                              ? 'bg-[#D4AF37]'
                               : 'bg-slate-600'
                       }`} />
                     </div>
@@ -331,7 +332,7 @@ export default function RadarPage() {
 
               {/* Scan Status Summary */}
               {counts.lastScanAt && (
-                <div className="bg-white rounded-xl border border-[#E7E0D3] p-4">
+                <div className="bg-[#FFFCF7] rounded-xl border border-[#E8E0D0] p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -348,7 +349,7 @@ export default function RadarPage() {
                       </span>
                       <Link 
                         href="/c/radar/tasks" 
-                        className="text-[#C7A56A] hover:underline"
+                        className="text-[#D4AF37] hover:underline"
                       >
                         查看详情
                       </Link>
@@ -389,8 +390,8 @@ export default function RadarPage() {
               )}
 
               {/* Recent Activity */}
-              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                <div className="px-4 py-3 border-b border-slate-100 bg-slate-50">
+              <div className="bg-[#FFFCF7] rounded-xl border border-[#E8E0D0] overflow-hidden">
+                <div className="px-4 py-3 border-b border-[#E8E0D0] bg-[#F7F3E8]">
                   <h3 className="text-sm font-medium text-[#0B1B2B]">最近活动</h3>
                 </div>
                 <div className="p-4">
@@ -412,7 +413,7 @@ export default function RadarPage() {
                       )}
                       {counts.candidatesImported7d > 0 && (
                         <div className="flex items-center gap-2 text-xs">
-                          <CheckCircle2 size={14} className="text-[#C7A56A]" />
+                          <CheckCircle2 size={14} className="text-[#D4AF37]" />
                           <span className="text-slate-600">
                             已导入 <strong>{counts.candidatesImported7d}</strong> 个到线索库
                           </span>

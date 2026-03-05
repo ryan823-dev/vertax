@@ -71,12 +71,12 @@ export function ShellVersionTab({
     : "text-slate-400";
 
   const cardStyles = variant === "light"
-    ? "bg-white border-[#E7E0D3] hover:border-[#C7A56A]/50"
-    : "bg-[#10263B]/30 border-[#10263B]/50 hover:border-[#C7A56A]/50";
+    ? "bg-white border-[#E7E0D3] hover:border-[#D4AF37]/50"
+    : "bg-[#10263B]/30 border-[#10263B]/50 hover:border-[#D4AF37]/50";
 
   const activeCardStyles = variant === "light"
-    ? "bg-[#FFFCF6] border-[#C7A56A]"
-    : "bg-[#C7A56A]/10 border-[#C7A56A]";
+    ? "bg-[#FFFCF6] border-[#D4AF37]"
+    : "bg-[#D4AF37]/10 border-[#D4AF37]";
 
   return (
     <div className="space-y-4">
@@ -107,7 +107,7 @@ export function ShellVersionTab({
               className={`mt-3 w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors
                 ${variant === "light"
                   ? "bg-[#0B1B2B] text-white hover:bg-[#10263B]"
-                  : "bg-[#C7A56A] text-[#0B1B2B] hover:bg-[#B8965B]"
+                  : "bg-[#D4AF37] text-[#0B1B2B] hover:bg-[#B8965B]"
                 }
                 disabled:opacity-50
               `}
@@ -179,7 +179,7 @@ export function ShellVersionTab({
                     onRevert(version.id);
                   }}
                   className={`mt-2 flex items-center gap-1 text-xs ${
-                    variant === "light" ? "text-[#C7A56A] hover:underline" : "text-[#C7A56A] hover:underline"
+                    variant === "light" ? "text-[#D4AF37] hover:underline" : "text-[#D4AF37] hover:underline"
                   }`}
                 >
                   <RotateCcw size={12} />

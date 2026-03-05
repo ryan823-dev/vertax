@@ -203,52 +203,62 @@ export default function SocialPage() {
 
   // 获取平台信息
   const getPlatformInfo = (platformId: string) => {
-    return PLATFORMS.find(p => p.id === platformId) || { id: platformId, name: platformId, color: 'bg-slate-500', textColor: 'text-slate-500' };
+    return PLATFORMS.find(p => p.id === platformId) || { id: platformId, name: platformId, color: 'bg-[#F7F3E8]0', textColor: 'text-slate-500' };
   };
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 text-[#C7A56A] animate-spin" />
+        <Loader2 className="w-8 h-8 text-[#D4AF37] animate-spin" />
       </div>
     );
   }
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-[#0B1B2B]">声量枢纽</h1>
-          <p className="text-sm text-slate-500 mt-1">社交媒体管理与品牌传播</p>
-        </div>
-        <div className="flex items-center gap-3">
-          {viewMode === 'list' ? (
+      {/* Header - 指令台 深蓝舞台风格 */}
+      <div className="rounded-2xl p-6 relative overflow-hidden" style={{
+        background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)',
+        boxShadow: '0 8px 32px -8px rgba(0,0,0,0.45)',
+      }}>
+        <div className="absolute inset-0 pointer-events-none" style={{
+          background: 'radial-gradient(ellipse 70% 60% at 50% -20%, rgba(212,175,55,0.14) 0%, transparent 65%)',
+        }} />
+        <div className="relative flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-white">声量枢纽</h1>
+            <p className="text-sm text-slate-400 mt-1">社交媒体管理与品牌传播</p>
+          </div>
+          <div className="flex items-center gap-3">
+            {viewMode === 'list' ? (
+              <button 
+                onClick={() => setViewMode('create')}
+                className="px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors"
+                style={{ background: '#D4AF37', color: '#0B1220', boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)' }}
+              >
+                <Plus size={16} />
+                创建内容
+              </button>
+            ) : (
+              <button 
+                onClick={() => {
+                  setViewMode('list');
+                  setTopic('');
+                  setGeneratedContents({});
+                }}
+                className="px-4 py-2 rounded-xl text-sm font-medium transition-colors"
+                style={{ background: '#0B1220', color: '#D4AF37' }}
+              >
+                返回列表
+              </button>
+            )}
             <button 
-              onClick={() => setViewMode('create')}
-              className="px-4 py-2 bg-[#0B1B2B] text-[#C7A56A] rounded-xl text-sm font-medium hover:bg-[#10263B] transition-colors flex items-center gap-2"
+              onClick={loadData}
+              className="p-2 text-slate-400 hover:text-[#D4AF37] transition-colors"
             >
-              <Plus size={16} />
-              创建内容
+              <RefreshCw size={18} />
             </button>
-          ) : (
-            <button 
-              onClick={() => {
-                setViewMode('list');
-                setTopic('');
-                setGeneratedContents({});
-              }}
-              className="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-200 transition-colors"
-            >
-              返回列表
-            </button>
-          )}
-          <button 
-            onClick={loadData}
-            className="p-2 text-slate-400 hover:text-[#C7A56A] transition-colors"
-          >
-            <RefreshCw size={18} />
-          </button>
+          </div>
         </div>
       </div>
 
@@ -277,12 +287,12 @@ export default function SocialPage() {
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: '内容数', value: stats.totalPosts, icon: Calendar, color: 'text-[#C7A56A]' },
+          { label: '内容数', value: stats.totalPosts, icon: Calendar, color: 'text-[#D4AF37]' },
           { label: '已发布', value: stats.published, icon: CheckCircle2, color: 'text-emerald-500' },
           { label: '总互动', value: stats.totalEngagement, icon: Heart, color: 'text-pink-500' },
           { label: '已授权账号', value: stats.accountCount, icon: Globe, color: 'text-blue-500' },
         ].map((stat) => (
-          <div key={stat.label} className="bg-[#FFFCF6] rounded-xl border border-[#E7E0D3] p-4">
+          <div key={stat.label} className="bg-[#F7F3E8] rounded-xl border border-[#E8E0D0] p-4">
             <div className="flex items-center gap-2 mb-2">
               <stat.icon size={16} className={stat.color} />
               <span className="text-xs text-slate-500">{stat.label}</span>
@@ -296,9 +306,9 @@ export default function SocialPage() {
       {viewMode === 'create' ? (
         <div className="grid grid-cols-2 gap-6">
           {/* Step 1: Generate Content */}
-          <div className="bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3] p-6">
+          <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
             <h3 className="font-bold text-[#0B1B2B] mb-4 flex items-center gap-2">
-              <span className="w-6 h-6 bg-[#0B1B2B] text-[#C7A56A] rounded-full text-xs flex items-center justify-center">1</span>
+              <span className="w-6 h-6 bg-[#0B1220] text-[#D4AF37] rounded-full text-xs flex items-center justify-center">1</span>
               AI生成多平台内容
             </h3>
             
@@ -310,7 +320,7 @@ export default function SocialPage() {
                   onChange={(e) => setTopic(e.target.value)}
                   placeholder="例如：发布新产品上线公告、分享行业洞察、公司活动回顾..."
                   rows={3}
-                  className="w-full px-4 py-2.5 border border-[#E7E0D3] rounded-xl text-sm focus:outline-none focus:border-[#C7A56A] resize-none"
+                  className="w-full px-4 py-2.5 border border-[#E8E0D0] rounded-xl text-sm focus:outline-none focus:border-[#D4AF37] resize-none bg-[#FFFCF7]"
                 />
               </div>
 
@@ -343,7 +353,7 @@ export default function SocialPage() {
               <button
                 onClick={handleGenerate}
                 disabled={!topic.trim() || selectedPlatforms.length === 0 || isGenerating}
-                className="w-full py-3 bg-gradient-to-r from-[#0B1B2B] to-[#152942] text-[#C7A56A] rounded-xl font-medium text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full py-3 bg-gradient-to-r from-[#0B1B2B] to-[#152942] text-[#D4AF37] rounded-xl font-medium text-sm flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {isGenerating ? (
                   <>
@@ -361,9 +371,9 @@ export default function SocialPage() {
           </div>
 
           {/* Step 2: Preview & Publish */}
-          <div className="bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3] p-6">
+          <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
             <h3 className="font-bold text-[#0B1B2B] mb-4 flex items-center gap-2">
-              <span className="w-6 h-6 bg-[#0B1B2B] text-[#C7A56A] rounded-full text-xs flex items-center justify-center">2</span>
+              <span className="w-6 h-6 bg-[#0B1220] text-[#D4AF37] rounded-full text-xs flex items-center justify-center">2</span>
               预览与发布
             </h3>
 
@@ -374,7 +384,7 @@ export default function SocialPage() {
                   {Object.entries(generatedContents).map(([platform, content]) => {
                     const info = getPlatformInfo(platform);
                     return (
-                      <div key={platform} className="border border-[#E7E0D3] rounded-xl p-4">
+                      <div key={platform} className="border border-[#E8E0D0] rounded-xl p-4 bg-[#FFFCF7]">
                         <div className="flex items-center gap-2 mb-2">
                           <div className={`w-6 h-6 ${info.color} rounded flex items-center justify-center`}>
                             <span className="text-white text-[10px] font-bold">
@@ -395,10 +405,11 @@ export default function SocialPage() {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex gap-3 pt-4 border-t border-[#E7E0D3]">
+                <div className="flex gap-3 pt-4 border-t border-[#E8E0D0]">
                   <button
                     onClick={() => handleSavePost(false)}
-                    className="flex-1 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-200 flex items-center justify-center gap-2"
+                    className="flex-1 py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2"
+                    style={{ background: '#0B1220', color: '#D4AF37' }}
                   >
                     <Edit2 size={14} />
                     保存草稿
@@ -406,7 +417,8 @@ export default function SocialPage() {
                   <button
                     onClick={() => handleSavePost(true)}
                     disabled={isPublishing || accounts.length === 0}
-                    className="flex-1 py-2.5 bg-[#0B1B2B] text-[#C7A56A] rounded-xl text-sm font-medium hover:bg-[#10263B] flex items-center justify-center gap-2 disabled:opacity-50"
+                    className="flex-1 py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50"
+                    style={{ background: '#D4AF37', color: '#0B1220', boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)' }}
                   >
                     {isPublishing ? (
                       <>
@@ -424,7 +436,9 @@ export default function SocialPage() {
               </div>
             ) : (
               <div className="text-center py-16">
-                <MessageSquare size={40} className="text-slate-300 mx-auto mb-3" />
+                <div className="w-16 h-16 mx-auto mb-3 rounded-xl flex items-center justify-center" style={{ background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.3)' }}>
+                  <MessageSquare size={28} className="text-[#D4AF37]" />
+                </div>
                 <p className="text-sm text-slate-500">输入主题并选择平台</p>
                 <p className="text-xs text-slate-400 mt-1">AI将为每个平台生成定制化内容</p>
               </div>
@@ -434,16 +448,24 @@ export default function SocialPage() {
       ) : (
         <div className="grid grid-cols-3 gap-6">
           {/* Post List */}
-          <div className="col-span-2 bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3] p-6">
-            <h3 className="font-bold text-[#0B1B2B] mb-4">内容列表</h3>
-            
+          <div className="col-span-2 bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0]">
+            <div className="px-6 py-4 border-b border-[#E8E0D0]" style={{ background: '#F0EBD8' }}>
+              <h3 className="font-bold text-[#0B1B2B]">内容列表</h3>
+            </div>
+            <div className="p-6">
             {posts.length === 0 ? (
-              <div className="text-center py-16">
-                <Calendar size={48} className="text-slate-300 mx-auto mb-4" />
-                <p className="text-slate-500">暂无社媒内容</p>
+              <div className="rounded-2xl p-12 text-center" style={{
+                background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)',
+                boxShadow: '0 8px 32px -8px rgba(0,0,0,0.45)',
+              }}>
+                <div className="w-16 h-16 mx-auto mb-4 rounded-xl flex items-center justify-center" style={{ background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.3)' }}>
+                  <Calendar size={28} className="text-[#D4AF37]" />
+                </div>
+                <p className="text-slate-400 mb-4">暂无社媒内容</p>
                 <button
                   onClick={() => setViewMode('create')}
-                  className="mt-4 px-4 py-2 bg-[#0B1B2B] text-[#C7A56A] rounded-xl text-sm font-medium"
+                  className="px-4 py-2 rounded-xl text-sm font-medium"
+                  style={{ background: '#D4AF37', color: '#0B1220', boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)' }}
                 >
                   创建第一条内容
                 </button>
@@ -458,8 +480,8 @@ export default function SocialPage() {
                       onClick={() => setSelectedPost(post)}
                       className={`p-4 border rounded-xl cursor-pointer transition-all ${
                         selectedPost?.id === post.id
-                          ? 'border-[#C7A56A] bg-[#C7A56A]/5'
-                          : 'border-[#E7E0D3] hover:border-[#C7A56A]/50 bg-white'
+                          ? 'border-[#D4AF37] bg-[#D4AF37]/5'
+                          : 'border-[#E8E0D0] hover:border-[#D4AF37]/50 bg-[#FFFCF7]'
                       }`}
                     >
                       <div className="flex items-start justify-between">
@@ -499,13 +521,14 @@ export default function SocialPage() {
                 })}
               </div>
             )}
+            </div>
           </div>
 
           {/* Post Detail */}
           <div className="col-span-1 space-y-4">
             {selectedPost ? (
               <>
-                <div className="bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3] p-6">
+                <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="font-bold text-[#0B1B2B]">内容详情</h3>
                     <button
@@ -525,7 +548,7 @@ export default function SocialPage() {
                     {selectedPost.versions.map((version) => {
                       const info = getPlatformInfo(version.platform);
                       return (
-                        <div key={version.id} className="p-3 bg-[#F7F3EA] rounded-xl">
+                        <div key={version.id} className="p-3 bg-[#F0EBD8] rounded-xl">
                           <div className="flex items-center gap-2 mb-2">
                             <div className={`w-5 h-5 ${info.color} rounded flex items-center justify-center`}>
                               <span className="text-white text-[8px] font-bold">
@@ -567,7 +590,7 @@ export default function SocialPage() {
                   </div>
 
                   {/* Timestamps */}
-                  <div className="mt-4 pt-4 border-t border-[#E7E0D3] text-[10px] text-slate-400 space-y-1">
+                  <div className="mt-4 pt-4 border-t border-[#E8E0D0] text-[10px] text-slate-400 space-y-1">
                     <p>创建：{new Date(selectedPost.createdAt).toLocaleString('zh-CN')}</p>
                     {selectedPost.publishedAt && (
                       <p>发布：{new Date(selectedPost.publishedAt).toLocaleString('zh-CN')}</p>
@@ -582,9 +605,14 @@ export default function SocialPage() {
                 </div>
               </>
             ) : (
-              <div className="bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3] p-8 text-center">
-                <Eye size={40} className="text-slate-300 mx-auto mb-3" />
-                <p className="text-sm text-slate-500">选择内容查看详情</p>
+              <div className="rounded-2xl p-8 text-center" style={{
+                background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)',
+                boxShadow: '0 8px 32px -8px rgba(0,0,0,0.45)',
+              }}>
+                <div className="w-16 h-16 mx-auto mb-3 rounded-xl flex items-center justify-center" style={{ background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.3)' }}>
+                  <Eye size={28} className="text-[#D4AF37]" />
+                </div>
+                <p className="text-sm text-slate-400">选择内容查看详情</p>
               </div>
             )}
           </div>
@@ -593,7 +621,7 @@ export default function SocialPage() {
 
       {/* Connected Accounts Summary */}
       {accounts.length > 0 && (
-        <div className="bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3] p-6">
+        <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
           <h3 className="font-bold text-[#0B1B2B] mb-4">已授权账号</h3>
           <div className="flex flex-wrap gap-3">
             {accounts.filter(a => a.isActive).map((account) => {
@@ -601,7 +629,7 @@ export default function SocialPage() {
               return (
                 <div
                   key={account.id}
-                  className="flex items-center gap-2 px-3 py-2 bg-white border border-[#E7E0D3] rounded-lg"
+                  className="flex items-center gap-2 px-3 py-2 bg-[#FFFCF7] border border-[#E8E0D0] rounded-lg"
                 >
                   <div className={`w-6 h-6 ${info.color} rounded flex items-center justify-center`}>
                     <span className="text-white text-[10px] font-bold">

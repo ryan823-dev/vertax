@@ -64,7 +64,7 @@ function PipelineStepper({
       return <AlertCircle size={16} className="text-red-400" />;
     }
     if (isCurrentStep) {
-      return <Circle size={16} className="text-[#C7A56A] fill-[#C7A56A]/20" />;
+      return <Circle size={16} className="text-[#D4AF37] fill-[#D4AF37]/20" />;
     }
     return <Circle size={16} className="text-slate-300" />;
   };
@@ -72,7 +72,7 @@ function PipelineStepper({
   const getStepTextColor = (status: StepStatus, isCurrentStep: boolean) => {
     if (status === 'DONE') return 'text-emerald-600';
     if (status === 'BLOCKED') return 'text-red-500';
-    if (isCurrentStep) return 'text-[#C7A56A] font-medium';
+    if (isCurrentStep) return 'text-[#D4AF37] font-medium';
     return 'text-slate-400';
   };
 
@@ -142,7 +142,7 @@ export function EngineHeader({
     : null;
 
   return (
-    <div className="bg-white/80 backdrop-blur-sm border-b border-[#E7E0D3] px-5 py-3 sticky top-0 z-10">
+    <div className="module-header-bar px-5 py-3 sticky top-0 z-10">
       <div className="flex items-center justify-between gap-4">
         {/* Left: Title + Description */}
         <div className="shrink-0">
@@ -180,7 +180,7 @@ export function EngineHeader({
                   className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
                     primaryAction.disabled
                       ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                      : 'bg-[#0B1B2B] text-[#C7A56A] hover:bg-[#10263B] hover:shadow-lg hover:shadow-[#C7A56A]/10'
+                      : 'bg-[#0B1B2B] text-[#D4AF37] hover:bg-[#10263B] hover:shadow-lg hover:shadow-[#D4AF37]/10'
                   }`}
                 >
                   <Upload size={16} />
@@ -193,7 +193,7 @@ export function EngineHeader({
                   className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
                     primaryAction.disabled
                       ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                      : 'bg-[#0B1B2B] text-[#C7A56A] hover:bg-[#10263B] hover:shadow-lg hover:shadow-[#C7A56A]/10'
+                      : 'bg-[#0B1B2B] text-[#D4AF37] hover:bg-[#10263B] hover:shadow-lg hover:shadow-[#D4AF37]/10'
                   }`}
                 >
                   {primaryAction.loading ? (
@@ -239,7 +239,7 @@ export function EmptyStateGuide({ currentStep, steps, blocker }: EmptyStateGuide
   return (
     <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
       <div className="w-16 h-16 rounded-2xl bg-[#F7F3EA] flex items-center justify-center mb-4">
-        <AlertCircle size={28} className="text-[#C7A56A]" />
+        <AlertCircle size={28} className="text-[#D4AF37]" />
       </div>
       
       <h3 className="text-lg font-bold text-[#0B1B2B] mb-2">
@@ -259,7 +259,7 @@ export function EmptyStateGuide({ currentStep, steps, blocker }: EmptyStateGuide
         {currentStepData && (
           <Link
             href={currentStepData.href}
-            className="flex items-center gap-2 px-4 py-2 bg-[#0B1B2B] text-[#C7A56A] rounded-xl text-sm font-medium hover:bg-[#10263B] transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-[#0B1B2B] text-[#D4AF37] rounded-xl text-sm font-medium hover:bg-[#10263B] transition-colors"
           >
             {currentStep === 1 && <Upload size={16} />}
             {currentStep > 1 && <Sparkles size={16} />}

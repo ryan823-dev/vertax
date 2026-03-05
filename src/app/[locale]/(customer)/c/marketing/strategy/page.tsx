@@ -279,49 +279,58 @@ export default function MarketingStrategyPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 text-[#C7A56A] animate-spin" />
+        <Loader2 className="w-8 h-8 text-[#D4AF37] animate-spin" />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link
-            href="/c/marketing"
-            className="p-2 text-slate-400 hover:text-[#C7A56A] transition-colors rounded-lg hover:bg-[#F7F3EA]"
-          >
-            <ArrowLeft size={20} />
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-[#0B1B2B]">内容策略</h1>
-            <p className="text-sm text-slate-500 mt-1">
-              从 TopicCluster 批量生成 ContentBrief，实现内容工业化生产
-            </p>
+      {/* Header - 指令台 深蓝舞台风格 */}
+      <div className="rounded-2xl p-6 relative overflow-hidden" style={{
+        background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)',
+        boxShadow: '0 8px 32px -8px rgba(0,0,0,0.45)',
+      }}>
+        <div className="absolute inset-0 pointer-events-none" style={{
+          background: 'radial-gradient(ellipse 70% 60% at 50% -20%, rgba(212,175,55,0.14) 0%, transparent 65%)',
+        }} />
+        <div className="relative flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Link
+              href="/c/marketing"
+              className="p-2 text-slate-400 hover:text-[#D4AF37] transition-colors rounded-lg hover:bg-white/10"
+            >
+              <ArrowLeft size={20} />
+            </Link>
+            <div>
+              <h1 className="text-2xl font-bold text-white">内容策略</h1>
+              <p className="text-sm text-slate-400 mt-1">
+                从 TopicCluster 批量生成 ContentBrief，实现内容工业化生产
+              </p>
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleRegenerate}
-            disabled={isSyncing}
-            className="flex items-center gap-2 px-4 py-2 bg-[#0B1B2B] text-[#C7A56A] rounded-xl text-sm font-medium hover:bg-[#10263B] transition-colors disabled:opacity-50"
-          >
-            {isSyncing ? (
-              <Loader2 size={16} className="animate-spin" />
-            ) : (
-              <Sparkles size={16} />
-            )}
-            重新生成
-          </button>
-          <button
-            onClick={loadData}
-            className="p-2 text-slate-400 hover:text-[#C7A56A] transition-colors"
-            title="刷新数据"
-          >
-            <RefreshCw size={18} />
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleRegenerate}
+              disabled={isSyncing}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors disabled:opacity-50"
+              style={{ background: '#D4AF37', color: '#0B1220', boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)' }}
+            >
+              {isSyncing ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <Sparkles size={16} />
+              )}
+              重新生成
+            </button>
+            <button
+              onClick={loadData}
+              className="p-2 text-slate-400 hover:text-[#D4AF37] transition-colors"
+              title="刷新数据"
+            >
+              <RefreshCw size={18} />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -338,15 +347,21 @@ export default function MarketingStrategyPage() {
 
       {/* No Data State */}
       {!topicCluster ? (
-        <div className="bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3] p-12 text-center">
-          <Target size={48} className="text-slate-300 mx-auto mb-4" />
-          <h3 className="text-lg font-bold text-[#0B1B2B] mb-2">尚未生成主题集群</h3>
-          <p className="text-sm text-slate-500 mb-6">
+        <div className="rounded-2xl p-12 text-center" style={{
+          background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)',
+          boxShadow: '0 8px 32px -8px rgba(0,0,0,0.45)',
+        }}>
+          <div className="w-16 h-16 mx-auto mb-4 rounded-xl flex items-center justify-center" style={{ background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.3)' }}>
+            <Target size={28} className="text-[#D4AF37]" />
+          </div>
+          <h3 className="text-lg font-bold text-slate-200 mb-2">尚未生成主题集群</h3>
+          <p className="text-sm text-slate-400 mb-6">
             请先在知识引擎完善企业认知，然后点击「同步到营销系统」自动生成
           </p>
           <Link
             href="/c/knowledge/company"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-[#0B1B2B] text-[#C7A56A] rounded-xl text-sm font-medium hover:bg-[#10263B] transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium"
+            style={{ background: '#D4AF37', color: '#0B1220', boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)' }}
           >
             前往知识引擎
             <ChevronRight size={16} />
@@ -358,13 +373,13 @@ export default function MarketingStrategyPage() {
           <div className="bg-gradient-to-r from-[#0B1B2B] to-[#10263B] rounded-2xl p-5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-[#C7A56A]/20 rounded-xl flex items-center justify-center">
-                  <Zap size={24} className="text-[#C7A56A]" />
+                <div className="w-12 h-12 bg-[#D4AF37]/20 rounded-xl flex items-center justify-center">
+                  <Zap size={24} className="text-[#D4AF37]" />
                 </div>
                 <div>
                   <h2 className="text-lg font-bold text-white">批量生成 Brief</h2>
                   <p className="text-sm text-slate-400">
-                    已选择 <span className="text-[#C7A56A] font-bold">{selectedItems.size}</span> / {totalItems} 个内容项
+                    已选择 <span className="text-[#D4AF37] font-bold">{selectedItems.size}</span> / {totalItems} 个内容项
                   </p>
                 </div>
               </div>
@@ -376,7 +391,7 @@ export default function MarketingStrategyPage() {
                   className="px-3 py-2 text-sm text-slate-300 hover:text-white transition-colors flex items-center gap-2"
                 >
                   {selectedItems.size === totalItems ? (
-                    <CheckSquare size={16} className="text-[#C7A56A]" />
+                    <CheckSquare size={16} className="text-[#D4AF37]" />
                   ) : (
                     <Square size={16} />
                   )}
@@ -387,7 +402,7 @@ export default function MarketingStrategyPage() {
                 <select
                   value={selectedPersonaId}
                   onChange={e => setSelectedPersonaId(e.target.value)}
-                  className="px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-sm text-white focus:outline-none focus:border-[#C7A56A]"
+                  className="px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-sm text-white focus:outline-none focus:border-[#D4AF37]"
                 >
                   <option value="" className="text-slate-900">不指定 Persona</option>
                   {personas.map(p => (
@@ -401,7 +416,7 @@ export default function MarketingStrategyPage() {
                 <button
                   onClick={handleBatchCreate}
                   disabled={selectedItems.size === 0 || isCreating}
-                  className="px-4 py-2 bg-[#C7A56A] text-[#0B1B2B] rounded-xl text-sm font-bold hover:bg-[#C7A56A]/90 transition-colors disabled:opacity-50 flex items-center gap-2"
+                  className="px-4 py-2 bg-[#D4AF37] text-[#0B1B2B] rounded-xl text-sm font-bold hover:bg-[#D4AF37]/90 transition-colors disabled:opacity-50 flex items-center gap-2"
                 >
                   {isCreating ? (
                     <Loader2 size={16} className="animate-spin" />
@@ -423,14 +438,14 @@ export default function MarketingStrategyPage() {
                     <AlertCircle size={16} className="text-amber-400" />
                   )}
                   <span className="text-white">
-                    成功创建 <span className="font-bold text-[#C7A56A]">{batchResult.created}</span> 个 Brief
+                    成功创建 <span className="font-bold text-[#D4AF37]">{batchResult.created}</span> 个 Brief
                     {batchResult.errors.length > 0 && (
                       <span className="text-amber-300">，{batchResult.errors.length} 个失败</span>
                     )}
                   </span>
                   <Link
                     href="/c/marketing/briefs"
-                    className="ml-auto text-[#C7A56A] hover:underline flex items-center gap-1"
+                    className="ml-auto text-[#D4AF37] hover:underline flex items-center gap-1"
                   >
                     查看 Briefs
                     <ArrowRight size={14} />
@@ -463,22 +478,22 @@ export default function MarketingStrategyPage() {
               return (
                 <div
                   key={clusterIdx}
-                  className="bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3] overflow-hidden"
+                  className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] overflow-hidden"
                 >
                   {/* Cluster Header */}
-                  <div className="flex items-center p-5 hover:bg-[#F7F3EA] transition-colors">
+                  <div className="flex items-center p-5 hover:bg-[#F0EBD8] transition-colors">
                     {/* Checkbox */}
                     <button
                       onClick={() => toggleSelectAllInCluster(clusterIdx)}
-                      className="mr-4 p-1 text-slate-400 hover:text-[#C7A56A] transition-colors"
+                      className="mr-4 p-1 text-slate-400 hover:text-[#D4AF37] transition-colors"
                     >
                       {allSelectedInCluster ? (
-                        <CheckSquare size={20} className="text-[#C7A56A]" />
+                        <CheckSquare size={20} className="text-[#D4AF37]" />
                       ) : selectedInCluster > 0 ? (
                         <div className="relative">
                           <Square size={20} />
                           <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="w-2 h-2 bg-[#C7A56A] rounded-sm" />
+                            <div className="w-2 h-2 bg-[#D4AF37] rounded-sm" />
                           </div>
                         </div>
                       ) : (
@@ -491,14 +506,14 @@ export default function MarketingStrategyPage() {
                       className="flex-1 flex items-center justify-between"
                     >
                       <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-gradient-to-br from-[#C7A56A] to-[#C7A56A]/70 rounded-xl flex items-center justify-center">
+                        <div className="w-10 h-10 bg-gradient-to-br from-[#D4AF37] to-[#D4AF37]/70 rounded-xl flex items-center justify-center">
                           <Layers size={18} className="text-[#0B1B2B]" />
                         </div>
                         <div className="text-left">
                           <h3 className="font-bold text-[#0B1B2B]">{cluster.pillar}</h3>
                           <p className="text-xs text-slate-500 mt-0.5">
                             {cluster.intent} ·
-                            <span className={selectedInCluster > 0 ? 'text-[#C7A56A]' : ''}>
+                            <span className={selectedInCluster > 0 ? 'text-[#D4AF37]' : ''}>
                               {' '}{selectedInCluster}/{clusterItemCount} 已选
                             </span>
                           </p>
@@ -513,11 +528,11 @@ export default function MarketingStrategyPage() {
 
                   {/* Cluster Content Map */}
                   {isExpanded && cluster.contentMap && (
-                    <div className="border-t border-[#E7E0D3] p-5">
+                    <div className="border-t border-[#E8E0D0] p-5">
                       <div className="grid gap-3">
                         {cluster.contentMap.map((item, itemIdx) => {
                           const isSelected = selectedItems.has(`${clusterIdx}-${itemIdx}`);
-                          const typeColor = CONTENT_TYPE_COLORS[item.type] || { bg: 'bg-slate-50', text: 'text-slate-600' };
+                          const typeColor = CONTENT_TYPE_COLORS[item.type] || { bg: 'bg-[#F7F3E8]', text: 'text-slate-600' };
                           const funnelColor = FUNNEL_COLORS[item.funnel] || { bg: 'bg-slate-100', text: 'text-slate-700' };
 
                           return (
@@ -526,14 +541,14 @@ export default function MarketingStrategyPage() {
                               onClick={() => toggleItemSelection(clusterIdx, itemIdx)}
                               className={`flex items-start gap-4 p-4 rounded-xl border cursor-pointer transition-all ${
                                 isSelected
-                                  ? 'bg-[#C7A56A]/10 border-[#C7A56A]'
-                                  : 'bg-white border-[#E7E0D3] hover:border-[#C7A56A]/30'
+                                  ? 'bg-[#D4AF37]/10 border-[#D4AF37]'
+                                  : 'bg-[#FFFCF7] border-[#E8E0D0] hover:border-[#D4AF37]/30'
                               }`}
                             >
                               {/* Checkbox */}
                               <div className="shrink-0 pt-0.5">
                                 {isSelected ? (
-                                  <CheckSquare size={18} className="text-[#C7A56A]" />
+                                  <CheckSquare size={18} className="text-[#D4AF37]" />
                                 ) : (
                                   <Square size={18} className="text-slate-300" />
                                 )}
@@ -583,7 +598,7 @@ export default function MarketingStrategyPage() {
 
                       {/* Required Evidence */}
                       {cluster.requiredEvidenceIds?.length > 0 && (
-                        <div className="mt-4 pt-4 border-t border-[#E7E0D3]">
+                        <div className="mt-4 pt-4 border-t border-[#E8E0D0]">
                           <p className="text-[10px] text-slate-400 flex items-center gap-1">
                             <CheckCircle2 size={10} />
                             此支柱需要 {cluster.requiredEvidenceIds.length} 条证据支撑

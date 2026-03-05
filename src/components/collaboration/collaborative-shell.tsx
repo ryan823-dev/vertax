@@ -147,8 +147,8 @@ export function CollaborativeShell({
   const tabStyles = (isActive: boolean) => {
     if (isActive) {
       return variant === "light"
-        ? "bg-[#C7A56A] text-[#0B1B2B]"
-        : "bg-[#C7A56A] text-[#0B1B2B]";
+        ? "bg-[#D4AF37] text-[#0B1B2B]"
+        : "bg-[#D4AF37] text-[#0B1B2B]";
     }
     return variant === "light"
       ? "text-slate-500 hover:bg-[#F7F3EA]"
@@ -175,7 +175,7 @@ export function CollaborativeShell({
           <div className="flex items-center gap-2">
             {isReadOnly && (
               <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                variant === "light" ? "bg-[#C7A56A]/10 text-[#C7A56A]" : "bg-[#C7A56A]/20 text-[#C7A56A]"
+                variant === "light" ? "bg-[#D4AF37]/10 text-[#D4AF37]" : "bg-[#D4AF37]/20 text-[#D4AF37]"
               }`}>
                 <Lock size={10} />
                 只读

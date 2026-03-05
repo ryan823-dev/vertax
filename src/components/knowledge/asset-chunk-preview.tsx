@@ -48,7 +48,7 @@ export function AssetChunkPreview({ assetId, assetName, open, onClose }: AssetCh
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-[#E7E0D3]">
         <div className="flex items-center gap-2 min-w-0">
-          <FileText size={18} className="text-[#C7A56A] shrink-0" />
+          <FileText size={18} className="text-[#D4AF37] shrink-0" />
           <h3 className="text-sm font-bold text-[#0B1B2B] truncate">{assetName}</h3>
           {data && (
             <span className="text-[10px] text-slate-400 shrink-0">{data.total} 个片段</span>
@@ -63,13 +63,13 @@ export function AssetChunkPreview({ assetId, assetName, open, onClose }: AssetCh
       <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 size={24} className="text-[#C7A56A] animate-spin" />
+            <Loader2 size={24} className="text-[#D4AF37] animate-spin" />
           </div>
         ) : data && data.items.length > 0 ? (
           data.items.map((chunk: ChunkData) => (
             <div
               key={chunk.id}
-              className="p-4 border border-[#E7E0D3] rounded-xl bg-white hover:border-[#C7A56A]/30 transition-colors"
+              className="p-4 border border-[#E7E0D3] rounded-xl bg-white hover:border-[#D4AF37]/30 transition-colors"
             >
               <div className="flex items-center gap-2 mb-2">
                 <span className="flex items-center gap-1 px-1.5 py-0.5 bg-[#F7F3EA] rounded text-[10px] font-medium text-[#0B1B2B]">

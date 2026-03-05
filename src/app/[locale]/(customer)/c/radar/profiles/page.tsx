@@ -145,9 +145,9 @@ function ProfileFormDialog({ profile, segments, sources, onClose, onSave }: Prof
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-[#FFFCF7] rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-[#E8E0D0] flex items-center justify-between" style={{background: '#F0EBD8'}}>
           <h2 className="text-lg font-bold text-[#0B1B2B]">
             {profile ? '编辑扫描计划' : '新建扫描计划'}
           </h2>
@@ -174,7 +174,7 @@ function ProfileFormDialog({ profile, segments, sources, onClose, onSave }: Prof
                   value={formData.name}
                   onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
                   placeholder="例如：欧洲工业机器人招标"
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#C7A56A]"
+                  className="w-full px-3 py-2 border border-[#E8E0D0] rounded-lg text-sm focus:outline-none focus:border-[#D4AF37]"
                 />
               </div>
               
@@ -185,7 +185,7 @@ function ProfileFormDialog({ profile, segments, sources, onClose, onSave }: Prof
                   onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
                   placeholder="简要说明此计划的目标和范围"
                   rows={2}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#C7A56A] resize-none"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#D4AF37] resize-none"
                 />
               </div>
               
@@ -194,7 +194,7 @@ function ProfileFormDialog({ profile, segments, sources, onClose, onSave }: Prof
                 <select
                   value={formData.segmentId || ''}
                   onChange={e => setFormData(prev => ({ ...prev, segmentId: e.target.value || undefined }))}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#C7A56A]"
+                  className="w-full px-3 py-2 border border-[#E8E0D0] rounded-lg text-sm focus:outline-none focus:border-[#D4AF37]"
                 >
                   <option value="">不关联</option>
                   {segments.map(s => (
@@ -208,7 +208,7 @@ function ProfileFormDialog({ profile, segments, sources, onClose, onSave }: Prof
                 <select
                   value={formData.scheduleRule}
                   onChange={e => setFormData(prev => ({ ...prev, scheduleRule: e.target.value }))}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#C7A56A]"
+                  className="w-full px-3 py-2 border border-[#E8E0D0] rounded-lg text-sm focus:outline-none focus:border-[#D4AF37]"
                 >
                   {SCHEDULE_PRESETS.map(p => (
                     <option key={p.value} value={p.value}>{p.label} - {p.description}</option>
@@ -232,7 +232,7 @@ function ProfileFormDialog({ profile, segments, sources, onClose, onSave }: Prof
                 onChange={e => setKeywordsText(e.target.value)}
                 placeholder="industrial robot&#10;automation equipment&#10;robotic arm"
                 rows={3}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#C7A56A] resize-none font-mono"
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#D4AF37] resize-none font-mono"
               />
             </div>
             
@@ -243,7 +243,7 @@ function ProfileFormDialog({ profile, segments, sources, onClose, onSave }: Prof
                 onChange={e => setNegativeText(e.target.value)}
                 placeholder="maintenance, repair, used"
                 rows={2}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#C7A56A] resize-none font-mono"
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#D4AF37] resize-none font-mono"
               />
             </div>
             
@@ -254,7 +254,7 @@ function ProfileFormDialog({ profile, segments, sources, onClose, onSave }: Prof
                 value={countriesText}
                 onChange={e => setCountriesText(e.target.value)}
                 placeholder="US, DE, FR, GB"
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#C7A56A]"
+                className="w-full px-3 py-2 border border-[#E8E0D0] rounded-lg text-sm focus:outline-none focus:border-[#D4AF37]"
               />
             </div>
           </div>
@@ -268,7 +268,7 @@ function ProfileFormDialog({ profile, segments, sources, onClose, onSave }: Prof
             
             <div className="grid grid-cols-3 gap-2">
               {CHANNEL_TYPES.map(ch => (
-                <label key={ch.value} className="flex items-center gap-2 p-2 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50">
+                <label key={ch.value} className="flex items-center gap-2 p-2 border border-[#E8E0D0] rounded-lg cursor-pointer hover:bg-[#F0EBD8]">
                   <input
                     type="checkbox"
                     checked={formData.enabledChannels?.includes(ch.value) || false}
@@ -280,7 +280,7 @@ function ProfileFormDialog({ profile, segments, sources, onClose, onSave }: Prof
                         setFormData(prev => ({ ...prev, enabledChannels: channels.filter(c => c !== ch.value) }));
                       }
                     }}
-                    className="w-4 h-4 text-[#C7A56A] rounded border-slate-300 focus:ring-[#C7A56A]"
+                    className="w-4 h-4 text-[#D4AF37] rounded border-slate-300 focus:ring-[#D4AF37]"
                   />
                   <span className="text-sm text-slate-700">{ch.label}</span>
                 </label>
@@ -295,12 +295,12 @@ function ProfileFormDialog({ profile, segments, sources, onClose, onSave }: Prof
               指定数据源（可选）
             </h3>
             
-            <div className="max-h-40 overflow-y-auto border border-slate-200 rounded-lg p-2 space-y-1">
+            <div className="max-h-40 overflow-y-auto border border-[#E8E0D0] rounded-lg p-2 space-y-1">
               {sources.length === 0 ? (
                 <p className="text-sm text-slate-400 p-2">暂无可用数据源</p>
               ) : (
                 sources.map(s => (
-                  <label key={s.id} className="flex items-center gap-2 p-2 rounded hover:bg-slate-50 cursor-pointer">
+                  <label key={s.id} className="flex items-center gap-2 p-2 rounded hover:bg-[#F0EBD8] cursor-pointer">
                     <input
                       type="checkbox"
                       checked={formData.sourceIds?.includes(s.id) || false}
@@ -312,7 +312,7 @@ function ProfileFormDialog({ profile, segments, sources, onClose, onSave }: Prof
                           setFormData(prev => ({ ...prev, sourceIds: ids.filter(id => id !== s.id) }));
                         }
                       }}
-                      className="w-4 h-4 text-[#C7A56A] rounded border-slate-300 focus:ring-[#C7A56A]"
+                      className="w-4 h-4 text-[#D4AF37] rounded border-slate-300 focus:ring-[#D4AF37]"
                     />
                     <span className="text-sm text-slate-700">{s.name}</span>
                     <span className="text-xs text-slate-400">({s.channelType})</span>
@@ -339,7 +339,7 @@ function ProfileFormDialog({ profile, segments, sources, onClose, onSave }: Prof
                   onChange={e => setFormData(prev => ({ ...prev, maxRunSeconds: parseInt(e.target.value) || 45 }))}
                   min={10}
                   max={55}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#C7A56A]"
+                  className="w-full px-3 py-2 border border-[#E8E0D0] rounded-lg text-sm focus:outline-none focus:border-[#D4AF37]"
                 />
               </div>
               
@@ -349,7 +349,7 @@ function ProfileFormDialog({ profile, segments, sources, onClose, onSave }: Prof
                     type="checkbox"
                     checked={formData.autoQualify}
                     onChange={e => setFormData(prev => ({ ...prev, autoQualify: e.target.checked }))}
-                    className="w-4 h-4 text-[#C7A56A] rounded border-slate-300 focus:ring-[#C7A56A]"
+                    className="w-4 h-4 text-[#D4AF37] rounded border-slate-300 focus:ring-[#D4AF37]"
                   />
                   <span className="text-sm text-slate-700">自动合格化</span>
                 </label>
@@ -359,7 +359,7 @@ function ProfileFormDialog({ profile, segments, sources, onClose, onSave }: Prof
                     type="checkbox"
                     checked={formData.autoEnrich}
                     onChange={e => setFormData(prev => ({ ...prev, autoEnrich: e.target.checked }))}
-                    className="w-4 h-4 text-[#C7A56A] rounded border-slate-300 focus:ring-[#C7A56A]"
+                    className="w-4 h-4 text-[#D4AF37] rounded border-slate-300 focus:ring-[#D4AF37]"
                   />
                   <span className="text-sm text-slate-700">自动补全</span>
                 </label>
@@ -369,7 +369,7 @@ function ProfileFormDialog({ profile, segments, sources, onClose, onSave }: Prof
         </form>
         
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-slate-200 flex items-center justify-end gap-3">
+        <div className="px-6 py-4 border-t border-[#E8E0D0] flex items-center justify-end gap-3">
           <button
             type="button"
             onClick={onClose}
@@ -380,7 +380,7 @@ function ProfileFormDialog({ profile, segments, sources, onClose, onSave }: Prof
           <button
             onClick={handleSubmit}
             disabled={isSaving}
-            className="px-4 py-2 bg-[#0B1B2B] text-[#C7A56A] rounded-lg text-sm font-medium hover:bg-[#10263B] disabled:opacity-50 flex items-center gap-2"
+            className="px-4 py-2 bg-[#0B1B2B] text-[#D4AF37] rounded-lg text-sm font-medium hover:bg-[#10263B] disabled:opacity-50 flex items-center gap-2"
           >
             {isSaving && <Loader2 size={14} className="animate-spin" />}
             {profile ? '保存更改' : '创建计划'}
@@ -484,7 +484,7 @@ export default function RadarProfilesPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 text-[#C7A56A] animate-spin" />
+        <Loader2 className="w-8 h-8 text-[#D4AF37] animate-spin" />
       </div>
     );
   }
@@ -492,26 +492,30 @@ export default function RadarProfilesPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-[#0B1B2B]">扫描计划</h1>
-          <p className="text-sm text-slate-500 mt-1">配置 24/7 持续扫描任务，自动发现潜在客户</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={loadData}
-            className="p-2 text-slate-400 hover:text-[#C7A56A] transition-colors"
-            title="刷新"
-          >
-            <RefreshCw size={18} />
-          </button>
-          <button
-            onClick={() => { setEditingProfile(null); setShowForm(true); }}
-            className="px-4 py-2 bg-[#0B1B2B] text-[#C7A56A] rounded-lg text-sm font-medium hover:bg-[#10263B] flex items-center gap-2"
-          >
-            <Plus size={16} />
-            新建计划
-          </button>
+      <div style={{background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)', boxShadow: '0 8px 32px -8px rgba(0,0,0,0.45)'}} className="rounded-2xl p-6 relative overflow-hidden">
+        <div style={{background: 'radial-gradient(ellipse 70% 60% at 50% -20%, rgba(212,175,55,0.14) 0%, transparent 65%)'}} className="absolute inset-0 pointer-events-none" />
+        <div className="relative flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-white">扫描计划</h1>
+            <p className="text-sm text-slate-400 mt-1">配置 24/7 持续扫描任务，自动发现潜在客户</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={loadData}
+              className="p-2 text-slate-400 hover:text-[#D4AF37] transition-colors"
+              title="刷新"
+            >
+              <RefreshCw size={18} />
+            </button>
+            <button
+              onClick={() => { setEditingProfile(null); setShowForm(true); }}
+              className="px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 hover:opacity-90 transition-all"
+              style={{background: '#D4AF37', color: '#0B1220', boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)'}}
+            >
+              <Plus size={16} />
+              新建计划
+            </button>
+          </div>
         </div>
       </div>
 
@@ -529,12 +533,12 @@ export default function RadarProfilesPage() {
       {/* Stats Summary */}
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: '总计划数', value: profiles.length, icon: CalendarClock, color: 'text-[#C7A56A]' },
+          { label: '总计划数', value: profiles.length, icon: CalendarClock, color: 'text-[#D4AF37]' },
           { label: '运行中', value: profiles.filter(p => p.isActive).length, icon: Play, color: 'text-emerald-500' },
           { label: '已暂停', value: profiles.filter(p => !p.isActive).length, icon: Pause, color: 'text-slate-400' },
           { label: '正在扫描', value: profiles.filter(p => p.lockToken).length, icon: Loader2, color: 'text-amber-500' },
         ].map(stat => (
-          <div key={stat.label} className="bg-[#FFFCF6] rounded-xl border border-[#E7E0D3] p-4">
+          <div key={stat.label} className="bg-[#FFFCF7] rounded-xl border border-[#E8E0D0] p-4">
             <div className="flex items-center gap-2 mb-2">
               <stat.icon size={16} className={stat.color} />
               <span className="text-xs text-slate-500">{stat.label}</span>
@@ -547,13 +551,16 @@ export default function RadarProfilesPage() {
       {/* Profiles List */}
       <div className="space-y-3">
         {profiles.length === 0 ? (
-          <div className="bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3] p-12 text-center">
-            <CalendarClock size={48} className="text-slate-300 mx-auto mb-4" />
+          <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-12 text-center">
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.3)'}}>
+              <CalendarClock size={28} className="text-[#D4AF37]" />
+            </div>
             <p className="text-slate-500">暂无扫描计划</p>
             <p className="text-xs text-slate-400 mt-2">创建计划以启动 24/7 持续扫描</p>
             <button
               onClick={() => { setEditingProfile(null); setShowForm(true); }}
-              className="mt-4 px-4 py-2 bg-[#0B1B2B] text-[#C7A56A] rounded-lg text-sm font-medium hover:bg-[#10263B]"
+              className="mt-4 px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-all"
+              style={{background: '#D4AF37', color: '#0B1220', boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)'}}
             >
               创建第一个计划
             </button>
@@ -566,8 +573,8 @@ export default function RadarProfilesPage() {
             return (
               <div
                 key={profile.id}
-                className={`bg-[#FFFCF6] rounded-xl border ${
-                  profile.isActive ? 'border-[#E7E0D3]' : 'border-slate-200 opacity-60'
+                className={`bg-[#FFFCF7] rounded-xl border ${
+                  profile.isActive ? 'border-[#E8E0D0]' : 'border-slate-200 opacity-60'
                 } p-5 transition-all hover:shadow-md`}
               >
                 <div className="flex items-start justify-between">
@@ -698,7 +705,7 @@ export default function RadarProfilesPage() {
                     <button
                       onClick={() => handleTrigger(profile.id)}
                       disabled={triggeringId === profile.id || isLocked}
-                      className="p-2 text-slate-400 hover:text-[#C7A56A] transition-colors disabled:opacity-50"
+                      className="p-2 text-slate-400 hover:text-[#D4AF37] transition-colors disabled:opacity-50"
                       title="立即触发扫描"
                     >
                       {triggeringId === profile.id ? (
@@ -718,14 +725,14 @@ export default function RadarProfilesPage() {
                       </button>
                       
                       {actionMenuId === profile.id && (
-                        <div className="absolute right-0 top-full mt-1 w-36 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-10">
+                        <div className="absolute right-0 top-full mt-1 w-36 bg-[#FFFCF7] rounded-lg shadow-lg border border-[#E8E0D0] py-1 z-10">
                           <button
                             onClick={() => {
                               setEditingProfile(profile);
                               setShowForm(true);
                               setActionMenuId(null);
                             }}
-                            className="w-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                            className="w-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-[#F0EBD8] flex items-center gap-2"
                           >
                             <Pencil size={14} />
                             编辑

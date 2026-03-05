@@ -29,7 +29,7 @@ export default function CustomerError({
         )}
         <button
           onClick={reset}
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#C7A56A] text-[#0B1B2B] rounded-xl text-sm font-medium hover:bg-[#D4B57A] transition-colors"
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#D4AF37] text-[#0B1B2B] rounded-xl text-sm font-medium hover:bg-[#D4B57A] transition-colors"
         >
           <RefreshCw size={16} />
           重新加载
