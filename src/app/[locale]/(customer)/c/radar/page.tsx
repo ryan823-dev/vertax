@@ -30,7 +30,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { getRadarPipelineStatus } from '@/actions/radar-pipeline';
-import type { RadarPipelineStatus } from '@/lib/radar/pipeline';
+import type { RadarPipelineStatus, StepState } from '@/lib/radar/pipeline';
 import { RadarHeader, StatCard, SecretaryPanel, RadarEmptyGuide } from '@/components/radar/radar-header';
 
 // 子模块快捷入口
@@ -123,7 +123,7 @@ export default function RadarPage() {
     );
   }
 
-  const { steps, counts, currentStep, primaryCTA, errors } = pipelineStatus;
+  const { steps, counts, currentStep, primaryCTA, errors } = pipelineStatus!;
 
   // 计算模块徽章
   const getModuleBadge = (badgeKey: string | null) => {
@@ -179,7 +179,7 @@ export default function RadarPage() {
             <div className="mt-8 bg-[#FFFCF7] rounded-2xl border border-[#E8E0D0] p-6">
               <h3 className="font-bold text-[#0B1B2B] mb-4">快速入门</h3>
               <div className="space-y-4">
-                {steps.map((step, idx) => (
+                {steps.map((step: StepState, idx: number) => (
                   <Link
                     key={step.key}
                     href={step.href}
@@ -307,7 +307,7 @@ export default function RadarPage() {
                 
                 {/* Progress Indicator */}
                 <div className="mt-6 flex items-center gap-2">
-                  {steps.map((step, idx) => (
+                  {steps.map((step: StepState, idx: number) => (
                     <div key={step.key} className="flex-1 flex items-center gap-1">
                       <div className={`h-1.5 flex-1 rounded-full ${
                         step.status === 'DONE' 
