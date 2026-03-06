@@ -102,7 +102,7 @@ export const targetingSpecSkill: SkillDefinition<typeof inputSchema, typeof outp
     SKILL_NAMES.RADAR_BUILD_CHANNEL_MAP,
     SKILL_NAMES.RADAR_PLAN_ACCOUNT_DISCOVERY,
   ],
-  model: 'qwen-max',
+  model: 'qwen-plus',  // 改用更快的模型
   temperature: 0.3,
   
   systemPrompt: `你是B2B出海获客专家。根据输入的企业认知、产品、优势证据、ICP/Persona与触发事件，产出"可执行筛选规则 Targeting Spec"。

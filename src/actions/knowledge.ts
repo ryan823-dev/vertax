@@ -102,28 +102,12 @@ export async function getAnalyzableAssets(): Promise<
 > {
   const session = await getSession();
 
-  // 获取文档类素材（可以提取文本的）
+  // 获取文档类素材（仅已成功解析的，避免超时）
   const assets = await db.asset.findMany({
     where: {
       tenantId: session.user.tenantId,
       status: "active",
-      OR: [
-        { fileCategory: "document" },
-        {
-          mimeType: {
-            in: [
-              "text/plain",
-              "text/markdown",
-              "text/html",
-              "text/csv",
-              "application/pdf",
-              "application/msword",
-              "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-              "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-            ],
-          },
-        },
-      ],
+      metadata: { path: ["processingStatus"], equals: "ready" },
     },
     select: {
       id: true,

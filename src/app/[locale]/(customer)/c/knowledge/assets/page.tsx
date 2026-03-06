@@ -14,7 +14,7 @@ import {
   FileText, AlertCircle, CheckCircle2, Clock, RotateCw,
   Grid3X3, List, Sparkles, Database, ChevronRight,
 } from 'lucide-react';
-import { getKnowledgeAssets, createAssetUploadSession, confirmAssetUpload, triggerAssetProcessing } from '@/actions/assets';
+import { getKnowledgeAssets, triggerAssetProcessing } from '@/actions/assets';
 import { getKnowledgePipelineStatus } from '@/actions/pipeline';
 import { KnowledgeAssetCard } from '@/components/knowledge/knowledge-asset-card';
 import { AssetChunkPreview } from '@/components/knowledge/asset-chunk-preview';
@@ -46,6 +46,9 @@ export default function KnowledgeAssetsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [previewAssetId, setPreviewAssetId] = useState<string | null>(null);
   const [previewAssetName, setPreviewAssetName] = useState('');
+  // 正在处理中的资产ID集合（用于轮询）
+  const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
+  const pollingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const loadPipelineStatus = useCallback(async () => {
     try {
@@ -75,6 +78,60 @@ export default function KnowledgeAssetsPage() {
     loadAssets();
   }, [loadPipelineStatus, loadAssets]);
 
+  // 轮询：当有资产处于"processing"状态时，每4秒查询一次状态
+  useEffect(() => {
+    const processingFromList = assets
+      .filter(a => a.processingMeta.processingStatus === 'processing')
+      .map(a => a.id);
+    const allProcessingIds = new Set([...processingFromList, ...processingIds]);
+
+    if (allProcessingIds.size === 0) {
+      if (pollingTimerRef.current) clearInterval(pollingTimerRef.current);
+      pollingTimerRef.current = null;
+      return;
+    }
+
+    if (pollingTimerRef.current) return; // 已在轮询中
+
+    pollingTimerRef.current = setInterval(async () => {
+      let anyFinished = false;
+      const remaining = new Set<string>();
+
+      await Promise.all(
+        Array.from(allProcessingIds).map(async (id) => {
+          try {
+            const res = await fetch(`/api/assets/status?assetId=${id}`);
+            if (!res.ok) return;
+            const data = await res.json() as { processingStatus: string };
+            if (data.processingStatus === 'processing') {
+              remaining.add(id);
+            } else {
+              anyFinished = true;
+            }
+          } catch { /* ignore */ }
+        })
+      );
+
+      setProcessingIds(remaining);
+      if (anyFinished) {
+        loadAssets();
+        loadPipelineStatus();
+      }
+      if (remaining.size === 0 && pollingTimerRef.current) {
+        clearInterval(pollingTimerRef.current);
+        pollingTimerRef.current = null;
+      }
+    }, 4000);
+
+    return () => {
+      if (pollingTimerRef.current) {
+        clearInterval(pollingTimerRef.current);
+        pollingTimerRef.current = null;
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assets, processingIds]);
+
   const handleSearch = useCallback((q: string) => { setSearch(q); setPage(1); }, []);
   const handleViewChunks = (assetId: string, assetName: string) => {
     setPreviewAssetId(assetId);
@@ -87,29 +144,56 @@ export default function KnowledgeAssetsPage() {
     setIsUploading(true);
     setUploadProgress(`正在上传 ${files.length} 个文件...`);
     try {
+      // 使用 API 路由代替 Server Action，避免 Next.js Server Action 环境变量问题
       const fileInputs = Array.from(files).map(file => ({
         originalName: file.name,
         mimeType: file.type || 'application/octet-stream',
         fileSize: file.size,
       }));
-      const sessions = await createAssetUploadSession(fileInputs);
+
+      const sessionRes = await fetch('/api/assets/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ files: fileInputs }),
+      });
+
+      if (!sessionRes.ok) {
+        const err = await sessionRes.json().catch(() => ({}));
+        throw new Error(err.error || `上传会话创建失败 (${sessionRes.status})`);
+      }
+
+      const { sessions } = await sessionRes.json();
+
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const session = sessions[i];
         setUploadProgress(`上传中 (${i + 1}/${files.length}): ${file.name}`);
-        await fetch(session.presignedUrl, {
+
+        // 直传 OSS
+        const ossRes = await fetch(session.presignedUrl, {
           method: 'PUT',
           body: file,
           headers: { 'Content-Type': file.type || 'application/octet-stream' },
         });
-        await confirmAssetUpload(session.assetId);
+        if (!ossRes.ok) throw new Error(`OSS 上传失败 (${ossRes.status})`);
+
+        // 确认上传完成
+        await fetch('/api/assets/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'confirm', assetId: session.assetId }),
+        });
+        // 将该资产加入轮询队列
+        setProcessingIds(prev => new Set([...prev, session.assetId]));
       }
-      setUploadProgress(null);
+
+      setUploadProgress('文件已上传，正在后台解析...');
+      setTimeout(() => setUploadProgress(null), 3000);
       loadAssets();
       loadPipelineStatus();
     } catch (err) {
       setUploadProgress(`上传失败: ${err instanceof Error ? err.message : '未知错误'}`);
-      setTimeout(() => setUploadProgress(null), 3000);
+      setTimeout(() => setUploadProgress(null), 5000);
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';

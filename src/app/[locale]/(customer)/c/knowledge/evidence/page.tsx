@@ -139,11 +139,22 @@ export default function EvidencePage() {
     if (!selectedAssetId) return;
     setIsBatchGenerating(true);
     try {
-      const result = await batchGenerateEvidences(selectedAssetId);
-      setBatchResult(result);
+      // Use REST API instead of Server Action to avoid 10s timeout
+      const res = await fetch('/api/evidence/batch-generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ assetId: selectedAssetId }),
+      });
+      const result = await res.json() as { generated?: number; errors?: number; error?: string; errorDetails?: string[] };
+      if (!res.ok) throw new Error(result.error || '生成失败');
+      if (result.errorDetails?.length) console.error('Evidence errors:', result.errorDetails);
+      setBatchResult({ generated: result.generated ?? 0, errors: result.errors ?? 0 });
       loadEvidences();
       loadPipelineStatus();
-    } catch { /* silent */ } finally { setIsBatchGenerating(false); }
+    } catch (err) {
+      setBatchResult({ generated: 0, errors: 1 });
+      console.error('batch generate error:', err);
+    } finally { setIsBatchGenerating(false); }
   };
 
   const toggleTypeFilter = (type: EvidenceTypeValue) => {

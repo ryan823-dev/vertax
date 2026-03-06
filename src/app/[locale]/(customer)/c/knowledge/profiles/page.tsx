@@ -13,12 +13,13 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
   Plus, Loader2, Users2, Trash2, Sparkles, ChevronRight, MessageSquare,
-  Building2, AlertCircle,
+  Building2, AlertCircle, Radar, RefreshCw,
 } from 'lucide-react';
 import {
   getICPSegments, createICPSegment, deleteICPSegment,
   getPersonasBySegment, createPersona, deletePersona,
   getMessagingMatrix, generatePersonaMessaging,
+  generatePersonasFromProfile,
 } from '@/actions/personas';
 import { getKnowledgePipelineStatus } from '@/actions/pipeline';
 import { EngineHeader } from '@/components/knowledge/engine-header';
@@ -49,6 +50,14 @@ export default function ProfilesPage() {
   // AI generate
   const [isGenerating, setIsGenerating] = useState(false);
   const [valuePropInput, setValuePropInput] = useState('');
+
+  // Auto-generate state
+  const [isAutoGenerating, setIsAutoGenerating] = useState(false);
+  const [showOverwriteConfirm, setShowOverwriteConfirm] = useState(false);
+  const [autoGenMessage, setAutoGenMessage] = useState<string | null>(null);
+
+  // Sync to radar
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // Load pipeline status
   const loadPipelineStatus = useCallback(async () => {
@@ -137,15 +146,94 @@ export default function ProfilesPage() {
     } catch { /* silent */ } finally { setIsGenerating(false); }
   };
 
+  // Auto-generate from CompanyProfile
+  const handleAutoGenerate = async (overwrite = false) => {
+    // If segments exist and not explicitly overwriting, show confirm
+    if (segments.length > 0 && !overwrite) {
+      setShowOverwriteConfirm(true);
+      return;
+    }
+    setShowOverwriteConfirm(false);
+    setIsAutoGenerating(true);
+    setAutoGenMessage(null);
+    try {
+      const result = await generatePersonasFromProfile({ overwrite: segments.length > 0 });
+
+      // CompanyProfile lacks buyerPersonas → AI fallback
+      if (result.needsAI) {
+        setAutoGenMessage('企业档案中暂无买家画像数据，正在 AI 生成...');
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 55000);
+        try {
+          const resp = await fetch('/api/knowledge/generate-personas', {
+            method: 'POST',
+            signal: controller.signal,
+          });
+          clearTimeout(timer);
+          if (!resp.ok) {
+            const err = await resp.json().catch(() => ({ error: 'Unknown error' }));
+            throw new Error(err.error || `HTTP ${resp.status}`);
+          }
+          // AI has written buyerPersonas back to CompanyProfile, now create DB records
+          const dbResult = await generatePersonasFromProfile({ overwrite: segments.length > 0 });
+          setAutoGenMessage(`AI 生成完成: ${dbResult.segmentsCreated} 个细分市场, ${dbResult.personasCreated} 个买家角色`);
+        } catch (e) {
+          clearTimeout(timer);
+          const errMsg = e instanceof Error && e.name === 'AbortError' ? '请求超时' : (e instanceof Error ? e.message : 'Unknown error');
+          setAutoGenMessage(`AI 生成失败: ${errMsg}`);
+          return;
+        }
+      } else {
+        setAutoGenMessage(`已生成: ${result.segmentsCreated} 个细分市场, ${result.personasCreated} 个买家角色`);
+      }
+
+      setSelectedSegmentId(null);
+      setSelectedPersonaId(null);
+      setMatrix([]);
+      loadSegments();
+      loadPipelineStatus();
+    } catch (e) {
+      setAutoGenMessage(`生成失败: ${e instanceof Error ? e.message : 'Unknown error'}`);
+    } finally {
+      setIsAutoGenerating(false);
+    }
+  };
+
+  // Sync to radar
+  const handleSyncToRadar = async () => {
+    setIsSyncing(true);
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 55000);
+      const resp = await fetch('/api/radar/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+        signal: controller.signal,
+      });
+      clearTimeout(timer);
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(err.error || `HTTP ${resp.status}`);
+      }
+      setAutoGenMessage('已同步到获客雷达');
+    } catch (e) {
+      const errMsg = e instanceof Error && e.name === 'AbortError' ? '同步超时' : (e instanceof Error ? e.message : 'Unknown error');
+      setAutoGenMessage(`同步失败: ${errMsg}`);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   // Check prerequisites
   const hasCompanyProfile = pipelineStatus?.counts.companyProfileHasContent;
 
   // Primary CTA config
   const getPrimaryCTA = () => {
     return {
-      label: '生成买家画像',
-      onClick: () => setShowCreateSegment(true),
-      disabled: !hasCompanyProfile,
+      label: isAutoGenerating ? '生成中...' : '生成买家画像',
+      onClick: () => handleAutoGenerate(),
+      disabled: !hasCompanyProfile || isAutoGenerating,
     };
   };
 
@@ -194,6 +282,13 @@ export default function ProfilesPage() {
                 <Plus size={14} />
                 新建角色
               </button>
+              {segments.length > 0 && (
+                <button onClick={handleSyncToRadar} disabled={isSyncing}
+                  className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-emerald-400 bg-[#0B1220] border border-[#0B1220] rounded-lg hover:bg-[#0B1220]/80 transition-colors disabled:opacity-50">
+                  {isSyncing ? <Loader2 size={14} className="animate-spin" /> : <Radar size={14} />}
+                  同步到获客雷达
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -316,6 +411,36 @@ export default function ProfilesPage() {
           </div>
         )}
       </div>
+
+      {/* Auto-generate progress / message */}
+      {autoGenMessage && (
+        <div className="fixed bottom-6 right-6 z-50 max-w-sm px-4 py-3 rounded-xl shadow-lg border border-[#E8E0D0] bg-white text-sm text-[#0B1220] flex items-center gap-2">
+          {isAutoGenerating && <Loader2 size={16} className="text-[#D4AF37] animate-spin flex-shrink-0" />}
+          <span>{autoGenMessage}</span>
+          {!isAutoGenerating && (
+            <button onClick={() => setAutoGenMessage(null)} className="ml-auto text-slate-400 hover:text-slate-600 text-xs">&times;</button>
+          )}
+        </div>
+      )}
+
+      {/* Overwrite Confirm Dialog */}
+      {showOverwriteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setShowOverwriteConfirm(false)}>
+          <div className="bg-white rounded-2xl border border-[#E7E0D3] shadow-xl w-[400px] p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-2 mb-3">
+              <RefreshCw size={18} className="text-[#D4AF37]" />
+              <h3 className="text-lg font-bold text-[#0B1B2B]">重新生成买家画像</h3>
+            </div>
+            <p className="text-sm text-slate-600 mb-4">
+              当前已有 {segments.length} 个细分市场。重新生成将<span className="text-red-500 font-medium">覆盖</span>所有现有细分市场和买家角色数据。
+            </p>
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setShowOverwriteConfirm(false)} className="px-4 py-2 text-sm border border-[#E7E0D3] rounded-xl text-slate-500">取消</button>
+              <button onClick={() => handleAutoGenerate(true)} className="px-4 py-2 text-sm bg-[#D4AF37] text-[#0B1220] rounded-xl font-medium">确认覆盖</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Create Segment Dialog */}
       {showCreateSegment && (

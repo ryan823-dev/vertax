@@ -24,7 +24,7 @@ import {
   updateCompanyProfile, type CompanyProfileData 
 } from '@/actions/knowledge';
 import { getKnowledgePipelineStatus } from '@/actions/pipeline';
-import { syncMarketingFromKnowledge, syncRadarFromKnowledge } from '@/actions/sync';
+// syncMarketingFromKnowledge and syncRadarFromKnowledge moved to Route Handlers (avoid Server Action 10s limit)
 import { toast } from 'sonner';
 import { getLatestVersion, createVersion } from '@/actions/versions';
 import { CollaborativeShell } from '@/components/collaboration';
@@ -141,22 +141,22 @@ export default function CompanyKnowledgePage() {
     loadData();
   }, [loadPipelineStatus, loadData]);
 
-  // AI Analysis
+  // AI Analysis - uses Route Handler to bypass 10s Server Action timeout
   const handleAnalyze = async () => {
-    if (selectedAssetIds.length === 0 && assets.length > 0) {
-      // Auto-select all if none selected
-      setSelectedAssetIds(assets.map(a => a.id));
-      return;
-    }
-    
     const idsToAnalyze = selectedAssetIds.length > 0 ? selectedAssetIds : assets.map(a => a.id);
     if (idsToAnalyze.length === 0) return;
     
     setIsAnalyzing(true);
     setError(null);
     try {
-      const result = await analyzeAssets(idsToAnalyze);
-      setProfile(result);
+      const res = await fetch('/api/knowledge/analyze-assets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ assetIds: idsToAnalyze }),
+      });
+      const data = await res.json() as { ok?: boolean; profile?: CompanyProfileData; error?: string };
+      if (!res.ok) throw new Error(data.error || 'AI分析失败');
+      if (data.profile) setProfile(data.profile as CompanyProfileData);
       setSelectedAssetIds([]);
       loadPipelineStatus();
     } catch (err) {
@@ -213,31 +213,65 @@ export default function CompanyKnowledgePage() {
     if (!profile) return;
     setIsSyncingMarketing(true);
     try {
-      const result = await syncMarketingFromKnowledge();
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 55000);
+      
+      const res = await fetch('/api/knowledge/sync-marketing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      
+      const result = await res.json() as { success?: boolean; error?: string };
       if (result.success) {
         toast.success('已同步到营销系统');
       } else {
         toast.error('同步失败', { description: result.error });
       }
     } catch (err) {
-      toast.error('同步失败', { description: err instanceof Error ? err.message : '未知错误' });
+      const errMsg = err instanceof Error && err.name === 'AbortError'
+        ? '请求超时，AI分析时间过长'
+        : (err instanceof Error ? err.message : '未知错误');
+      toast.error('同步失败', { description: errMsg });
     } finally {
       setIsSyncingMarketing(false);
     }
   };
 
   const handleSyncRadar = async () => {
+    console.log('[SyncRadar] clicked, profile:', !!profile);
     if (!profile) return;
     setIsSyncingRadar(true);
     try {
-      const result = await syncRadarFromKnowledge();
+      console.log('[SyncRadar] sending fetch...');
+      // 设置55秒超时（Vercel maxDuration=60，留5秒余量）
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 55000);
+      
+      const res = await fetch('/api/knowledge/sync-radar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      
+      console.log('[SyncRadar] response status:', res.status);
+      const result = await res.json() as { success?: boolean; error?: string; detail?: string };
+      console.log('[SyncRadar] result:', result);
       if (result.success) {
         toast.success('已同步到获客雷达');
       } else {
         toast.error('同步失败', { description: result.error });
       }
     } catch (err) {
-      toast.error('同步失败', { description: err instanceof Error ? err.message : '未知错误' });
+      console.error('[SyncRadar] fetch error:', err);
+      const errMsg = err instanceof Error && err.name === 'AbortError'
+        ? '请求超时，AI分析时间过长'
+        : (err instanceof Error ? err.message : '未知错误');
+      toast.error('同步失败', { description: errMsg });
     } finally {
       setIsSyncingRadar(false);
     }

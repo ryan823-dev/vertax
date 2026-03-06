@@ -38,7 +38,7 @@ export default auth((req) => {
   }
 
   // Allow external API routes (assets API for VertaX integration)
-  if (pathname.startsWith("/api/assets")) {
+  if (pathname.startsWith("/api/assets") || pathname.startsWith("/api/evidence") || pathname.startsWith("/api/ai")) {
     return NextResponse.next();
   }
 
@@ -84,5 +84,5 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/((?!_next|api/auth|.*\\..*).*)"],
+  matcher: ["/((?!_next|api/|.*\\..*).*)"],
 };

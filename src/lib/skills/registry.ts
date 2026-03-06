@@ -39,6 +39,13 @@ export function hasSkill(name: string): boolean {
   return skillRegistry.has(name);
 }
 
+/**
+ * 获取所有已注册的 Skill 名称
+ */
+export function getSkillNames(): string[] {
+  return Array.from(skillRegistry.keys());
+}
+
 // ==================== Skill Names (Type-Safe) ====================
 
 export const SKILL_NAMES = {
@@ -69,32 +76,48 @@ let registered = false;
 export async function ensureSkillsRegistered(): Promise<void> {
   if (registered) return;
   
-  // 动态导入所有 Skills（容错处理）
-  try {
-    const [radarSkills, marketingSkills] = await Promise.all([
-      import('./radar').catch(() => ({})),
-      import('./marketing').catch(() => ({})),
-    ]);
-    
-    // 注册雷达 Skills
-    Object.values(radarSkills).forEach(skill => {
-      if (skill && typeof skill === 'object' && 'name' in skill) {
-        registerSkill(skill as SkillDefinition);
-      }
-    });
-    
-    // 注册营销 Skills
-    Object.values(marketingSkills).forEach(skill => {
-      if (skill && typeof skill === 'object' && 'name' in skill) {
-        registerSkill(skill as SkillDefinition);
-      }
-    });
-  } catch (err) {
-    console.warn('[Skills] Failed to load skill modules:', err);
-  }
+  console.log('[Skills] Starting dynamic import...');
+  
+  // 动态导入所有 Skills
+  const [radarSkills, marketingSkills] = await Promise.all([
+    import('./radar').then((mod) => {
+      console.log('[Skills] radar module loaded, exports:', Object.keys(mod));
+      return mod as Record<string, unknown>;
+    }).catch((err) => {
+      console.error('[Skills] Failed to load radar skills:', err);
+      return {} as Record<string, unknown>;
+    }),
+    import('./marketing').then((mod) => {
+      console.log('[Skills] marketing module loaded, exports:', Object.keys(mod));
+      return mod as Record<string, unknown>;
+    }).catch((err) => {
+      console.error('[Skills] Failed to load marketing skills:', err);
+      return {} as Record<string, unknown>;
+    }),
+  ]);
+
+  // 注册雷达 Skills
+  const radarCount = Object.values(radarSkills).filter(skill => {
+    if (skill && typeof skill === 'object' && 'name' in skill) {
+      registerSkill(skill as SkillDefinition);
+      return true;
+    }
+    return false;
+  }).length;
+  console.log(`[Skills] Registered ${radarCount} radar skills`);
+
+  // 注册营销 Skills
+  const marketingCount = Object.values(marketingSkills).filter(skill => {
+    if (skill && typeof skill === 'object' && 'name' in skill) {
+      registerSkill(skill as SkillDefinition);
+      return true;
+    }
+    return false;
+  }).length;
+  console.log(`[Skills] Registered ${marketingCount} marketing skills`);
   
   registered = true;
-  console.log(`[Skills] Registered ${skillRegistry.size} skills`);
+  console.log(`[Skills] Total registered: ${skillRegistry.size} skills`);
 }
 
 // ==================== Debug Helpers ====================

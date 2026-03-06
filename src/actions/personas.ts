@@ -191,6 +191,99 @@ export async function deletePersona(id: string): Promise<void> {
   revalidatePath("/zh-CN/knowledge");
 }
 
+// ==================== 从企业档案自动生成 ====================
+
+export async function generatePersonasFromProfile(
+  options?: { overwrite?: boolean }
+): Promise<{ segmentsCreated: number; personasCreated: number; needsAI?: boolean }> {
+  const session = await getSession();
+  const tenantId = session.user.tenantId;
+
+  // 读取企业档案
+  const profile = await db.companyProfile.findUnique({ where: { tenantId } });
+  if (!profile) {
+    throw new Error("请先生成企业档案");
+  }
+
+  const buyerPersonas = (profile.buyerPersonas as Array<{ role: string; title: string; concerns: string[] }>) || [];
+  const targetIndustries = (profile.targetIndustries as string[]) || [];
+  const targetRegions = (profile.targetRegions as string[]) || [];
+
+  // 企业档案中没有 buyerPersonas → 让前端走 AI fallback
+  if (buyerPersonas.length === 0 && targetIndustries.length === 0) {
+    return { segmentsCreated: 0, personasCreated: 0, needsAI: true };
+  }
+
+  // 覆盖模式：先删 Persona（SetNull 关系），再删 Segment
+  if (options?.overwrite) {
+    await db.persona.deleteMany({ where: { tenantId } });
+    await db.iCPSegment.deleteMany({ where: { tenantId } });
+  }
+
+  // 推断 seniority
+  function inferSeniority(title: string): string {
+    if (/总裁|VP|副总|CEO|CTO|CMO|COO|CFO|总经理|董事/i.test(title)) return 'executive';
+    if (/总监|高级经理|部长|主任|Director/i.test(title)) return 'senior';
+    if (/经理|科长|主管|Manager/i.test(title)) return 'mid';
+    return 'mid';
+  }
+
+  let segmentsCreated = 0;
+  let personasCreated = 0;
+
+  // 映射 targetIndustries → ICPSegment
+  const createdSegments: Array<{ id: string; name: string }> = [];
+  if (targetIndustries.length > 0) {
+    for (let i = 0; i < targetIndustries.length; i++) {
+      const seg = await db.iCPSegment.create({
+        data: {
+          tenantId,
+          name: targetIndustries[i],
+          industry: targetIndustries[i],
+          regions: targetRegions,
+          order: i,
+        },
+      });
+      createdSegments.push({ id: seg.id, name: seg.name });
+      segmentsCreated++;
+    }
+  } else {
+    // 无行业信息时创建默认 segment
+    const seg = await db.iCPSegment.create({
+      data: {
+        tenantId,
+        name: '默认市场',
+        regions: targetRegions,
+        order: 0,
+      },
+    });
+    createdSegments.push({ id: seg.id, name: seg.name });
+    segmentsCreated++;
+  }
+
+  // 映射 buyerPersonas → Persona，挂在第一个 segment 下
+  const firstSegmentId = createdSegments[0]?.id;
+  for (let i = 0; i < buyerPersonas.length; i++) {
+    const bp = buyerPersonas[i];
+    await db.persona.create({
+      data: {
+        tenantId,
+        segmentId: firstSegmentId,
+        name: bp.role || bp.title,
+        title: bp.title || bp.role,
+        seniority: inferSeniority(bp.title || ''),
+        concerns: (bp.concerns || []).slice(0, 5),
+        order: i,
+      },
+    });
+    personasCreated++;
+  }
+
+  revalidatePath("/zh-CN/knowledge");
+
+  return { segmentsCreated, personasCreated };
+}
+
 // ==================== Messaging Matrix ====================
 
 export async function getMessagingMatrix(personaId: string): Promise<MessagingMatrixData[]> {

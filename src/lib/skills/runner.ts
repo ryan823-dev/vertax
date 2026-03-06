@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { chatCompletion } from '@/lib/ai-client';
 import { prisma } from '@/lib/prisma';
 import { logActivity, ACTIVITY_ACTIONS, EVENT_CATEGORIES } from '@/lib/utils/activity-logger';
-import { getSkill, ensureSkillsRegistered } from './registry';
+import { getSkill, getSkillNames } from './registry';
 import { loadEvidenceContext } from './evidence-loader';
 import {
   type SkillDefinition,
@@ -36,12 +36,11 @@ export async function executeSkill(
 ): Promise<SkillResponse> {
   const { tenantId, userId } = config;
   
-  // 确保 Skills 已注册
-  await ensureSkillsRegistered();
-  
-  // 1. 获取 Skill 定义
+  // 获取 Skill 定义（需要在调用前注册好）
   const skill = getSkill(skillName);
   if (!skill) {
+    console.error(`[SkillRunner] Skill not found: ${skillName}`);
+    console.log(`[SkillRunner] Available skills: ${Array.from(getSkillNames?.() || [])}`);
     throw new SkillNotFoundError(skillName);
   }
   
@@ -83,7 +82,7 @@ export async function executeSkill(
     {
       model: skill.model || 'qwen-plus',
       temperature: skill.temperature ?? 0.3,
-      maxTokens: 8192,
+      maxTokens: 4096,
     }
   );
   

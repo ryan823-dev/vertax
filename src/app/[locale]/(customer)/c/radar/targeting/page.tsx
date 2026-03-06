@@ -36,7 +36,6 @@ import {
   getLatestTargetingSpec, 
   getLatestChannelMap,
   getArtifactVersionHistory,
-  syncRadarFromKnowledge,
 } from '@/actions/sync';
 import { updateVersionContent } from '@/actions/versions';
 import { CollaborativeShell } from '@/components/collaboration';
@@ -195,11 +194,22 @@ export default function TargetingSpecPage() {
     loadData();
   }, [loadData]);
 
-  // 重新生成
+  // 重新生成 - 通过 Route Handler 绕过 Server Action 10s 限制和 Skill 系统
   const handleRegenerate = async () => {
     setIsSyncing(true);
     try {
-      const result = await syncRadarFromKnowledge();
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 55000);
+      
+      const res = await fetch('/api/radar/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      
+      const result = await res.json() as { success?: boolean; error?: string };
       if (result.success) {
         toast.success('已更新 TargetingSpec + ChannelMap');
         loadData();
@@ -207,7 +217,10 @@ export default function TargetingSpecPage() {
         toast.error('同步失败', { description: result.error });
       }
     } catch (err) {
-      toast.error('同步失败', { description: err instanceof Error ? err.message : '未知错误' });
+      const errMsg = err instanceof Error && err.name === 'AbortError'
+        ? '请求超时，AI分析时间过长'
+        : (err instanceof Error ? err.message : '未知错误');
+      toast.error('同步失败', { description: errMsg });
     } finally {
       setIsSyncing(false);
     }
