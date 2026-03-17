@@ -117,10 +117,6 @@ model PushRecord {
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
 
-  @@index([tenantId, status])
-  @@index([contentId])
-  @@index([websiteConfigId])
-  @@index([status, timeoutAt])
   @@unique([contentId, websiteConfigId]) // 每个内容每个站点只有一条推送记录
 }
 
@@ -159,8 +155,6 @@ model User {
   tasksAssigned     ArtifactTask[]     @relation("TaskAssignee")
   chatConversations ChatConversation[]
 
-  @@index([tenantId])
-  @@index([email])
 }
 
 model Role {
@@ -192,7 +186,6 @@ model Account {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
-  @@index([userId])
 }
 
 model Session {
@@ -202,10 +195,10 @@ model Session {
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
 }
 
 model VerificationToken {
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
   identifier String
   token      String   @unique
   expires    DateTime
@@ -226,8 +219,6 @@ model ApiKey {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  @@index([tenantId])
-  @@index([key])
 }
 
 // ==================== MODULE 1: PRODUCTS ====================
@@ -253,8 +244,6 @@ model Product {
   categories ProductCategory[]
 
   @@unique([tenantId, slug])
-  @@index([tenantId])
-  @@index([status])
 }
 
 model ProductImage {
@@ -266,7 +255,6 @@ model ProductImage {
   order     Int      @default(0)
   createdAt DateTime @default(now())
 
-  @@index([productId])
 }
 
 model ProductSpec {
@@ -278,7 +266,6 @@ model ProductSpec {
   unit      String?
   order     Int     @default(0)
 
-  @@index([productId])
 }
 
 model ProductCategory {
@@ -288,7 +275,6 @@ model ProductCategory {
   name      String
 
   @@unique([productId, name])
-  @@index([productId])
 }
 
 // ==================== MODULE 2: SEO & GEO CONTENT ====================
@@ -312,9 +298,6 @@ model SeoAudit {
   createdAt     DateTime  @default(now())
   completedAt   DateTime?
 
-  @@index([tenantId])
-  @@index([userId])
-  @@index([status])
 }
 
 model ContentCategory {
@@ -332,7 +315,6 @@ model ContentCategory {
   contents SeoContent[]
 
   @@unique([tenantId, slug])
-  @@index([tenantId])
 }
 
 model SeoContent {
@@ -368,11 +350,6 @@ model SeoContent {
   pushRecords  PushRecord[]   // 推送记录
 
   @@unique([tenantId, slug])
-  @@index([tenantId])
-  @@index([categoryId])
-  @@index([authorId])
-  @@index([status])
-  @@index([briefId])
 }
 
 // ==================== MODULE 3: SOCIAL MEDIA ====================
@@ -393,7 +370,6 @@ model SocialAccount {
   updatedAt    DateTime  @updatedAt
 
   @@unique([tenantId, platform, accountId])
-  @@index([tenantId])
 }
 
 model SocialPost {
@@ -414,10 +390,6 @@ model SocialPost {
 
   versions PostVersion[]
 
-  @@index([tenantId])
-  @@index([authorId])
-  @@index([status])
-  @@index([scheduledAt])
 }
 
 model PostVersion {
@@ -433,7 +405,6 @@ model PostVersion {
   publishAttempts Int        @default(0)
   metrics         Json       @default("{}")
 
-  @@index([postId])
 }
 
 // ==================== MODULE 4: AI LEAD GENERATION ====================
@@ -464,10 +435,6 @@ model Lead {
 
   campaigns CampaignLead[]
 
-  @@index([tenantId])
-  @@index([ownerId])
-  @@index([status])
-  @@index([email])
 }
 
 model Campaign {
@@ -488,8 +455,6 @@ model Campaign {
 
   leads CampaignLead[]
 
-  @@index([tenantId])
-  @@index([status])
 }
 
 model CampaignLead {
@@ -507,8 +472,6 @@ model CampaignLead {
   updatedAt           DateTime  @updatedAt
 
   @@unique([campaignId, leadId])
-  @@index([campaignId])
-  @@index([leadId])
 }
 
 // ==================== SYSTEM ====================
@@ -530,10 +493,6 @@ model Activity {
   severity      String?  // "info"|"warn"|"error"
   context       Json?    // { versionId, briefId, previousStatus, ... }
 
-  @@index([tenantId])
-  @@index([userId])
-  @@index([entityType, entityId])
-  @@index([createdAt])
 }
 
 // ==================== MODULE 6: KNOWLEDGE ENGINE ====================
@@ -602,7 +561,6 @@ model CompanyProfile {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([tenantId])
 }
 
 // ==================== MODULE 5: ASSET HUB ====================
@@ -614,7 +572,7 @@ model AssetFolder {
   name        String
   description String?
   parentId    String?
-  parent      AssetFolder?  @relation("FolderTree", fields: [parentId], references: [id])
+  parent      AssetFolder?  @relation("FolderTree", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   children    AssetFolder[] @relation("FolderTree")
   color       String?
   order       Int           @default(0)
@@ -624,8 +582,6 @@ model AssetFolder {
   assets Asset[]
 
   @@unique([tenantId, name, parentId])
-  @@index([tenantId])
-  @@index([parentId])
 }
 
 model Asset {
@@ -662,12 +618,6 @@ model Asset {
 
   chunks    AssetChunk[]
 
-  @@index([tenantId])
-  @@index([tenantId, fileCategory])
-  @@index([tenantId, status])
-  @@index([folderId])
-  @@index([uploadedById])
-  @@index([createdAt])
 }
 
 // ==================== ASSET CHUNKS (文本分块) ====================
@@ -690,9 +640,6 @@ model AssetChunk {
 
   evidences  Evidence[]
 
-  @@index([assetId])
-  @@index([tenantId])
-  @@index([assetId, chunkIndex])
 }
 
 // ==================== EVIDENCE (证据库) ====================
@@ -717,10 +664,6 @@ model Evidence {
   updatedAt     DateTime     @updatedAt
   deletedAt     DateTime?
 
-  @@index([tenantId])
-  @@index([tenantId, type])
-  @@index([chunkId])
-  @@index([assetId])
 }
 
 // ==================== BRAND GUIDELINES (品牌规范) ====================
@@ -738,8 +681,6 @@ model BrandGuideline {
   createdAt DateTime          @default(now())
   updatedAt DateTime          @updatedAt
 
-  @@index([tenantId])
-  @@index([tenantId, category])
 }
 
 // ==================== ICP & PERSONA (画像中心) ====================
@@ -760,7 +701,6 @@ model ICPSegment {
 
   personas    Persona[]
 
-  @@index([tenantId])
 }
 
 model Persona {
@@ -782,8 +722,6 @@ model Persona {
   messagingMatrix MessagingMatrix[]
   contentBriefs   ContentBrief[]
 
-  @@index([tenantId])
-  @@index([segmentId])
 }
 
 model MessagingMatrix {
@@ -799,8 +737,6 @@ model MessagingMatrix {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  @@index([tenantId])
-  @@index([personaId])
 }
 
 // ==================== Phase 3: ARTIFACT VERSIONING ====================
@@ -823,9 +759,6 @@ model ArtifactVersion {
   tasks    ArtifactTask[]
 
   @@unique([entityType, entityId, version])
-  @@index([tenantId])
-  @@index([entityType, entityId])
-  @@index([tenantId, status])
 }
 
 // ==================== Phase 3: CONTENT BRIEF ====================
@@ -851,9 +784,6 @@ model ContentBrief {
 
   contentPieces SeoContent[]
 
-  @@index([tenantId])
-  @@index([tenantId, status])
-  @@index([targetPersonaId])
 }
 
 // ==================== Phase 3: ARTIFACT COLLABORATION ====================
@@ -867,7 +797,7 @@ model ArtifactComment {
   authorId   String
   author     User             @relation(fields: [authorId], references: [id])
   parentId   String?
-  parent     ArtifactComment? @relation("CommentReplies", fields: [parentId], references: [id])
+  parent     ArtifactComment? @relation("CommentReplies", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   replies    ArtifactComment[] @relation("CommentReplies")
   resolvedAt DateTime?
   createdAt  DateTime         @default(now())
@@ -881,9 +811,6 @@ model ArtifactComment {
   // 评论转任务关联
   linkedTask   ArtifactTask? @relation("CommentTask")
 
-  @@index([versionId])
-  @@index([tenantId])
-  @@index([parentId])
 }
 
 model ArtifactTask {
@@ -904,11 +831,8 @@ model ArtifactTask {
 
   // Phase 3 协作壳：来源评论关联
   sourceCommentId String?          @unique
-  sourceComment   ArtifactComment? @relation("CommentTask", fields: [sourceCommentId], references: [id], onDelete: SetNull)
+  sourceComment   ArtifactComment? @relation("CommentTask", fields: [sourceCommentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  @@index([versionId])
-  @@index([tenantId, status])
-  @@index([assigneeId])
 }
 
 // ==================== Phase 3: DECISION CENTER CHAT ====================
@@ -926,7 +850,6 @@ model ChatConversation {
 
   messages ChatMessage[]
 
-  @@index([tenantId, userId])
 }
 
 model ChatMessage {
@@ -939,7 +862,6 @@ model ChatMessage {
   tokens         Int?
   createdAt      DateTime         @default(now())
 
-  @@index([conversationId, createdAt])
 }
 
 // ==================== MODULE 7: RADAR (获客雷达) ====================
@@ -1051,7 +973,6 @@ model RadarSource {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  @@index([channelType, isEnabled])
 }
 
 // ==================== 发现任务 ====================
@@ -1091,8 +1012,6 @@ model RadarTask {
   
   createdAt       DateTime @default(now())
   
-  @@index([tenantId, status])
-  @@index([sourceId, status])
 }
 
 // ==================== 统一候选池 ====================
@@ -1176,12 +1095,6 @@ model RadarCandidate {
   updatedAt       DateTime @updatedAt
   
   @@unique([sourceId, externalId])
-  @@index([tenantId, candidateType, status])
-  @@index([tenantId, qualifyTier])
-  @@index([tenantId, sourceId])
-  @@index([taskId])
-  @@index([expireAt])
-  @@index([profileId, status])
 }
 
 // ==================== 正式线索公司 ====================
@@ -1226,10 +1139,6 @@ model ProspectCompany {
   updatedAt       DateTime @updatedAt
   deletedAt       DateTime?
   
-  @@index([tenantId, status])
-  @@index([tenantId, tier])
-  @@index([tenantId, industry])
-  @@index([assignedTo])
 }
 
 // ==================== 正式联系人 ====================
@@ -1263,9 +1172,6 @@ model ProspectContact {
   updatedAt       DateTime @updatedAt
   deletedAt       DateTime?
   
-  @@index([tenantId, companyId])
-  @@index([tenantId, status])
-  @@index([email])
 }
 
 // ==================== 正式机会（招标转化后） ====================
@@ -1313,10 +1219,6 @@ model Opportunity {
   updatedAt       DateTime @updatedAt
   deletedAt       DateTime?
   
-  @@index([tenantId, stage])
-  @@index([tenantId, deadline])
-  @@index([companyId])
-  @@index([assignedTo])
 }
 
 // ==================== 搜索配置（定时监控） ====================
@@ -1367,8 +1269,6 @@ model RadarSearchProfile {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   
-  @@index([tenantId, isActive])
-  @@index([isActive, nextRunAt])
 }
 
 // ==================== 扫描游标（持续增量） ====================
@@ -1392,7 +1292,6 @@ model RadarScanCursor {
   updatedAt    DateTime @updatedAt
 
   @@unique([profileId, sourceId])
-  @@index([profileId])
 }
 
 // ==================== 意图信号追踪 ====================
@@ -1424,11 +1323,6 @@ model IntentSignal {
   occurredAt  DateTime @default(now())
   createdAt   DateTime @default(now())
 
-  @@index([tenantId])
-  @@index([candidateId])
-  @@index([companyId])
-  @@index([signalType])
-  @@index([occurredAt])
   @@map("intent_signals")
 }
 
@@ -1461,8 +1355,6 @@ model WebhookConfig {
 
   logs        WebhookLog[]
 
-  @@index([tenantId])
-  @@index([isActive])
   @@map("webhook_configs")
 }
 
@@ -1488,10 +1380,6 @@ model WebhookLog {
 
   webhook       WebhookConfig @relation(fields: [webhookId], references: [id], onDelete: Cascade)
 
-  @@index([tenantId])
-  @@index([webhookId])
-  @@index([success])
-  @@index([createdAt])
   @@map("webhook_logs")
 }
 
@@ -1516,9 +1404,6 @@ model ApiCallLog {
   // 时间戳
   createdAt   DateTime @default(now())
 
-  @@index([service])
-  @@index([success])
-  @@index([createdAt])
   @@map("api_call_logs")
 }
 
@@ -1548,8 +1433,6 @@ model ApiKeyConfig {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  @@index([service])
-  @@index([isEnabled])
   @@map("api_key_configs")
 }
 
@@ -1591,9 +1474,5 @@ model OutreachRecord {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  @@index([tenantId])
-  @@index([candidateId])
-  @@index([status])
-  @@index([createdAt])
   @@map("outreach_records")
 }
