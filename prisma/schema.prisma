@@ -181,12 +181,12 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String? 
+  access_token      String? 
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String? 
   session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -239,8 +239,8 @@ model Product {
   sku             String?
   name            String
   slug            String
-  description     String?   @db.Text
-  detailedContent String?   @db.Text
+  description     String?   
+  detailedContent String?   
   status          String    @default("draft")
   publishedAt     DateTime?
   metadata        Json      @default("{}")
@@ -274,7 +274,7 @@ model ProductSpec {
   productId String
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   key       String
-  value     String  @db.Text
+  value     String  
   unit      String?
   order     Int     @default(0)
 
@@ -305,7 +305,7 @@ model SeoAudit {
   currentStep   String?
   scores        Json      @default("{}")
   findings      Json      @default("[]")
-  aiSummary     String?   @db.Text
+  aiSummary     String?   
   crawlErrors   Json      @default("[]")
   pagesCrawled  Int       @default(0)
   crawlDuration Int?
@@ -345,8 +345,8 @@ model SeoContent {
   author          User            @relation(fields: [authorId], references: [id])
   title           String
   slug            String
-  excerpt         String?         @db.Text
-  content         String          @db.Text
+  excerpt         String?         
+  content         String          
   metaTitle       String?
   metaDescription String?
   keywords        String[]
@@ -384,8 +384,8 @@ model SocialAccount {
   platform     String
   accountName  String
   accountId    String
-  accessToken  String?   @db.Text
-  refreshToken String?   @db.Text
+  accessToken  String?   
+  refreshToken String?   
   expiresAt    DateTime?
   metadata     Json      @default("{}")
   isActive     Boolean   @default(true)
@@ -425,7 +425,7 @@ model PostVersion {
   postId          String
   post            SocialPost @relation(fields: [postId], references: [id], onDelete: Cascade)
   platform        String
-  content         String     @db.Text
+  content         String     
   media           String[]
   platformPostId  String?
   publishedAt     DateTime?
@@ -456,7 +456,7 @@ model Lead {
   status          String    @default("new")
   priority        String    @default("medium")
   researchData    Json      @default("{}")
-  notes           String?   @db.Text
+  notes           String?   
   lastContactedAt DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -475,8 +475,8 @@ model Campaign {
   tenantId       String
   tenant         Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   name           String
-  description    String?   @db.Text
-  emailTemplate  String    @db.Text
+  description    String?   
+  emailTemplate  String    
   subject        String
   status         String    @default("draft")
   scheduledStart DateTime?
@@ -502,7 +502,7 @@ model CampaignLead {
   sentAt              DateTime?
   openedAt            DateTime?
   repliedAt           DateTime?
-  personalizedContent String?   @db.Text
+  personalizedContent String?   
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
@@ -574,7 +574,7 @@ model CompanyProfile {
 
   // 企业基本信息（AI提炼）
   companyName  String?
-  companyIntro String? @db.Text
+  companyIntro String? 
 
   // 核心能力画像
   coreProducts    Json @default("[]") // 核心产品/服务能力
@@ -593,7 +593,7 @@ model CompanyProfile {
   lastAnalyzedAt DateTime?
   analysisSource Json    @default("[]") // 分析使用的素材ID列表
   aiModel        String? // 使用的AI模型
-  rawAnalysis    String? @db.Text // AI原始分析结果
+  rawAnalysis    String?  // AI原始分析结果
 
   // Phase 2 扩展
   sectionEdits   Json    @default("{}") // { sectionKey: { content, editedAt, editedBy } }
@@ -679,7 +679,7 @@ model AssetChunk {
   assetId    String
   asset      Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
 
-  content    String   @db.Text
+  content    String   
   chunkIndex Int
   pageNumber Int?
   charStart  Int?
@@ -702,7 +702,7 @@ model Evidence {
   tenantId      String @db.ObjectId
   tenant        Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   title         String
-  content       String       @db.Text
+  content       String       
   type          EvidenceType @default(claim)
   sourceLocator Json         @default("{}")
   chunkId       String?
@@ -731,7 +731,7 @@ model BrandGuideline {
   tenant    Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   category  GuidelineCategory
   title     String
-  content   String            @db.Text
+  content   String            
   examples  Json              @default("[]")
   isActive  Boolean           @default(true)
   order     Int               @default(0)
@@ -752,7 +752,7 @@ model ICPSegment {
   industry    String?
   companySize String?
   regions     String[]
-  description String?   @db.Text
+  description String?   
   criteria    Json      @default("{}")
   order       Int       @default(0)
   createdAt   DateTime  @default(now())
@@ -793,7 +793,7 @@ model MessagingMatrix {
   personaId    String
   persona      Persona  @relation(fields: [personaId], references: [id], onDelete: Cascade)
   valueProp    String
-  message      String   @db.Text
+  message      String   
   channel      String?
   evidenceRefs String[]
   createdAt    DateTime @default(now())
@@ -841,7 +841,7 @@ model ContentBrief {
   intent          String    // "informational"|"commercial"|"transactional"|"navigational"
   cta             String?
   evidenceIds     String[]  // 引用的 Evidence id 列表
-  notes           String?   @db.Text
+  notes           String?   
   status          String    @default("draft") // "draft"|"ready"|"in_progress"|"done"
   createdById     String
   createdBy       User      @relation(fields: [createdById], references: [id])
@@ -863,7 +863,7 @@ model ArtifactComment {
   tenantId   String
   versionId  String
   version    ArtifactVersion  @relation(fields: [versionId], references: [id], onDelete: Cascade)
-  content    String           @db.Text
+  content    String           
   authorId   String
   author     User             @relation(fields: [authorId], references: [id])
   parentId   String?
@@ -934,7 +934,7 @@ model ChatMessage {
   conversationId String
   conversation   ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   role           String           // "user"|"assistant"|"system"
-  content        String           @db.Text
+  content        String           
   references     Json?            // [{ evidenceId, title, excerpt }]
   tokens         Int?
   createdAt      DateTime         @default(now())
@@ -1116,7 +1116,7 @@ model RadarCandidate {
   
   // 通用字段
   displayName     String
-  description     String?  @db.Text
+  description     String?  
   
   // 公司字段（candidateType=COMPANY）
   website         String?
@@ -1147,7 +1147,7 @@ model RadarCandidate {
   matchExplain    Json?    // { rules: [...], reasons: [...], query, channel }
   
   // AI 处理
-  aiSummary       String?  @db.Text
+  aiSummary       String?  
   aiRelevance     Json?    // { score, reasons[], matchedKeywords[] }
   
   // 状态
@@ -1200,7 +1200,7 @@ model ProspectCompany {
   city            String?
   industry        String?
   companySize     String?
-  description     String?  @db.Text
+  description     String?  
   
   // 分类与标签
   tier            String?  // A | B | C
@@ -1216,7 +1216,7 @@ model ProspectCompany {
   assignedTo      String?
   lastContactedAt DateTime?
   nextActionDate  DateTime?
-  notes           String?  @db.Text
+  notes           String?  
   
   // 关系
   contacts        ProspectContact[]
@@ -1257,7 +1257,7 @@ model ProspectContact {
   
   // 状态
   status          String   @default("new")
-  notes           String?  @db.Text
+  notes           String?  
   
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -1285,7 +1285,7 @@ model Opportunity {
   
   // 核心信息
   title           String
-  description     String?  @db.Text
+  description     String?  
   
   // 时间与金额
   deadline        DateTime?
@@ -1307,7 +1307,7 @@ model Opportunity {
   assignedTo      String?
   nextAction      String?
   nextActionDate  DateTime?
-  notes           String?  @db.Text
+  notes           String?  
   
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -1569,8 +1569,8 @@ model OutreachRecord {
 
   // 邮件内容
   subject     String
-  bodyText    String?  @db.Text
-  bodyHtml    String?  @db.Text
+  bodyText    String?  
+  bodyHtml    String?  
 
   // 发送状态
   messageId   String?  @unique // Resend message ID
