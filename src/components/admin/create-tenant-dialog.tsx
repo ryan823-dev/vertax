@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus } from "lucide-react";
+import { Plus, ExternalLink } from "lucide-react";
 import { createTenantWithAdmin } from "@/actions/admin";
 
 function generateSlug(name: string): string {
@@ -42,10 +42,12 @@ export function CreateTenantDialog() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [slugManual, setSlugManual] = useState(false);
+  const [successData, setSuccessData] = useState<{ loginUrl: string; email: string } | null>(null);
 
   const [companyName, setCompanyName] = useState("");
   const [slug, setSlug] = useState("");
   const [plan, setPlan] = useState("free");
+  const [domain, setDomain] = useState("");
   const [adminName, setAdminName] = useState("");
   const [adminEmail, setAdminEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -60,11 +62,13 @@ export function CreateTenantDialog() {
     setCompanyName("");
     setSlug("");
     setPlan("free");
+    setDomain("");
     setAdminName("");
     setAdminEmail("");
     setPassword("");
     setError("");
     setSlugManual(false);
+    setSuccessData(null);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -99,6 +103,7 @@ export function CreateTenantDialog() {
         companyName: companyName.trim(),
         slug: slug.trim(),
         plan,
+        domain: domain.trim() || undefined,
         adminName: adminName.trim(),
         adminEmail: adminEmail.trim().toLowerCase(),
         password,
@@ -106,8 +111,12 @@ export function CreateTenantDialog() {
 
       if (result.success) {
         toast.success(t("createSuccess"));
-        setOpen(false);
-        resetForm();
+        if (result.loginUrl) {
+          setSuccessData({ loginUrl: result.loginUrl, email: adminEmail.trim().toLowerCase() });
+        } else {
+          setOpen(false);
+          resetForm();
+        }
       } else {
         const errorMessages: Record<string, string> = {
           emailExists: t("emailExists"),
@@ -183,6 +192,17 @@ export function CreateTenantDialog() {
             </Select>
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="domain">外贸网站域名（可选）</Label>
+            <Input
+              id="domain"
+              value={domain}
+              onChange={(e) => setDomain(e.target.value.toLowerCase().replace(/[^a-z0-9.-]/g, ""))}
+              placeholder="example.com"
+            />
+            <p className="text-xs text-muted-foreground">客户的海外官网域名，用于邮件发送等</p>
+          </div>
+
           <div className="border-t pt-4">
             <p className="text-sm font-medium text-muted-foreground mb-3">
               {t("adminInfo")}
@@ -224,17 +244,34 @@ export function CreateTenantDialog() {
           </div>
 
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setOpen(false)}
-              disabled={loading}
-            >
-              {tc("cancel")}
-            </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? tc("loading") : tc("confirm")}
-            </Button>
+            {successData ? (
+              <>
+                <div className="flex-1 p-3 rounded-lg bg-green-50 border border-green-200">
+                  <p className="text-sm font-medium text-green-800 mb-2">✓ 客户账户已创建</p>
+                  <div className="space-y-1 text-sm text-green-700">
+                    <p>登录地址：<a href={successData.loginUrl} target="_blank" rel="noopener" className="underline font-medium">{successData.loginUrl}</a></p>
+                    <p>管理员邮箱：{successData.email}</p>
+                  </div>
+                </div>
+                <Button type="button" onClick={() => { setOpen(false); resetForm(); }}>
+                  完成
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setOpen(false)}
+                  disabled={loading}
+                >
+                  {tc("cancel")}
+                </Button>
+                <Button type="submit" disabled={loading}>
+                  {loading ? tc("loading") : tc("confirm")}
+                </Button>
+              </>
+            )}
           </DialogFooter>
         </form>
       </DialogContent>

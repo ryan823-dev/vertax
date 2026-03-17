@@ -37,6 +37,13 @@ import {
   AlertTriangle,
   ArrowRight,
   Zap,
+  Send,
+  SearchCheck,
+  Target,
+  Users,
+  TrendingUp,
+  Shield,
+  MessageSquare,
 } from 'lucide-react';
 import {
   getCandidatesV2,
@@ -85,6 +92,23 @@ export default function RadarCandidatesPage() {
   const [pipelineStatus, setPipelineStatus] = useState<RadarPipelineStatus | null>(null);
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateWithSource | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  
+  // 发送邮件状态
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [manualEmail, setManualEmail] = useState('');
+  const [emailSent, setEmailSent] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
+
+  // 背调状态
+  const [isResearching, setIsResearching] = useState(false);
+  const [researchData, setResearchData] = useState<any>(null);
+  const [researchError, setResearchError] = useState<string | null>(null);
+
+  // 邮件序列状态
+  const [isGeneratingSequence, setIsGeneratingSequence] = useState(false);
+  const [emailSequence, setEmailSequence] = useState<any>(null);
+  const [sequenceError, setSequenceError] = useState<string | null>(null);
+  const [expandedEmailIndex, setExpandedEmailIndex] = useState<number | null>(null);
   
   // 从 URL 参数初始化筛选条件
   const initialStatus = searchParams.get('status') as CandidateStatus | null;
@@ -173,6 +197,134 @@ export default function RadarCandidatesPage() {
       setSelectedCandidate(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : '导入失败');
+    }
+  };
+
+  // 发送Outreach邮件
+  const handleSendEmail = async (candidate: CandidateWithSource) => {
+    const targetEmail = manualEmail || candidate.email;
+    if (!targetEmail) {
+      setEmailError('请输入邮箱地址');
+      return;
+    }
+
+    setIsSendingEmail(true);
+    setEmailError(null);
+
+    try {
+      const response = await fetch('/api/outreach/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          candidateId: candidate.id,
+          email: targetEmail,
+          language: 'en',
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setEmailSent(true);
+        setManualEmail('');
+        loadData(true);
+      } else {
+        setEmailError(result.error || result.details || '发送失败');
+      }
+    } catch (err) {
+      setEmailError(err instanceof Error ? err.message : '发送失败');
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
+
+  // 执行客户背调
+  const handleResearch = async (candidate: CandidateWithSource) => {
+    setIsResearching(true);
+    setResearchError(null);
+
+    try {
+      const response = await fetch('/api/research/company', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ candidateId: candidate.id }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setResearchData(result.data);
+        loadData(true);
+      } else {
+        setResearchError(result.error || result.details || '背调失败');
+      }
+    } catch (err) {
+      setResearchError(err instanceof Error ? err.message : '背调失败');
+    } finally {
+      setIsResearching(false);
+    }
+  };
+
+  // 加载已有背调结果
+  const loadResearchData = async (candidateId: string) => {
+    try {
+      const response = await fetch(`/api/research/company?candidateId=${candidateId}`);
+      const result = await response.json();
+      if (result.success && result.data) {
+        setResearchData(result.data);
+      }
+    } catch {
+      // 忽略错误
+    }
+  };
+
+  // 当选择候选时，加载背调结果
+  useEffect(() => {
+    if (selectedCandidate) {
+      loadResearchData(selectedCandidate.id);
+      loadEmailSequence(selectedCandidate.id);
+    } else {
+      setResearchData(null);
+      setEmailSequence(null);
+    }
+  }, [selectedCandidate?.id]);
+
+  // 生成邮件序列
+  const handleGenerateSequence = async (candidate: CandidateWithSource) => {
+    setIsGeneratingSequence(true);
+    setSequenceError(null);
+
+    try {
+      const response = await fetch('/api/research/email-sequence', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ candidateId: candidate.id }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setEmailSequence(result.data);
+      } else {
+        setSequenceError(result.error || result.details || '生成失败');
+      }
+    } catch (err) {
+      setSequenceError(err instanceof Error ? err.message : '生成失败');
+    } finally {
+      setIsGeneratingSequence(false);
+    }
+  };
+
+  // 加载已有邮件序列
+  const loadEmailSequence = async (candidateId: string) => {
+    try {
+      const response = await fetch(`/api/research/email-sequence?candidateId=${candidateId}`);
+      const result = await response.json();
+      if (result.success && result.data) {
+        setEmailSequence(result.data);
+      }
+    } catch {
+      // 忽略错误
     }
   };
 
@@ -459,7 +611,20 @@ export default function RadarCandidatesPage() {
                   return (
                     <div 
                       key={candidate.id}
-                      onClick={() => setSelectedCandidate(isSelected ? null : candidate)}
+                      onClick={() => {
+                        setSelectedCandidate(isSelected ? null : candidate);
+                        // 重置邮件状态
+                        setEmailSent(false);
+                        setEmailError(null);
+                        setManualEmail('');
+                        // 重置背调状态
+                        setResearchData(null);
+                        setResearchError(null);
+                        // 重置邮件序列状态
+                        setEmailSequence(null);
+                        setSequenceError(null);
+                        setExpandedEmailIndex(null);
+                      }}
                       className={`flex items-center gap-3 p-4 cursor-pointer transition-all ${
                         isSelected 
                           ? 'bg-[#D4AF37]/5' 
@@ -646,7 +811,7 @@ export default function RadarCandidatesPage() {
                 </div>
 
                 {/* AI Summary */}
-                {selectedCandidate.aiSummary && (
+                {selectedCandidate.aiSummary && !researchData && (
                   <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-5">
                     <h4 className="flex items-center gap-2 text-sm font-bold text-[#0B1B2B] mb-3">
                       <Sparkles size={14} className="text-[#D4AF37]" />
@@ -655,6 +820,253 @@ export default function RadarCandidatesPage() {
                     <p className="text-xs text-slate-600 leading-relaxed">
                       {selectedCandidate.aiSummary}
                     </p>
+                  </div>
+                )}
+
+                {/* AI背调模块 */}
+                <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="flex items-center gap-2 text-sm font-bold text-[#0B1B2B]">
+                      <SearchCheck size={14} className="text-[#D4AF37]" />
+                      AI 客户背调
+                    </h4>
+                    {researchData && (
+                      <span className="text-xs text-emerald-600 flex items-center gap-1">
+                        <CheckCircle2 size={12} />
+                        已完成
+                      </span>
+                    )}
+                  </div>
+
+                  {isResearching ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 size={24} className="text-[#D4AF37] animate-spin" />
+                      <span className="ml-2 text-sm text-slate-500">AI正在深度分析...</span>
+                    </div>
+                  ) : researchData ? (
+                    <div className="space-y-4">
+                      {/* 公司概况 */}
+                      <div className="bg-[#FFFCF7] rounded-xl border border-[#E8E0D0] p-3">
+                        <h5 className="text-xs font-medium text-[#0B1B2B] mb-2 flex items-center gap-1">
+                          <Building2 size={12} className="text-[#D4AF37]" />
+                          公司概况
+                        </h5>
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div><span className="text-slate-400">类型：</span>{researchData.overview?.businessType}</div>
+                          <div><span className="text-slate-400">规模：</span>{researchData.overview?.scale}</div>
+                          <div><span className="text-slate-400">定位：</span>{researchData.overview?.marketPosition}</div>
+                          <div><span className="text-slate-400">覆盖：</span>{researchData.overview?.geographicFocus}</div>
+                        </div>
+                      </div>
+
+                      {/* 行业分析 */}
+                      <div className="bg-[#FFFCF7] rounded-xl border border-[#E8E0D0] p-3">
+                        <h5 className="text-xs font-medium text-[#0B1B2B] mb-2 flex items-center gap-1">
+                          <TrendingUp size={12} className="text-[#D4AF37]" />
+                          行业分析
+                        </h5>
+                        <div className="text-xs space-y-1">
+                          <div><span className="text-slate-400">主行业：</span>{researchData.industry?.primaryIndustry}</div>
+                          <div><span className="text-slate-400">趋势：</span>{researchData.industry?.industryTrends?.join('、')}</div>
+                        </div>
+                      </div>
+
+                      {/* 潜在痛点 */}
+                      <div className="bg-[#FFFCF7] rounded-xl border border-[#E8E0D0] p-3">
+                        <h5 className="text-xs font-medium text-[#0B1B2B] mb-2 flex items-center gap-1">
+                          <Target size={12} className="text-[#D4AF37]" />
+                          潜在痛点
+                        </h5>
+                        <div className="space-y-1">
+                          {researchData.painPoints?.operational?.slice(0, 3).map((p: string, i: number) => (
+                            <div key={i} className="text-xs text-slate-600 flex items-start gap-1">
+                              <span className="text-amber-500">•</span>
+                              {p}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* 决策链 */}
+                      <div className="bg-[#FFFCF7] rounded-xl border border-[#E8E0D0] p-3">
+                        <h5 className="text-xs font-medium text-[#0B1B2B] mb-2 flex items-center gap-1">
+                          <Users size={12} className="text-[#D4AF37]" />
+                          决策链推断
+                        </h5>
+                        <div className="text-xs space-y-2">
+                          <div className="flex items-center gap-2">
+                            <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded text-[10px]">主要</span>
+                            <span>{researchData.decisionMakers?.primary?.role}</span>
+                          </div>
+                          <div className="text-slate-500">
+                            关注：{researchData.decisionMakers?.primary?.concerns?.join('、')}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 推荐策略 */}
+                      <div className="bg-gradient-to-r from-[#D4AF37]/10 to-transparent rounded-xl border border-[#D4AF37]/30 p-3">
+                        <h5 className="text-xs font-medium text-[#0B1B2B] mb-2 flex items-center gap-1">
+                          <MessageSquare size={12} className="text-[#D4AF37]" />
+                          推荐接触策略
+                        </h5>
+                        <div className="text-xs space-y-2">
+                          <div className="font-medium text-[#0B1B2B]">{researchData.outreachStrategy?.valueProposition}</div>
+                          <div className="text-slate-600">
+                            <span className="text-slate-400">谈资：</span>
+                            {researchData.outreachStrategy?.talkingPoints?.slice(0, 2).join('；')}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 风险提示 */}
+                      <div className={`flex items-center gap-2 text-xs p-2 rounded-lg ${
+                        researchData.risks?.level === 'high' ? 'bg-red-50 text-red-600' :
+                        researchData.risks?.level === 'medium' ? 'bg-amber-50 text-amber-600' :
+                        'bg-emerald-50 text-emerald-600'
+                      }`}>
+                        <Shield size={12} />
+                        <span>风险等级：{researchData.risks?.level?.toUpperCase()}</span>
+                        <span className="text-slate-400 ml-auto">置信度：{researchData.confidence}%</span>
+                      </div>
+
+                      {/* 重新背调按钮 */}
+                      <button
+                        onClick={() => handleResearch(selectedCandidate)}
+                        className="w-full py-2 text-xs text-slate-500 hover:text-[#D4AF37] transition-colors"
+                      >
+                        重新分析
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="text-center py-6">
+                      <p className="text-xs text-slate-500 mb-3">
+                        AI将深度分析目标公司的行业、痛点、决策链
+                      </p>
+                      <button
+                        onClick={() => handleResearch(selectedCandidate)}
+                        className="px-4 py-2 bg-[#D4AF37] text-[#0B1B2B] rounded-xl text-sm font-medium hover:bg-[#C5A030] transition-colors inline-flex items-center gap-2"
+                      >
+                        <SearchCheck size={14} />
+                        开始背调
+                      </button>
+                      {researchError && (
+                        <p className="text-xs text-red-500 mt-2">{researchError}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* 邮件序列模块 */}
+                {researchData && (
+                  <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-5">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="flex items-center gap-2 text-sm font-bold text-[#0B1B2B]">
+                        <Mail size={14} className="text-[#D4AF37]" />
+                        AI 邮件序列
+                      </h4>
+                      {emailSequence && (
+                        <span className="text-xs text-emerald-600 flex items-center gap-1">
+                          <CheckCircle2 size={12} />
+                          {emailSequence.totalEmails}封邮件
+                        </span>
+                      )}
+                    </div>
+
+                    {isGeneratingSequence ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 size={24} className="text-[#D4AF37] animate-spin" />
+                        <span className="ml-2 text-sm text-slate-500">AI正在设计邮件序列...</span>
+                      </div>
+                    ) : emailSequence ? (
+                      <div className="space-y-3">
+                        {/* 序列概览 */}
+                        <div className="bg-[#FFFCF7] rounded-xl border border-[#E8E0D0] p-3">
+                          <div className="flex items-center justify-between text-xs mb-2">
+                            <span className="text-slate-500">目标：{emailSequence.goal}</span>
+                            <span className="text-slate-400">{emailSequence.estimatedDuration}</span>
+                          </div>
+                        </div>
+
+                        {/* 邮件列表 */}
+                        {emailSequence.emails?.map((email: any, idx: number) => (
+                          <div key={idx} className="bg-[#FFFCF7] rounded-xl border border-[#E8E0D0] overflow-hidden">
+                            <button
+                              onClick={() => setExpandedEmailIndex(expandedEmailIndex === idx ? null : idx)}
+                              className="w-full p-3 text-left flex items-center justify-between hover:bg-[#F7F3E8] transition-colors"
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="w-6 h-6 rounded-full bg-[#D4AF37]/20 text-[#D4AF37] text-xs flex items-center justify-center font-medium">
+                                  {email.order}
+                                </span>
+                                <div>
+                                  <div className="text-xs font-medium text-[#0B1B2B]">{email.name}</div>
+                                  <div className="text-[10px] text-slate-400">{email.sendDelay}</div>
+                                </div>
+                              </div>
+                              <ChevronRight
+                                size={14}
+                                className={`text-slate-400 transition-transform ${expandedEmailIndex === idx ? 'rotate-90' : ''}`}
+                              />
+                            </button>
+
+                            {expandedEmailIndex === idx && (
+                              <div className="px-3 pb-3 space-y-2 border-t border-[#E8E0D0]">
+                                {/* 主题和预览 */}
+                                <div className="pt-2">
+                                  <div className="text-xs font-medium text-[#0B1B2B] mb-1">{email.subject}</div>
+                                  <div className="text-[10px] text-slate-400 italic">{email.previewText}</div>
+                                </div>
+
+                                {/* 正文 */}
+                                <div className="text-xs text-slate-600 whitespace-pre-wrap bg-white rounded-lg p-2 border border-[#E8E0D0]">
+                                  {email.body}
+                                </div>
+
+                                {/* CTA */}
+                                <div className="flex items-center gap-2">
+                                  <span className="px-2 py-1 bg-[#D4AF37] text-[#0B1B2B] rounded text-[10px] font-medium">
+                                    {email.cta?.text}
+                                  </span>
+                                </div>
+
+                                {/* 心理学触发点 */}
+                                {email.psychologicalTrigger && (
+                                  <div className="text-[10px] text-purple-600 flex items-center gap-1">
+                                    <Zap size={10} />
+                                    {email.psychologicalTrigger}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+
+                        {/* 重新生成按钮 */}
+                        <button
+                          onClick={() => handleGenerateSequence(selectedCandidate)}
+                          className="w-full py-2 text-xs text-slate-500 hover:text-[#D4AF37] transition-colors"
+                        >
+                          重新生成序列
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="text-center py-6">
+                        <p className="text-xs text-slate-500 mb-3">
+                          基于背调结果，AI将设计5轮跟进邮件
+                        </p>
+                        <button
+                          onClick={() => handleGenerateSequence(selectedCandidate)}
+                          className="px-4 py-2 bg-[#D4AF37] text-[#0B1B2B] rounded-xl text-sm font-medium hover:bg-[#C5A030] transition-colors inline-flex items-center gap-2"
+                        >
+                          <Mail size={14} />
+                          生成邮件序列
+                        </button>
+                        {sequenceError && (
+                          <p className="text-xs text-red-500 mt-2">{sequenceError}</p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -702,6 +1114,56 @@ export default function RadarCandidatesPage() {
                       <Download size={16} />
                       导入到{selectedCandidate.candidateType === 'OPPORTUNITY' ? '机会池' : '线索库'}
                     </button>
+                  )}
+
+                  {/* Send Outreach Email */}
+                  {(selectedCandidate.status === 'QUALIFIED' || selectedCandidate.status === 'NEW') &&
+                   selectedCandidate.qualifyTier && selectedCandidate.qualifyTier !== 'excluded' && (
+                    <div className="mt-3 pt-3 border-t border-[#E8E0D0]">
+                      <p className="text-xs text-slate-500 mb-2">发送开发信</p>
+
+                      {/* 如果没有email，显示输入框 */}
+                      {!selectedCandidate.email && (
+                        <input
+                          type="email"
+                          value={manualEmail}
+                          onChange={(e) => setManualEmail(e.target.value)}
+                          placeholder="输入邮箱地址"
+                          className="w-full px-3 py-2 mb-2 border border-[#E8E0D0] rounded-lg text-sm focus:outline-none focus:border-[#D4AF37]"
+                        />
+                      )}
+
+                      {/* 发送成功提示 */}
+                      {emailSent ? (
+                        <div className="flex items-center gap-2 py-2.5 px-4 bg-emerald-50 text-emerald-600 rounded-xl text-sm">
+                          <CheckCircle2 size={16} />
+                          邮件已发送！
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => handleSendEmail(selectedCandidate)}
+                          disabled={isSendingEmail || (!selectedCandidate.email && !manualEmail)}
+                          className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#D4AF37] text-[#0B1B2B] rounded-xl text-sm font-medium hover:bg-[#C5A030] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isSendingEmail ? (
+                            <>
+                              <Loader2 size={16} className="animate-spin" />
+                              发送中...
+                            </>
+                          ) : (
+                            <>
+                              <Send size={16} />
+                              发送开发信
+                            </>
+                          )}
+                        </button>
+                      )}
+
+                      {/* 错误提示 */}
+                      {emailError && (
+                        <p className="text-xs text-red-500 mt-2">{emailError}</p>
+                      )}
+                    </div>
                   )}
                   
                   {/* Already Imported */}

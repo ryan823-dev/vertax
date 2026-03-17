@@ -443,6 +443,57 @@ export default function MarketingPage() {
                 </div>
               )}
 
+              {/* AI文案助手 */}
+              {selectedKeyword && (
+                <div className="p-3 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl border border-purple-100">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-purple-700">AI文案助手</p>
+                      <p className="text-[10px] text-purple-500">生成营销文案、产品描述</p>
+                    </div>
+                    <button
+                      onClick={async () => {
+                        setIsGeneratingContent(true);
+                        try {
+                          const res = await fetch('/api/marketing/copywriting', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              type: contentType === 'article' ? 'landing_page' : contentType === 'product' ? 'product_page' : 'feature_page',
+                              companyName: '涂豆科技',
+                              industry: '涂装设备',
+                              targetAudience: '制造业采购决策者',
+                              mainProblem: '涂装效率低、质量不稳定',
+                              solution: '自动化涂装解决方案',
+                              keyBenefits: ['提升30%产能', '降低VOC排放50%', '投资回报<18个月'],
+                              differentiators: ['自主研发', '一站式服务', '10年行业经验'],
+                              proofPoints: ['服务500+客户', 'ISO9001认证', '专利技术'],
+                              language: 'zh',
+                            }),
+                          });
+                          const result = await res.json();
+                          if (result.success) {
+                            setGeneratedContent({
+                              title: result.data.headline,
+                              content: result.data.body + '\n\n' + (result.data.sections?.map((s: any) => `## ${s.title}\n${s.content}`).join('\n\n') || ''),
+                              metaTitle: result.data.headline,
+                              metaDescription: result.data.subheadline,
+                            });
+                          }
+                        } finally {
+                          setIsGeneratingContent(false);
+                        }
+                      }}
+                      disabled={isGeneratingContent}
+                      className="px-3 py-1.5 bg-purple-600 text-white rounded-lg text-xs font-medium hover:bg-purple-700 disabled:opacity-50 flex items-center gap-1"
+                    >
+                      <Sparkles size={12} />
+                      {isGeneratingContent ? '生成中...' : '生成文案'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Generate Button */}
               {selectedKeyword && (
                 <button
@@ -656,6 +707,49 @@ export default function MarketingPage() {
                         );
                       })}
                     </div>
+                  </div>
+
+                  {/* AI SEO优化 */}
+                  <div className="mt-4 pt-4 border-t border-[#E8E0D0]">
+                    <button
+                      onClick={async () => {
+                        if (!selectedContent) return;
+                        setIsGeneratingContent(true);
+                        try {
+                          const res = await fetch('/api/marketing/ai-seo', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              action: 'optimize',
+                              data: {
+                                content: selectedContent.content,
+                                targetQuery: selectedContent.keywords?.[0] || selectedContent.title,
+                                language: 'zh',
+                              },
+                            }),
+                          });
+                          const result = await res.json();
+                          if (result.success) {
+                            setGeneratedContent({
+                              title: selectedContent.title,
+                              content: result.data.optimizedContent,
+                              metaTitle: selectedContent.metaTitle || '',
+                              metaDescription: selectedContent.metaDescription || '',
+                            });
+                          }
+                        } finally {
+                          setIsGeneratingContent(false);
+                        }
+                      }}
+                      disabled={isGeneratingContent}
+                      className="w-full py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50 hover:shadow-md transition-all"
+                    >
+                      <Search size={14} />
+                      {isGeneratingContent ? 'AI优化中...' : 'AI SEO优化'}
+                    </button>
+                    <p className="text-[10px] text-slate-400 mt-1 text-center">
+                      优化内容以提高AI搜索引擎可见性
+                    </p>
                   </div>
                 </div>
 

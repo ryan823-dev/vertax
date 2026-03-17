@@ -113,9 +113,10 @@ export class GooglePlacesAdapter implements RadarAdapter {
   private buildSearchText(query: RadarSearchQuery): string {
     const parts: string[] = [];
     
-    // 关键词
+    // 关键词 - 只取前3个，避免查询过长
     if (query.keywords?.length) {
-      parts.push(query.keywords.join(' '));
+      const topKeywords = query.keywords.slice(0, 3);
+      parts.push(topKeywords.join(' '));
     }
     
     // 行业/类型

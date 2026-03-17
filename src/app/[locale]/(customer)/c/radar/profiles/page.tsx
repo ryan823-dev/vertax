@@ -108,6 +108,11 @@ function ProfileFormDialog({ profile, segments, sources, onClose, onSave }: Prof
     maxRunSeconds: profile?.maxRunSeconds || 45,
     autoQualify: profile?.autoQualify ?? true,
     autoEnrich: profile?.autoEnrich ?? false,
+    // 新增字段
+    targetCustomerType: (profile as any)?.targetCustomerType || [],
+    businessScenario: (profile as any)?.businessScenario || '',
+    exampleCustomers: (profile as any)?.exampleCustomers || [],
+    myProduct: (profile as any)?.myProduct || '',
   });
   
   const [keywordsText, setKeywordsText] = useState(
@@ -118,6 +123,9 @@ function ProfileFormDialog({ profile, segments, sources, onClose, onSave }: Prof
   );
   const [countriesText, setCountriesText] = useState(
     (profile?.targetCountries || []).join(', ')
+  );
+  const [exampleCustomersText, setExampleCustomersText] = useState(
+    ((profile as any)?.exampleCustomers || []).join(', ')
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -258,7 +266,147 @@ function ProfileFormDialog({ profile, segments, sources, onClose, onSave }: Prof
               />
             </div>
           </div>
-          
+
+          {/* 精准定位 - 新增 */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+              <Target size={14} />
+              精准定位（重要）
+            </h3>
+
+            <div>
+              <label className="block text-xs text-slate-500 mb-1">我的产品/服务</label>
+              <input
+                type="text"
+                value={formData.myProduct || ''}
+                onChange={e => setFormData(prev => ({ ...prev, myProduct: e.target.value }))}
+                placeholder="例如：喷漆自动化机器人工作站、涂装生产线"
+                className="w-full px-3 py-2 border border-[#E8E0D0] rounded-lg text-sm focus:outline-none focus:border-[#D4AF37]"
+              />
+              <p className="text-[10px] text-slate-400 mt-1">说明你卖什么，AI会据此筛选目标客户</p>
+            </div>
+
+            <div>
+              <label className="block text-xs text-slate-500 mb-2">目标客户类型（可多选）</label>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { value: 'manufacturer', label: '制造商', desc: '有生产线、需要设备' },
+                  { value: 'contract_coater', label: '涂装加工厂', desc: '承接涂装外包服务' },
+                  { value: 'distributor', label: '分销商/经销商', desc: '销售产品（通常排除）' },
+                  { value: 'retailer', label: '零售商', desc: '面向终端消费者（通常排除）' },
+                  { value: 'service_provider', label: '服务商', desc: '维修、安装等服务' },
+                  { value: 'oem', label: 'OEM代工厂', desc: '为品牌代工生产' },
+                ].map(type => (
+                  <label key={type.value} className={`flex items-start gap-2 p-2 border rounded-lg cursor-pointer transition-all ${
+                    formData.targetCustomerType?.includes(type.value)
+                      ? 'border-[#D4AF37] bg-[#D4AF37]/5'
+                      : 'border-[#E8E0D0] hover:border-[#D4AF37]/50'
+                  }`}>
+                    <input
+                      type="checkbox"
+                      checked={formData.targetCustomerType?.includes(type.value) || false}
+                      onChange={e => {
+                        const types = formData.targetCustomerType || [];
+                        if (e.target.checked) {
+                          setFormData(prev => ({ ...prev, targetCustomerType: [...types, type.value] }));
+                        } else {
+                          setFormData(prev => ({ ...prev, targetCustomerType: types.filter(t => t !== type.value) }));
+                        }
+                      }}
+                      className="w-4 h-4 mt-0.5 text-[#D4AF37] rounded border-slate-300 focus:ring-[#D4AF37]"
+                    />
+                    <div>
+                      <span className="text-sm text-slate-700">{type.label}</span>
+                      <p className="text-[10px] text-slate-400">{type.desc}</p>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs text-slate-500 mb-1">业务场景描述</label>
+              <textarea
+                value={formData.businessScenario || ''}
+                onChange={e => setFormData(prev => ({ ...prev, businessScenario: e.target.value }))}
+                placeholder="例如：寻找需要升级自动化喷涂设备的汽车零部件制造商，他们通常有手工喷涂产线需要改造"
+                rows={2}
+                className="w-full px-3 py-2 border border-[#E8E0D0] rounded-lg text-sm focus:outline-none focus:border-[#D4AF37] resize-none"
+              />
+              <p className="text-[10px] text-slate-400 mt-1">描述你的目标客户需要什么，AI会据此优化搜索</p>
+            </div>
+          </div>
+
+          {/* 精准定位 - 新增 */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+              <Target size={14} />
+              精准定位（重要）
+            </h3>
+
+            <div>
+              <label className="block text-xs text-slate-500 mb-1">我的产品/服务</label>
+              <input
+                type="text"
+                value={formData.myProduct || ''}
+                onChange={e => setFormData(prev => ({ ...prev, myProduct: e.target.value }))}
+                placeholder="例如：喷漆自动化机器人工作站、涂装生产线"
+                className="w-full px-3 py-2 border border-[#E8E0D0] rounded-lg text-sm focus:outline-none focus:border-[#D4AF37]"
+              />
+              <p className="text-[10px] text-slate-400 mt-1">说明你卖什么，AI会据此筛选目标客户</p>
+            </div>
+
+            <div>
+              <label className="block text-xs text-slate-500 mb-2">目标客户类型（可多选）</label>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { value: 'manufacturer', label: '制造商', desc: '有生产线、需要设备' },
+                  { value: 'contract_coater', label: '涂装加工厂', desc: '承接涂装外包服务' },
+                  { value: 'distributor', label: '分销商/经销商', desc: '销售产品（通常排除）' },
+                  { value: 'retailer', label: '零售商', desc: '面向终端消费者（通常排除）' },
+                  { value: 'service_provider', label: '服务商', desc: '维修、安装等服务' },
+                  { value: 'oem', label: 'OEM代工厂', desc: '为品牌代工生产' },
+                ].map(type => (
+                  <label key={type.value} className={`flex items-start gap-2 p-2 border rounded-lg cursor-pointer transition-all ${
+                    formData.targetCustomerType?.includes(type.value)
+                      ? 'border-[#D4AF37] bg-[#D4AF37]/5'
+                      : 'border-[#E8E0D0] hover:border-[#D4AF37]/50'
+                  }`}>
+                    <input
+                      type="checkbox"
+                      checked={formData.targetCustomerType?.includes(type.value) || false}
+                      onChange={e => {
+                        const types = formData.targetCustomerType || [];
+                        if (e.target.checked) {
+                          setFormData(prev => ({ ...prev, targetCustomerType: [...types, type.value] }));
+                        } else {
+                          setFormData(prev => ({ ...prev, targetCustomerType: types.filter(t => t !== type.value) }));
+                        }
+                      }}
+                      className="w-4 h-4 mt-0.5 text-[#D4AF37] rounded border-slate-300 focus:ring-[#D4AF37]"
+                    />
+                    <div>
+                      <span className="text-sm text-slate-700">{type.label}</span>
+                      <p className="text-[10px] text-slate-400">{type.desc}</p>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs text-slate-500 mb-1">业务场景描述</label>
+              <textarea
+                value={formData.businessScenario || ''}
+                onChange={e => setFormData(prev => ({ ...prev, businessScenario: e.target.value }))}
+                placeholder="例如：寻找需要升级自动化喷涂设备的汽车零部件制造商，他们通常有手工喷涂产线需要改造"
+                rows={2}
+                className="w-full px-3 py-2 border border-[#E8E0D0] rounded-lg text-sm focus:outline-none focus:border-[#D4AF37] resize-none"
+              />
+              <p className="text-[10px] text-slate-400 mt-1">描述你的目标客户需要什么，AI会据此优化搜索</p>
+            </div>
+          </div>
+
           {/* 渠道选择 */}
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">

@@ -13,6 +13,10 @@ import { AISearchAdapter } from './ai-search';
 import { GooglePlacesAdapter } from './google-places';
 import { BraveSearchAdapter } from './brave-search';
 import { GenericFeedAdapter } from './generic-feed';
+import { SAMGovAdapter } from './sam-gov';
+import { HiringSignalAdapter } from './hiring-signal';
+import { TradeDataAdapter } from './trade-data';
+import { TradeShowAdapter } from './trade-show';
 
 // ==================== 适配器注册表 ====================
 
@@ -258,7 +262,127 @@ export function ensureAdaptersInitialized(): void {
     },
     (config) => new GenericFeedAdapter(config)
   );
-  
+
+  // ==================== 新增数据源 ====================
+
+  // 注册 SAM.gov 适配器（美国政府采购）
+  registerAdapter(
+    {
+      code: 'sam_gov',
+      name: 'SAM.gov - 美国政府采购',
+      channelType: 'TENDER',
+      adapterType: 'API',
+      description: '美国联邦政府采购招标平台，覆盖美国政府采购公告',
+      features: {
+        supportsKeywordSearch: true,
+        supportsCategoryFilter: true, // NAICS codes
+        supportsDateFilter: true,
+        supportsRegionFilter: true,
+        supportsPagination: true,
+        supportsDetails: true,
+        maxResultsPerQuery: 100,
+        rateLimit: { requests: 30, windowMs: 60000 },
+      },
+      defaultConfig: {
+        timeout: 30000,
+      },
+      storagePolicy: 'TTL_CACHE',
+      ttlDays: 90,
+      attributionRequired: true,
+      isOfficial: true,
+      countries: ['US'],
+      websiteUrl: 'https://sam.gov',
+    },
+    (config) => new SAMGovAdapter(config)
+  );
+
+  // 注册招聘信号适配器
+  registerAdapter(
+    {
+      code: 'hiring_signal',
+      name: '招聘信号 - 公司增长监测',
+      channelType: 'HIRING',
+      adapterType: 'AI_SEARCH',
+      description: '通过招聘信息识别正在扩张的公司，招聘=增长=潜在需求',
+      features: {
+        supportsKeywordSearch: true,
+        supportsCategoryFilter: true, // 职位类型
+        supportsDateFilter: true,
+        supportsRegionFilter: true,
+        supportsPagination: false,
+        supportsDetails: false,
+        maxResultsPerQuery: 50,
+        rateLimit: { requests: 10, windowMs: 60000 },
+      },
+      defaultConfig: {
+        timeout: 60000,
+      },
+      storagePolicy: 'TTL_CACHE',
+      ttlDays: 30,
+      attributionRequired: false,
+      isOfficial: false,
+    },
+    (config) => new HiringSignalAdapter(config)
+  );
+
+  // 注册海关贸易数据适配器
+  registerAdapter(
+    {
+      code: 'trade_data',
+      name: '海关贸易数据 - 进口商发现',
+      channelType: 'ECOSYSTEM',
+      adapterType: 'AI_SEARCH',
+      description: '通过海关数据发现实际买家，进口商=已购买相关产品=高意向客户',
+      features: {
+        supportsKeywordSearch: true,
+        supportsCategoryFilter: true, // HS codes
+        supportsDateFilter: true,
+        supportsRegionFilter: true,
+        supportsPagination: false,
+        supportsDetails: false,
+        maxResultsPerQuery: 30,
+        rateLimit: { requests: 5, windowMs: 60000 },
+      },
+      defaultConfig: {
+        timeout: 60000,
+      },
+      storagePolicy: 'TTL_CACHE',
+      ttlDays: 90,
+      attributionRequired: false,
+      isOfficial: false,
+    },
+    (config) => new TradeDataAdapter(config)
+  );
+
+  // 注册展会参展商适配器
+  registerAdapter(
+    {
+      code: 'trade_show',
+      name: '展会参展商 - 市场活跃客户',
+      channelType: 'TRADESHOW',
+      adapterType: 'AI_SEARCH',
+      description: '获取行业展会参展商名单，参展商=有市场预算=高意向客户',
+      features: {
+        supportsKeywordSearch: true,
+        supportsCategoryFilter: true, // 展会类型
+        supportsDateFilter: true,
+        supportsRegionFilter: true,
+        supportsPagination: false,
+        supportsDetails: false,
+        maxResultsPerQuery: 50,
+        rateLimit: { requests: 5, windowMs: 60000 },
+      },
+      defaultConfig: {
+        timeout: 60000,
+      },
+      storagePolicy: 'TTL_CACHE',
+      ttlDays: 90,
+      attributionRequired: false,
+      isOfficial: false,
+    },
+    (config) => new TradeShowAdapter(config)
+  );
+
   initialized = true;
 }
 
@@ -271,8 +395,12 @@ export const ADAPTER_CODES = {
   GOOGLE_PLACES: 'google_places',
   BRAVE_SEARCH: 'brave_search',
   GENERIC_FEED: 'generic_feed',
-  // 后续扩展
+  // 新增数据源
   SAM_GOV: 'sam_gov',
+  HIRING_SIGNAL: 'hiring_signal',
+  TRADE_DATA: 'trade_data',
+  TRADE_SHOW: 'trade_show',
+  // 后续扩展
   CSV_IMPORT: 'csv_import',
 } as const;
 

@@ -106,9 +106,24 @@ export async function runIncrementalScan(
       ...(exclusionRules.negativeKeywords || []),
     ];
 
+    // 查询策略：按关键词+国家组合分批搜索
+    // 每次只用1个关键词+1个国家，避免查询过长
+    const queryIndex = cursor.queryIndex || 0;
+    const countryIndex = Math.floor(queryIndex / Math.max(allKeywords.length, 1));
+    const keywordIndex = queryIndex % Math.max(allKeywords.length, 1);
+    
+    const currentKeyword = allKeywords.length > 0 ? allKeywords[keywordIndex] : undefined;
+    const currentCountry = profile.targetCountries.length > 0 
+      ? profile.targetCountries[countryIndex % profile.targetCountries.length] 
+      : undefined;
+    
+    // 计算是否还有更多组合
+    const totalCombinations = Math.max(allKeywords.length, 1) * Math.max(profile.targetCountries.length, 1);
+    const hasMoreCombinations = queryIndex < totalCombinations - 1;
+
     const baseQuery: RadarSearchQuery = {
-      keywords: allKeywords.length > 0 ? allKeywords : undefined,
-      countries: profile.targetCountries.length > 0 ? profile.targetCountries : undefined,
+      keywords: currentKeyword ? [currentKeyword] : undefined,
+      countries: currentCountry ? [currentCountry] : undefined,
       regions: profile.targetRegions.length > 0 ? profile.targetRegions : undefined,
       categories: profile.categoryFilters.length > 0 ? profile.categoryFilters : undefined,
       targetIndustries: profile.industryCodes.length > 0 ? profile.industryCodes : undefined,
@@ -151,15 +166,33 @@ export async function runIncrementalScan(
         }
       }
 
+      // 重新计算当前关键词和国家
+      const queryIndex = cursor.queryIndex || 0;
+      const countryIndex = Math.floor(queryIndex / Math.max(allKeywords.length, 1));
+      const keywordIndex = queryIndex % Math.max(allKeywords.length, 1);
+      
+      const currentKeyword = allKeywords.length > 0 ? allKeywords[keywordIndex] : undefined;
+      const currentCountry = profile.targetCountries.length > 0 
+        ? profile.targetCountries[countryIndex % profile.targetCountries.length] 
+        : undefined;
+      
+      const totalCombinations = Math.max(allKeywords.length, 1) * Math.max(profile.targetCountries.length, 1);
+      const hasMoreCombinations = queryIndex < totalCombinations - 1;
+
       // 执行搜索
       const queryWithCursor: RadarSearchQuery = {
-        ...baseQuery,
+        keywords: currentKeyword ? [currentKeyword] : undefined,
+        countries: currentCountry ? [currentCountry] : undefined,
+        regions: profile.targetRegions.length > 0 ? profile.targetRegions : undefined,
+        categories: profile.categoryFilters.length > 0 ? profile.categoryFilters : undefined,
+        targetIndustries: profile.industryCodes.length > 0 ? profile.industryCodes : undefined,
         cursor: {
           nextPage: cursor.nextPage,
           nextPageToken: cursor.nextPageToken,
           since: cursor.since,
           queryIndex: cursor.queryIndex,
         },
+        maxResults: options.maxResults,
       };
 
       const result = await adapter.search(queryWithCursor);
@@ -189,19 +222,26 @@ export async function runIncrementalScan(
         stats.cursorAdvanced = true;
       }
 
-      if (result.isExhausted) {
-        // 条款C: time-skew buffer
-        cursor.exhausted = true;
-        cursor.since = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+      // 当前关键词+国家组合搜索完成
+      if (result.isExhausted || !result.hasMore) {
+        // 移动到下一个组合
+        cursor.queryIndex = (cursor.queryIndex || 0) + 1;
         cursor.nextPage = 0;
-        cursor.queryIndex = 0;
-        stats.exhausted = true;
-        break;
-      }
-
-      if (!result.hasMore && !result.nextCursor) {
-        stats.exhausted = true;
-        break;
+        cursor.nextPageToken = undefined;
+        stats.cursorAdvanced = true;
+        
+        // 检查是否还有更多组合
+        if (!hasMoreCombinations) {
+          // 所有组合都搜索完了
+          cursor.exhausted = true;
+          cursor.since = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+          cursor.queryIndex = 0;
+          stats.exhausted = true;
+          break;
+        }
+        
+        // 继续下一个组合
+        stats.cursorAdvanced = true;
       }
 
       // 速率限制

@@ -10,16 +10,17 @@ datasource db {
 // ==================== TENANT & AUTH ====================
 
 model Tenant {
-  id        String    @id @default(cuid())
-  name      String
-  slug      String    @unique
-  domain    String?
-  plan      String    @default("free")
-  status    String    @default("active")
-  settings  Json      @default("{}")
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  domain      String?
+  plan        String    @default("free")
+  status      String    @default("active")
+  settings    Json      @default("{}")
+  emailConfig Json?     // 邮件配置：平台Key/自定义Key、发件域名等
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
 
   users          User[]
   products       Product[]
@@ -1376,20 +1377,223 @@ model RadarScanCursor {
   id           String   @id @default(cuid())
   profileId    String
   sourceId     String
-  
+
   // 游标状态
   cursorState  Json     // { nextPage, nextPageToken, since, queryIndex, exhausted }
-  
+
   // 统计
   lastScanAt   DateTime?
   scanCount    Int      @default(0)
   totalFetched Int      @default(0)
   totalNew     Int      @default(0)
   lastError    String?
-  
+
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-  
+
   @@unique([profileId, sourceId])
   @@index([profileId])
+}
+
+// ==================== 意图信号追踪 ====================
+
+model IntentSignal {
+  id          String   @id @default(cuid())
+  tenantId    String
+
+  // 关联实体
+  candidateId String?  // 关联 RadarCandidate
+  companyId   String?  // 关联 ProspectCompany
+  contactId   String?  // 关联 ProspectContact
+
+  // 信号类型
+  signalType  String   // email_open, email_click, website_visit, pricing_view, demo_request
+
+  // 信号强度
+  intensity   Float    @default(1.0)  // 0.0 - 1.0
+  score       Int      @default(0)    // 计算后的意图分数
+
+  // 信号详情
+  metadata    Json?    // { emailId, link, page, duration, ip, userAgent }
+  ipAddress   String?
+  userAgent   String?
+  page        String?  // 访问的页面
+  referrer    String?  // 来源页面
+
+  // 时间戳
+  occurredAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([candidateId])
+  @@index([companyId])
+  @@index([signalType])
+  @@index([occurredAt])
+  @@map("intent_signals")
+}
+
+// ==================== Webhook集成 ====================
+
+model WebhookConfig {
+  id          String   @id @default(cuid())
+  tenantId    String
+
+  // Webhook配置
+  name        String
+  url         String
+  method      String   @default("POST")  // POST, PUT, PATCH
+  headers     Json?    // 自定义请求头
+  authType    String   @default("none")  // none, basic, bearer
+  secret      String?  // 签名密钥（用于验证）
+
+  // 触发事件
+  events      String[] // candidate_qualified, candidate_imported, email_sent, etc.
+
+  // 执行配置
+  isActive    Boolean  @default(true)
+  retryCount  Int      @default(3)
+  timeout     Int      @default(5000)  // 毫秒
+
+  // 元数据
+  lastTriggeredAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  logs        WebhookLog[]
+
+  @@index([tenantId])
+  @@index([isActive])
+  @@map("webhook_configs")
+}
+
+model WebhookLog {
+  id            String   @id @default(cuid())
+  tenantId      String
+  webhookId     String
+
+  // 触发事件
+  event         String
+  payload       Json?
+
+  // 执行结果
+  success       Boolean
+  statusCode    Int?
+  response      String?  // JSON响应
+  error         String?
+  executionTime Int      // 毫秒
+  retryAttempt  Int      @default(0)
+
+  // 时间戳
+  createdAt     DateTime @default(now())
+
+  webhook       WebhookConfig @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([webhookId])
+  @@index([success])
+  @@index([createdAt])
+  @@map("webhook_logs")
+}
+
+// ==================== API调用日志（成本追踪） ====================
+
+model ApiCallLog {
+  id          String   @id @default(cuid())
+
+  // 服务信息
+  service     String   // google_places, apollo, skrapp, hunter, brave_search
+  operation   String   // search, enrich, verify
+
+  // 成本
+  cost        Float    @default(0)  // USD
+  credits     Int      @default(0)  // 积分（可选）
+
+  // 结果
+  success     Boolean  @default(true)
+  errorCode   String?
+  metadata    Json?    // { query, resultCount, duration }
+
+  // 时间戳
+  createdAt   DateTime @default(now())
+
+  @@index([service])
+  @@index([success])
+  @@index([createdAt])
+  @@map("api_call_logs")
+}
+
+// ==================== 统一API密钥管理（Tower后台） ====================
+
+model ApiKeyConfig {
+  id          String   @id @default(cuid())
+
+  // 服务名称
+  service     String   @unique // google_places, apollo, skrapp, hunter, brave_search, firecrawl
+
+  // 密钥（加密存储）
+  apiKey      String?
+  apiSecret   String?  // 部分服务需要两个密钥
+
+  // 状态
+  isEnabled   Boolean  @default(true)
+  lastUsedAt  DateTime?
+
+  // 配额追踪
+  monthlyLimit   Int?     // 月度调用上限
+  currentUsage   Int      @default(0)  // 当前用量
+  usageResetAt   DateTime?  // 用量重置时间
+
+  // 元数据
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([service])
+  @@index([isEnabled])
+  @@map("api_key_configs")
+}
+
+// ==================== 外联邮件记录 ====================
+
+model OutreachRecord {
+  id          String   @id @default(cuid())
+  tenantId    String
+
+  // 关联候选
+  candidateId String?
+  profileId   String?  // RadarSearchProfile
+
+  // 收件人信息
+  toEmail     String
+  toName      String?
+
+  // 邮件内容
+  subject     String
+  bodyText    String?  @db.Text
+  bodyHtml    String?  @db.Text
+
+  // 发送状态
+  messageId   String?  @unique // Resend message ID
+  status      String   @default("pending") // pending, sent, delivered, opened, clicked, bounced, failed
+
+  // 追踪数据
+  sentAt      DateTime?
+  deliveredAt DateTime?
+  openedAt    DateTime?
+  clickedAt   DateTime?
+
+  // 错误信息
+  error       String?
+
+  // 元数据
+  metadata    Json?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([candidateId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("outreach_records")
 }

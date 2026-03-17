@@ -904,6 +904,11 @@ export interface CreateRadarSearchProfileInput {
   maxRunSeconds?: number;
   autoQualify?: boolean;
   autoEnrich?: boolean;
+  // 新增：精准定位字段
+  targetCustomerType?: string[];      // 目标客户类型：manufacturer, distributor, service_provider, retailer
+  businessScenario?: string;          // 业务场景描述：我卖什么，客户需要什么
+  exampleCustomers?: string[];        // 示例目标客户
+  myProduct?: string;                 // 我的产品/服务
 }
 
 /**

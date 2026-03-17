@@ -69,10 +69,11 @@ export async function createTenantWithAdmin(data: {
   adminName: string;
   adminEmail: string;
   password: string;
-}): Promise<{ success: boolean; error?: string }> {
+  domain?: string; // 外贸网站域名
+}): Promise<{ success: boolean; error?: string; tenantId?: string; loginUrl?: string }> {
   await requirePlatformAdmin();
 
-  const { companyName, slug, plan, adminName, adminEmail, password } = data;
+  const { companyName, slug, plan, adminName, adminEmail, password, domain } = data;
 
   // Validate email uniqueness
   const existingUser = await db.user.findUnique({
@@ -99,47 +100,108 @@ export async function createTenantWithAdmin(data: {
   }
 
   const hashedPassword = await hash(password, 10);
+  const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'vertax.top';
 
-  // Create tenant with admin user and default categories
-  await db.tenant.create({
+  // Create tenant with all default configurations
+  const tenant = await db.tenant.create({
     data: {
       name: companyName,
       slug,
+      domain: domain || null,
       plan,
       status: "active",
+      settings: {
+        websiteDomain: domain || null,
+        brandName: companyName,
+        locale: 'en',
+      },
       users: {
         create: {
           name: adminName,
           email: adminEmail,
           password: hashedPassword,
           roleId: role.id,
+          locale: 'en',
         },
       },
       categories: {
         createMany: {
           data: [
-            { name: "Blog", slug: "blog", description: "博客文章", order: 0 },
-            {
-              name: "Buy Guide",
-              slug: "buy-guide",
-              description: "采购指南",
-              order: 1,
-            },
-            {
-              name: "Whitepaper",
-              slug: "whitepaper",
-              description: "白皮书",
-              order: 2,
-            },
+            { name: "Article", slug: "article", description: "Blog articles", order: 0 },
+            { name: "Product", slug: "product", description: "Product pages", order: 1 },
+            { name: "Case Study", slug: "case-study", description: "Customer case studies", order: 2 },
+            { name: "News", slug: "news", description: "Company news", order: 3 },
           ],
         },
       },
     },
+    include: { users: true },
   });
+
+  const adminUser = tenant.users[0];
+
+  // 创建账户（密码登录）
+  await db.account.create({
+    data: {
+      userId: adminUser.id,
+      type: 'credentials',
+      provider: 'credentials',
+      providerAccountId: adminEmail,
+      access_token: hashedPassword,
+    },
+  });
+
+  // 创建默认 ICP Segment
+  const defaultSegment = await db.iCPSegment.create({
+    data: {
+      tenantId: tenant.id,
+      name: 'Target Customers',
+      description: `Default ICP segment for ${companyName}`,
+      criteria: {},
+    },
+  });
+
+  // 创建默认 RadarSearchProfile
+  await db.radarSearchProfile.create({
+    data: {
+      tenantId: tenant.id,
+      name: 'Default Discovery Profile',
+      description: 'Auto-created default discovery profile',
+      segmentId: defaultSegment.id,
+      keywords: { en: ['machinery', 'equipment', 'manufacturing'] },
+      targetCountries: ['US', 'CA', 'GB', 'DE', 'AU'],
+      targetRegions: ['NA', 'EU', 'APAC'],
+      enabledChannels: ['MAPS', 'DIRECTORY'],
+      sourceIds: [],
+      isActive: true,
+      scheduleRule: '0 6 * * *',
+    },
+  });
+
+  // 创建 WebsiteConfig
+  if (domain) {
+    await db.websiteConfig.create({
+      data: {
+        tenantId: tenant.id,
+        url: `https://${domain}`,
+        siteType: 'custom',
+        isActive: true,
+        seoDefaults: {
+          metaTitleTemplate: `{title} | ${companyName}`,
+          defaultDescription: `${companyName} - Industrial Solutions`,
+        },
+      },
+    });
+  }
 
   revalidatePath("/zh-CN/admin");
   revalidatePath("/en/admin");
-  return { success: true };
+
+  return {
+    success: true,
+    tenantId: tenant.id,
+    loginUrl: `https://${slug}.${baseDomain}`,
+  };
 }
 
 export async function updateTenantStatus(

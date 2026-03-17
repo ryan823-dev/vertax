@@ -79,8 +79,12 @@ export async function GET(req: NextRequest) {
           if (Date.now() >= deadline) break;
 
           try {
-            const tier = scoreCandidate(candidate, profile);
-            
+            // 使用配置化评分逻辑
+            const tier = await scoreCandidate(candidate, {
+              ...profile,
+              tenantId: candidate.tenantId,
+            });
+
             if (tier === 'excluded') {
               await prisma.radarCandidate.update({
                 where: { id: candidate.id },
@@ -97,27 +101,31 @@ export async function GET(req: NextRequest) {
               // Feedback Loop: 记录排除原因
               await appendExclusionRule(profileId, candidate.displayName, candidate.industry);
             } else {
-              // 条款E: 判断是否需要 enrich
-              const needsEnrich = (tier === 'A' || tier === 'B') &&
-                !candidate.phone && !candidate.website &&
+              // 判断是否需要 enrich（缺关键联系方式）
+              const shouldEnrich = needsEnrichment(candidate) &&
                 candidate.source.storagePolicy !== 'ID_ONLY';
 
               const adapterReg = getAdapterRegistration(candidate.source.code);
               const supportsDetails = adapterReg?.features?.supportsDetails ?? false;
-              const shouldEnrich = needsEnrich && supportsDetails;
+
+              // 如果需要enrich且adapter支持，进入ENRICHING
+              // 否则直接QUALIFIED
+              const finalEnrich = shouldEnrich && supportsDetails;
 
               await prisma.radarCandidate.update({
                 where: { id: candidate.id },
                 data: {
-                  status: shouldEnrich ? 'ENRICHING' : 'QUALIFIED',
+                  status: finalEnrich ? 'ENRICHING' : 'QUALIFIED',
                   qualifyTier: tier,
-                  qualifyReason: `Auto-qualify: tier ${tier}`,
+                  qualifyReason: finalEnrich
+                    ? `Auto-qualify: tier ${tier}, needs enrichment`
+                    : `Auto-qualify: tier ${tier}`,
                   qualifiedAt: new Date(),
                   qualifiedBy: 'scheduler',
                 },
               });
 
-              if (shouldEnrich) {
+              if (finalEnrich) {
                 stats.enriching++;
               } else {
                 stats.qualified++;
@@ -154,43 +162,156 @@ export async function GET(req: NextRequest) {
 
 // ==================== 评分逻辑 ====================
 
-function scoreCandidate(
-  candidate: { displayName: string; website?: string | null; phone?: string | null; country?: string | null; industry?: string | null; matchScore?: number | null; description?: string | null },
-  profile: { targetCountries: string[]; industryCodes: string[]; exclusionRules: unknown }
-): 'A' | 'B' | 'C' | 'excluded' {
-  let score = 0;
+import type { ScoringProfile } from '@/types/scoring-profile';
+import { DEFAULT_SCORING_PROFILE } from '@/types/scoring-profile';
 
-  // 有网站 +2
-  if (candidate.website) score += 2;
-  // 有电话 +1
-  if (candidate.phone) score += 1;
-  // 目标国家匹配 +3
-  if (candidate.country && profile.targetCountries.includes(candidate.country)) score += 3;
-  // 行业匹配 +2
-  if (candidate.industry && profile.industryCodes.some(ic => 
-    candidate.industry?.toLowerCase().includes(ic.toLowerCase())
-  )) score += 2;
-  // 已有匹配分数 +N
-  if (candidate.matchScore) score += Math.round(candidate.matchScore * 3);
-  // 有描述 +1
-  if (candidate.description && candidate.description.length > 50) score += 1;
+// 缓存评分配置（避免频繁查询数据库）
+let scoringProfileCache: { profile: ScoringProfile; tenantId: string; expiresAt: number } | null = null;
 
-  // 排除规则检查
-  const rules = (profile.exclusionRules as { negativeKeywords?: string[] }) || {};
-  if (rules.negativeKeywords?.length) {
-    const text = `${candidate.displayName} ${candidate.description || ''}`.toLowerCase();
-    if (rules.negativeKeywords.some(kw => text.includes(kw.toLowerCase()))) {
+/**
+ * 获取评分配置
+ *
+ * 优先从 ICPSegment 读取用户自定义配置，否则使用默认配置
+ */
+async function getScoringConfig(tenantId: string): Promise<ScoringProfile> {
+  // 检查缓存（5分钟有效）
+  if (scoringProfileCache &&
+      scoringProfileCache.tenantId === tenantId &&
+      scoringProfileCache.expiresAt > Date.now()) {
+    return scoringProfileCache.profile;
+  }
+
+  try {
+    // 从第一个 ICPSegment 读取配置
+    const segment = await prisma.iCPSegment.findFirst({
+      where: { tenantId },
+      select: { criteria: true },
+      orderBy: { order: 'asc' },
+    });
+
+    if (segment?.criteria) {
+      const criteria = segment.criteria as Record<string, unknown>;
+      if (criteria.scoringProfile) {
+        const profile = criteria.scoringProfile as ScoringProfile;
+        // 更新缓存
+        scoringProfileCache = {
+          profile,
+          tenantId,
+          expiresAt: Date.now() + 5 * 60 * 1000, // 5分钟
+        };
+        return profile;
+      }
+    }
+  } catch (error) {
+    console.error('[getScoringConfig] Error:', error);
+  }
+
+  return DEFAULT_SCORING_PROFILE;
+}
+
+/**
+ * 评分逻辑 v3 - 配置化版本
+ *
+ * 使用用户自定义的评分规则，而非硬编码
+ * 支持基于信号来源的加分
+ */
+async function scoreCandidate(
+  candidate: {
+    displayName: string;
+    website?: string | null;
+    phone?: string | null;
+    email?: string | null;
+    country?: string | null;
+    industry?: string | null;
+    matchScore?: number | null;
+    description?: string | null;
+    matchExplain?: { channel?: string } | null;
+  },
+  profile: { targetCountries: string[]; industryCodes: string[]; exclusionRules: unknown; tenantId: string }
+): Promise<'A' | 'B' | 'C' | 'excluded'> {
+  // 获取评分配置
+  const config = await getScoringConfig(profile.tenantId);
+
+  // 合并名称和描述进行分析
+  const text = `${candidate.displayName} ${candidate.description || ''}`.toLowerCase();
+
+  // ========== 负向信号检查（排除） ==========
+  for (const signal of config.negativeSignals) {
+    const matched = signal.keywords.some(kw => text.includes(kw.toLowerCase()));
+    if (matched) {
       return 'excluded';
     }
   }
 
-  if (score >= 7) return 'A';
-  if (score >= 4) return 'B';
-  if (score >= 2) return 'C';
-  return 'excluded';
+  // ========== 正向信号评分 ==========
+  let score = config.baseScore;
+
+  for (const signal of config.positiveSignals) {
+    const matched = signal.keywords.some(kw => text.includes(kw.toLowerCase()));
+    if (matched) {
+      score += signal.weight;
+    }
+  }
+
+  // ========== 联系方式完整性 ==========
+  if (candidate.website) score += config.contactScoring.hasWebsite;
+  if (candidate.phone) score += config.contactScoring.hasPhone;
+  if (candidate.email) score += config.contactScoring.hasEmail;
+
+  // ========== 信号来源加分 ==========
+  const channel = candidate.matchExplain?.channel;
+  if (channel && config.channelScoring) {
+    const channelScore = config.channelScoring[channel as keyof typeof config.channelScoring];
+    if (channelScore) {
+      score += channelScore;
+    }
+  }
+
+  // ========== 目标国家匹配 ==========
+  if (candidate.country && profile.targetCountries.length > 0) {
+    const normalizedCountry = candidate.country.toUpperCase();
+    const matched = profile.targetCountries.some(tc => {
+      const tcUpper = tc.toUpperCase();
+      return normalizedCountry.includes(tcUpper) ||
+             tcUpper.includes(normalizedCountry.slice(0, 2)) ||
+             normalizedCountry.startsWith(tcUpper);
+    });
+    if (matched) score += config.targetCountryBonus;
+  }
+
+  // ========== 已有匹配分数 ==========
+  if (candidate.matchScore) score += Math.round(candidate.matchScore * 10);
+
+  // ========== 排除规则检查 ==========
+  const rules = (profile.exclusionRules as { excludedCompanies?: string[] }) || {};
+  if (rules.excludedCompanies?.length) {
+    const nameLower = candidate.displayName.toLowerCase();
+    if (rules.excludedCompanies.some(excluded =>
+      nameLower === excluded.toLowerCase() ||
+      nameLower.includes(excluded.toLowerCase())
+    )) {
+      return 'excluded';
+    }
+  }
+
+  // ========== 层级判定 ==========
+  if (score >= config.thresholds.tierA) return 'A';   // 优质客户
+  if (score >= config.thresholds.tierB) return 'B';   // 潜力客户
+  return 'C';                                          // 一般客户
+}
+
+/**
+ * 判断候选是否需要enrichment
+ */
+function needsEnrichment(candidate: {
+  website?: string | null;
+  phone?: string | null;
+}): boolean {
+  return !candidate.website && !candidate.phone;
 }
 
 // ==================== Feedback Loop ====================
+// 注意：已禁用恶性关键词排除，只保留公司名排除（用于去重）
 
 async function appendExclusionRule(
   profileId: string,
@@ -203,25 +324,25 @@ async function appendExclusionRule(
       select: { exclusionRules: true },
     });
 
-    const existingRules = (profile?.exclusionRules as { 
+    const existingRules = (profile?.exclusionRules as {
       negativeKeywords?: string[];
       excludedCompanies?: string[];
     }) || {};
 
-    // 提取公司名作为排除关键词（取前3个词）
-    const nameTokens = displayName.split(/\s+/).slice(0, 3).filter(t => t.length > 2);
-    const existingNeg = existingRules.negativeKeywords || [];
     const existingComp = existingRules.excludedCompanies || [];
 
     // 限制排除规则总数（防止无限增长）
-    const MAX_EXCLUSIONS = 100;
+    const MAX_EXCLUSIONS = 200;
     if (existingComp.length >= MAX_EXCLUSIONS) return;
 
+    // 只添加公司名，不拆分关键词（避免恶性排除）
     await prisma.radarSearchProfile.update({
       where: { id: profileId },
       data: {
         exclusionRules: {
-          negativeKeywords: [...new Set([...existingNeg, ...nameTokens])].slice(0, MAX_EXCLUSIONS),
+          // 清空恶性关键词列表
+          negativeKeywords: [],
+          // 只保留公司名排除
           excludedCompanies: [...new Set([...existingComp, displayName])].slice(0, MAX_EXCLUSIONS),
         } as object,
       },

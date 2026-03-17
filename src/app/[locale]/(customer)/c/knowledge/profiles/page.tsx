@@ -13,7 +13,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
   Plus, Loader2, Users2, Trash2, Sparkles, ChevronRight, MessageSquare,
-  Building2, AlertCircle, Radar, RefreshCw,
+  Building2, AlertCircle, Radar, RefreshCw, Settings,
 } from 'lucide-react';
 import {
   getICPSegments, createICPSegment, deleteICPSegment,
@@ -272,6 +272,13 @@ export default function ProfilesPage() {
               )}
             </div>
             <div className="flex items-center gap-2">
+              <Link
+                href="/c/knowledge/scoring"
+                className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-[#D4AF37] bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded-lg hover:bg-[#D4AF37]/20 transition-colors"
+              >
+                <Settings size={14} />
+                评分配置
+              </Link>
               <button onClick={() => setShowCreateSegment(true)} disabled={!hasCompanyProfile}
                 className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-slate-600 border border-[#E8E0D0] rounded-lg hover:bg-[#F0EBD8] transition-colors disabled:opacity-50">
                 <Plus size={14} />

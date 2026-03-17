@@ -27,6 +27,9 @@ import {
   ArrowRight,
   Sparkles,
   FileSearch,
+  Send,
+  MessageSquare,
+  X,
 } from 'lucide-react';
 import Link from 'next/link';
 import { getRadarPipelineStatus } from '@/actions/radar-pipeline';
@@ -47,6 +50,56 @@ export default function RadarPage() {
   const [pipelineStatus, setPipelineStatus] = useState<RadarPipelineStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pipelineLoaded, setPipelineLoaded] = useState(false);
+
+  // 自然语言需求输入
+  const [showChatInput, setShowChatInput] = useState(false);
+  const [userRequest, setUserRequest] = useState('');
+  const [isProcessingRequest, setIsProcessingRequest] = useState(false);
+  const [requestResult, setRequestResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  // 处理自然语言需求
+  const handleUserRequest = async () => {
+    if (!userRequest.trim()) return;
+    
+    setIsProcessingRequest(true);
+    setRequestResult(null);
+    
+    try {
+      const res = await fetch('/api/radar/parse-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ request: userRequest }),
+      });
+      
+      const data = await res.json();
+      
+      if (data.success) {
+        setRequestResult({ 
+          success: true, 
+          message: `已创建扫描计划"${data.profile.name}"，正在搜索中...` 
+        });
+        setUserRequest('');
+        // 刷新状态
+        setTimeout(() => {
+          loadPipelineStatus(true);
+          setRequestResult(null);
+        }, 2000);
+      } else {
+        setRequestResult({ 
+          success: false, 
+          message: data.error || '解析失败，请重试' 
+        });
+      }
+    } catch (err) {
+      setRequestResult({ 
+        success: false, 
+        message: '网络错误，请重试' 
+      });
+    } finally {
+      setIsProcessingRequest(false);
+    }
+  };
+
 
   // 加载流水线状态
   const loadPipelineStatus = useCallback(async (showRefreshing = false) => {
@@ -199,6 +252,91 @@ export default function RadarPage() {
             </button>
           </div>
         )}
+
+        {/* 智能对话输入 - 自然语言需求 */}
+        <div className="bg-gradient-to-r from-[#0B1220] to-[#152942] rounded-2xl p-5 relative overflow-hidden">
+          <div className="absolute inset-0 pointer-events-none" style={{background: 'radial-gradient(ellipse 60% 50% at 50% 0%, rgba(212,175,55,0.1) 0%, transparent 60%)'}} />
+          
+          <div className="relative">
+            <div className="flex items-center gap-2 mb-3">
+              <MessageSquare size={18} className="text-[#D4AF37]" />
+              <h3 className="font-bold text-white">智能获客助手</h3>
+            </div>
+            
+            {!showChatInput ? (
+              <button
+                onClick={() => setShowChatInput(true)}
+                className="w-full py-3 px-4 bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-xl text-left text-slate-400 hover:border-[#D4AF37]/50 transition-all flex items-center gap-2"
+              >
+                <Sparkles size={16} className="text-[#D4AF37]" />
+                <span>描述你的目标客户，AI帮你自动搜索...</span>
+              </button>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={userRequest}
+                    onChange={e => setUserRequest(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleUserRequest()}
+                    placeholder="例如：帮我寻找美国的冰箱制造企业，需要喷漆机器人设备"
+                    className="flex-1 py-3 px-4 bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.15)] rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#D4AF37]"
+                    disabled={isProcessingRequest}
+                  />
+                  <button
+                    onClick={handleUserRequest}
+                    disabled={isProcessingRequest || !userRequest.trim()}
+                    className="px-4 py-3 bg-[#D4AF37] text-[#0B1220] rounded-xl font-medium hover:bg-[#C5A030] transition-colors disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {isProcessingRequest ? (
+                      <Loader2 size={18} className="animate-spin" />
+                    ) : (
+                      <Send size={18} />
+                    )}
+                  </button>
+                  <button
+                    onClick={() => { setShowChatInput(false); setUserRequest(''); setRequestResult(null); }}
+                    className="px-3 py-3 bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-xl text-slate-400 hover:text-white transition-colors"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+                
+                {requestResult && (
+                  <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
+                    requestResult.success 
+                      ? 'bg-emerald-500/20 text-emerald-300' 
+                      : 'bg-red-500/20 text-red-300'
+                  }`}>
+                    {requestResult.success ? (
+                      <CheckCircle2 size={14} />
+                    ) : (
+                      <AlertTriangle size={14} />
+                    )}
+                    {requestResult.message}
+                  </div>
+                )}
+                
+                <div className="flex flex-wrap gap-2">
+                  <span className="text-xs text-slate-500">试试：</span>
+                  {[
+                    '寻找美国汽车零部件制造商',
+                    '欧洲家电企业需要喷涂设备',
+                    '日本精密制造工厂',
+                  ].map(example => (
+                    <button
+                      key={example}
+                      onClick={() => setUserRequest(example)}
+                      className="px-2 py-1 text-xs bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded text-slate-400 hover:text-white hover:border-[#D4AF37]/50 transition-all"
+                    >
+                      {example}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* 初始状态引导 */}
         {isInitialState ? (

@@ -67,3 +67,4 @@ vetsphere/
 shipyard-xevora/
 POD-Dreamworks/
 -/
+.env*.local

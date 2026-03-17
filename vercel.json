@@ -6,6 +6,7 @@
     { "path": "/api/cron/radar-qualify", "schedule": "0 3 * * *" },
     { "path": "/api/cron/radar-enrich", "schedule": "0 5 * * *" },
     { "path": "/api/cron/radar-cleanup", "schedule": "0 2 * * *" },
+    { "path": "/api/cron/radar-notify", "schedule": "0 8 * * *" },
     { "path": "/api/cron/push-timeout", "schedule": "0 6 * * *" },
     { "path": "/api/cron/publish-scheduled", "schedule": "0 7 * * *" }
   ]
