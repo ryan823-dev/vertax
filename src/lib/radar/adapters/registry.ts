@@ -17,6 +17,8 @@ import { SAMGovAdapter } from './sam-gov';
 import { HiringSignalAdapter } from './hiring-signal';
 import { TradeDataAdapter } from './trade-data';
 import { TradeShowAdapter } from './trade-show';
+import { DevelopmentBankAdapter } from './development-bank';
+import { EmergingMarketsAdapter } from './emerging-markets';
 
 // ==================== 适配器注册表 ====================
 
@@ -383,6 +385,68 @@ export function ensureAdaptersInitialized(): void {
     (config) => new TradeShowAdapter(config)
   );
 
+  // ==================== 新兴市场数据源 ====================
+
+  // 注册国际开发银行适配器
+  registerAdapter(
+    {
+      code: 'dev_bank',
+      name: '国际开发银行 - 新兴市场项目',
+      channelType: 'TENDER',
+      adapterType: 'AI_SEARCH',
+      description: '世界银行、非洲开发银行等机构的项目，覆盖中东、非洲、拉美、东欧',
+      features: {
+        supportsKeywordSearch: true,
+        supportsCategoryFilter: true, // 行业/部门
+        supportsDateFilter: true,
+        supportsRegionFilter: true,
+        supportsPagination: false,
+        supportsDetails: false,
+        maxResultsPerQuery: 50,
+        rateLimit: { requests: 10, windowMs: 60000 },
+      },
+      defaultConfig: {
+        timeout: 60000,
+      },
+      storagePolicy: 'TTL_CACHE',
+      ttlDays: 90,
+      attributionRequired: false,
+      isOfficial: false,
+      regions: ['MENA', 'AFRICA', 'LATAM', 'ECA', 'ASIA'],
+    },
+    (config) => new DevelopmentBankAdapter(config)
+  );
+
+  // 注册新兴市场采购平台适配器
+  registerAdapter(
+    {
+      code: 'emerging_markets',
+      name: '新兴市场采购平台',
+      channelType: 'TENDER',
+      adapterType: 'AI_SEARCH',
+      description: '中东、非洲、拉美、东欧本地采购平台，覆盖 40+ 国家',
+      features: {
+        supportsKeywordSearch: true,
+        supportsCategoryFilter: true,
+        supportsDateFilter: true,
+        supportsRegionFilter: true,
+        supportsPagination: false,
+        supportsDetails: false,
+        maxResultsPerQuery: 50,
+        rateLimit: { requests: 10, windowMs: 60000 },
+      },
+      defaultConfig: {
+        timeout: 60000,
+      },
+      storagePolicy: 'TTL_CACHE',
+      ttlDays: 60,
+      attributionRequired: false,
+      isOfficial: false,
+      regions: ['MENA', 'AFRICA', 'LATAM', 'ECA'],
+    },
+    (config) => new EmergingMarketsAdapter(config)
+  );
+
   initialized = true;
 }
 
@@ -400,6 +464,8 @@ export const ADAPTER_CODES = {
   HIRING_SIGNAL: 'hiring_signal',
   TRADE_DATA: 'trade_data',
   TRADE_SHOW: 'trade_show',
+  DEV_BANK: 'dev_bank',
+  EMERGING_MARKETS: 'emerging_markets',
   // 后续扩展
   CSV_IMPORT: 'csv_import',
 } as const;

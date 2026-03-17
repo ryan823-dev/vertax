@@ -16,3 +16,7 @@ export { SAMGovAdapter } from './sam-gov';
 export { HiringSignalAdapter } from './hiring-signal';
 export { TradeDataAdapter } from './trade-data';
 export { TradeShowAdapter } from './trade-show';
+
+// 新兴市场适配器
+export { DevelopmentBankAdapter } from './development-bank';
+export { EmergingMarketsAdapter } from './emerging-markets';
