@@ -1481,3 +1481,26 @@ model OutreachRecord {
 
   @@map("outreach_records")
 }
+
+// ==================== 获客雷达错误日志 ====================
+
+model RadarError {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId    String
+
+  // 错误来源
+  adapter     String   // ted, ungm, brave, hunter, etc.
+  operation   String   // search, enrich, validate, etc.
+  error       String   @db.String(1000)
+
+  // 关联数据
+  candidateId String?
+  query       String?
+
+  // 时间戳
+  timestamp   DateTime @default(now())
+
+  @@index([adapter, timestamp])
+  @@index([tenantId, timestamp])
+  @@map("radar_errors")
+}
