@@ -56,7 +56,7 @@
     "products": "产品管理",
     "productList": "产品列表",
     "productCategories": "产品分类",
-    "marketing": "营销系统",
+    "marketing": "增长引擎",
     "seo": "SEO内容",
     "seoContent": "内容列表",
     "seoCategories": "内容分类",
@@ -100,8 +100,8 @@
         "description": "管理您的产品目录，编辑产品信息并上架到海外站点"
       },
       "seo": {
-        "title": "SEO内容",
-        "description": "AI辅助SEO规划，创建并发布优质内容到自定义栏目"
+        "title": "增长内容",
+        "description": "AI辅助SEO规划与GEO问答，创建并发布优质内容到自定义栏目"
       },
       "social": {
         "title": "社媒管理",
