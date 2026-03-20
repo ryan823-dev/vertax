@@ -14,6 +14,29 @@ import { chatCompletion } from '@/lib/ai-client';
 
 // ==================== 类型定义 ====================
 
+// 计费相关类型（预留接口）
+interface CreditConsumption {
+  userId: string;
+  featureType: string;
+  quantity: number;
+  creditsPerUnit: number;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * 消费积分（预留接口，当前为空实现）
+ * TODO: 当项目需要计费功能时实现
+ */
+async function consumeCredits(params: CreditConsumption): Promise<void> {
+  // 当前版本不扣除积分
+  console.log('[AI Search] Credit consumption (not implemented):', {
+    featureType: params.featureType,
+    quantity: params.quantity,
+  });
+}
+
+// ==================== 类型定义 ====================
+
 interface GeneratedQuery {
   lang: string;
   query: string;
@@ -51,10 +74,12 @@ export class AISearchAdapter implements RadarAdapter {
 
   private timeout: number;
   private searchApiKey?: string;
+  private workspaceId?: string; // 用于积分扣除
 
-  constructor(config: AdapterConfig) {
+  constructor(config: AdapterConfig & { workspaceId?: string }) {
     this.timeout = config.timeout || 60000;
     this.searchApiKey = config.apiKey || process.env.SERPAPI_KEY || process.env.BING_SEARCH_KEY;
+    this.workspaceId = config.workspaceId;
   }
 
   async search(query: RadarSearchQuery): Promise<RadarSearchResult> {
@@ -76,6 +101,27 @@ export class AISearchAdapter implements RadarAdapter {
     const duration = Date.now() - startTime;
     const nextQueryIndex = startIndex + queriesToRun.length;
     const allExhausted = nextQueryIndex >= searchQueries.length;
+    
+    // Step 4: 扣除积分（按搜索次数）
+    if (tenders.length > 0 && this.workspaceId) {
+      try {
+        await consumeCredits({
+          userId: this.workspaceId, // workspaceId 作为用户标识
+          featureType: 'ai_search',
+          quantity: queriesToRun.length, // 按搜索查询次数计费
+          creditsPerUnit: 1, // 每次查询 1 积分
+          metadata: {
+            keywords: query.keywords,
+            countries: query.countries,
+            resultsCount: tenders.length,
+            duration,
+          },
+        });
+      } catch (error) {
+        console.error('Failed to consume credits for AI search:', error);
+        // 积分扣除失败不影响搜索结果返回
+      }
+    }
     
     return {
       items: tenders,
