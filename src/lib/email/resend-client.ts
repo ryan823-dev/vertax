@@ -116,6 +116,12 @@ export interface TenantEmailConfig {
   verifiedDomain?: string;           // 已验证的域名
 }
 
+export interface EmailAttachment {
+  filename: string;        // 文件名
+  content: string;         // Base64 编码的文件内容
+  contentType?: string;    // MIME 类型，如 "application/pdf"
+}
+
 export interface EmailOptions {
   to: string | string[];
   subject: string;
@@ -124,6 +130,7 @@ export interface EmailOptions {
   replyTo?: string;
   tags?: Record<string, string>;
   tenantId?: string;                 // 可选：指定租户以使用其配置
+  attachments?: EmailAttachment[];    // 附件列表
 }
 
 export interface SendResult {
@@ -167,6 +174,11 @@ export async function sendEmail(options: EmailOptions): Promise<SendResult> {
       html: options.html,
       replyTo: replyTo,
       tags: options.tags ? Object.entries(options.tags).map(([name, value]) => ({ name, value })) : undefined,
+      attachments: options.attachments?.map((att) => ({
+        filename: att.filename,
+        content: att.content,
+        contentType: att.contentType,
+      })),
     });
 
     if (error) {
