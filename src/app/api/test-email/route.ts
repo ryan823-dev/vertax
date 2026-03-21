@@ -10,7 +10,7 @@ export const maxDuration = 30;
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const secret = searchParams.get('secret');
-  const to = searchParams.get('to') || 'admin@tdpaintcell.com';
+  const to = searchParams.get('to') || 'admin@tdpaint.com';
 
   // 验证密钥
   if (secret !== process.env.CRON_SECRET) {
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
           <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
           <p style="color: #666; font-size: 12px;">
             发送时间: ${new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })}<br>
-            发件域名: tdpaintcell.com
+            发件域名: tdpaint.com
           </p>
         </div>
       `,

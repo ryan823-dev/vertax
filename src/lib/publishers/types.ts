@@ -1,7 +1,7 @@
 /**
  * Content Publishing Pipeline - Types
  * 
- * 基于 Paintcell (tdpaintcell.com) 真实 Supabase schema 定义。
+ * 基于 Paintcell (tdpaint.com) 真实 Supabase schema 定义。
  * resources_posts 表字段来源：paintcell/src/integrations/supabase/types.ts
  */
 

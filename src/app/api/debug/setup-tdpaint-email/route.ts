@@ -1,6 +1,6 @@
 /**
  * 配置涂豆科技的邮件设置
- * 使用 tdpaintcell.com 作为发件域名
+ * 使用 tdpaint.com 作为发件域名
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -18,10 +18,10 @@ export async function POST(req: NextRequest) {
     // 配置邮件设置
     const emailConfig = {
       usePlatformKey: true,  // 使用平台 API Key
-      fromEmail: '涂豆科技 <noreply@tdpaintcell.com>',
-      replyToEmail: 'sales@tdpaintcell.com',
-      customFromDomain: 'tdpaintcell.com',
-      verifiedDomain: 'tdpaintcell.com', // 假设已在 Resend 后台验证
+      fromEmail: '涂豆科技 <noreply@tdpaint.com>',
+      replyToEmail: 'sales@tdpaint.com',
+      customFromDomain: 'tdpaint.com',
+      verifiedDomain: 'tdpaint.com', // 需在 Resend 后台验证
     };
 
     await prisma.tenant.update({
@@ -39,10 +39,10 @@ export async function POST(req: NextRequest) {
         replyToEmail: emailConfig.replyToEmail,
         domain: emailConfig.customFromDomain,
       },
-      note: '请确保已在 Resend 后台验证 tdpaintcell.com 域名',
+      note: '请确保已在 Resend 后台验证 tdpaint.com 域名',
     });
   } catch (error) {
-    console.error('[setup-tdpaintcell-email] Error:', error);
+    console.error('[setup-tdpaint-email] Error:', error);
     return NextResponse.json(
       { error: 'Internal error', message: error instanceof Error ? error.message : 'Unknown' },
       { status: 500 }

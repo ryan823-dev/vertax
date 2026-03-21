@@ -131,7 +131,7 @@ export default function WebsitePage() {
                 id="url"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                placeholder="https://www.tdpaintcell.com"
+                placeholder="https://www.tdpaint.com"
               />
               <p className="text-xs text-muted-foreground">
                 客户海外官网的完整域名

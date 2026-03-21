@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Candidate not found' }, { status: 404 });
     }
 
-    const targetEmail = email || candidate.email || 'admin@tdpaintcell.com';
+    const targetEmail = email || candidate.email || 'admin@tdpaint.com';
 
     // 获取租户信息
     const tenant = await prisma.tenant.findUnique({

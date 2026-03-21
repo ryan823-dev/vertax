@@ -143,7 +143,7 @@ export function decodeCrossPlatformJWT(token: string): CrossPlatformJWTPayload |
 /**
  * Extract tenant slug from subdomain
  * 
- * @param hostname - The full hostname (e.g., "tdpaintcell.vertax.top")
+ * @param hostname - The full hostname (e.g., "tdpaint.vertax.top")
  * @param baseDomain - The base domain (e.g., "vertax.top")
  * @returns The tenant slug or null if not a subdomain
  */

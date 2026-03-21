@@ -10,7 +10,7 @@ export default function CustomerLayout({
 }) {
   // TODO: Get tenant info from context/server
   const tenantName = '涂豆科技';
-  const tenantSlug = 'tdpaintcell';
+  const tenantSlug = 'tdpaint';
 
   return (
     <div className="customer-theme flex min-h-screen bg-[#F7F3EA] text-[#111827]">

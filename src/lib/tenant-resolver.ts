@@ -33,7 +33,7 @@ export function resolveTenant(hostname: string): TenantInfo {
     };
   }
   
-  // Check if it's a customer subdomain (e.g., tdpaintcell.vertax.top)
+  // Check if it's a customer subdomain (e.g., tdpaint.vertax.top)
   if (domain.endsWith(`.${BASE_DOMAIN}`)) {
     const tenantSlug = domain.replace(`.${BASE_DOMAIN}`, '');
     return {

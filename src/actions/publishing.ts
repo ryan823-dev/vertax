@@ -3,7 +3,7 @@
 /**
  * 内容推送管道 Server Actions
  * 
- * 负责将 Vertax 营销内容推送到客户独立站（首个客户：tdpaintcell.com）
+ * 负责将 Vertax 营销内容推送到客户独立站（首个客户：tdpaint.com）
  * 
  * 架构流程：
  * Vertax SeoContent → field-mapper → SupabasePublisherAdapter → Edge Function → resources_posts
