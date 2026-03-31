@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { 
   BarChart3, 
   FileText, 
@@ -38,6 +39,7 @@ import {
   type MarketingStats,
   type KeywordSuggestion,
 } from '@/actions/marketing';
+import { getGrowthPipelineStatus } from '@/actions/growth-pipeline';
 import {
   pushContentToWebsite,
   getPushRecords,
@@ -76,22 +78,29 @@ export default function MarketingPage() {
   const [websiteConfig, setWebsiteConfig] = useState<WebsiteConfigData | null>(null);
   const [pushRecords, setPushRecords] = useState<PushRecordData[]>([]);
   const [isPushing, setIsPushing] = useState(false);
+  const [seoHealthScore, setSeoHealthScore] = useState(0);
+  const [geoCount, setGeoCount] = useState(0);
 
   // 加载数据
   const loadData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const [contentsData, statsData, configData, pushData] = await Promise.all([
+      const [contentsData, statsData, configData, pushData, pipelineData] = await Promise.all([
         getContents(),
         getMarketingStats(),
         getWebsiteConfig(),
         getPushRecords(),
+        getGrowthPipelineStatus().catch(() => null),
       ]);
       setContents(contentsData);
       setStats(statsData);
       setWebsiteConfig(configData);
       setPushRecords(pushData);
+      if (pipelineData) {
+        setSeoHealthScore(pipelineData.counts.seoHealthScore);
+        setGeoCount(pipelineData.counts.geoMentionCount);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : '加载数据失败');
     } finally {
@@ -279,7 +288,7 @@ export default function MarketingPage() {
         }} />
         <div className="relative flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-white">营销系统</h1>
+            <h1 className="text-2xl font-bold text-white">增长系统</h1>
             <p className="text-sm text-slate-400 mt-1">SEO内容生产与分发</p>
           </div>
           <div className="flex items-center gap-3">
@@ -328,21 +337,32 @@ export default function MarketingPage() {
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-6 gap-4">
         {[
-          { label: '内容资产', value: stats.totalContents, icon: FileText, color: 'text-[#D4AF37]' },
-          { label: '已发布', value: stats.published, icon: CheckCircle2, color: 'text-emerald-500' },
-          { label: '草稿', value: stats.draft, icon: Edit2, color: 'text-slate-500' },
-          { label: '已排期', value: stats.scheduled, icon: Clock, color: 'text-blue-500' },
-        ].map((stat) => (
-          <div key={stat.label} className="bg-[#F7F3E8] rounded-xl border border-[#E8E0D0] p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <stat.icon size={16} className={stat.color} />
-              <span className="text-xs text-slate-500">{stat.label}</span>
+          { label: '内容资产', value: stats.totalContents, icon: FileText, color: 'text-[#D4AF37]', href: undefined, dark: false },
+          { label: '已发布', value: stats.published, icon: CheckCircle2, color: 'text-emerald-500', href: undefined, dark: false },
+          { label: '草稿', value: stats.draft, icon: Edit2, color: 'text-slate-500', href: undefined, dark: false },
+          { label: '已排期', value: stats.scheduled, icon: Clock, color: 'text-blue-500', href: undefined, dark: false },
+          { label: 'SEO 健康分', value: seoHealthScore, icon: BarChart3, color: 'text-[#D4AF37]', href: '/customer/marketing/seo-aeo', dark: true },
+          { label: 'GEO 版本', value: geoCount, icon: Globe, color: 'text-[#D4AF37]', href: '/customer/marketing/geo-center', dark: true },
+        ].map((stat) => {
+          const content = (
+            <div key={stat.label} className="rounded-xl p-4 border transition-all hover:scale-[1.01]" style={
+              stat.dark
+                ? { background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 70%, #0D1525 100%)', border: '1px solid rgba(212,175,55,0.25)', boxShadow: '0 4px 16px -4px rgba(0,0,0,0.3)' }
+                : { background: '#F7F3E8', border: '1px solid #E8E0D0' }
+            }>
+              <div className="flex items-center gap-2 mb-2">
+                <stat.icon size={16} className={stat.color} />
+                <span className={`text-xs ${stat.dark ? 'text-slate-400' : 'text-slate-500'}`}>{stat.label}</span>
+              </div>
+              <p className={`text-2xl font-bold ${stat.dark ? 'text-[#D4AF37]' : 'text-[#0B1B2B]'}`}>{stat.value}</p>
             </div>
-            <p className="text-2xl font-bold text-[#0B1B2B]">{stat.value}</p>
-          </div>
-        ))}
+          );
+          return stat.href
+            ? <Link key={stat.label} href={stat.href}>{content}</Link>
+            : <div key={stat.label}>{content}</div>;
+        })}
       </div>
 
       {/* Content Area */}

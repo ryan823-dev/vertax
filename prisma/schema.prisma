@@ -345,7 +345,8 @@ model SeoContent {
   brief        ContentBrief?  @relation(fields: [briefId], references: [id], onDelete: SetNull)
   outline      Json?          // { sections: [{ heading, keyPoints }] }
   evidenceRefs String[]       // 引用的 Evidence id
-  schemaJson   Json?          // Schema.org 结构化数据
+  schemaJson   Json?          // Schema.org 结构化数据 (FAQPage JSON-LD)
+  geoVersion   String?        // GEO-optimized short version (300-500 words, for AI citation)
   pushRecords  PushRecord[]   // 推送记录
 
   @@unique([tenantId, slug])

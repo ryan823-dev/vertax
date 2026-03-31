@@ -24,7 +24,7 @@ export type EntityType =
   | 'ContactRoleMap'
   | 'OutreachPack'
   | 'WeeklyCadence'
-  // 营销系统产物
+  // 增长系统产物
   | 'TopicCluster'
   | 'ContentDraft'
   | 'ClaimsVerification'

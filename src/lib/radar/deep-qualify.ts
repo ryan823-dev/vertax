@@ -5,11 +5,18 @@
  * 使用 LLM 判断"这个客户到底适不适合我们"，而不是简单的关键词匹配。
  *
  * 可被 cron (radar-qualify) 和手动操作两种场景调用。
+ *
+ * Phase 4 增强：
+ * - 集成 funding-tracker 融资信号
+ * - 集成 news-intelligence 新闻信号
+ * - 集成 linkedin-research 联系人信号
+ * - 信号评分自动调整 Tier 等级
  */
 
 import { prisma } from '@/lib/prisma';
 import { chatCompletion } from '@/lib/ai-client';
 import type { CompanyProfileContext } from '@/lib/skills/types';
+import { enrichCandidateIntelligence, calculateSignalScores, type IntelligenceData, type SignalScore } from './intelligence-enricher';
 
 // ==================== 类型定义 ====================
 
@@ -25,6 +32,9 @@ export interface DeepQualifyCandidate {
   sourceUrl: string;
   sourceChannel?: string;
   matchExplain?: Record<string, unknown> | null;
+  // Phase 4: 扩展情报数据
+  intelligence?: IntelligenceData;
+  signalScores?: SignalScore;
 }
 
 export interface DeepQualifyResult {
@@ -35,6 +45,9 @@ export interface DeepQualifyResult {
   approachAngle: string;
   exclusionReason: string | null;
   dataGaps: string[];
+  // Phase 4: 信号评分
+  signalScores?: SignalScore;
+  signalBoost?: number;  // 基于信号的加分
 }
 
 export interface DeepQualifyBatchResult {
@@ -139,11 +152,77 @@ function buildCandidatesList(candidates: DeepQualifyCandidate[]): string {
   return candidates.map((c, i) => {
     const parts = [`${i + 1}. [ID: ${c.id}] ${c.displayName}`];
     if (c.website) parts.push(`   网站: ${c.website}`);
-    if (c.description) parts.push(`   描述: ${c.description.slice(0, 300)}`);
+    if (c.description) parts.push(`   描述: ${c.description?.slice(0, 300) || ''}`);
     if (c.industry) parts.push(`   行业: ${c.industry}`);
     if (c.country) parts.push(`   国家: ${c.country}${c.city ? ` / ${c.city}` : ''}`);
     if (c.companySize) parts.push(`   规模: ${c.companySize}`);
     if (c.sourceChannel) parts.push(`   来源: ${c.sourceChannel}`);
+    return parts.join('\n');
+  }).join('\n\n');
+}
+
+/**
+ * 构建包含情报数据的候选列表
+ * Phase 4: 扩展版本
+ */
+function buildCandidatesListWithIntelligence(candidates: DeepQualifyCandidate[]): string {
+  return candidates.map((c, i) => {
+    const parts: string[] = [`${i + 1}. [ID: ${c.id}] ${c.displayName}`];
+
+    // 基本信息
+    if (c.website) parts.push(`   网站: ${c.website}`);
+    if (c.description) parts.push(`   描述: ${c.description?.slice(0, 200) || ''}`);
+    if (c.industry) parts.push(`   行业: ${c.industry}`);
+    if (c.country) parts.push(`   国家: ${c.country}${c.city ? ` / ${c.city}` : ''}`);
+    if (c.companySize) parts.push(`   规模: ${c.companySize}`);
+    if (c.sourceChannel) parts.push(`   来源: ${c.sourceChannel}`);
+
+    // Phase 4: 融资信号
+    if (c.intelligence?.funding) {
+      const f = c.intelligence.funding;
+      const fundingParts: string[] = ['   📈 融资信息:'];
+      if (f.latestRound) fundingParts.push(`最新轮次: ${f.latestRound}`);
+      if (f.valuation) fundingParts.push(`估值: ${f.valuation}`);
+      if (f.totalRaised) fundingParts.push(`总融资: ${f.totalRaised}`);
+      if (f.leadInvestors && f.leadInvestors.length > 0) {
+        fundingParts.push(`投资者: ${f.leadInvestors.join(', ')}`);
+      }
+      if (fundingParts.length > 1) {
+        parts.push(fundingParts.join(' '));
+      }
+    }
+
+    // Phase 4: 新闻信号
+    if (c.intelligence?.news) {
+      const n = c.intelligence.news;
+      const newsParts: string[] = ['   📰 新闻动态:'];
+      if (n.sentiment) newsParts.push(`情绪: ${n.sentiment}`);
+      if (n.recentHeadlines && n.recentHeadlines.length > 0) {
+        newsParts.push(`最新: ${n.recentHeadlines[0]?.slice(0, 80) || ''}`);
+      }
+      if (n.keyThemes && n.keyThemes.length > 0) {
+        newsParts.push(`主题: ${n.keyThemes.slice(0, 3).join(', ')}`);
+      }
+      if (newsParts.length > 1) {
+        parts.push(newsParts.join(' '));
+      }
+    }
+
+    // Phase 4: 联系人信号
+    if (c.intelligence?.contacts?.decisionMakers) {
+      const contacts = c.intelligence.contacts.decisionMakers;
+      if (contacts.length > 0) {
+        const contactNames = contacts.slice(0, 3).map(d => `${d.name}(${d.title})`).join(', ');
+        parts.push(`   👤 决策者: ${contactNames}`);
+      }
+    }
+
+    // Phase 4: 信号评分摘要
+    if (c.signalScores) {
+      const { fundingSignal, newsSignal, timingSignal, contactSignal, overallScore } = c.signalScores;
+      parts.push(`   📊 信号评分: 融资${fundingSignal} | 新闻${newsSignal} | 时机${timingSignal} | 联系人${contactSignal} | 综合${overallScore}`);
+    }
+
     return parts.join('\n');
   }).join('\n\n');
 }
@@ -167,12 +246,24 @@ const SYSTEM_PROMPT = `你是一名专业的B2B出海获客分析师。你的任
 4. **时机信号**：是否有迹象表明该公司近期有采购意向？
    - 正在扩产、新建工厂、发布招标、招聘相关岗位等
 
+5. **融资与新闻信号**（Phase 4）：
+   - 近期融资的公司通常有更强的采购能力和更清晰的业务扩张计划
+   - 正面新闻（扩张、新产品、合作伙伴）表明公司处于上升期
+   - 这些信号可以提升候选的优先级
+
 ## 分层标准
 
-- **Tier A（优质客户）**：需求明确匹配 + 规模合适 + 地区匹配，值得立即跟进
+- **Tier A（优质客户）**：需求明确匹配 + 规模合适 + 地区匹配 + 积极信号，值得立即跟进
 - **Tier B（潜力客户）**：需求可能匹配但不确定，或规模/地区部分匹配，值得进一步了解
 - **Tier C（一般客户）**：间接关联，匹配度低但不排除
 - **excluded（排除）**：明确不是目标客户（竞争对手、中间商、行业无关）
+
+## 信号加权规则
+
+在评估时，关注以下信号：
+- 融资信号（fundingSignal > 60）：+Tier 升级机会，融资后公司通常有采购需求
+- 新闻情绪（sentiment=positive）：+优先级提升，积极动态表明业务活跃
+- 决策者信息完整度（contactSignal > 50）：+更容易接触关键人
 
 ## 接触角度（approachAngle）
 
@@ -204,16 +295,57 @@ const SYSTEM_PROMPT = `你是一名专业的B2B出海获客分析师。你的任
  *
  * @param tenantId - 租户 ID
  * @param candidates - 通过 Stage 1 快筛的候选列表（建议 ≤ 10 个/批）
+ * @param options - 评估选项
  */
 export async function deepQualifyBatch(
   tenantId: string,
   candidates: DeepQualifyCandidate[],
+  options?: {
+    skipIntelligence?: boolean;    // 跳过情报丰富化（已丰富的候选可用）
+    intelligenceConcurrency?: number; // 情报丰富化并发数
+  }
 ): Promise<DeepQualifyBatchResult> {
   const startTime = Date.now();
   const errors: string[] = [];
 
   if (candidates.length === 0) {
     return { results: [], tokensUsed: 0, duration: 0, errors: [] };
+  }
+
+  // Phase 4: 情报丰富化
+  // 为每个候选补充融资、新闻、联系人等情报数据
+  if (!options?.skipIntelligence) {
+    const enrichTasks = candidates.map(async (candidate) => {
+      // 检查是否已有情报数据
+      if (candidate.intelligence) {
+        return candidate;
+      }
+
+      try {
+        // 异步获取情报（不阻塞主流程）
+        const enrichment = await enrichCandidateIntelligence(candidate.id, {
+          includeFunding: true,
+          includeNews: true,
+          includeContacts: true,
+          includeCompetitors: false,
+        });
+
+        if (enrichment.success) {
+          candidate.intelligence = enrichment.data;
+          candidate.signalScores = calculateSignalScores(enrichment.data);
+        }
+      } catch (e) {
+        errors.push(`Intelligence enrich failed for ${candidate.id}: ${e instanceof Error ? e.message : 'Unknown'}`);
+      }
+
+      return candidate;
+    });
+
+    // 并行执行，但设置超时避免阻塞太久
+    await Promise.race([
+      Promise.all(enrichTasks),
+      new Promise(resolve => setTimeout(resolve, 30000)) // 30秒超时
+    ]);
   }
 
   // 加载企业画像
@@ -223,7 +355,8 @@ export async function deepQualifyBatch(
     ? buildCompanyContext(companyProfile)
     : '（未配置企业画像。请基于候选公司自身信息和通用B2B逻辑进行判断。）';
 
-  const candidatesList = buildCandidatesList(candidates);
+  // 构建候选列表（包含情报数据）
+  const candidatesList = buildCandidatesListWithIntelligence(candidates);
 
   const userPrompt = `
 === 我方企业画像 ===
@@ -286,14 +419,48 @@ ${candidatesList}
     const finalResults: DeepQualifyResult[] = candidates.map(c => {
       const aiResult = resultMap.get(c.id);
       if (aiResult) {
+        // Phase 4: 考虑信号评分进行 Tier 调整
+        let finalTier = (['A', 'B', 'C', 'excluded'].includes(aiResult.tier) ? aiResult.tier : 'C') as 'A' | 'B' | 'C' | 'excluded';
+        let signalBoost = 0;
+
+        if (c.signalScores && finalTier !== 'excluded') {
+          const { fundingSignal, newsSignal, contactSignal, overallScore } = c.signalScores;
+
+          // 高融资信号可提升 Tier
+          if (fundingSignal > 60 && finalTier === 'B') {
+            finalTier = 'A';
+            signalBoost = 0.1;
+          } else if (fundingSignal > 60 && finalTier === 'C') {
+            finalTier = 'B';
+            signalBoost = 0.05;
+          }
+
+          // 积极新闻信号可提升 Tier
+          if (newsSignal > 70 && finalTier === 'B') {
+            finalTier = 'A';
+            signalBoost += 0.05;
+          } else if (newsSignal > 70 && finalTier === 'C') {
+            finalTier = 'B';
+            signalBoost += 0.05;
+          }
+
+          // 低信号评分可能降级
+          if (overallScore < 30 && finalTier === 'A') {
+            finalTier = 'B';
+            signalBoost = -0.1;
+          }
+        }
+
         return {
           id: c.id,
-          tier: (['A', 'B', 'C', 'excluded'].includes(aiResult.tier) ? aiResult.tier : 'C') as 'A' | 'B' | 'C' | 'excluded',
-          confidence: typeof aiResult.confidence === 'number' ? Math.min(1, Math.max(0, aiResult.confidence)) : 0.5,
+          tier: finalTier,
+          confidence: typeof aiResult.confidence === 'number' ? Math.min(1, Math.max(0, aiResult.confidence + signalBoost)) : 0.5,
           matchReasons: Array.isArray(aiResult.matchReasons) ? aiResult.matchReasons : [],
           approachAngle: typeof aiResult.approachAngle === 'string' ? aiResult.approachAngle : '',
           exclusionReason: aiResult.exclusionReason ?? null,
           dataGaps: Array.isArray(aiResult.dataGaps) ? aiResult.dataGaps : [],
+          signalScores: c.signalScores,
+          signalBoost,
         };
       }
 
@@ -395,6 +562,7 @@ export async function applyDeepQualifyResults(
             qualifyReason: result.matchReasons.join('; '),
             matchScore: result.confidence,
             aiSummary: result.approachAngle || null,
+            // Phase 4: 保存信号评分到 aiRelevance
             aiRelevance: {
               tier: result.tier,
               confidence: result.confidence,
@@ -402,6 +570,15 @@ export async function applyDeepQualifyResults(
               approachAngle: result.approachAngle,
               dataGaps: result.dataGaps,
               source: 'deep-qualify-v2',
+              // 包含信号评分
+              signalScores: result.signalScores ? {
+                fundingSignal: result.signalScores.fundingSignal,
+                newsSignal: result.signalScores.newsSignal,
+                timingSignal: result.signalScores.timingSignal,
+                contactSignal: result.signalScores.contactSignal,
+                overallScore: result.signalScores.overallScore,
+              } : undefined,
+              signalBoost: result.signalBoost,
             } as object,
             qualifiedAt: new Date(),
             qualifiedBy: 'ai-deep-qualify',
@@ -424,6 +601,13 @@ async function appendExclusionFeedback(
   result: DeepQualifyResult,
 ): Promise<void> {
   try {
+    // 从数据库读取候选公司名
+    const candidate = await prisma.radarCandidate.findUnique({
+      where: { id: result.id },
+      select: { displayName: true },
+    });
+    if (!candidate?.displayName) return;
+
     const profile = await prisma.radarSearchProfile.findUnique({
       where: { id: profileId },
       select: { exclusionRules: true },
@@ -432,28 +616,24 @@ async function appendExclusionFeedback(
     const rules = (profile?.exclusionRules as {
       excludedCompanies?: string[];
       excludedPatterns?: string[];
+      negativeKeywords?: string[];
     }) || {};
 
     const excludedCompanies = rules.excludedCompanies || [];
     const MAX_EXCLUSIONS = 200;
     if (excludedCompanies.length >= MAX_EXCLUSIONS) return;
 
-    // 提取排除原因中的模式（如果有明确的行业排除原因）
-    const candidateName = result.matchReasons.find(r => r.includes('竞争对手'))
-      ? undefined
-      : undefined;
-
-    // 目前只做公司名排除，避免过度排除
+    // Append company name to exclusion list, preserve all other fields
     await prisma.radarSearchProfile.update({
       where: { id: profileId },
       data: {
         exclusionRules: {
           ...rules,
-          excludedCompanies: [...new Set(excludedCompanies)].slice(0, MAX_EXCLUSIONS),
+          excludedCompanies: [...new Set([...excludedCompanies, candidate.displayName])].slice(0, MAX_EXCLUSIONS),
         } as object,
       },
     });
   } catch {
-    // 静默失败，不影响主流程
+    // Silent failure — does not affect main flow
   }
 }

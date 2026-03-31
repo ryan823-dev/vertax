@@ -79,9 +79,10 @@ export async function getICP(): Promise<ICPData | null> {
     select: { tenantId: true },
   });
   if (!user) return null;
+  const tenantId = user!.tenantId as string;
 
   const profile = await prisma.companyProfile.findUnique({
-    where: { tenantId: user.tenantId },
+    where: { tenantId: tenantId },
     select: {
       targetIndustries: true,
       targetRegions: true,
@@ -111,10 +112,11 @@ export async function getLeads(): Promise<LeadData[]> {
     select: { tenantId: true },
   });
   if (!user) return [];
+  const tenantId = user!.tenantId as string;
 
   const leads = await prisma.lead.findMany({
     where: {
-      tenantId: user.tenantId,
+      tenantId: tenantId,
       deletedAt: null,
     },
     orderBy: { createdAt: "desc" },
@@ -156,31 +158,32 @@ export async function getRadarStats(): Promise<RadarStats> {
   if (!user) {
     return { totalLeads: 0, highIntent: 0, pendingFollowUp: 0, thisWeek: 0 };
   }
+  const tenantId = user!.tenantId as string;
 
   const oneWeekAgo = new Date();
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
   const [total, highIntent, pending, thisWeek] = await Promise.all([
     prisma.lead.count({
-      where: { tenantId: user.tenantId, deletedAt: null },
+      where: { tenantId: tenantId, deletedAt: null },
     }),
     prisma.lead.count({
       where: {
-        tenantId: user.tenantId,
+        tenantId: tenantId,
         deletedAt: null,
         priority: "high",
       },
     }),
     prisma.lead.count({
       where: {
-        tenantId: user.tenantId,
+        tenantId: tenantId,
         deletedAt: null,
         status: "pending",
       },
     }),
     prisma.lead.count({
       where: {
-        tenantId: user.tenantId,
+        tenantId: tenantId,
         deletedAt: null,
         createdAt: { gte: oneWeekAgo },
       },
@@ -210,6 +213,7 @@ export async function runAIResearch(query: string): Promise<LeadData[]> {
   if (!user) {
     throw new Error("用户不存在");
   }
+  const tenantId = user!.tenantId as string;
 
   // 获取ICP数据
   const icp = await getICP();
@@ -326,7 +330,7 @@ ${icp ? `
 
       const lead = await prisma.lead.create({
         data: {
-          tenantId: user.tenantId,
+          tenantId: tenantId,
           ownerId: user.id,
           companyName: data.companyName,
           contactName: data.contactName,
@@ -384,11 +388,12 @@ export async function updateLeadStatus(
     select: { tenantId: true },
   });
   if (!user) return null;
+  const tenantId = user!.tenantId as string;
 
   const lead = await prisma.lead.update({
     where: {
       id: leadId,
-      tenantId: user.tenantId,
+      tenantId: tenantId,
     },
     data: {
       status,
@@ -427,11 +432,12 @@ export async function deleteLead(leadId: string): Promise<boolean> {
     select: { tenantId: true },
   });
   if (!user) return false;
+  const tenantId = user!.tenantId as string;
 
   await prisma.lead.update({
     where: {
       id: leadId,
-      tenantId: user.tenantId,
+      tenantId: tenantId,
     },
     data: {
       deletedAt: new Date(),

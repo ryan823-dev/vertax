@@ -19,7 +19,7 @@ import { getKnowledgePipelineStatus } from '@/actions/pipeline';
 import { KnowledgeAssetCard } from '@/components/knowledge/knowledge-asset-card';
 import { AssetChunkPreview } from '@/components/knowledge/asset-chunk-preview';
 import { ContentSearchBar } from '@/components/knowledge/content-search-bar';
-import { EngineHeader, EmptyStateGuide } from '@/components/knowledge/engine-header';
+import { EngineHeader, EmptyStateGuide, NextStepBanner } from '@/components/knowledge/engine-header';
 import type { AssetWithProcessingStatus } from '@/types/assets';
 import type { AssetProcessingStatus } from '@/types/knowledge';
 import type { PipelineStatus } from '@/lib/knowledge/pipeline';
@@ -444,7 +444,7 @@ export default function KnowledgeAssetsPage() {
           {/* 工具栏 */}
           <div
             className="px-5 py-3 flex items-center gap-3"
-            style={{ borderBottom: '1px solid #E8E0D0', background: '#F0EBD8' }}
+            style={{ borderBottom: '1px solid #E8E0D0', background: '#EDE7D5' }}
           >
             {/* 搜索框 */}
             <div className="w-64">
@@ -638,6 +638,11 @@ export default function KnowledgeAssetsPage() {
           </div>
         </div>
       </div>
+
+      {/* Next Step Banner */}
+      {pipelineStatus && (
+        <NextStepBanner steps={pipelineStatus.steps} currentStep={pipelineStatus.currentStep} />
+      )}
 
       {/* Chunk Preview Sheet */}
       {previewAssetId && (

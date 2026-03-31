@@ -102,10 +102,10 @@ export function AppSidebar() {
         },
       ],
     },
-    // 营销系统（Inbound）
+    // 增长系统（Inbound）
     {
       key: "marketing",
-      label: "营销系统",
+      label: "增长系统",
       icon: TrendingUp,
       items: [
         { title: "SEO 内容", url: "/zh-CN/seo", icon: FileText },

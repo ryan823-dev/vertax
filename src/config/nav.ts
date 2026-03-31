@@ -29,6 +29,8 @@ import {
   BookOpen,
   Users2,
   Package,
+  SearchCheck,
+  BrainCircuit,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -156,13 +158,13 @@ export const navConfig: NavItem[] = [
   },
 
   // ────────────────────────────────────────
-  // 3. 营销系统 - 内容增长/SEO-AEO
+  // 3. 增长系统 - 内容增长/SEO-AEO/GEO
   // ────────────────────────────────────────
   {
     key: 'marketing',
-    label: '营销系统',
-    pageTitle: '内容增长引擎',
-    pageSubtitle: '营销系统',
+    label: '增长系统',
+    pageTitle: '增长系统',
+    pageSubtitle: 'SEO · AEO · GEO 全链路内容增长引擎',
     href: '/customer/marketing',
     icon: BarChart3,
     order: 3,
@@ -170,9 +172,11 @@ export const navConfig: NavItem[] = [
     healthSource: 'marketing.status',
     subItems: [
       { key: 'topics', label: '主题集群', href: '/customer/marketing/topics', icon: Layers, order: 1 },
-      { key: 'strategy', label: '内容策略', href: '/customer/marketing/strategy', icon: Zap, order: 2 },
-      { key: 'briefs', label: '内容简报', href: '/customer/marketing/briefs', icon: FileEdit, order: 3 },
-      { key: 'contents', label: '内容库', href: '/customer/marketing/contents', icon: FileStack, order: 4 },
+      { key: 'briefs', label: '内容简报', href: '/customer/marketing/briefs', icon: FileEdit, order: 2 },
+      { key: 'contents', label: '内容库', href: '/customer/marketing/contents', icon: FileStack, order: 3 },
+      { key: 'strategy', label: '发布策略', href: '/customer/marketing/strategy', icon: Zap, order: 4 },
+      { key: 'seo-aeo', label: 'SEO/AEO 优化', href: '/customer/marketing/seo-aeo', icon: SearchCheck, order: 5, badge: { type: 'premium', text: 'NEW' } },
+      { key: 'geo-center', label: 'GEO 发布中心', href: '/customer/marketing/geo-center', icon: BrainCircuit, order: 6, badge: { type: 'premium', text: 'NEW' } },
     ],
   },
 

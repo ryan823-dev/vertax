@@ -58,10 +58,11 @@ export async function getContents(): Promise<ContentData[]> {
     select: { tenantId: true },
   });
   if (!user) return [];
+  const tenantId = user!.tenantId as string;
 
   const contents = await prisma.seoContent.findMany({
     where: {
-      tenantId: user.tenantId,
+      tenantId: tenantId,
       deletedAt: null,
     },
     include: {
@@ -108,19 +109,20 @@ export async function getMarketingStats(): Promise<MarketingStats> {
   if (!user) {
     return { totalContents: 0, published: 0, draft: 0, scheduled: 0 };
   }
+  const tenantId = user!.tenantId as string;
 
   const [total, published, draft, scheduled] = await Promise.all([
     prisma.seoContent.count({
-      where: { tenantId: user.tenantId, deletedAt: null },
+      where: { tenantId: tenantId, deletedAt: null },
     }),
     prisma.seoContent.count({
-      where: { tenantId: user.tenantId, deletedAt: null, status: "published" },
+      where: { tenantId: tenantId, deletedAt: null, status: "published" },
     }),
     prisma.seoContent.count({
-      where: { tenantId: user.tenantId, deletedAt: null, status: "draft" },
+      where: { tenantId: tenantId, deletedAt: null, status: "draft" },
     }),
     prisma.seoContent.count({
-      where: { tenantId: user.tenantId, deletedAt: null, status: "scheduled" },
+      where: { tenantId: tenantId, deletedAt: null, status: "scheduled" },
     }),
   ]);
 
@@ -143,9 +145,10 @@ export async function getCategories(): Promise<ContentCategory[]> {
     select: { tenantId: true },
   });
   if (!user) return [];
+  const tenantId = user!.tenantId as string;
 
   const categories = await prisma.contentCategory.findMany({
-    where: { tenantId: user.tenantId },
+    where: { tenantId: tenantId },
     orderBy: { order: "asc" },
   });
 
@@ -193,9 +196,10 @@ export async function generateKeywords(topic: string): Promise<KeywordSuggestion
     select: { tenantId: true },
   });
   if (!user) throw new Error("用户不存在");
+  const tenantId = user!.tenantId as string;
 
   const profile = await prisma.companyProfile.findUnique({
-    where: { tenantId: user.tenantId },
+    where: { tenantId: tenantId },
     select: {
       companyName: true,
       coreProducts: true,
@@ -269,10 +273,11 @@ export async function generateContent(
     select: { tenantId: true },
   });
   if (!user) throw new Error("用户不存在");
+  const tenantId = user!.tenantId as string;
 
   // 获取企业画像
   const profile = await prisma.companyProfile.findUnique({
-    where: { tenantId: user.tenantId },
+    where: { tenantId: tenantId },
   });
 
   const typeLabels = {
@@ -356,9 +361,10 @@ export async function saveContent(data: {
     select: { tenantId: true, id: true },
   });
   if (!user) throw new Error("用户不存在");
+  const tenantId = user!.tenantId as string;
 
   // 确保有默认分类
-  const categoryId = data.categoryId || (await ensureDefaultCategory(user.tenantId));
+  const categoryId = data.categoryId || (await ensureDefaultCategory(tenantId));
 
   // 生成 slug
   const slug = data.title
@@ -369,7 +375,7 @@ export async function saveContent(data: {
 
   const content = await prisma.seoContent.create({
     data: {
-      tenantId: user.tenantId,
+      tenantId: tenantId,
       authorId: user.id,
       categoryId,
       title: data.title,
@@ -419,11 +425,12 @@ export async function updateContentStatus(
     select: { tenantId: true },
   });
   if (!user) return null;
+  const tenantId = user!.tenantId as string;
 
   const content = await prisma.seoContent.update({
     where: {
       id: contentId,
-      tenantId: user.tenantId,
+      tenantId: tenantId,
     },
     data: {
       status,
@@ -469,11 +476,12 @@ export async function deleteContent(contentId: string): Promise<boolean> {
     select: { tenantId: true },
   });
   if (!user) return false;
+  const tenantId = user!.tenantId as string;
 
   await prisma.seoContent.update({
     where: {
       id: contentId,
-      tenantId: user.tenantId,
+      tenantId: tenantId,
     },
     data: {
       deletedAt: new Date(),

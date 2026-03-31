@@ -38,13 +38,14 @@ export async function getSystemTodos(): Promise<TodoItem[]> {
     select: { tenantId: true },
   });
   if (!user) return [];
+  const tenantId = user!.tenantId as string;
 
   const todos: TodoItem[] = [];
   const now = new Date();
 
   // 1. Check Knowledge Engine - Company Profile completeness
   const profile = await prisma.companyProfile.findUnique({
-    where: { tenantId: user.tenantId },
+    where: { tenantId: tenantId },
   });
 
   if (!profile) {
@@ -84,7 +85,7 @@ export async function getSystemTodos(): Promise<TodoItem[]> {
   // 2. Check Acquisition Radar - High intent leads to follow up
   const highIntentLeads = await prisma.lead.count({
     where: {
-      tenantId: user.tenantId,
+      tenantId: tenantId,
       deletedAt: null,
       priority: 'high',
       status: 'new',
@@ -109,7 +110,7 @@ export async function getSystemTodos(): Promise<TodoItem[]> {
   // 3. Check Marketing System - Draft contents
   const draftContents = await prisma.seoContent.count({
     where: {
-      tenantId: user.tenantId,
+      tenantId: tenantId,
       deletedAt: null,
       status: 'draft',
     },
@@ -133,7 +134,7 @@ export async function getSystemTodos(): Promise<TodoItem[]> {
   // 4. Check Social Hub - Account authorization
   const socialAccounts = await prisma.socialAccount.count({
     where: {
-      tenantId: user.tenantId,
+      tenantId: tenantId,
       isActive: true,
     },
   });
@@ -156,7 +157,7 @@ export async function getSystemTodos(): Promise<TodoItem[]> {
   // 5. Check Social Hub - Scheduled posts
   const scheduledPosts = await prisma.socialPost.count({
     where: {
-      tenantId: user.tenantId,
+      tenantId: tenantId,
       deletedAt: null,
       status: 'scheduled',
       scheduledAt: { lte: new Date(now.getTime() + 24 * 60 * 60 * 1000) }, // within 24h
@@ -181,7 +182,7 @@ export async function getSystemTodos(): Promise<TodoItem[]> {
   // 6. Check for failed social posts
   const failedPosts = await prisma.socialPost.count({
     where: {
-      tenantId: user.tenantId,
+      tenantId: tenantId,
       deletedAt: null,
       status: 'failed',
     },
@@ -247,9 +248,10 @@ export async function getRecentActivity(limit: number = 10): Promise<RecentActiv
     select: { tenantId: true },
   });
   if (!user) return [];
+  const tenantId = user!.tenantId as string;
 
   const activities = await prisma.activity.findMany({
-    where: { tenantId: user.tenantId },
+    where: { tenantId: tenantId },
     include: {
       user: { select: { name: true } },
     },
@@ -290,12 +292,13 @@ export async function getModuleHealth(): Promise<ModuleHealth[]> {
     select: { tenantId: true },
   });
   if (!user) return [];
+  const tenantId = user!.tenantId as string;
 
   const health: ModuleHealth[] = [];
 
   // Knowledge Engine
   const profile = await prisma.companyProfile.findUnique({
-    where: { tenantId: user.tenantId },
+    where: { tenantId: tenantId },
   });
   health.push({
     module: '知识引擎',
@@ -306,7 +309,7 @@ export async function getModuleHealth(): Promise<ModuleHealth[]> {
 
   // Acquisition Radar
   const leadCount = await prisma.lead.count({
-    where: { tenantId: user.tenantId, deletedAt: null },
+    where: { tenantId: tenantId, deletedAt: null },
   });
   health.push({
     module: '获客雷达',
@@ -316,7 +319,7 @@ export async function getModuleHealth(): Promise<ModuleHealth[]> {
 
   // Marketing System
   const contentCount = await prisma.seoContent.count({
-    where: { tenantId: user.tenantId, deletedAt: null },
+    where: { tenantId: tenantId, deletedAt: null },
   });
   health.push({
     module: '营销系统',
@@ -326,7 +329,7 @@ export async function getModuleHealth(): Promise<ModuleHealth[]> {
 
   // Social Hub
   const accountCount = await prisma.socialAccount.count({
-    where: { tenantId: user.tenantId, isActive: true },
+    where: { tenantId: tenantId, isActive: true },
   });
   health.push({
     module: '声量枢纽',

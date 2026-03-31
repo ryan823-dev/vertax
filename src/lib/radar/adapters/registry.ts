@@ -28,6 +28,7 @@ import { ICPMatchingAdapter } from './icp-matching';
 import { GoogleAlertsAdapter } from './google-alerts';
 import { MultiSourceSearchAdapter } from './multi-search';
 import { BatchDiscoveryAdapter } from './batch-discovery';
+import { CompetitiveDiscoveryAdapter, CompetitiveDiscoveryRegistration } from './competitive-discovery';
 
 // ==================== 数据源可靠性定义 ====================
 
@@ -918,6 +919,12 @@ export function ensureAdaptersInitialized(): void {
     (config) => new BatchDiscoveryAdapter(config)
   );
 
+  // 注册竞品发现适配器
+  registerAdapter(
+    CompetitiveDiscoveryRegistration,
+    (config) => new CompetitiveDiscoveryAdapter(config)
+  );
+
   initialized = true;
 }
 
@@ -947,6 +954,8 @@ export const ADAPTER_CODES = {
   GOOGLE_ALERTS: 'google_alerts',
   MULTI_SEARCH: 'multi_search',
   BATCH_DISCOVERY: 'batch_discovery',
+  // 竞品发现
+  COMPETITIVE_DISCOVERY: 'competitive_discovery',
   // 后续扩展
   CSV_IMPORT: 'csv_import',
 } as const;

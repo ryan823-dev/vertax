@@ -20,9 +20,10 @@ export async function getWebsiteConfigDetail(): Promise<WebsiteConfigDetail | nu
     select: { tenantId: true },
   });
   if (!user) return null;
+  const tenantId = user!.tenantId as string;
 
   const config = await prisma.websiteConfig.findUnique({
-    where: { tenantId: user.tenantId },
+    where: { tenantId: tenantId },
   });
   if (!config) return null;
 
@@ -57,12 +58,13 @@ export async function saveWebsiteConfig(
   if (!user) {
     return { success: false, error: "用户不存在" };
   }
+  const tenantId = user!.tenantId as string;
 
   try {
     await prisma.websiteConfig.upsert({
-      where: { tenantId: user.tenantId },
+      where: { tenantId: tenantId },
       create: {
-        tenantId: user.tenantId,
+        tenantId: tenantId,
         url: data.url || null,
         siteType: data.siteType || "supabase",
         supabaseUrl: data.supabaseUrl || null,
@@ -110,9 +112,10 @@ export async function testWebsiteConnection(): Promise<{
   if (!user) {
     return { success: false, message: "用户不存在" };
   }
+  const tenantId = user!.tenantId as string;
 
   const config = await prisma.websiteConfig.findUnique({
-    where: { tenantId: user.tenantId },
+    where: { tenantId: tenantId },
   });
 
   if (!config) {

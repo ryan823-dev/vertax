@@ -75,7 +75,7 @@ export async function createICPSegment(input: CreateICPSegmentInput): Promise<IC
     context: { name: s.name, industry: s.industry },
   });
 
-  revalidatePath("/zh-CN/knowledge");
+  revalidatePath("/customer/knowledge/profiles");
 
   return {
     id: s.id, name: s.name, industry: s.industry, companySize: s.companySize,
@@ -95,7 +95,7 @@ export async function updateICPSegment(id: string, input: Partial<CreateICPSegme
   if (input.criteria !== undefined) data.criteria = input.criteria as object;
 
   await db.iCPSegment.update({ where: { id, tenantId: session.user.tenantId }, data });
-  revalidatePath("/zh-CN/knowledge");
+  revalidatePath("/customer/knowledge/profiles");
 }
 
 export async function deleteICPSegment(id: string): Promise<void> {
@@ -105,7 +105,7 @@ export async function deleteICPSegment(id: string): Promise<void> {
     throw new Error(roleCheck.error);
   }
   await db.iCPSegment.delete({ where: { id, tenantId: session.user.tenantId } });
-  revalidatePath("/zh-CN/knowledge");
+  revalidatePath("/customer/knowledge/profiles");
 }
 
 // ==================== Personas ====================
@@ -157,7 +157,7 @@ export async function createPersona(input: CreatePersonaInput): Promise<PersonaD
     context: { name: p.name, title: p.title },
   });
 
-  revalidatePath("/zh-CN/knowledge");
+  revalidatePath("/customer/knowledge/profiles");
 
   return {
     id: p.id, segmentId: p.segmentId, segmentName: p.segment?.name || undefined,
@@ -178,7 +178,7 @@ export async function updatePersona(id: string, input: Partial<CreatePersonaInpu
   if (input.evidenceRefs !== undefined) data.evidenceRefs = input.evidenceRefs;
 
   await db.persona.update({ where: { id, tenantId: session.user.tenantId }, data });
-  revalidatePath("/zh-CN/knowledge");
+  revalidatePath("/customer/knowledge/profiles");
 }
 
 export async function deletePersona(id: string): Promise<void> {
@@ -188,7 +188,7 @@ export async function deletePersona(id: string): Promise<void> {
     throw new Error(roleCheck.error);
   }
   await db.persona.delete({ where: { id, tenantId: session.user.tenantId } });
-  revalidatePath("/zh-CN/knowledge");
+  revalidatePath("/customer/knowledge/profiles");
 }
 
 // ==================== 从企业档案自动生成 ====================
@@ -279,7 +279,7 @@ export async function generatePersonasFromProfile(
     personasCreated++;
   }
 
-  revalidatePath("/zh-CN/knowledge");
+  revalidatePath("/customer/knowledge/profiles");
 
   return { segmentsCreated, personasCreated };
 }
@@ -328,7 +328,7 @@ export async function upsertMessagingMatrixEntry(
     });
   }
 
-  revalidatePath("/zh-CN/knowledge");
+  revalidatePath("/customer/knowledge/profiles");
 }
 
 export async function generatePersonaMessaging(

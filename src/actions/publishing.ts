@@ -29,9 +29,10 @@ export async function getWebsiteConfig(): Promise<WebsiteConfigData | null> {
     select: { tenantId: true },
   });
   if (!user) return null;
+  const tenantId = user!.tenantId as string;
 
   const config = await prisma.websiteConfig.findUnique({
-    where: { tenantId: user.tenantId },
+    where: { tenantId: tenantId },
   });
 
   if (!config) return null;
@@ -70,10 +71,11 @@ export async function pushContentToWebsite(
   if (!user) {
     return { success: false, error: "用户不存在" };
   }
+  const tenantId = user!.tenantId as string;
 
   // 1. 查找内容
   const content = await prisma.seoContent.findFirst({
-    where: { id: contentId, tenantId: user.tenantId, deletedAt: null },
+    where: { id: contentId, tenantId: tenantId, deletedAt: null },
     include: { category: { select: { slug: true } } },
   });
   if (!content) {
@@ -82,7 +84,7 @@ export async function pushContentToWebsite(
 
   // 2. 查找网站配置
   const websiteConfig = await prisma.websiteConfig.findUnique({
-    where: { tenantId: user.tenantId },
+    where: { tenantId: tenantId },
   });
   if (!websiteConfig || !websiteConfig.isActive) {
     return { success: false, error: "未配置或已禁用官网连接" };
@@ -140,7 +142,7 @@ export async function pushContentToWebsite(
       },
     },
     create: {
-      tenantId: user.tenantId,
+      tenantId: tenantId,
       contentId: content.id,
       websiteConfigId: websiteConfig.id,
       status: result.success ? "PENDING" : "FAILED",
@@ -196,10 +198,11 @@ export async function getPushRecords(contentId?: string): Promise<PushRecordData
     select: { tenantId: true },
   });
   if (!user) return [];
+  const tenantId = user!.tenantId as string;
 
   const records = await prisma.pushRecord.findMany({
     where: {
-      tenantId: user.tenantId,
+      tenantId: tenantId,
       ...(contentId ? { contentId } : {}),
     },
     include: {
@@ -242,12 +245,13 @@ export async function confirmPushRecord(
   if (!user) {
     return { success: false, error: "用户不存在" };
   }
+  const tenantId = user!.tenantId as string;
 
   try {
     await prisma.pushRecord.update({
       where: {
         id: pushRecordId,
-        tenantId: user.tenantId,
+        tenantId: tenantId,
       },
       data: {
         status: "CONFIRMED",
@@ -276,9 +280,10 @@ export async function retryPush(
     select: { tenantId: true },
   });
   if (!user) return { success: false, error: "用户不存在" };
+  const tenantId = user!.tenantId as string;
 
   const record = await prisma.pushRecord.findFirst({
-    where: { id: pushRecordId, tenantId: user.tenantId },
+    where: { id: pushRecordId, tenantId: tenantId },
   });
   if (!record) return { success: false, error: "记录不存在" };
 

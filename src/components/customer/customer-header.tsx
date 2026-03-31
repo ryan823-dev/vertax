@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from 'react';
-import { ChevronDown, Shield, Eye, LayoutList } from 'lucide-react';
+import { ChevronDown, Shield, Eye, LayoutList, Zap } from 'lucide-react';
 import { useRoleContext } from '@/contexts/role-context';
 import { DISPLAY_MODES } from '@/lib/constants';
 
@@ -18,7 +18,6 @@ export function CustomerHeader({
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // 点击外部关闭下拉
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -30,105 +29,215 @@ export function CustomerHeader({
   }, []);
 
   return (
-    <header className="h-16 bg-[#FFFCF6] border-b border-[#E7E0D3] px-6 flex items-center justify-between shrink-0 z-20">
+    <header
+      className="h-14 px-5 flex items-center justify-between shrink-0 z-20"
+      style={{
+        background: 'rgba(11,18,32,0.92)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        borderBottom: '1px solid rgba(212,175,55,0.12)',
+        boxShadow: '0 1px 0 rgba(255,255,255,0.03), 0 4px 24px -4px rgba(0,0,0,0.3)',
+      }}
+    >
       {/* 左侧：项目标识 */}
-      <div className="flex items-center gap-1.5 bg-[#F7F3EA] px-5 py-2 rounded-full border border-[#E7E0D3] text-sm">
-        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-tight">项目</span>
-        <span className="font-bold text-[#0B1B2B]">{tenantName}</span>
-        <span className="text-[10px] bg-[#D4AF37]/10 text-[#D4AF37] px-1.5 py-0.5 rounded font-mono border border-[#D4AF37]/20">
-          {tenantSlug}.vertax.top
-        </span>
+      <div className="flex items-center gap-2">
+        <div
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm"
+          style={{
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.08)',
+          }}
+        >
+          <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)' }}>
+            项目
+          </span>
+          <span className="font-semibold text-white text-[13px]">{tenantName}</span>
+          <span
+            className="text-[10px] px-1.5 py-0.5 rounded font-mono"
+            style={{
+              background: 'rgba(212,175,55,0.1)',
+              color: '#D4AF37',
+              border: '1px solid rgba(212,175,55,0.2)',
+            }}
+          >
+            {tenantSlug}.vertax.top
+          </span>
+        </div>
+
+        {/* AI 引擎状态指示 */}
+        <div
+          className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg"
+          style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.15)' }}
+        >
+          <div className="w-1.5 h-1.5 rounded-full bg-[#22C55E] animate-pulse" />
+          <span className="text-[10px] font-medium" style={{ color: '#22C55E' }}>引擎运行中</span>
+        </div>
       </div>
-      
+
       {/* 右侧：模式切换 + 身份胶囊 */}
-      <div className="flex items-center gap-3">
-        {/* 显示模式切换（独立于身份） */}
-        <div className="flex items-center bg-[#F7F3EA] border border-[#E7E0D3] rounded-lg overflow-hidden">
+      <div className="flex items-center gap-2.5">
+        {/* 显示模式切换 */}
+        <div
+          className="flex items-center rounded-lg overflow-hidden"
+          style={{
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.08)',
+          }}
+        >
           <button
             onClick={() => setDisplayMode(DISPLAY_MODES.SECRETARY)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-all ${
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-all"
+            style={
               displayMode === DISPLAY_MODES.SECRETARY
-                ? 'bg-[#0B1B2B] text-[#D4AF37]'
-                : 'text-slate-500 hover:text-slate-700'
-            }`}
+                ? { background: 'rgba(212,175,55,0.15)', color: '#D4AF37', borderRight: '1px solid rgba(212,175,55,0.2)' }
+                : { color: 'rgba(255,255,255,0.4)', borderRight: '1px solid rgba(255,255,255,0.06)' }
+            }
           >
-            <Eye size={12} />
+            <Eye size={11} />
             秘书
           </button>
           <button
             onClick={() => setDisplayMode(DISPLAY_MODES.ANALYST)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-all ${
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-all"
+            style={
               displayMode === DISPLAY_MODES.ANALYST
-                ? 'bg-[#0B1B2B] text-[#D4AF37]'
-                : 'text-slate-500 hover:text-slate-700'
-            }`}
+                ? { background: 'rgba(212,175,55,0.15)', color: '#D4AF37' }
+                : { color: 'rgba(255,255,255,0.4)' }
+            }
           >
-            <LayoutList size={12} />
+            <LayoutList size={11} />
             分析
           </button>
         </div>
 
-        {/* 唯一身份胶囊 */}
+        {/* 身份胶囊 */}
         <div className="relative" ref={dropdownRef}>
-          <button 
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)} 
-            className={`flex items-center gap-2.5 pl-2 pr-4 py-1.5 rounded-full border-2 transition-all select-none active:scale-[0.98] ${
-              isDecider
-                ? 'bg-[#0B1B2B] border-[#D4AF37]/40 hover:border-[#D4AF37]/70'
-                : 'bg-[#0B1B2B] border-blue-400/30 hover:border-blue-400/60'
-            }`}
+          <button
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            className="flex items-center gap-2 pl-1.5 pr-3 py-1 rounded-xl transition-all select-none active:scale-[0.98]"
+            style={{
+              background: isDecider
+                ? 'linear-gradient(135deg, rgba(212,175,55,0.12) 0%, rgba(212,175,55,0.06) 100%)'
+                : 'rgba(59,130,246,0.1)',
+              border: isDecider
+                ? '1px solid rgba(212,175,55,0.3)'
+                : '1px solid rgba(59,130,246,0.25)',
+            }}
           >
-            <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold ${
-              isDecider ? 'bg-[#D4AF37] text-[#0B1B2B]' : 'bg-blue-500 text-white'
-            }`}>
+            <div
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-bold shrink-0"
+              style={
+                isDecider
+                  ? { background: '#D4AF37', color: '#0B1220' }
+                  : { background: '#3B82F6', color: 'white' }
+              }
+            >
               {roleLabel.slice(0, 1)}
             </div>
             <div className="text-left hidden sm:block">
               <p className="text-[11px] font-bold text-white leading-none">{userName}</p>
-              <div className="flex items-center gap-1 mt-1">
-                <Shield size={9} className={isDecider ? 'text-[#D4AF37]' : 'text-blue-400'} />
-                <p className="text-[9px] text-slate-500 font-bold uppercase tracking-tight">{roleLabel}</p>
+              <div className="flex items-center gap-1 mt-0.5">
+                <Shield size={8} style={{ color: isDecider ? '#D4AF37' : '#60A5FA' }} />
+                <p
+                  className="text-[9px] font-bold uppercase tracking-tight"
+                  style={{ color: 'rgba(255,255,255,0.4)' }}
+                >
+                  {roleLabel}
+                </p>
               </div>
             </div>
-            <ChevronDown size={14} className={`text-slate-500 ml-1 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+            <ChevronDown
+              size={13}
+              className={`transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}
+              style={{ color: 'rgba(255,255,255,0.35)' }}
+            />
           </button>
-          
+
           {/* 下拉菜单 */}
           {isDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-64 bg-white border border-[#E7E0D3] rounded-2xl shadow-xl overflow-hidden z-50 animate-fade-in">
+            <div
+              className="absolute right-0 mt-2 w-64 rounded-2xl overflow-hidden z-50 animate-fade-in"
+              style={{
+                background: '#0F1728',
+                border: '1px solid rgba(255,255,255,0.08)',
+                boxShadow: '0 16px 48px -8px rgba(0,0,0,0.6), 0 0 0 1px rgba(212,175,55,0.08)',
+              }}
+            >
               {/* 当前角色信息 */}
-              <div className="px-4 py-3 bg-slate-50 border-b border-[#E7E0D3]">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">当前身份</p>
+              <div
+                className="px-4 py-3"
+                style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+              >
+                <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                  当前身份
+                </p>
               </div>
-              <div className="p-3">
+              <div className="p-3 space-y-1">
                 {/* 决策者 */}
-                <div className={`flex items-center gap-3 p-3 rounded-xl ${isDecider ? 'bg-[#F7F3EA] border border-[#D4AF37]/20' : 'opacity-50'}`}>
-                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold ${isDecider ? 'bg-[#D4AF37] text-[#0B1B2B]' : 'bg-[#D4AF37]/30 text-[#D4AF37]'}`}>
+                <div
+                  className="flex items-center gap-3 p-3 rounded-xl transition-all"
+                  style={
+                    isDecider
+                      ? { background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.2)' }
+                      : { opacity: 0.4, border: '1px solid transparent' }
+                  }
+                >
+                  <div
+                    className="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold shrink-0"
+                    style={
+                      isDecider
+                        ? { background: '#D4AF37', color: '#0B1220' }
+                        : { background: 'rgba(212,175,55,0.2)', color: '#D4AF37' }
+                    }
+                  >
                     决
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-[#0B1B2B]">决策者</p>
-                    <p className="text-[10px] text-slate-500 mt-0.5">全权限 · 可审批发布配置</p>
+                    <p className="text-xs font-bold text-white">决策者</p>
+                    <p className="text-[10px] mt-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                      全权限 · 可审批发布配置
+                    </p>
                   </div>
-                  {isDecider && <Shield size={14} className="text-[#D4AF37] ml-auto" />}
+                  {isDecider && <Shield size={13} className="text-[#D4AF37] ml-auto" />}
                 </div>
-                
+
                 {/* 执行者 */}
-                <div className={`flex items-center gap-3 p-3 rounded-xl mt-1 ${!isDecider ? 'bg-blue-50 border border-blue-200/50' : 'opacity-50'}`}>
-                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold ${!isDecider ? 'bg-blue-500 text-white' : 'bg-blue-200 text-blue-400'}`}>
+                <div
+                  className="flex items-center gap-3 p-3 rounded-xl transition-all"
+                  style={
+                    !isDecider
+                      ? { background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)' }
+                      : { opacity: 0.4, border: '1px solid transparent' }
+                  }
+                >
+                  <div
+                    className="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold shrink-0"
+                    style={
+                      !isDecider
+                        ? { background: '#3B82F6', color: 'white' }
+                        : { background: 'rgba(59,130,246,0.2)', color: '#60A5FA' }
+                    }
+                  >
                     执
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-[#0B1B2B]">执行者</p>
-                    <p className="text-[10px] text-slate-500 mt-0.5">日常执行 · 不可审批删除</p>
+                    <p className="text-xs font-bold text-white">执行者</p>
+                    <p className="text-[10px] mt-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                      日常执行 · 不可审批删除
+                    </p>
                   </div>
-                  {!isDecider && <Shield size={14} className="text-blue-500 ml-auto" />}
+                  {!isDecider && <Shield size={13} className="text-blue-400 ml-auto" />}
                 </div>
               </div>
-              
+
               {/* 底部说明 */}
-              <div className="px-4 py-2.5 border-t border-[#E7E0D3] bg-slate-50">
-                <p className="text-[10px] text-slate-400">身份由管理员分配，如需变更请联系管理员</p>
+              <div
+                className="px-4 py-2.5"
+                style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
+              >
+                <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                  身份由管理员分配，如需变更请联系管理员
+                </p>
               </div>
             </div>
           )}

@@ -28,7 +28,7 @@ import { getKnowledgePipelineStatus } from '@/actions/pipeline';
 import { toast } from 'sonner';
 import { getLatestVersion, createVersion } from '@/actions/versions';
 import { CollaborativeShell } from '@/components/collaboration';
-import { EngineHeader, EmptyStateGuide } from '@/components/knowledge/engine-header';
+import { EngineHeader, EmptyStateGuide, NextStepBanner } from '@/components/knowledge/engine-header';
 import type { AnchorSpec, ArtifactStatusValue } from '@/types/artifact';
 import type { PipelineStatus } from '@/lib/knowledge/pipeline';
 
@@ -141,6 +141,23 @@ export default function CompanyKnowledgePage() {
     loadData();
   }, [loadPipelineStatus, loadData]);
 
+  // P1-2: Pipeline 状态轮询 — AI 任务后台运行期间每 4s 刷新 stepper 进度
+  const startPipelinePolling = useCallback((initialStep: number, maxSeconds = 90) => {
+    const deadline = Date.now() + maxSeconds * 1000;
+    const interval = setInterval(async () => {
+      if (Date.now() >= deadline) { clearInterval(interval); return; }
+      try {
+        const status = await getKnowledgePipelineStatus();
+        setPipelineStatus(status);
+        if (status.currentStep > initialStep || status.currentStep >= status.steps.length - 1) {
+          clearInterval(interval);
+          loadData();
+        }
+      } catch { /* 静默 */ }
+    }, 4000);
+    return interval;
+  }, [loadData]);
+
   // AI Analysis - uses Route Handler to bypass 10s Server Action timeout
   const handleAnalyze = async () => {
     const idsToAnalyze = selectedAssetIds.length > 0 ? selectedAssetIds : assets.map(a => a.id);
@@ -148,6 +165,7 @@ export default function CompanyKnowledgePage() {
     
     setIsAnalyzing(true);
     setError(null);
+    const currentStep = pipelineStatus?.currentStep ?? 0;
     try {
       const res = await fetch('/api/knowledge/analyze-assets', {
         method: 'POST',
@@ -158,7 +176,9 @@ export default function CompanyKnowledgePage() {
       if (!res.ok) throw new Error(data.error || 'AI分析失败');
       if (data.profile) setProfile(data.profile as CompanyProfileData);
       setSelectedAssetIds([]);
+      // 立即刷新一次，然后启动轮询持续跟踪后台进度
       loadPipelineStatus();
+      startPipelinePolling(currentStep);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'AI分析失败');
     } finally {
@@ -226,7 +246,7 @@ export default function CompanyKnowledgePage() {
       
       const result = await res.json() as { success?: boolean; error?: string };
       if (result.success) {
-        toast.success('已同步到营销系统');
+        toast.success('已同步到增长系统');
       } else {
         toast.error('同步失败', { description: result.error });
       }
@@ -389,11 +409,11 @@ export default function CompanyKnowledgePage() {
                 <p className="text-sm text-slate-500 mb-2">需要先完成以下步骤：</p>
                 <div className="flex items-center justify-center gap-6 my-6">
                   <div className="flex flex-col items-center gap-2">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      pipelineStatus?.counts.assetsParsed && pipelineStatus.counts.assetsParsed >= 1 
-                        ? 'bg-emerald-100 text-emerald-600' 
-                        : 'bg-slate-100 text-slate-400'
-                    }`}>
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center" style={
+                      pipelineStatus?.counts.assetsParsed && pipelineStatus.counts.assetsParsed >= 1
+                        ? { background: 'rgba(212,175,55,0.12)', color: '#B8860B' }
+                        : { background: 'rgba(0,0,0,0.04)', color: '#94A3B8' }
+                    }>
                       <FileStack size={18} />
                     </div>
                     <span className="text-xs text-slate-500">
@@ -402,11 +422,11 @@ export default function CompanyKnowledgePage() {
                   </div>
                   <span className="text-slate-300">或</span>
                   <div className="flex flex-col items-center gap-2">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      pipelineStatus?.counts.evidenceCount && pipelineStatus.counts.evidenceCount >= 1 
-                        ? 'bg-emerald-100 text-emerald-600' 
-                        : 'bg-slate-100 text-slate-400'
-                    }`}>
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center" style={
+                      pipelineStatus?.counts.evidenceCount && pipelineStatus.counts.evidenceCount >= 1
+                        ? { background: 'rgba(212,175,55,0.12)', color: '#B8860B' }
+                        : { background: 'rgba(0,0,0,0.04)', color: '#94A3B8' }
+                    }>
                       <CheckCircle2 size={18} />
                     </div>
                     <span className="text-xs text-slate-500">
@@ -434,7 +454,7 @@ export default function CompanyKnowledgePage() {
                   {pipelineStatus?.counts.evidenceCount || 0} 条证据
                 </p>
                 {pipelineStatus?.counts.evidenceCount && pipelineStatus.counts.evidenceCount < 3 && (
-                  <p className="text-xs text-amber-600 mb-4">
+                  <p className="text-xs text-[#B8860B] mb-4">
                     建议先补齐证据(≥3条)以获得更好的分析效果
                   </p>
                 )}
@@ -503,16 +523,18 @@ export default function CompanyKnowledgePage() {
                   <button
                     onClick={handleSyncMarketing}
                     disabled={isSyncingMarketing}
-                    className="w-full flex items-center gap-2 px-3 py-2 bg-[#0B1220] text-[#D4AF37] rounded-lg text-xs font-medium hover:bg-[#0B1220]/90 transition-colors disabled:opacity-50"
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+                    style={{ background: 'rgba(212,175,55,0.08)', color: '#D4AF37', border: '1px solid rgba(212,175,55,0.25)' }}
                   >
                     {isSyncingMarketing ? <Loader2 size={12} className="animate-spin" /> : <BarChart3 size={12} />}
-                    营销系统
+                    增长系统
                     <ArrowRight size={10} className="ml-auto" />
                   </button>
                   <button
                     onClick={handleSyncRadar}
                     disabled={isSyncingRadar}
-                    className="w-full flex items-center gap-2 px-3 py-2 bg-[#0B1220] text-emerald-400 rounded-lg text-xs font-medium hover:bg-[#0B1220]/90 transition-colors disabled:opacity-50"
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+                    style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #C4A028 100%)', color: '#0B1220', boxShadow: '0 2px 8px -2px rgba(212,175,55,0.35)' }}
                   >
                     {isSyncingRadar ? <Loader2 size={12} className="animate-spin" /> : <Radar size={12} />}
                     获客雷达
@@ -592,7 +614,9 @@ export default function CompanyKnowledgePage() {
                   return (
                     <div 
                       key={section.key} 
-                      className={`bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-4 group relative ${getSectionHighlightClass(section.key)}`}
+                      className={`bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-4 group relative transition-all duration-200 ${getSectionHighlightClass(section.key)}`}
+                      onMouseEnter={(e) => { const t = e.currentTarget; t.style.borderColor = 'rgba(212,175,55,0.4)'; t.style.boxShadow = '0 4px 16px -4px rgba(212,175,55,0.15)'; t.style.transform = 'translateY(-1px)'; }}
+                      onMouseLeave={(e) => { const t = e.currentTarget; t.style.borderColor = ''; t.style.boxShadow = ''; t.style.transform = ''; }}
                     >
                       <div className="flex items-center gap-2 mb-3">
                         <SectionIcon size={16} className="text-[#D4AF37]" />
@@ -651,7 +675,11 @@ export default function CompanyKnowledgePage() {
               </div>
 
               {/* ICP Section */}
-              <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-5">
+              <div
+                className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-5 transition-all duration-200"
+                onMouseEnter={(e) => { const t = e.currentTarget; t.style.borderColor = 'rgba(212,175,55,0.4)'; t.style.boxShadow = '0 4px 16px -4px rgba(212,175,55,0.15)'; t.style.transform = 'translateY(-1px)'; }}
+                onMouseLeave={(e) => { const t = e.currentTarget; t.style.borderColor = ''; t.style.boxShadow = ''; t.style.transform = ''; }}
+              >
                 <h3 className="font-bold text-[#0B1220] mb-4 flex items-center gap-2">
                   <Users size={18} className="text-[#D4AF37]" />
                   目标客户画像 (ICP)
@@ -695,7 +723,7 @@ export default function CompanyKnowledgePage() {
                         {persona.concerns?.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-2">
                             {persona.concerns.map((concern, j) => (
-                              <span key={j} className="px-2 py-0.5 bg-amber-50 text-amber-600 text-[10px] rounded">{concern}</span>
+                              <span key={j} className="px-2 py-0.5 text-[10px] rounded" style={{ background: 'rgba(212,175,55,0.08)', color: '#B8860B', border: '1px solid rgba(212,175,55,0.15)' }}>{concern}</span>
                             ))}
                           </div>
                         )}
@@ -724,6 +752,11 @@ export default function CompanyKnowledgePage() {
               )}
             </div>
           </div>
+        )}
+
+        {/* Next Step Banner */}
+        {pipelineStatus && (
+          <NextStepBanner steps={pipelineStatus.steps} currentStep={pipelineStatus.currentStep} />
         )}
       </div>
     </div>

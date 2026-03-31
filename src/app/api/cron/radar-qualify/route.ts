@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Cron: 雷达双阶段合格化
  *
  * Stage 1（规则快筛，0 token）: 排除词 + 负向信号 + 排除规则 → 快速淘汰明显不匹配的候选
@@ -171,7 +171,7 @@ export async function GET(req: NextRequest) {
 
             // 写回数据库
             const applyResult = await applyDeepQualifyResults(aiResult.results, profileId);
-            stats.stage2_enriching += applyResult.excluded; // reuse for enriching count
+            stats.stage2_enriching += applyResult.updated; // candidates entering ENRICHING or QUALIFIED
             stats.errors.push(...applyResult.errors);
           }
         }
@@ -320,7 +320,7 @@ async function appendExclusionRule(
       where: { id: profileId },
       data: {
         exclusionRules: {
-          negativeKeywords: [],
+          ...existingRules,
           excludedCompanies: [...new Set([...existingComp, displayName])].slice(0, MAX_EXCLUSIONS),
         } as object,
       },

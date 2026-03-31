@@ -108,12 +108,12 @@ export default function LoginPage() {
       setError("邮箱或密码错误");
       setLoading(false);
     } else {
+      // 登录成功，使用硬跳转强制刷新页面，让 middleware 正确检测认证状态
       if (isExternalRedirect) {
         await handleCrossDomainRedirect();
       } else {
         const targetPath = process.env.NEXT_PUBLIC_VIEW_MODE === "customer" ? "/customer/home" : "/dashboard";
-        router.push(targetPath);
-        router.refresh();
+        window.location.href = targetPath;
       }
     }
   }

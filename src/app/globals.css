@@ -683,12 +683,13 @@
   border-radius: var(--radius-md);
 }
 
-/* 模块顶栏 - 奶油色毛玻璃 */
+/* 模块顶栏 - 深蓝毛玻璃（与侧边栏一体化） */
 .module-header-bar {
-  background: rgba(247,243,232,0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border-cream);
+  background: rgba(11,18,32,0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(212,175,55,0.1);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.02), 0 4px 20px -4px rgba(0,0,0,0.4);
 }
 
 /* 深蓝底+金字按钮（模块通用主操作） */
@@ -705,3 +706,16 @@
   border-color: var(--border-gold);
   box-shadow: 0 2px 12px -2px rgba(212,175,55,0.2);
 }
+
+/* module-card hover + animations */
+.module-card { transition: border-color 200ms ease, box-shadow 200ms ease; }
+.module-card:hover { border-color: rgba(212,175,55,0.3); box-shadow: 0 4px 20px -4px rgba(212,175,55,0.12); }
+
+@keyframes slide-up-fade { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+.animate-slide-up { animation: slide-up-fade 0.4s cubic-bezier(0.16,1,0.3,1) both; }
+.animate-slide-up-delay-1 { animation: slide-up-fade 0.4s 0.06s cubic-bezier(0.16,1,0.3,1) both; }
+.animate-slide-up-delay-2 { animation: slide-up-fade 0.4s 0.12s cubic-bezier(0.16,1,0.3,1) both; }
+.animate-slide-up-delay-3 { animation: slide-up-fade 0.4s 0.18s cubic-bezier(0.16,1,0.3,1) both; }
+
+@keyframes gold-glow-pulse { 0%,100% { text-shadow: 0 0 8px rgba(212,175,55,0.3); } 50% { text-shadow: 0 0 16px rgba(212,175,55,0.6); } }
+.animate-gold-glow { animation: gold-glow-pulse 2.5s ease-in-out infinite; }

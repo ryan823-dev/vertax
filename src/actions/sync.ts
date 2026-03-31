@@ -4,7 +4,7 @@
  * Knowledge Sync Actions
  * 
  * 将知识引擎沉淀的认知（Company/Profile/Evidence/Guideline）联动到：
- * - 营销系统：生成 TopicCluster → ContentBrief → ContentDraft
+ * - 增长系统：生成 TopicCluster → ContentBrief → ContentDraft
  * - 获客雷达：生成 TargetingSpec → ChannelMap → Discovery Tasks
  * 
  * 所有产物使用 ArtifactVersion.content(JSON) 存储，不新增业务表
@@ -157,7 +157,7 @@ async function loadICPSegments(tenantId: string) {
 // ==================== Sync to Marketing ====================
 
 /**
- * 从知识引擎同步到营销系统
+ * 从知识引擎同步到增长系统
  * 
  * 流程：
  * 1. 加载 CompanyProfile + Personas + Evidence

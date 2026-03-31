@@ -1,122 +1,186 @@
 "use client";
 
 /**
- * 内容增长工作台顶部条
- * 
- * 包含：
- * - 左：页面标题 + 说明
- * - 中：5步 Growth Stepper（进度指示器）
- * - 右：主 CTA 按钮 + 知识引擎完成度
+ * 增长系统顶部工作台
+ *
+ * 深蓝金设计系统：#0B1220 背景 · #D4AF37 金色强调
+ * 7步 Stepper + StatCard + SecretaryPanel
  */
 
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { 
-  TrendingUp, Sparkles, CheckCircle2, Circle, AlertCircle, 
-  ChevronRight, Clock, Loader2, RefreshCw, Layers,
-  FileText, FileEdit, CheckSquare, Send,
-} from 'lucide-react';
-import type { StepState, StepStatus, GrowthPipelineCounts, PrimaryCTA } from '@/lib/marketing/growth-pipeline';
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import {
+  TrendingUp,
+  Sparkles,
+  CheckCircle2,
+  Circle,
+  AlertCircle,
+  ChevronRight,
+  Clock,
+  RefreshCw,
+  Layers,
+  FileText,
+  FileEdit,
+  CheckSquare,
+  Send,
+  BarChart3,
+  Globe,
+  ArrowRight,
+} from "lucide-react";
+import type {
+  StepState,
+  StepStatus,
+  GrowthPipelineCounts,
+  PrimaryCTA,
+} from "@/lib/marketing/growth-pipeline";
 
 // ============================================
-// 类型定义
+// 类型
 // ============================================
 
 interface GrowthHeaderProps {
-  /** 页面标题 */
   title: string;
-  /** 页面说明 */
   description: string;
-  /** 流水线步骤状态 */
   steps: StepState[];
-  /** 计数数据 */
   counts: GrowthPipelineCounts;
-  /** 当前步骤 (1-5) */
   currentStep: number;
-  /** 主 CTA 配置 */
   primaryCTA?: PrimaryCTA;
-  /** 是否正在刷新 */
   isRefreshing?: boolean;
-  /** 刷新回调 */
   onRefresh?: () => void;
 }
 
+// ============================================
 // 步骤图标映射
+// ============================================
+
 const STEP_ICONS: Record<string, React.ElementType> = {
   topics: Layers,
   briefs: FileText,
   drafts: FileEdit,
   verify: CheckSquare,
   publish: Send,
+  "seo-aeo": BarChart3,
+  geo: Globe,
 };
 
 // ============================================
-// Stepper 组件
+// 7-Step Stepper — 深蓝金版
 // ============================================
 
-function GrowthStepper({ 
-  steps, 
-  currentStep 
-}: { 
-  steps: StepState[]; 
+function GrowthStepper({
+  steps,
+  currentStep,
+}: {
+  steps: StepState[];
   currentStep: number;
 }) {
   const router = useRouter();
-  
-  const getStepIcon = (step: StepState, isCurrentStep: boolean) => {
-    const Icon = STEP_ICONS[step.key] || Circle;
-    
-    if (step.status === 'DONE') {
-      return <CheckCircle2 size={16} className="text-emerald-500" />;
-    }
-    if (step.status === 'BLOCKED') {
-      return <AlertCircle size={16} className="text-red-400" />;
-    }
-    if (isCurrentStep) {
-      return <Icon size={16} className="text-[#D4AF37]" />;
-    }
-    return <Icon size={16} className="text-slate-300" />;
+
+  const getNodeStyle = (
+    step: StepState,
+    isCurrent: boolean
+  ): { bg: string; border: string; shadow?: string } => {
+    if (step.status === "DONE")
+      return {
+        bg: "rgba(16,185,129,0.15)",
+        border: "1px solid rgba(16,185,129,0.5)",
+      };
+    if (step.status === "BLOCKED")
+      return {
+        bg: "rgba(239,68,68,0.12)",
+        border: "1px solid rgba(239,68,68,0.4)",
+      };
+    if (isCurrent)
+      return {
+        bg: "rgba(212,175,55,0.15)",
+        border: "1px solid rgba(212,175,55,0.6)",
+        shadow: "0 0 12px rgba(212,175,55,0.25)",
+      };
+    return {
+      bg: "rgba(255,255,255,0.05)",
+      border: "1px solid rgba(255,255,255,0.1)",
+    };
   };
 
-  const getStepTextColor = (status: StepStatus, isCurrentStep: boolean) => {
-    if (status === 'DONE') return 'text-emerald-600';
-    if (status === 'BLOCKED') return 'text-red-500';
-    if (isCurrentStep) return 'text-[#D4AF37] font-medium';
-    return 'text-slate-400';
+  const getIconColor = (step: StepState, isCurrent: boolean) => {
+    if (step.status === "DONE") return "text-emerald-400";
+    if (step.status === "BLOCKED") return "text-red-400";
+    if (isCurrent) return "text-[#D4AF37]";
+    return "text-slate-500";
+  };
+
+  const getLabelColor = (step: StepState, isCurrent: boolean) => {
+    if (step.status === "DONE") return "text-emerald-400";
+    if (step.status === "BLOCKED") return "text-red-400";
+    if (isCurrent) return "text-[#D4AF37] font-semibold";
+    return "text-slate-500";
   };
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-0.5">
       {steps.map((step, idx) => {
-        const isCurrentStep = idx + 1 === currentStep;
+        const isCurrent = idx + 1 === currentStep;
         const isLast = idx === steps.length - 1;
+        const Icon = STEP_ICONS[step.key] || Circle;
+        const nodeStyle = getNodeStyle(step, isCurrent);
 
         return (
           <div key={step.key} className="flex items-center">
-            {/* Step */}
+            {/* Step node */}
             <button
               onClick={() => router.push(step.href)}
-              className={`group flex items-center gap-1.5 px-2 py-1 rounded-lg transition-all hover:bg-[#F7F3EA] ${
-                isCurrentStep ? 'bg-[#F7F3EA]' : ''
-              }`}
+              className="group flex flex-col items-center gap-1 px-1.5 py-1 rounded-lg transition-all hover:scale-105"
               title={step.blocker || step.label}
             >
-              {getStepIcon(step, isCurrentStep)}
-              <span className={`text-[11px] whitespace-nowrap ${getStepTextColor(step.status, isCurrentStep)}`}>
+              <div
+                className="w-7 h-7 rounded-lg flex items-center justify-center transition-all"
+                style={{
+                  background: nodeStyle.bg,
+                  border: nodeStyle.border,
+                  boxShadow: nodeStyle.shadow,
+                }}
+              >
+                {step.status === "DONE" ? (
+                  <CheckCircle2 size={14} className="text-emerald-400" />
+                ) : step.status === "BLOCKED" ? (
+                  <AlertCircle size={14} className="text-red-400" />
+                ) : (
+                  <Icon size={14} className={getIconColor(step, isCurrent)} />
+                )}
+              </div>
+              <span
+                className={`text-[10px] whitespace-nowrap leading-none ${getLabelColor(step, isCurrent)}`}
+              >
                 {step.label}
               </span>
               {step.count !== undefined && step.count > 0 && (
-                <span className={`text-[10px] px-1 py-0.5 rounded ${
-                  step.status === 'DONE' ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-500'
-                }`}>
+                <span
+                  className="text-[9px] px-1 py-0.5 rounded-sm leading-none"
+                  style={{
+                    background:
+                      step.status === "DONE"
+                        ? "rgba(16,185,129,0.15)"
+                        : "rgba(212,175,55,0.12)",
+                    color:
+                      step.status === "DONE" ? "#34d399" : "#D4AF37",
+                  }}
+                >
                   {step.count}
                 </span>
               )}
             </button>
-            
-            {/* Connector */}
+
+            {/* Connector line */}
             {!isLast && (
-              <ChevronRight size={12} className="text-slate-300 mx-0.5" />
+              <div
+                className="w-5 h-px mt-[-14px]"
+                style={{
+                  background:
+                    step.status === "DONE"
+                      ? "rgba(16,185,129,0.4)"
+                      : "rgba(255,255,255,0.08)",
+                }}
+              />
             )}
           </div>
         );
@@ -126,29 +190,39 @@ function GrowthStepper({
 }
 
 // ============================================
-// 知识引擎完成度指示器
+// 知识引擎完成度徽章
 // ============================================
 
 function KnowledgeIndicator({ counts }: { counts: GrowthPipelineCounts }) {
-  const { knowledgeCompleteness, hasCompanyProfile, hasPersonas, hasEvidence } = counts;
-  
+  const { knowledgeCompleteness } = counts;
+
   if (knowledgeCompleteness >= 100) {
     return (
-      <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-50 text-emerald-600 rounded-lg text-[10px]">
+      <div
+        className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] text-emerald-400"
+        style={{
+          background: "rgba(16,185,129,0.1)",
+          border: "1px solid rgba(16,185,129,0.3)",
+        }}
+      >
         <CheckCircle2 size={12} />
-        知识引擎就绪
+        知识引擎 100%
       </div>
     );
   }
-  
+
   return (
-    <Link 
+    <Link
       href="/customer/knowledge"
-      className="flex items-center gap-1.5 px-2 py-1 bg-amber-50 text-amber-600 rounded-lg text-[10px] hover:bg-amber-100 transition-colors"
-      title={`企业档案: ${hasCompanyProfile ? '✓' : '✗'} | 买家画像: ${hasPersonas ? '✓' : '✗'} | 证据库: ${hasEvidence ? '✓' : '✗'}`}
+      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] text-amber-400 hover:opacity-80 transition-opacity"
+      style={{
+        background: "rgba(245,158,11,0.1)",
+        border: "1px solid rgba(245,158,11,0.3)",
+      }}
+      title={`企业档案: ${counts.hasCompanyProfile ? "✓" : "✗"} | 买家画像: ${counts.hasPersonas ? "✓" : "✗"} | 证据库: ${counts.hasEvidence ? "✓" : "✗"}`}
     >
       <AlertCircle size={12} />
-      知识引擎 {knowledgeCompleteness}%
+      知识 {knowledgeCompleteness}%
     </Link>
   );
 }
@@ -168,45 +242,75 @@ export function GrowthHeader({
   onRefresh,
 }: GrowthHeaderProps) {
   const formatDate = (date: Date | null) => {
-    if (!date) return '暂无记录';
-    const now = new Date();
-    const diff = now.getTime() - new Date(date).getTime();
+    if (!date) return "暂无记录";
+    const diff = Date.now() - new Date(date).getTime();
     const minutes = Math.floor(diff / 60000);
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
-    
-    if (minutes < 1) return '刚刚';
-    if (minutes < 60) return `${minutes} 分钟前`;
-    if (hours < 24) return `${hours} 小时前`;
-    if (days < 7) return `${days} 天前`;
-    return new Date(date).toLocaleDateString('zh-CN');
+    if (minutes < 1) return "刚刚";
+    if (minutes < 60) return `${minutes}m 前`;
+    if (hours < 24) return `${hours}h 前`;
+    if (days < 7) return `${days}d 前`;
+    return new Date(date).toLocaleDateString("zh-CN");
   };
 
   return (
-    <div className="module-header-bar px-5 py-3 sticky top-0 z-10">
+    <div
+      className="sticky top-0 z-20 px-6 py-3 border-b border-[rgba(212,175,55,0.15)]"
+      style={{
+        background:
+          "linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)",
+        boxShadow: "0 4px 24px -4px rgba(0,0,0,0.5)",
+      }}
+    >
+      {/* Subtle gold glow top edge */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: "1px",
+          background:
+            "linear-gradient(90deg, transparent, rgba(212,175,55,0.4) 40%, rgba(212,175,55,0.4) 60%, transparent)",
+          pointerEvents: "none",
+        }}
+      />
+
       <div className="flex items-center justify-between gap-4">
-        {/* Left: Title + Description */}
-        <div className="shrink-0">
-          <div className="flex items-center gap-2">
-            <TrendingUp size={20} className="text-[#D4AF37]" />
-            <h1 className="text-lg font-bold text-[#0B1B2B]">{title}</h1>
+        {/* Left: Icon + Title */}
+        <div className="shrink-0 flex items-center gap-2.5">
+          <div
+            className="w-8 h-8 rounded-lg flex items-center justify-center"
+            style={{
+              background: "rgba(212,175,55,0.12)",
+              border: "1px solid rgba(212,175,55,0.3)",
+            }}
+          >
+            <TrendingUp size={16} className="text-[#D4AF37]" />
           </div>
-          <p className="text-xs text-slate-500 ml-7">{description}</p>
+          <div>
+            <h1 className="text-sm font-bold text-white leading-none">
+              {title}
+            </h1>
+            <p className="text-[10px] text-slate-500 mt-0.5 leading-none">
+              {description}
+            </p>
+          </div>
         </div>
 
-        {/* Center: Stepper */}
-        <div className="flex-1 flex justify-center">
+        {/* Center: 7-Step Stepper */}
+        <div className="flex-1 flex justify-center overflow-hidden">
           <GrowthStepper steps={steps} currentStep={currentStep} />
         </div>
 
-        {/* Right: CTA + Meta */}
-        <div className="shrink-0 flex items-center gap-3">
-          {/* Knowledge Indicator */}
+        {/* Right: Knowledge + time + refresh + CTA */}
+        <div className="shrink-0 flex items-center gap-2">
           <KnowledgeIndicator counts={counts} />
-          
-          {/* Last Update Time + Refresh */}
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 text-[10px] text-slate-400">
+
+          {/* Last update + refresh */}
+          <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 text-[10px] text-slate-600">
               <Clock size={10} />
               <span>{formatDate(counts.lastUpdatedAt)}</span>
             </div>
@@ -214,10 +318,13 @@ export function GrowthHeader({
               <button
                 onClick={onRefresh}
                 disabled={isRefreshing}
-                className="p-1 hover:bg-slate-100 rounded transition-colors disabled:opacity-50"
+                className="p-1 rounded hover:bg-white/5 transition-colors disabled:opacity-40"
                 title="刷新状态"
               >
-                <RefreshCw size={12} className={`text-slate-400 ${isRefreshing ? 'animate-spin' : ''}`} />
+                <RefreshCw
+                  size={11}
+                  className={`text-slate-500 ${isRefreshing ? "animate-spin" : ""}`}
+                />
               </button>
             )}
           </div>
@@ -227,20 +334,32 @@ export function GrowthHeader({
             <div className="relative">
               <Link
                 href={primaryCTA.href}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${
                   primaryCTA.disabled
-                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed pointer-events-none'
-                    : 'bg-[#0B1B2B] text-[#D4AF37] hover:bg-[#10263B] hover:shadow-lg hover:shadow-[#D4AF37]/10'
+                    ? "bg-white/5 text-slate-500 cursor-not-allowed pointer-events-none"
+                    : "text-[#0B1220] hover:opacity-90 hover:shadow-lg"
                 }`}
+                style={
+                  primaryCTA.disabled
+                    ? {}
+                    : {
+                        background: "#D4AF37",
+                        boxShadow: "0 2px 12px -2px rgba(212,175,55,0.4)",
+                      }
+                }
                 onClick={(e) => primaryCTA.disabled && e.preventDefault()}
               >
-                <Sparkles size={16} />
+                <Sparkles size={13} />
                 {primaryCTA.label}
               </Link>
-              
-              {/* Disabled Reason Tooltip */}
               {primaryCTA.disabled && primaryCTA.disabledReason && (
-                <div className="absolute top-full mt-1 right-0 px-2 py-1 bg-slate-100 text-slate-500 text-[10px] rounded whitespace-nowrap border border-slate-200">
+                <div
+                  className="absolute top-full mt-1.5 right-0 px-2 py-1 rounded text-[10px] text-slate-400 whitespace-nowrap z-30"
+                  style={{
+                    background: "#0B1220",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                  }}
+                >
                   {primaryCTA.disabledReason}
                 </div>
               )}
@@ -253,7 +372,7 @@ export function GrowthHeader({
 }
 
 // ============================================
-// 统计卡片组件
+// StatCard — 深蓝金版
 // ============================================
 
 interface GrowthStatCardProps {
@@ -263,43 +382,89 @@ interface GrowthStatCardProps {
   href?: string;
   highlight?: boolean;
   subValue?: string;
+  trend?: "up" | "down" | "neutral";
 }
 
-export function GrowthStatCard({ 
-  label, 
-  value, 
-  icon, 
-  href, 
+export function GrowthStatCard({
+  label,
+  value,
+  icon,
+  href,
   highlight = false,
   subValue,
 }: GrowthStatCardProps) {
   const content = (
-    <div className={`p-4 rounded-xl border transition-all ${
-      highlight 
-        ? 'bg-[#F7F3E8] border-[#E8E0D0] hover:border-[#D4AF37]' 
-        : 'bg-[#FFFCF7] border-[#E8E0D0] hover:border-[#D4AF37]/50'
-    } ${href ? 'cursor-pointer hover:shadow-md' : ''}`}>
+    <div
+      className={`p-4 rounded-xl transition-all group ${
+        href ? "cursor-pointer hover:scale-[1.01]" : ""
+      }`}
+      style={{
+        background: highlight
+          ? "linear-gradient(135deg, #0B1220 0%, #0A1018 70%, #0D1525 100%)"
+          : "#FFFCF7",
+        border: highlight
+          ? "1px solid rgba(212,175,55,0.3)"
+          : "1px solid #E8E0D0",
+        boxShadow: highlight
+          ? "0 4px 24px -4px rgba(0,0,0,0.3)"
+          : undefined,
+      }}
+    >
       <div className="flex items-start justify-between mb-2">
-        <div className={`p-2 rounded-lg ${highlight ? 'bg-white' : 'bg-slate-50'}`}>
+        <div
+          className="p-2 rounded-lg"
+          style={{
+            background: highlight
+              ? "rgba(212,175,55,0.12)"
+              : "rgba(11,18,32,0.06)",
+            border: highlight
+              ? "1px solid rgba(212,175,55,0.25)"
+              : "1px solid rgba(11,18,32,0.06)",
+          }}
+        >
           {icon}
         </div>
+        {href && (
+          <ArrowRight
+            size={12}
+            className={`transition-colors ${
+              highlight
+                ? "text-[#D4AF37] opacity-40 group-hover:opacity-100"
+                : "text-slate-300 group-hover:text-[#D4AF37]"
+            }`}
+          />
+        )}
       </div>
-      <div className="text-2xl font-bold text-[#0B1B2B] mb-0.5">{value}</div>
-      <div className="text-xs text-slate-500">{label}</div>
+      <div
+        className={`text-2xl font-bold mb-0.5 ${
+          highlight ? "text-[#D4AF37]" : "text-[#0B1B2B]"
+        }`}
+      >
+        {value}
+      </div>
+      <div
+        className={`text-xs ${highlight ? "text-slate-400" : "text-slate-500"}`}
+      >
+        {label}
+      </div>
       {subValue && (
-        <div className="text-[10px] text-slate-400 mt-1">{subValue}</div>
+        <div
+          className={`text-[10px] mt-1 ${
+            highlight ? "text-slate-500" : "text-slate-400"
+          }`}
+        >
+          {subValue}
+        </div>
       )}
     </div>
   );
 
-  if (href) {
-    return <Link href={href}>{content}</Link>;
-  }
+  if (href) return <Link href={href}>{content}</Link>;
   return content;
 }
 
 // ============================================
-// 秘书催办栏组件
+// SecretaryPanel — 深蓝金版待办栏
 // ============================================
 
 interface SecretaryPanelProps {
@@ -307,132 +472,144 @@ interface SecretaryPanelProps {
 }
 
 export function GrowthSecretaryPanel({ counts }: SecretaryPanelProps) {
+  type ItemType = "warning" | "info" | "action";
   const items: Array<{
-    type: 'warning' | 'info' | 'action';
+    type: ItemType;
     title: string;
     description: string;
     href?: string;
   }> = [];
 
-  // 待处理简报
-  if (counts.briefsDraft > 0) {
+  if (counts.briefsDraft > 0)
     items.push({
-      type: 'action',
+      type: "action",
       title: `${counts.briefsDraft} 个简报待完善`,
-      description: '草稿状态的简报需要补充信息',
-      href: '/customer/marketing/briefs?status=draft',
+      description: "草稿状态的简报需要补充信息",
+      href: "/customer/marketing/briefs?status=draft",
     });
-  }
 
-  // 就绪简报待生成草稿
-  if (counts.briefsReady > 0) {
+  if (counts.briefsReady > 0)
     items.push({
-      type: 'action',
-      title: `${counts.briefsReady} 个简报待生成`,
-      description: '已就绪的简报可以生成内容草稿',
-      href: '/customer/marketing/briefs?status=ready',
+      type: "action",
+      title: `${counts.briefsReady} 个简报可生成内容包`,
+      description: "点击「一键生成」产出 SEO+GEO 四合一内容",
+      href: "/customer/marketing/briefs?status=ready",
     });
-  }
 
-  // 缺证据内容
-  if (counts.missingProofCount > 0) {
+  if (counts.missingProofCount > 0)
     items.push({
-      type: 'warning',
+      type: "warning",
       title: `${counts.missingProofCount} 条内容缺证据`,
-      description: '请补充证据引用以增强可信度',
-      href: '/customer/marketing/contents',
+      description: "请补充证据引用以增强可信度",
+      href: "/customer/marketing/contents",
     });
-  }
 
-  // 待发布草稿
-  if (counts.draftsPending > 0) {
+  if (counts.draftsPending > 0)
     items.push({
-      type: 'info',
+      type: "info",
       title: `${counts.draftsPending} 个草稿待发布`,
-      description: '完成审核后可创建发布包',
-      href: '/customer/marketing/contents?status=draft',
+      description: "完成审核后可创建发布包",
+      href: "/customer/marketing/contents?status=draft",
     });
-  }
 
-  // 待审核发布包
-  if (counts.publishPacksPending > 0) {
+  if (counts.publishPacksPending > 0)
     items.push({
-      type: 'action',
+      type: "action",
       title: `${counts.publishPacksPending} 个发布包待审核`,
-      description: '审核通过后可发布到目标渠道',
-      href: '/customer/marketing/strategy',
+      description: "审核通过后可发布到目标渠道",
+      href: "/customer/marketing/strategy",
     });
-  }
 
-  // 知识引擎未完成
-  if (counts.knowledgeCompleteness < 100) {
+  if (counts.knowledgeCompleteness < 100)
     items.push({
-      type: 'warning',
-      title: '知识引擎未完善',
-      description: '完善知识引擎可提升内容质量',
-      href: '/customer/knowledge',
+      type: "warning",
+      title: "知识引擎未完善",
+      description: "完善知识引擎可提升内容质量",
+      href: "/customer/knowledge",
     });
-  }
 
-  // 没有任何待办
-  if (items.length === 0) {
+  if (items.length === 0)
     items.push({
-      type: 'info',
-      title: '一切顺利',
-      description: '内容增长流程运行正常',
+      type: "info",
+      title: "一切顺利",
+      description: "内容增长流程运行正常",
     });
-  }
+
+  const TYPE_CONFIG: Record<
+    ItemType,
+    { iconColor: string; Icon: React.ElementType; dotBg: string }
+  > = {
+    warning: {
+      iconColor: "text-amber-400",
+      Icon: AlertCircle,
+      dotBg: "rgba(245,158,11,0.15)",
+    },
+    action: {
+      iconColor: "text-[#D4AF37]",
+      Icon: Sparkles,
+      dotBg: "rgba(212,175,55,0.12)",
+    },
+    info: {
+      iconColor: "text-slate-400",
+      Icon: CheckCircle2,
+      dotBg: "rgba(255,255,255,0.06)",
+    },
+  };
 
   return (
-    <div className="module-card overflow-hidden">
-      <div className="px-4 py-3 border-b border-[#E8E0D0] bg-[#F7F3E8]">
-        <h3 className="text-sm font-medium text-[#0B1B2B]">待办事项</h3>
+    <div
+      className="rounded-xl overflow-hidden"
+      style={{
+        background:
+          "linear-gradient(135deg, #0B1220 0%, #0A1018 70%, #0D1525 100%)",
+        border: "1px solid rgba(212,175,55,0.15)",
+        boxShadow: "0 4px 24px -4px rgba(0,0,0,0.3)",
+      }}
+    >
+      <div
+        className="px-4 py-3 border-b border-[rgba(212,175,55,0.12)]"
+        style={{ background: "rgba(212,175,55,0.04)" }}
+      >
+        <h3 className="text-xs font-semibold text-[#D4AF37] uppercase tracking-wider">
+          待办事项
+        </h3>
       </div>
-      <div className="divide-y divide-[#E8E0D0]">
-        {items.map((item, idx) => (
-          <div key={idx} className="p-3">
-            {item.href ? (
-              <Link href={item.href} className="block group">
-                <div className="flex items-start gap-2">
-                  <div className={`mt-0.5 ${
-                    item.type === 'warning' ? 'text-amber-500' :
-                    item.type === 'action' ? 'text-blue-500' :
-                    'text-slate-400'
-                  }`}>
-                    {item.type === 'warning' ? <AlertCircle size={14} /> :
-                     item.type === 'action' ? <Circle size={14} className="fill-current" /> :
-                     <CheckCircle2 size={14} />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-[#0B1B2B] group-hover:text-[#D4AF37] transition-colors">
-                      {item.title}
-                    </div>
-                    <div className="text-xs text-slate-500 mt-0.5 line-clamp-2">
-                      {item.description}
-                    </div>
-                  </div>
-                  <ChevronRight size={14} className="text-slate-300 group-hover:text-[#D4AF37] transition-colors mt-0.5" />
+      <div className="divide-y divide-[rgba(255,255,255,0.06)]">
+        {items.map((item, idx) => {
+          const cfg = TYPE_CONFIG[item.type];
+          const Icon = cfg.Icon;
+          const inner = (
+            <div className="flex items-start gap-3 p-3 group">
+              <div
+                className="mt-0.5 w-6 h-6 rounded-md flex items-center justify-center shrink-0"
+                style={{ background: cfg.dotBg }}
+              >
+                <Icon size={12} className={cfg.iconColor} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-medium text-slate-200 group-hover:text-[#D4AF37] transition-colors">
+                  {item.title}
                 </div>
-              </Link>
-            ) : (
-              <div className="flex items-start gap-2">
-                <div className={`mt-0.5 ${
-                  item.type === 'warning' ? 'text-amber-500' :
-                  item.type === 'action' ? 'text-blue-500' :
-                  'text-slate-400'
-                }`}>
-                  {item.type === 'warning' ? <AlertCircle size={14} /> :
-                   item.type === 'action' ? <Circle size={14} className="fill-current" /> :
-                   <CheckCircle2 size={14} />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-[#0B1B2B]">{item.title}</div>
-                  <div className="text-xs text-slate-500 mt-0.5 line-clamp-2">{item.description}</div>
+                <div className="text-[10px] text-slate-500 mt-0.5 line-clamp-2">
+                  {item.description}
                 </div>
               </div>
-            )}
-          </div>
-        ))}
+              {item.href && (
+                <ChevronRight
+                  size={12}
+                  className="text-slate-600 group-hover:text-[#D4AF37] transition-colors mt-0.5 shrink-0"
+                />
+              )}
+            </div>
+          );
+          return item.href ? (
+            <Link key={idx} href={item.href}>
+              {inner}
+            </Link>
+          ) : (
+            <div key={idx}>{inner}</div>
+          );
+        })}
       </div>
     </div>
   );

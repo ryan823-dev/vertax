@@ -221,7 +221,7 @@ export async function analyzeAssets(
     },
   });
 
-  revalidatePath("/zh-CN/knowledge");
+  revalidatePath("/customer/knowledge/company");
 
   return {
     id: profile.id,
@@ -303,7 +303,7 @@ export async function updateCompanyProfile(
     update: updateData,
   });
 
-  revalidatePath("/zh-CN/knowledge");
+  revalidatePath("/customer/knowledge/company");
 
   return {
     id: profile.id,

@@ -49,7 +49,7 @@ export interface ProgressStripProps {
  * 2x3网格展示六大核心系统的健康状态
  * - 知识引擎
  * - 获客雷达
- * - 营销系统
+ * - 增长系统
  * - 声量枢纽
  * - 推进中台
  * - AI中枢
@@ -59,7 +59,7 @@ export interface ProgressStripProps {
 export const defaultSystems: Omit<SystemProgress, 'progress' | 'progressLabel' | 'status' | 'statusLabel'>[] = [
   { id: 'knowledge', name: '知识引擎', icon: Library, href: '/customer/knowledge' },
   { id: 'radar', name: '获客雷达', icon: Radar, href: '/customer/radar' },
-  { id: 'marketing', name: '营销系统', icon: BarChart3, href: '/customer/marketing' },
+  { id: 'marketing', name: '增长系统', icon: BarChart3, href: '/customer/marketing' },
   { id: 'social', name: '声量枢纽', icon: Globe, href: '/customer/social' },
   { id: 'hub', name: '推进中台', icon: ClipboardList, href: '/customer/hub' },
   { id: 'ai', name: 'AI 中枢', icon: Brain, href: '/customer/ai' },

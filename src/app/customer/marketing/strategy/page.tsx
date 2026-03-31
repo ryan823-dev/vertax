@@ -356,7 +356,7 @@ export default function MarketingStrategyPage() {
           </div>
           <h3 className="text-lg font-bold text-slate-200 mb-2">尚未生成主题集群</h3>
           <p className="text-sm text-slate-400 mb-6">
-            请先在知识引擎完善企业认知，然后点击「同步到营销系统」自动生成
+            请先在知识引擎完善企业认知，然后点击「同步到增长系统」自动生成
           </p>
           <Link
             href="/customer/knowledge/company"

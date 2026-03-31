@@ -323,6 +323,13 @@ async function processCandidate(
     : undefined;
 
   // 条款B: upsert 避免竞态，使用 sourceId_externalId 复合键
+  // P1-3: externalId 为空时生成 fallback，防止 unique key 碰撞导致数据覆盖
+  if (!item.externalId) {
+    const rawKey = (item.displayName + '::' + item.sourceUrl).toLowerCase().replace(/\s+/g, '-');
+    const hash = Buffer.from(rawKey).toString('base64url').slice(0, 48);
+    item = { ...item, externalId: 'fallback-' + hash };
+  }
+
   const result = await prisma.radarCandidate.upsert({
     where: {
       sourceId_externalId: {

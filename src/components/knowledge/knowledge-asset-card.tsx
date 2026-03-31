@@ -1,22 +1,22 @@
 "use client";
 
 import { useState } from 'react';
-import { FileText, FileSpreadsheet, Presentation, Play, Eye, RotateCw, Loader2 } from 'lucide-react';
+import { FileText, FileSpreadsheet, Presentation, Play, Eye, RotateCw, Loader2, File } from 'lucide-react';
 import { ProcessingStatusBadge } from './processing-status-badge';
 import { triggerAssetProcessing } from '@/actions/assets';
 import type { AssetWithProcessingStatus } from '@/types/assets';
 
 function getFileIcon(mimeType: string) {
   if (mimeType.includes('pdf') || mimeType.includes('word') || mimeType.startsWith('text/')) {
-    return { icon: FileText, color: 'text-blue-500', bg: 'bg-blue-50' };
+    return { icon: FileText, color: '#3B82F6', bg: 'rgba(59,130,246,0.1)', border: 'rgba(59,130,246,0.2)' };
   }
   if (mimeType.includes('spreadsheet') || mimeType.includes('excel') || mimeType.includes('csv')) {
-    return { icon: FileSpreadsheet, color: 'text-emerald-500', bg: 'bg-emerald-50' };
+    return { icon: FileSpreadsheet, color: '#22C55E', bg: 'rgba(34,197,94,0.1)', border: 'rgba(34,197,94,0.2)' };
   }
   if (mimeType.includes('presentation') || mimeType.includes('powerpoint')) {
-    return { icon: Presentation, color: 'text-orange-500', bg: 'bg-orange-50' };
+    return { icon: Presentation, color: '#F97316', bg: 'rgba(249,115,22,0.1)', border: 'rgba(249,115,22,0.2)' };
   }
-  return { icon: FileText, color: 'text-slate-400', bg: 'bg-slate-50' };
+  return { icon: File, color: '#94A3B8', bg: 'rgba(148,163,184,0.1)', border: 'rgba(148,163,184,0.2)' };
 }
 
 function formatSize(bytes: number | bigint) {
@@ -51,24 +51,52 @@ export function KnowledgeAssetCard({ asset, onViewChunks, onProcessingUpdate }: 
   };
 
   return (
-    <div className="p-4 border border-[#E7E0D3] rounded-xl bg-[#FFFCF6] hover:border-[#D4AF37]/40 transition-all group">
+    <div
+      className="p-4 rounded-xl transition-all group"
+      style={{
+        background: '#FFFCF6',
+        border: '1px solid #E7E0D3',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.borderColor = 'rgba(212,175,55,0.4)';
+        e.currentTarget.style.boxShadow = '0 4px 16px -4px rgba(212,175,55,0.15)';
+        e.currentTarget.style.transform = 'translateY(-1px)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.borderColor = '#E7E0D3';
+        e.currentTarget.style.boxShadow = '';
+        e.currentTarget.style.transform = '';
+      }}
+    >
       <div className="flex items-start gap-3">
-        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${fileIcon.bg} shrink-0`}>
-          <Icon size={20} className={fileIcon.color} />
+        {/* File type icon */}
+        <div
+          className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
+          style={{ background: fileIcon.bg, border: `1px solid ${fileIcon.border}` }}
+        >
+          <Icon size={20} style={{ color: fileIcon.color }} />
         </div>
+
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <p className="text-sm font-medium text-[#0B1B2B] truncate">{asset.originalName}</p>
+            <p className="text-sm font-semibold truncate" style={{ color: '#0B1B2B' }}>
+              {asset.originalName}
+            </p>
             <ProcessingStatusBadge status={status} size="xs" />
           </div>
-          <div className="flex items-center gap-2 text-[10px] text-slate-400">
+          <div className="flex items-center gap-2 text-[10px]" style={{ color: '#94A3B8' }}>
             <span>{formatSize(asset.fileSize)}</span>
-            <span>·</span>
+            <span style={{ color: '#CBD5E1' }}>·</span>
             <span>{new Date(asset.createdAt).toLocaleDateString('zh-CN')}</span>
             {asset.processingMeta.chunkCount !== undefined && (
               <>
-                <span>·</span>
-                <span>{asset.processingMeta.chunkCount} 片段</span>
+                <span style={{ color: '#CBD5E1' }}>·</span>
+                <span
+                  className="px-1.5 py-0.5 rounded font-medium"
+                  style={{ background: 'rgba(212,175,55,0.08)', color: '#D4AF37' }}
+                >
+                  {asset.processingMeta.chunkCount} 片段
+                </span>
               </>
             )}
           </div>
@@ -76,12 +104,19 @@ export function KnowledgeAssetCard({ asset, onViewChunks, onProcessingUpdate }: 
       </div>
 
       {/* Action buttons */}
-      <div className="flex items-center gap-2 mt-3">
-        {status === 'unprocessed' || status === 'failed' ? (
+      <div className="flex items-center gap-2 mt-3 pt-3" style={{ borderTop: '1px solid #EDE8DF' }}>
+        {(status === 'unprocessed' || status === 'failed') && (
           <button
             onClick={handleProcess}
             disabled={isProcessing}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#0B1B2B] bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded-lg hover:bg-[#D4AF37]/20 transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
+            style={{
+              background: 'rgba(212,175,55,0.08)',
+              color: '#0B1B2B',
+              border: '1px solid rgba(212,175,55,0.25)',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(212,175,55,0.15)')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(212,175,55,0.08)')}
           >
             {isProcessing ? (
               <Loader2 size={12} className="animate-spin" />
@@ -90,14 +125,27 @@ export function KnowledgeAssetCard({ asset, onViewChunks, onProcessingUpdate }: 
             ) : (
               <Play size={12} />
             )}
-            {isProcessing ? '处理中...' : status === 'failed' ? '重试' : '处理'}
+            {isProcessing ? '处理中...' : status === 'failed' ? '重试' : '开始处理'}
           </button>
-        ) : null}
+        )}
 
         {status === 'ready' && (
           <button
             onClick={() => onViewChunks(asset.id, asset.originalName)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#0B1B2B] bg-[#F7F3EA] border border-[#E7E0D3] rounded-lg hover:bg-[#E7E0D3] transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors"
+            style={{
+              background: '#F0EBD8',
+              color: '#4A5568',
+              border: '1px solid #E7E0D3',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#E8E0D0';
+              e.currentTarget.style.color = '#0B1B2B';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = '#F0EBD8';
+              e.currentTarget.style.color = '#4A5568';
+            }}
           >
             <Eye size={12} />
             查看文本
@@ -105,14 +153,21 @@ export function KnowledgeAssetCard({ asset, onViewChunks, onProcessingUpdate }: 
         )}
 
         {status === 'processing' && (
-          <span className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-blue-500">
+          <span
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg"
+            style={{ background: 'rgba(59,130,246,0.06)', color: '#3B82F6' }}
+          >
             <Loader2 size={12} className="animate-spin" />
             正在提取文本...
           </span>
         )}
 
         {status === 'failed' && asset.processingMeta.processingError && (
-          <span className="text-[10px] text-red-400 truncate max-w-[200px]" title={asset.processingMeta.processingError}>
+          <span
+            className="text-[10px] truncate max-w-[200px]"
+            style={{ color: '#EF4444' }}
+            title={asset.processingMeta.processingError}
+          >
             {asset.processingMeta.processingError}
           </span>
         )}

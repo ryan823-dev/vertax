@@ -387,33 +387,41 @@ export default function RadarPage() {
             <div className="col-span-8 space-y-6">
               {/* B) Daily Brief Stats */}
               <div className="grid grid-cols-4 gap-4">
-                <StatCard
-                  label="本周新增"
-                  value={counts.candidatesNew7d}
-                  icon={<Zap size={18} className="text-blue-500" />}
-                  href="/customer/radar/candidates?period=7d"
-                  highlight={counts.candidatesNew7d > 0}
-                />
-                <StatCard
-                  label="高质量候选"
-                  value={counts.candidatesQualifiedAB7d}
-                  icon={<TrendingUp size={18} className="text-emerald-500" />}
-                  href="/customer/radar/candidates?tier=A,B"
-                  highlight={counts.candidatesQualifiedAB7d > 0}
-                />
-                <StatCard
-                  label="待审核"
-                  value={counts.pendingReviewCount}
-                  icon={<FileSearch size={18} className="text-amber-500" />}
-                  href="/customer/radar/candidates?status=NEW"
-                  highlight={counts.pendingReviewCount > 0}
-                />
-                <StatCard
-                  label="已导入"
-                  value={counts.candidatesImported7d}
-                  icon={<CheckCircle2 size={18} className="text-[#D4AF37]" />}
-                  href="/customer/radar/prospects"
-                />
+                <div className="animate-slide-up">
+                  <StatCard
+                    label="本周新增"
+                    value={counts.candidatesNew7d}
+                    icon={<Zap size={18} className="text-blue-500" />}
+                    href="/customer/radar/candidates?period=7d"
+                    highlight={counts.candidatesNew7d > 0}
+                  />
+                </div>
+                <div className="animate-slide-up-delay-1">
+                  <StatCard
+                    label="高质量候选"
+                    value={counts.candidatesQualifiedAB7d}
+                    icon={<TrendingUp size={18} className="text-emerald-500" />}
+                    href="/customer/radar/candidates?tier=A,B"
+                    highlight={counts.candidatesQualifiedAB7d > 0}
+                  />
+                </div>
+                <div className="animate-slide-up-delay-2">
+                  <StatCard
+                    label="待审核"
+                    value={counts.pendingReviewCount}
+                    icon={<FileSearch size={18} className="text-amber-500" />}
+                    href="/customer/radar/candidates?status=NEW"
+                    highlight={counts.pendingReviewCount > 0}
+                  />
+                </div>
+                <div className="animate-slide-up-delay-3">
+                  <StatCard
+                    label="已导入"
+                    value={counts.candidatesImported7d}
+                    icon={<CheckCircle2 size={18} className="text-[#D4AF37]" />}
+                    href="/customer/radar/prospects"
+                  />
+                </div>
               </div>
 
               {/* Module Quick Access */}

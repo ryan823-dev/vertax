@@ -13,7 +13,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, request) {
         if (!credentials?.email || !credentials?.password) {
           return null;
         }
@@ -46,9 +46,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           email: user.email,
           name: user.name,
           image: user.image,
-          tenantId: user.tenantId,
-          tenantName: user.tenant.name,
-          tenantSlug: user.tenant.slug,
+          tenantId: user.tenantId ?? undefined,
+          tenantName: user.tenant?.name ?? '',
+          tenantSlug: user.tenant?.slug ?? '',
           roleId: user.roleId,
           roleName: user.role.name,
           permissions: user.role.permissions as string[],

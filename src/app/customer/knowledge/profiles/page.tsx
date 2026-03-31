@@ -7,13 +7,14 @@
  * - 集成 EngineHeader + Stepper
  * - 输入来源提示（依赖企业档案）
  * - 明确前置条件
+ * - 弹窗深色毛玻璃、CTA金渐变、删除确认、错误toast
  */
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
   Plus, Loader2, Users2, Trash2, Sparkles, ChevronRight, MessageSquare,
-  Building2, AlertCircle, Radar, RefreshCw, Settings,
+  Building2, AlertCircle, Radar, RefreshCw, Settings, X,
 } from 'lucide-react';
 import {
   getICPSegments, createICPSegment, deleteICPSegment,
@@ -22,9 +23,17 @@ import {
   generatePersonasFromProfile,
 } from '@/actions/personas';
 import { getKnowledgePipelineStatus } from '@/actions/pipeline';
-import { EngineHeader } from '@/components/knowledge/engine-header';
+import { EngineHeader, NextStepBanner } from '@/components/knowledge/engine-header';
 import type { ICPSegmentData, PersonaData, MessagingMatrixData, CreatePersonaInput } from '@/types/knowledge';
 import type { PipelineStatus } from '@/lib/knowledge/pipeline';
+
+// Dark dialog wrapper styles
+const DIALOG_OVERLAY: React.CSSProperties = { background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' };
+const DIALOG_PANEL: React.CSSProperties = { background: '#0F1728', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 24px 64px -12px rgba(0,0,0,0.6)' };
+const DIALOG_LABEL: React.CSSProperties = { color: 'rgba(255,255,255,0.35)', fontSize: '10px', fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: '0.05em' };
+const DIALOG_INPUT: React.CSSProperties = { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' };
+const DIALOG_CANCEL: React.CSSProperties = { color: 'rgba(255,255,255,0.5)', border: '1px solid rgba(255,255,255,0.1)' };
+const DIALOG_CONFIRM: React.CSSProperties = { background: 'linear-gradient(135deg, #D4AF37 0%, #C4A028 100%)', color: '#0B1220', boxShadow: '0 2px 12px -2px rgba(212,175,55,0.4)' };
 
 export default function ProfilesPage() {
   // Pipeline status
@@ -54,10 +63,21 @@ export default function ProfilesPage() {
   // Auto-generate state
   const [isAutoGenerating, setIsAutoGenerating] = useState(false);
   const [showOverwriteConfirm, setShowOverwriteConfirm] = useState(false);
-  const [autoGenMessage, setAutoGenMessage] = useState<string | null>(null);
+
+  // Delete confirmation
+  const [deleteTarget, setDeleteTarget] = useState<{ type: 'segment' | 'persona'; id: string; name: string } | null>(null);
 
   // Sync to radar
   const [isSyncing, setIsSyncing] = useState(false);
+
+  // Toast
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(null), 4000);
+    return () => clearTimeout(timer);
+  }, [toast]);
 
   // Load pipeline status
   const loadPipelineStatus = useCallback(async () => {
@@ -65,7 +85,7 @@ export default function ProfilesPage() {
       const status = await getKnowledgePipelineStatus();
       setPipelineStatus(status);
     } catch {
-      // silent
+      // Pipeline status is non-critical
     }
   }, []);
 
@@ -76,7 +96,9 @@ export default function ProfilesPage() {
       const data = await getICPSegments();
       setSegments(data);
       if (data.length > 0 && !selectedSegmentId) setSelectedSegmentId(data[0].id);
-    } catch { /* silent */ } finally { setIsLoading(false); }
+    } catch {
+      setToast({ message: '加载细分市场失败', type: 'error' });
+    } finally { setIsLoading(false); }
   }, []);
 
   const loadPersonas = useCallback(async () => {
@@ -84,7 +106,9 @@ export default function ProfilesPage() {
     try {
       const data = await getPersonasBySegment(selectedSegmentId);
       setPersonas(data);
-    } catch { /* silent */ }
+    } catch {
+      setToast({ message: '加载买家角色失败', type: 'error' });
+    }
   }, [selectedSegmentId]);
 
   const loadMatrix = useCallback(async () => {
@@ -93,8 +117,27 @@ export default function ProfilesPage() {
     try {
       const data = await getMessagingMatrix(selectedPersonaId);
       setMatrix(data);
-    } catch { /* silent */ } finally { setIsLoadingMatrix(false); }
+    } catch {
+      setToast({ message: '加载信息矩阵失败', type: 'error' });
+    } finally { setIsLoadingMatrix(false); }
   }, [selectedPersonaId]);
+
+  // P1-2: Pipeline 状态轮询 — AI 任务后台运行期间每 4s 刷新 stepper 进度
+  const startPipelinePolling = useCallback((initialStep: number, maxSeconds = 90) => {
+    const deadline = Date.now() + maxSeconds * 1000;
+    const interval = setInterval(async () => {
+      if (Date.now() >= deadline) { clearInterval(interval); return; }
+      try {
+        const status = await getKnowledgePipelineStatus();
+        setPipelineStatus(status);
+        if (status.currentStep > initialStep || status.currentStep >= status.steps.length - 1) {
+          clearInterval(interval);
+          loadSegments();
+        }
+      } catch { /* 静默 */ }
+    }, 4000);
+    return interval;
+  }, [loadSegments]);
 
   useEffect(() => { 
     loadPipelineStatus();
@@ -105,35 +148,62 @@ export default function ProfilesPage() {
 
   const handleCreateSegment = async () => {
     if (!segmentName) return;
-    await createICPSegment({ name: segmentName, industry: segmentIndustry || undefined });
-    setShowCreateSegment(false);
-    setSegmentName('');
-    setSegmentIndustry('');
-    loadSegments();
-    loadPipelineStatus();
+    try {
+      await createICPSegment({ name: segmentName, industry: segmentIndustry || undefined });
+      setShowCreateSegment(false);
+      setSegmentName('');
+      setSegmentIndustry('');
+      loadSegments();
+      loadPipelineStatus();
+      setToast({ message: '细分市场已创建', type: 'success' });
+    } catch {
+      setToast({ message: '创建细分市场失败', type: 'error' });
+    }
   };
 
   const handleDeleteSegment = async (id: string) => {
-    await deleteICPSegment(id);
-    if (selectedSegmentId === id) setSelectedSegmentId(null);
-    loadSegments();
-    loadPipelineStatus();
+    try {
+      await deleteICPSegment(id);
+      if (selectedSegmentId === id) setSelectedSegmentId(null);
+      loadSegments();
+      loadPipelineStatus();
+      setToast({ message: '细分市场已删除', type: 'success' });
+    } catch {
+      setToast({ message: '删除细分市场失败', type: 'error' });
+    }
   };
 
   const handleCreatePersona = async () => {
     if (!personaForm.name || !personaForm.title) return;
-    await createPersona({ ...personaForm, segmentId: selectedSegmentId || undefined });
-    setShowCreatePersona(false);
-    setPersonaForm({ name: '', title: '' });
-    loadPersonas();
-    loadPipelineStatus();
+    try {
+      await createPersona({ ...personaForm, segmentId: selectedSegmentId || undefined });
+      setShowCreatePersona(false);
+      setPersonaForm({ name: '', title: '' });
+      loadPersonas();
+      loadPipelineStatus();
+      setToast({ message: '买家角色已创建', type: 'success' });
+    } catch {
+      setToast({ message: '创建买家角色失败', type: 'error' });
+    }
   };
 
   const handleDeletePersona = async (id: string) => {
-    await deletePersona(id);
-    if (selectedPersonaId === id) { setSelectedPersonaId(null); setMatrix([]); }
-    loadPersonas();
-    loadPipelineStatus();
+    try {
+      await deletePersona(id);
+      if (selectedPersonaId === id) { setSelectedPersonaId(null); setMatrix([]); }
+      loadPersonas();
+      loadPipelineStatus();
+      setToast({ message: '买家角色已删除', type: 'success' });
+    } catch {
+      setToast({ message: '删除买家角色失败', type: 'error' });
+    }
+  };
+
+  const handleConfirmDelete = () => {
+    if (!deleteTarget) return;
+    if (deleteTarget.type === 'segment') handleDeleteSegment(deleteTarget.id);
+    else handleDeletePersona(deleteTarget.id);
+    setDeleteTarget(null);
   };
 
   const handleAIGenerate = async () => {
@@ -143,25 +213,26 @@ export default function ProfilesPage() {
       const props = valuePropInput.split('\n').filter(Boolean).map(s => s.trim());
       await generatePersonaMessaging(selectedPersonaId, props);
       loadMatrix();
-    } catch { /* silent */ } finally { setIsGenerating(false); }
+      setToast({ message: '信息矩阵已生成', type: 'success' });
+    } catch {
+      setToast({ message: 'AI 生成失败', type: 'error' });
+    } finally { setIsGenerating(false); }
   };
 
   // Auto-generate from CompanyProfile
   const handleAutoGenerate = async (overwrite = false) => {
-    // If segments exist and not explicitly overwriting, show confirm
     if (segments.length > 0 && !overwrite) {
       setShowOverwriteConfirm(true);
       return;
     }
     setShowOverwriteConfirm(false);
     setIsAutoGenerating(true);
-    setAutoGenMessage(null);
+    const currentStep = pipelineStatus?.currentStep ?? 0;
     try {
       const result = await generatePersonasFromProfile({ overwrite: segments.length > 0 });
 
-      // CompanyProfile lacks buyerPersonas → AI fallback
       if (result.needsAI) {
-        setAutoGenMessage('企业档案中暂无买家画像数据，正在 AI 生成...');
+        setToast({ message: '正在 AI 生成买家画像...', type: 'success' });
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), 55000);
         try {
@@ -174,17 +245,16 @@ export default function ProfilesPage() {
             const err = await resp.json().catch(() => ({ error: 'Unknown error' }));
             throw new Error(err.error || `HTTP ${resp.status}`);
           }
-          // AI has written buyerPersonas back to CompanyProfile, now create DB records
           const dbResult = await generatePersonasFromProfile({ overwrite: segments.length > 0 });
-          setAutoGenMessage(`AI 生成完成: ${dbResult.segmentsCreated} 个细分市场, ${dbResult.personasCreated} 个买家角色`);
+          setToast({ message: `AI 生成完成: ${dbResult.segmentsCreated} 个细分市场, ${dbResult.personasCreated} 个买家角色`, type: 'success' });
         } catch (e) {
           clearTimeout(timer);
           const errMsg = e instanceof Error && e.name === 'AbortError' ? '请求超时' : (e instanceof Error ? e.message : 'Unknown error');
-          setAutoGenMessage(`AI 生成失败: ${errMsg}`);
+          setToast({ message: `AI 生成失败: ${errMsg}`, type: 'error' });
           return;
         }
       } else {
-        setAutoGenMessage(`已生成: ${result.segmentsCreated} 个细分市场, ${result.personasCreated} 个买家角色`);
+        setToast({ message: `已生成: ${result.segmentsCreated} 个细分市场, ${result.personasCreated} 个买家角色`, type: 'success' });
       }
 
       setSelectedSegmentId(null);
@@ -192,8 +262,10 @@ export default function ProfilesPage() {
       setMatrix([]);
       loadSegments();
       loadPipelineStatus();
+      // 启动轮询跟踪后台 stepper 进度
+      startPipelinePolling(currentStep);
     } catch (e) {
-      setAutoGenMessage(`生成失败: ${e instanceof Error ? e.message : 'Unknown error'}`);
+      setToast({ message: `生成失败: ${e instanceof Error ? e.message : 'Unknown error'}`, type: 'error' });
     } finally {
       setIsAutoGenerating(false);
     }
@@ -216,10 +288,10 @@ export default function ProfilesPage() {
         const err = await resp.json().catch(() => ({ error: 'Unknown error' }));
         throw new Error(err.error || `HTTP ${resp.status}`);
       }
-      setAutoGenMessage('已同步到获客雷达');
+      setToast({ message: '已同步到获客雷达', type: 'success' });
     } catch (e) {
       const errMsg = e instanceof Error && e.name === 'AbortError' ? '同步超时' : (e instanceof Error ? e.message : 'Unknown error');
-      setAutoGenMessage(`同步失败: ${errMsg}`);
+      setToast({ message: `同步失败: ${errMsg}`, type: 'error' });
     } finally {
       setIsSyncing(false);
     }
@@ -259,12 +331,12 @@ export default function ProfilesPage() {
               <div className="flex items-center gap-2">
                 <Building2 size={16} className="text-slate-400" />
                 <span className="text-xs text-slate-500">输入来源：</span>
-                <span className={`text-xs font-medium ${hasCompanyProfile ? 'text-emerald-600' : 'text-slate-400'}`}>
+                <span className="text-xs font-medium" style={{ color: hasCompanyProfile ? '#B8860B' : '#94A3B8' }}>
                   企业档案 {hasCompanyProfile ? '✓ 已生成' : '× 未生成'}
                 </span>
               </div>
               {!hasCompanyProfile && (
-                <div className="flex items-center gap-2 text-amber-600 text-xs">
+                <div className="flex items-center gap-2 text-xs" style={{ color: '#B8860B' }}>
                   <AlertCircle size={14} />
                   <span>请先生成企业档案</span>
                   <Link href="/customer/knowledge/company" className="text-[#D4AF37] hover:underline">去企业档案</Link>
@@ -274,7 +346,8 @@ export default function ProfilesPage() {
             <div className="flex items-center gap-2">
               <Link
                 href="/customer/knowledge/scoring"
-                className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-[#D4AF37] bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded-lg hover:bg-[#D4AF37]/20 transition-colors"
+                className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors"
+                style={{ color: '#D4AF37', background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.25)' }}
               >
                 <Settings size={14} />
                 评分配置
@@ -291,7 +364,8 @@ export default function ProfilesPage() {
               </button>
               {segments.length > 0 && (
                 <button onClick={handleSyncToRadar} disabled={isSyncing}
-                  className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-emerald-400 bg-[#0B1220] border border-[#0B1220] rounded-lg hover:bg-[#0B1220]/80 transition-colors disabled:opacity-50">
+                  className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
+                  style={DIALOG_CONFIRM}>
                   {isSyncing ? <Loader2 size={14} className="animate-spin" /> : <Radar size={14} />}
                   同步到获客雷达
                 </button>
@@ -304,12 +378,18 @@ export default function ProfilesPage() {
           <div className="flex items-center justify-center py-16"><Loader2 size={28} className="text-[#D4AF37] animate-spin" /></div>
         ) : !hasCompanyProfile ? (
           <div className="text-center py-12 bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0]">
-            <Users2 size={40} className="text-slate-300 mx-auto mb-3" />
+            <div
+              className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
+              style={{ background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.2)', boxShadow: '0 0 24px rgba(212,175,55,0.1)' }}
+            >
+              <Users2 size={28} className="text-[#D4AF37]" />
+            </div>
             <p className="text-sm text-slate-500 mb-2">需要先生成企业档案</p>
             <p className="text-xs text-slate-400 mb-4">企业档案将提供目标客户信息作为画像输入</p>
             <Link
               href="/customer/knowledge/company"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-[#D4AF37] text-[#0B1220] rounded-xl text-sm font-medium hover:bg-[#D4AF37]/90 transition-colors shadow-[0_4px_16px_-2px_rgba(212,175,55,0.35)]"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all"
+              style={DIALOG_CONFIRM}
             >
               <Building2 size={16} />
               去企业档案
@@ -319,7 +399,7 @@ export default function ProfilesPage() {
           <div className="grid grid-cols-5 gap-5 min-h-[500px]">
             {/* Left: Segments */}
             <div className="col-span-1 space-y-2">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">细分市场</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">① 选择市场</p>
               {segments.length === 0 ? (
                 <div className="text-center py-8 bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0]">
                   <p className="text-xs text-slate-400 mb-3">暂无细分市场</p>
@@ -327,38 +407,52 @@ export default function ProfilesPage() {
                     className="text-xs text-[#D4AF37] hover:underline">创建第一个</button>
                 </div>
               ) : segments.map((seg) => (
-                <button key={seg.id} onClick={() => { setSelectedSegmentId(seg.id); setSelectedPersonaId(null); setMatrix([]); }}
-                  className={`w-full text-left p-3 rounded-2xl border transition-all ${
+                <div key={seg.id}
+                  className={`w-full text-left p-3 rounded-2xl border transition-all duration-200 cursor-pointer ${
                     selectedSegmentId === seg.id ? 'border-[#D4AF37] bg-[#D4AF37]/5' : 'border-[#E8E0D0] bg-[#F7F3E8] hover:border-[#D4AF37]/30'
-                  }`}>
+                  }`}
+                  onClick={() => { setSelectedSegmentId(seg.id); setSelectedPersonaId(null); setMatrix([]); }}
+                  onMouseEnter={(e) => { if (selectedSegmentId !== seg.id) { e.currentTarget.style.boxShadow = '0 4px 16px -4px rgba(212,175,55,0.15)'; e.currentTarget.style.transform = 'translateY(-1px)'; } }}
+                  onMouseLeave={(e) => { e.currentTarget.style.boxShadow = ''; e.currentTarget.style.transform = ''; }}
+                >
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-medium text-[#0B1220] truncate">{seg.name}</p>
-                    {selectedSegmentId === seg.id && <ChevronRight size={14} className="text-[#D4AF37]" />}
+                    <div className="flex items-center gap-1">
+                      <button onClick={(e) => { e.stopPropagation(); setDeleteTarget({ type: 'segment', id: seg.id, name: seg.name }); }}
+                        className="p-1 text-slate-400 opacity-40 hover:opacity-100 hover:text-red-500 rounded transition-all"
+                        >
+                        <Trash2 size={12} />
+                      </button>
+                      {selectedSegmentId === seg.id && <ChevronRight size={14} className="text-[#D4AF37]" />}
+                    </div>
                   </div>
                   <div className="flex items-center gap-2 mt-1">
                     {seg.industry && <span className="text-[10px] text-slate-400">{seg.industry}</span>}
                     <span className="text-[10px] text-slate-400">{seg.personaCount || 0} 角色</span>
                   </div>
-                </button>
+                </div>
               ))}
             </div>
 
             {/* Middle: Personas */}
             <div className="col-span-2 space-y-3">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">买家角色</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">② 选择角色</p>
               {personas.length === 0 ? (
                 <div className="text-center py-12 bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0]">
                   <Users2 size={32} className="text-slate-300 mx-auto mb-2" />
-                  <p className="text-xs text-slate-400">{selectedSegmentId ? '暂无角色，请创建' : '请先选择细分市场'}</p>
+                  <p className="text-xs text-slate-400">{selectedSegmentId ? '暂无角色，点击下方创建' : '← 先选择左侧细分市场'}</p>
                 </div>
               ) : personas.map((p) => (
                 <div key={p.id} onClick={() => setSelectedPersonaId(p.id)}
-                  className={`p-4 rounded-2xl border cursor-pointer transition-all ${
+                  className={`p-4 rounded-2xl border cursor-pointer transition-all duration-200 ${
                     selectedPersonaId === p.id ? 'border-[#D4AF37] bg-[#D4AF37]/5' : 'border-[#E8E0D0] bg-[#F7F3E8] hover:border-[#D4AF37]/30'
-                  }`}>
+                  }`}
+                  onMouseEnter={(e) => { if (selectedPersonaId !== p.id) { e.currentTarget.style.boxShadow = '0 4px 16px -4px rgba(212,175,55,0.15)'; e.currentTarget.style.transform = 'translateY(-1px)'; } }}
+                  onMouseLeave={(e) => { e.currentTarget.style.boxShadow = ''; e.currentTarget.style.transform = ''; }}
+                >
                   <div className="flex items-center justify-between mb-1">
                     <h4 className="text-sm font-bold text-[#0B1220]">{p.name}</h4>
-                    <button onClick={(e) => { e.stopPropagation(); handleDeletePersona(p.id); }} className="p-1 text-slate-400 hover:text-red-500 rounded">
+                    <button onClick={(e) => { e.stopPropagation(); setDeleteTarget({ type: 'persona', id: p.id, name: p.name }); }} className="p-1 text-slate-400 hover:text-red-500 rounded">
                       <Trash2 size={12} />
                     </button>
                   </div>
@@ -366,7 +460,7 @@ export default function ProfilesPage() {
                   {p.concerns.length > 0 && (
                     <div className="flex flex-wrap gap-1">
                       {p.concerns.map((c, i) => (
-                        <span key={i} className="px-2 py-0.5 text-[10px] bg-[#F7F3EA] text-slate-500 rounded-full">{c}</span>
+                        <span key={i} className="px-2 py-0.5 text-[10px] rounded-full" style={{ background: 'rgba(212,175,55,0.08)', color: '#B8860B', border: '1px solid rgba(212,175,55,0.12)' }}>{c}</span>
                       ))}
                     </div>
                   )}
@@ -377,7 +471,7 @@ export default function ProfilesPage() {
             {/* Right: Messaging Matrix */}
             <div className="col-span-2 space-y-3">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">信息矩阵</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">③ 配置信息</p>
               </div>
               {!selectedPersonaId ? (
                 <div className="text-center py-12 bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0]">
@@ -391,9 +485,12 @@ export default function ProfilesPage() {
                   {matrix.length > 0 && (
                     <div className="space-y-2">
                       {matrix.map((m) => (
-                        <div key={m.id} className="p-3 border border-[#E8E0D0] rounded-2xl bg-[#F7F3E8]">
+                        <div key={m.id} className="p-3 border border-[#E8E0D0] rounded-2xl bg-[#F7F3E8] transition-all duration-200"
+                          onMouseEnter={(e) => { const t = e.currentTarget; t.style.borderColor = 'rgba(212,175,55,0.4)'; t.style.boxShadow = '0 4px 16px -4px rgba(212,175,55,0.15)'; t.style.transform = 'translateY(-1px)'; }}
+                          onMouseLeave={(e) => { const t = e.currentTarget; t.style.borderColor = ''; t.style.boxShadow = ''; t.style.transform = ''; }}
+                        >
                           <div className="flex items-center gap-2 mb-1.5">
-                            <span className="px-2 py-0.5 text-[10px] font-medium bg-[#D4AF37]/10 text-[#D4AF37] rounded">{m.valueProp}</span>
+                            <span className="px-2 py-0.5 text-[10px] font-medium rounded" style={{ background: 'rgba(212,175,55,0.1)', color: '#D4AF37' }}>{m.valueProp}</span>
                             {m.channel && <span className="text-[10px] text-slate-400">{m.channel}</span>}
                           </div>
                           <p className="text-xs text-slate-600 leading-relaxed">{m.message}</p>
@@ -405,10 +502,11 @@ export default function ProfilesPage() {
                   <div className="p-4 bg-[#F0EBD8] rounded-2xl border border-[#E8E0D0] mt-3">
                     <p className="text-xs font-medium text-[#0B1220] mb-2">AI 生成定制信息</p>
                     <textarea value={valuePropInput} onChange={(e) => setValuePropInput(e.target.value)}
-                      rows={3} placeholder="输入价值主张（每行一条），如：&#10;降低运营成本&#10;提升产品质量&#10;加速交付周期"
+                      rows={3} placeholder={"输入价值主张（每行一条），如：\n降低运营成本\n提升产品质量\n加速交付周期"}
                       className="w-full px-3 py-2 text-xs border border-[#E8E0D0] rounded-lg bg-[#FFFCF7] mb-2 text-[#0B1220]" />
                     <button onClick={handleAIGenerate} disabled={isGenerating || !valuePropInput.trim()}
-                      className="flex items-center gap-2 px-3 py-1.5 text-xs bg-[#D4AF37] text-[#0B1220] rounded-lg font-medium disabled:opacity-50">
+                      className="flex items-center gap-2 px-4 py-2 text-xs rounded-lg font-semibold disabled:opacity-50 transition-all"
+                      style={DIALOG_CONFIRM}>
                       {isGenerating ? <><Loader2 size={12} className="animate-spin" />生成中...</> : <><Sparkles size={12} />生成</>}
                     </button>
                   </div>
@@ -419,31 +517,56 @@ export default function ProfilesPage() {
         )}
       </div>
 
-      {/* Auto-generate progress / message */}
-      {autoGenMessage && (
-        <div className="fixed bottom-6 right-6 z-50 max-w-sm px-4 py-3 rounded-xl shadow-lg border border-[#E8E0D0] bg-white text-sm text-[#0B1220] flex items-center gap-2">
-          {isAutoGenerating && <Loader2 size={16} className="text-[#D4AF37] animate-spin flex-shrink-0" />}
-          <span>{autoGenMessage}</span>
-          {!isAutoGenerating && (
-            <button onClick={() => setAutoGenMessage(null)} className="ml-auto text-slate-400 hover:text-slate-600 text-xs">&times;</button>
-          )}
+      {/* Toast */}
+      {toast && (
+        <div
+          className="fixed top-20 right-6 z-[60] max-w-sm px-4 py-3 rounded-xl shadow-lg text-sm flex items-center gap-2 animate-slide-up"
+          style={{
+            background: toast.type === 'success' ? 'rgba(212,175,55,0.15)' : 'rgba(239,68,68,0.15)',
+            border: `1px solid ${toast.type === 'success' ? 'rgba(212,175,55,0.3)' : 'rgba(239,68,68,0.3)'}`,
+            color: toast.type === 'success' ? '#B8860B' : '#DC2626',
+            backdropFilter: 'blur(12px)',
+          }}
+        >
+          {isAutoGenerating && <Loader2 size={14} className="animate-spin flex-shrink-0" />}
+          <span className="flex-1">{toast.message}</span>
+          <button onClick={() => setToast(null)} className="ml-auto opacity-50 hover:opacity-100"><X size={14} /></button>
+        </div>
+      )}
+
+      {/* Delete Confirm Dialog */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={DIALOG_OVERLAY} onClick={() => setDeleteTarget(null)}>
+          <div className="rounded-2xl w-[400px] p-6" style={DIALOG_PANEL} onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-2 mb-3">
+              <Trash2 size={18} style={{ color: '#EF4444' }} />
+              <h3 className="text-lg font-bold text-white">确认删除</h3>
+            </div>
+            <p className="text-sm mb-4" style={{ color: 'rgba(255,255,255,0.6)' }}>
+              确定要删除{deleteTarget.type === 'segment' ? '细分市场' : '买家角色'} <span className="text-white font-medium">&quot;{deleteTarget.name}&quot;</span> 吗？此操作不可撤销。
+            </p>
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setDeleteTarget(null)} className="px-4 py-2 text-sm rounded-xl" style={DIALOG_CANCEL}>取消</button>
+              <button onClick={handleConfirmDelete} className="px-4 py-2 text-sm rounded-xl font-medium" style={{ background: 'rgba(239,68,68,0.15)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.3)' }}>删除</button>
+            </div>
+          </div>
         </div>
       )}
 
       {/* Overwrite Confirm Dialog */}
       {showOverwriteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setShowOverwriteConfirm(false)}>
-          <div className="bg-white rounded-2xl border border-[#E7E0D3] shadow-xl w-[400px] p-6" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={DIALOG_OVERLAY} onClick={() => setShowOverwriteConfirm(false)}>
+          <div className="rounded-2xl w-[400px] p-6" style={DIALOG_PANEL} onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-2 mb-3">
-              <RefreshCw size={18} className="text-[#D4AF37]" />
-              <h3 className="text-lg font-bold text-[#0B1B2B]">重新生成买家画像</h3>
+              <RefreshCw size={18} style={{ color: '#D4AF37' }} />
+              <h3 className="text-lg font-bold text-white">重新生成买家画像</h3>
             </div>
-            <p className="text-sm text-slate-600 mb-4">
-              当前已有 {segments.length} 个细分市场。重新生成将<span className="text-red-500 font-medium">覆盖</span>所有现有细分市场和买家角色数据。
+            <p className="text-sm mb-4" style={{ color: 'rgba(255,255,255,0.6)' }}>
+              当前已有 {segments.length} 个细分市场。重新生成将<span style={{ color: '#EF4444' }} className="font-medium">覆盖</span>所有现有细分市场和买家角色数据。
             </p>
             <div className="flex justify-end gap-2">
-              <button onClick={() => setShowOverwriteConfirm(false)} className="px-4 py-2 text-sm border border-[#E7E0D3] rounded-xl text-slate-500">取消</button>
-              <button onClick={() => handleAutoGenerate(true)} className="px-4 py-2 text-sm bg-[#D4AF37] text-[#0B1220] rounded-xl font-medium">确认覆盖</button>
+              <button onClick={() => setShowOverwriteConfirm(false)} className="px-4 py-2 text-sm rounded-xl" style={DIALOG_CANCEL}>取消</button>
+              <button onClick={() => handleAutoGenerate(true)} className="px-4 py-2 text-sm rounded-xl font-semibold" style={DIALOG_CONFIRM}>确认覆盖</button>
             </div>
           </div>
         </div>
@@ -451,16 +574,24 @@ export default function ProfilesPage() {
 
       {/* Create Segment Dialog */}
       {showCreateSegment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setShowCreateSegment(false)}>
-          <div className="bg-white rounded-2xl border border-[#E7E0D3] shadow-xl w-[400px] p-6" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-bold text-[#0B1B2B] mb-4">新建细分市场</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={DIALOG_OVERLAY} onClick={() => setShowCreateSegment(false)}>
+          <div className="rounded-2xl w-[400px] p-6" style={DIALOG_PANEL} onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-white mb-4">新建细分市场</h3>
             <div className="space-y-3">
-              <input value={segmentName} onChange={(e) => setSegmentName(e.target.value)} className="w-full px-3 py-2 text-sm border border-[#E7E0D3] rounded-lg bg-white text-[#0B1B2B]" placeholder="细分市场名称" />
-              <input value={segmentIndustry} onChange={(e) => setSegmentIndustry(e.target.value)} className="w-full px-3 py-2 text-sm border border-[#E7E0D3] rounded-lg bg-white text-[#0B1B2B]" placeholder="目标行业（可选）" />
+              <div>
+                <label className="block mb-1.5" style={DIALOG_LABEL}>市场名称</label>
+                <input value={segmentName} onChange={(e) => setSegmentName(e.target.value)}
+                  className="w-full px-3 py-2 text-sm rounded-lg focus:outline-none" style={DIALOG_INPUT} placeholder="细分市场名称" />
+              </div>
+              <div>
+                <label className="block mb-1.5" style={DIALOG_LABEL}>目标行业</label>
+                <input value={segmentIndustry} onChange={(e) => setSegmentIndustry(e.target.value)}
+                  className="w-full px-3 py-2 text-sm rounded-lg focus:outline-none" style={DIALOG_INPUT} placeholder="目标行业（可选）" />
+              </div>
             </div>
-            <div className="flex justify-end gap-2 mt-4">
-              <button onClick={() => setShowCreateSegment(false)} className="px-4 py-2 text-sm border border-[#E7E0D3] rounded-xl text-slate-500">取消</button>
-              <button onClick={handleCreateSegment} disabled={!segmentName} className="px-4 py-2 text-sm bg-[#0B1B2B] text-[#D4AF37] rounded-xl font-medium disabled:opacity-50">创建</button>
+            <div className="flex justify-end gap-2 mt-5">
+              <button onClick={() => setShowCreateSegment(false)} className="px-4 py-2 text-sm rounded-xl" style={DIALOG_CANCEL}>取消</button>
+              <button onClick={handleCreateSegment} disabled={!segmentName} className="px-4 py-2 text-sm rounded-xl font-semibold disabled:opacity-50" style={DIALOG_CONFIRM}>创建</button>
             </div>
           </div>
         </div>
@@ -468,27 +599,43 @@ export default function ProfilesPage() {
 
       {/* Create Persona Dialog */}
       {showCreatePersona && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setShowCreatePersona(false)}>
-          <div className="bg-white rounded-2xl border border-[#E7E0D3] shadow-xl w-[450px] p-6" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-bold text-[#0B1B2B] mb-4">新建买家角色</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={DIALOG_OVERLAY} onClick={() => setShowCreatePersona(false)}>
+          <div className="rounded-2xl w-[450px] p-6" style={DIALOG_PANEL} onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-white mb-4">新建买家角色</h3>
             <div className="space-y-3">
-              <input value={personaForm.name} onChange={(e) => setPersonaForm({ ...personaForm, name: e.target.value })} className="w-full px-3 py-2 text-sm border border-[#E7E0D3] rounded-lg bg-white text-[#0B1B2B]" placeholder="角色名称，如：采购经理" />
-              <input value={personaForm.title} onChange={(e) => setPersonaForm({ ...personaForm, title: e.target.value })} className="w-full px-3 py-2 text-sm border border-[#E7E0D3] rounded-lg bg-white text-[#0B1B2B]" placeholder="典型职位，如：采购部总监" />
-              <select value={personaForm.seniority || ''} onChange={(e) => setPersonaForm({ ...personaForm, seniority: e.target.value || undefined })}
-                className="w-full px-3 py-2 text-sm border border-[#E7E0D3] rounded-lg bg-white text-[#0B1B2B]">
-                <option value="">级别（可选）</option>
-                <option value="junior">初级</option>
-                <option value="mid">中级</option>
-                <option value="senior">高级</option>
-                <option value="executive">高管</option>
-              </select>
+              <div>
+                <label className="block mb-1.5" style={DIALOG_LABEL}>角色名称</label>
+                <input value={personaForm.name} onChange={(e) => setPersonaForm({ ...personaForm, name: e.target.value })}
+                  className="w-full px-3 py-2 text-sm rounded-lg focus:outline-none" style={DIALOG_INPUT} placeholder="如：采购经理" />
+              </div>
+              <div>
+                <label className="block mb-1.5" style={DIALOG_LABEL}>典型职位</label>
+                <input value={personaForm.title} onChange={(e) => setPersonaForm({ ...personaForm, title: e.target.value })}
+                  className="w-full px-3 py-2 text-sm rounded-lg focus:outline-none" style={DIALOG_INPUT} placeholder="如：采购部总监" />
+              </div>
+              <div>
+                <label className="block mb-1.5" style={DIALOG_LABEL}>级别</label>
+                <select value={personaForm.seniority || ''} onChange={(e) => setPersonaForm({ ...personaForm, seniority: e.target.value || undefined })}
+                  className="w-full px-3 py-2 text-sm rounded-lg focus:outline-none" style={DIALOG_INPUT}>
+                  <option value="">级别（可选）</option>
+                  <option value="junior">初级</option>
+                  <option value="mid">中级</option>
+                  <option value="senior">高级</option>
+                  <option value="executive">高管</option>
+                </select>
+              </div>
             </div>
-            <div className="flex justify-end gap-2 mt-4">
-              <button onClick={() => setShowCreatePersona(false)} className="px-4 py-2 text-sm border border-[#E7E0D3] rounded-xl text-slate-500">取消</button>
-              <button onClick={handleCreatePersona} disabled={!personaForm.name || !personaForm.title} className="px-4 py-2 text-sm bg-[#0B1B2B] text-[#D4AF37] rounded-xl font-medium disabled:opacity-50">创建</button>
+            <div className="flex justify-end gap-2 mt-5">
+              <button onClick={() => setShowCreatePersona(false)} className="px-4 py-2 text-sm rounded-xl" style={DIALOG_CANCEL}>取消</button>
+              <button onClick={handleCreatePersona} disabled={!personaForm.name || !personaForm.title} className="px-4 py-2 text-sm rounded-xl font-semibold disabled:opacity-50" style={DIALOG_CONFIRM}>创建</button>
             </div>
           </div>
         </div>
+      )}
+
+      {/* Next Step Banner */}
+      {pipelineStatus && (
+        <NextStepBanner steps={pipelineStatus.steps} currentStep={pipelineStatus.currentStep} />
       )}
     </div>
   );

@@ -166,7 +166,7 @@ export function SkillPanel({
           AI Skills
         </h3>
         <span className="text-xs text-slate-400">
-          {engine === 'radar' ? '获客雷达' : '营销系统'}
+          {engine === 'radar' ? '获客雷达' : '增长系统'}
         </span>
       </div>
 

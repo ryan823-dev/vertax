@@ -57,7 +57,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     where: { id: session.user.id },
     select: { tenantId: true },
   });
-  if (!user) {
+  if (!user?.tenantId) {
     return {
       knowledgeCompleteness: 0,
       totalLeads: 0,
@@ -69,29 +69,31 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     };
   }
 
+  const tenantId = user.tenantId;
+
   // Get all stats in parallel
   const [profile, leads, highIntentLeads, contents, draftContents, socialAccounts, failedPosts] =
     await Promise.all([
       prisma.companyProfile.findUnique({
-        where: { tenantId: user.tenantId },
+        where: { tenantId },
       }),
       prisma.lead.count({
-        where: { tenantId: user.tenantId, deletedAt: null },
+        where: { tenantId, deletedAt: null },
       }),
       prisma.lead.count({
-        where: { tenantId: user.tenantId, deletedAt: null, priority: 'high' },
+        where: { tenantId, deletedAt: null, priority: 'high' },
       }),
       prisma.seoContent.count({
-        where: { tenantId: user.tenantId, deletedAt: null },
+        where: { tenantId, deletedAt: null },
       }),
       prisma.seoContent.count({
-        where: { tenantId: user.tenantId, deletedAt: null, status: 'draft' },
+        where: { tenantId, deletedAt: null, status: 'draft' },
       }),
       prisma.socialAccount.count({
-        where: { tenantId: user.tenantId, isActive: true },
+        where: { tenantId, isActive: true },
       }),
       prisma.socialPost.count({
-        where: { tenantId: user.tenantId, deletedAt: null, status: 'failed' },
+        where: { tenantId, deletedAt: null, status: 'failed' },
       }),
     ]);
 
@@ -151,17 +153,18 @@ export async function getPendingActions(): Promise<PendingAction[]> {
     where: { id: session.user.id },
     select: { tenantId: true },
   });
-  if (!user) return [];
+  if (!user?.tenantId) return [];
 
+  const tenantId = user.tenantId;
   const actions: PendingAction[] = [];
 
   // Check for critical issues first
   const [profile, socialAccounts, failedPosts, highIntentLeads, draftContents] = await Promise.all([
-    prisma.companyProfile.findUnique({ where: { tenantId: user.tenantId } }),
-    prisma.socialAccount.count({ where: { tenantId: user.tenantId, isActive: true } }),
-    prisma.socialPost.count({ where: { tenantId: user.tenantId, deletedAt: null, status: 'failed' } }),
-    prisma.lead.count({ where: { tenantId: user.tenantId, deletedAt: null, priority: 'high', status: 'new' } }),
-    prisma.seoContent.count({ where: { tenantId: user.tenantId, deletedAt: null, status: 'draft' } }),
+    prisma.companyProfile.findUnique({ where: { tenantId } }),
+    prisma.socialAccount.count({ where: { tenantId, isActive: true } }),
+    prisma.socialPost.count({ where: { tenantId, deletedAt: null, status: 'failed' } }),
+    prisma.lead.count({ where: { tenantId, deletedAt: null, priority: 'high', status: 'new' } }),
+    prisma.seoContent.count({ where: { tenantId, deletedAt: null, status: 'draft' } }),
   ]);
 
   // P0 - Blocked issues
@@ -216,7 +219,7 @@ export async function getPendingActions(): Promise<PendingAction[]> {
       id: 'content-draft',
       priority: 'P2',
       title: `${draftContents} 篇内容待发布`,
-      module: '营销系统',
+      module: '增长系统',
       action: '发布内容',
       actionLink: '/c/marketing',
     });
@@ -233,21 +236,23 @@ export async function getTenantInfo(): Promise<TenantInfo | null> {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { 
+    select: {
       tenantId: true,
       tenant: { select: { name: true } },
     },
   });
-  if (!user) return null;
+  if (!user?.tenantId || !user.tenant) return null;
+
+  const tenantId = user.tenantId;
 
   const profile = await prisma.companyProfile.findUnique({
-    where: { tenantId: user.tenantId },
+    where: { tenantId },
     select: { companyName: true },
   });
 
   return {
     name: user.tenant.name,
-    companyName: profile?.companyName || undefined,
+    companyName: profile?.companyName ?? undefined,
   };
 }
 
@@ -268,7 +273,7 @@ export async function generateAIBriefing(): Promise<AIBriefing> {
     where: { id: session.user.id },
     select: { tenantId: true },
   });
-  if (!user) {
+  if (!user?.tenantId) {
     return {
       summary: '用户信息加载失败',
       highlights: [],
@@ -277,24 +282,26 @@ export async function generateAIBriefing(): Promise<AIBriefing> {
     };
   }
 
+  const tenantId = user.tenantId;
+
   // Gather all data
   const [profile, leads, contents, socialPosts, socialAccounts] = await Promise.all([
-    prisma.companyProfile.findUnique({ where: { tenantId: user.tenantId } }),
-    prisma.lead.findMany({ 
-      where: { tenantId: user.tenantId, deletedAt: null },
+    prisma.companyProfile.findUnique({ where: { tenantId } }),
+    prisma.lead.findMany({
+      where: { tenantId, deletedAt: null },
       orderBy: { createdAt: 'desc' },
       take: 10,
     }),
     prisma.seoContent.findMany({
-      where: { tenantId: user.tenantId, deletedAt: null },
+      where: { tenantId, deletedAt: null },
       take: 10,
     }),
     prisma.socialPost.findMany({
-      where: { tenantId: user.tenantId, deletedAt: null },
+      where: { tenantId, deletedAt: null },
       include: { versions: true },
       take: 10,
     }),
-    prisma.socialAccount.count({ where: { tenantId: user.tenantId, isActive: true } }),
+    prisma.socialAccount.count({ where: { tenantId, isActive: true } }),
   ]);
 
   const systemPrompt = `你是一位专业的企业战略顾问，负责为企业老板提供每日决策简报。
@@ -347,7 +354,7 @@ export async function generateAIBriefing(): Promise<AIBriefing> {
     };
   } catch (error) {
     console.error("AI简报生成失败:", error);
-    
+
     // Fallback to static briefing
     const highlights: string[] = [];
     const recommendations: string[] = [];
@@ -373,7 +380,7 @@ export async function generateAIBriefing(): Promise<AIBriefing> {
     }
 
     return {
-      summary: profile 
+      summary: profile
         ? `${profile.companyName || '企业'}全球化获客引擎运行中`
         : '系统初始化中，建议完善企业画像',
       highlights,

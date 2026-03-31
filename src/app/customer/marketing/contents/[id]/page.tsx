@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, type ReactNode } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
@@ -19,6 +19,11 @@ import {
   Info,
   Lock,
   MessageSquarePlus,
+  Globe,
+  Copy,
+  Check,
+  BarChart3,
+  Code2,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -99,7 +104,10 @@ export default function ContentEditorPage() {
     evidence: true,
     guidelines: false,
     seo: false,
+    geo: true,
   });
+  const [geoCopied, setGeoCopied] = useState(false);
+  const [schemaCopied, setSchemaCopied] = useState(false);
 
   // 协作相关状态
   const [currentVersionId, setCurrentVersionId] = useState<string | null>(null);
@@ -507,7 +515,7 @@ export default function ContentEditorPage() {
                             {section.keyPoints.map((point, pIdx) => (
                               <li key={pIdx} className="text-xs text-slate-500 flex items-start gap-2">
                                 <span className="text-[#D4AF37]">•</span>
-                                {point}
+                                {String(point)}
                               </li>
                             ))}
                           </ul>
@@ -755,6 +763,138 @@ export default function ContentEditorPage() {
               </div>
             )}
           </div>
+
+          {/* SEO / GEO Panel — shown only for AI-generated content */}
+          {content && !!(((content as unknown as Record<string, unknown>).geoVersion || (content as unknown as Record<string, unknown>).schemaJson)) && ((): ReactNode => {
+            const meta = ((content as unknown as Record<string, unknown>).aiMetadata || {}) as Record<string, unknown>;
+            const geoVersion = (content as unknown as Record<string, unknown>).geoVersion as string | null;
+            const schemaJson = (content as unknown as Record<string, unknown>).schemaJson as Record<string, unknown> | null;
+            const framework = meta.seoFramework as string | undefined;
+            const primaryKeyword = meta.primaryKeyword as string | undefined;
+            const supportingKeywords = (meta.supportingKeywords || []) as string[];
+            const wordCount = meta.wordCount as number | undefined;
+            const metaTitleLen = form.metaTitle.length;
+            const metaDescLen = form.metaDescription.length;
+
+            return (
+              <div className="rounded-xl overflow-hidden border border-[rgba(212,175,55,0.3)]" style={{
+                background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 70%, #0D1525 100%)',
+              }}>
+                {/* SEO Score Card */}
+                <div className="p-3 border-b border-[rgba(212,175,55,0.12)]">
+                  <div className="flex items-center gap-2 mb-3">
+                    <BarChart3 className="w-3.5 h-3.5 text-[#D4AF37]" />
+                    <span className="text-[11px] font-semibold text-[#D4AF37] uppercase tracking-wider">SEO · AEO 指标</span>
+                    {framework && (
+                      <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded text-slate-400 bg-slate-800 border border-slate-700">
+                        Framework {framework}
+                      </span>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    {primaryKeyword && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] text-slate-500">主关键词</span>
+                        <span className="text-[11px] text-[#D4AF37] font-mono">{primaryKeyword}</span>
+                      </div>
+                    )}
+                    {wordCount && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] text-slate-500">文章字数</span>
+                        <span className={`text-[11px] font-mono ${wordCount >= 1500 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                          {wordCount.toLocaleString()} {wordCount >= 1500 ? '✓' : '⚠'}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] text-slate-500">Meta Title</span>
+                      <span className={`text-[11px] font-mono ${metaTitleLen > 0 && metaTitleLen <= 60 ? 'text-emerald-400' : metaTitleLen > 60 ? 'text-red-400' : 'text-slate-500'}`}>
+                        {metaTitleLen > 0 ? `${metaTitleLen}/60 ${metaTitleLen <= 60 ? '✓' : '✗'}` : '未填写'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] text-slate-500">Meta Desc</span>
+                      <span className={`text-[11px] font-mono ${metaDescLen >= 150 && metaDescLen <= 160 ? 'text-emerald-400' : metaDescLen > 0 ? 'text-amber-400' : 'text-slate-500'}`}>
+                        {metaDescLen > 0 ? `${metaDescLen}/160 ${metaDescLen >= 150 ? '✓' : '⚠'}` : '未填写'}
+                      </span>
+                    </div>
+                    {schemaJson && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] text-slate-500">FAQPage Schema</span>
+                        <span className="text-[11px] text-emerald-400">已生成 ✓</span>
+                      </div>
+                    )}
+                  </div>
+                  {supportingKeywords.length > 0 && (
+                    <div className="mt-3">
+                      <p className="text-[10px] text-slate-600 mb-1.5">支撑关键词</p>
+                      <div className="flex flex-wrap gap-1">
+                        {supportingKeywords.slice(0, 6).map((kw: string) => (
+                          <span key={kw} className="text-[10px] px-1.5 py-0.5 rounded text-slate-400" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                            {kw}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* FAQ Schema block */}
+                {schemaJson && (
+                  <div className="p-3 border-b border-[rgba(212,175,55,0.12)]">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-1.5">
+                        <Code2 className="w-3.5 h-3.5 text-emerald-400" />
+                        <span className="text-[11px] font-medium text-emerald-400">FAQPage JSON-LD</span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(JSON.stringify(schemaJson, null, 2));
+                          setSchemaCopied(true);
+                          setTimeout(() => setSchemaCopied(false), 1800);
+                        }}
+                        className="flex items-center gap-1 text-[10px] text-slate-400 hover:text-[#D4AF37] transition-colors"
+                      >
+                        {schemaCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                        {schemaCopied ? '已复制' : '复制'}
+                      </button>
+                    </div>
+                    <div className="rounded p-2 text-[10px] text-slate-400 font-mono line-clamp-4 overflow-hidden" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                      {JSON.stringify(schemaJson, null, 2)}
+                    </div>
+                  </div>
+                )}
+
+                {/* GEO version */}
+                {geoVersion && (
+                  <div className="p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-1.5">
+                        <Globe className="w-3.5 h-3.5 text-[#D4AF37]" />
+                        <span className="text-[11px] font-medium text-[#D4AF37]">GEO 版本</span>
+                        <span className="text-[10px] text-slate-600">AI 引擎可引用</span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(geoVersion);
+                          setGeoCopied(true);
+                          setTimeout(() => setGeoCopied(false), 1800);
+                        }}
+                        className="flex items-center gap-1 text-[10px] text-[#D4AF37] hover:opacity-80 transition-opacity"
+                      >
+                        {geoCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                        {geoCopied ? '已复制' : '复制'}
+                      </button>
+                    </div>
+                    <div className="rounded p-2.5 text-[11px] text-slate-300 leading-relaxed line-clamp-5" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                      {geoVersion}
+                    </div>
+                    <p className="text-[10px] text-slate-600 mt-1.5">{geoVersion.split(/\s+/).length} words · 粘贴至 About / FAQ</p>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Brief Context */}
           {brief && (
