@@ -7,7 +7,7 @@ import { ShellCommentsTab } from "./shell-comments-tab";
 import { ShellTasksTab } from "./shell-tasks-tab";
 import { ShellHistoryTab, convertActivityToHistory } from "./shell-history-tab";
 import { getVersionHistory, getVersionDetails } from "@/actions/approval";
-import { getCommentsByVersion, getTasksByVersion } from "@/actions/collaboration";
+import { getCommentsByVersion, getTasksByVersion, getEntityActivities, type ActivityEntry } from "@/actions/collaboration";
 import { listVersions, getLatestVersion, revertToVersion } from "@/actions/versions";
 import type { EntityType, AnchorSpec, AnchorType, ArtifactStatusValue, CommentData, TaskData } from "@/types/artifact";
 
@@ -96,9 +96,9 @@ export function CollaborativeShell({
         setComments(commentList as CommentData[]);
         setTasks(taskList as TaskData[]);
 
-        // TODO: Load history from Activity table
-        // For now, use empty history
-        setHistory([]);
+        // Load activity history for this entity
+        const activityList = await getEntityActivities(entityType, entityId);
+        setHistory(convertActivityToHistory(activityList));
       }
     } catch (err) {
       console.error("Failed to load collaboration data:", err);

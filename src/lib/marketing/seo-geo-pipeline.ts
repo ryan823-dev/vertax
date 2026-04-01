@@ -192,25 +192,53 @@ interface SerpApiResponse {
 }
 
 async function fetchSerpData(keyword: string): Promise<SerpApiResponse | null> {
-  const apiKey = process.env.SERPAPI_KEY;
-  if (!apiKey) return null;
+  const serpApiKey = process.env.SERPAPI_KEY;
+  const braveKey = process.env.BRAVE_SEARCH_API_KEY;
+  if (!serpApiKey && !braveKey) return null;
 
   try {
-    const url = new URL('https://serpapi.com/search');
-    url.searchParams.set('q', keyword);
-    url.searchParams.set('api_key', apiKey);
-    url.searchParams.set('engine', 'google');
-    url.searchParams.set('hl', 'en');
-    url.searchParams.set('gl', 'us');
-    url.searchParams.set('num', '10');
+    // SerpAPI 主渠道（Google 索引）
+    if (serpApiKey) {
+      const url = new URL('https://serpapi.com/search');
+      url.searchParams.set('q', keyword);
+      url.searchParams.set('api_key', serpApiKey);
+      url.searchParams.set('engine', 'google');
+      url.searchParams.set('hl', 'en');
+      url.searchParams.set('gl', 'us');
+      url.searchParams.set('num', '10');
 
-    const res = await fetch(url.toString(), {
-      headers: { 'Accept': 'application/json' },
-      signal: AbortSignal.timeout(8000),
-    });
+      const res = await fetch(url.toString(), {
+        headers: { 'Accept': 'application/json' },
+        signal: AbortSignal.timeout(8000),
+      });
+      if (res.ok) return await res.json() as SerpApiResponse;
+    }
 
-    if (!res.ok) return null;
-    return await res.json() as SerpApiResponse;
+    // Brave Search 补充渠道
+    if (braveKey) {
+      const res = await fetch(
+        `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(keyword)}&count=10`,
+        {
+          headers: {
+            'Accept': 'application/json',
+            'Accept-Encoding': 'gzip',
+            'X-Subscription-Token': braveKey,
+          },
+          signal: AbortSignal.timeout(8000),
+        }
+      );
+      if (!res.ok) return null;
+      const data = await res.json() as { web?: { results?: Array<{ title: string; url: string; description: string }> } };
+      return {
+        organic_results: (data.web?.results || []).map(r => ({
+          title: r.title,
+          link: r.url,
+          snippet: r.description,
+        })),
+      } as SerpApiResponse;
+    }
+
+    return null;
   } catch {
     return null;
   }

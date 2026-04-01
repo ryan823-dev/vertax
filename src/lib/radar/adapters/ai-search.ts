@@ -78,7 +78,7 @@ export class AISearchAdapter implements RadarAdapter {
 
   constructor(config: AdapterConfig & { workspaceId?: string }) {
     this.timeout = config.timeout || 60000;
-    this.searchApiKey = config.apiKey || process.env.SERPAPI_KEY || process.env.BING_SEARCH_KEY;
+    this.searchApiKey = config.apiKey || process.env.SERPAPI_KEY || process.env.BRAVE_SEARCH_API_KEY;
     this.workspaceId = config.workspaceId;
   }
 
@@ -205,15 +205,21 @@ export class AISearchAdapter implements RadarAdapter {
       try {
         let items: WebSearchResult[] = [];
         
-        if (process.env.SERPAPI_KEY) {
-          items = await this.searchWithSerpAPI(q.query);
-        } else if (process.env.BING_SEARCH_KEY) {
-          items = await this.searchWithBing(q.query);
-        } else {
-          // 无搜索 API，跳过
+        if (!process.env.SERPAPI_KEY && !process.env.BRAVE_SEARCH_API_KEY) {
           console.warn('No search API key configured');
           continue;
         }
+        // 并行调用 SerpAPI（主）+ Brave（补充），合并去重
+        const [serpItems, braveItems] = await Promise.allSettled([
+          process.env.SERPAPI_KEY ? this.searchWithSerpAPI(q.query) : Promise.resolve([]),
+          process.env.BRAVE_SEARCH_API_KEY ? this.searchWithBrave(q.query) : Promise.resolve([]),
+        ]);
+        const serpResults = serpItems.status === 'fulfilled' ? serpItems.value : [];
+        const braveResults = braveItems.status === 'fulfilled' ? braveItems.value : [];
+        // 以 link 为 key 去重，SerpAPI 结果优先
+        const seen = new Set(serpResults.map(r => r.link));
+        const merged = [...serpResults, ...braveResults.filter(r => !seen.has(r.link))];
+        items = merged;
         
         results.push({ query: q, items });
         
@@ -228,7 +234,7 @@ export class AISearchAdapter implements RadarAdapter {
   }
 
   /**
-   * 使用 SerpAPI 搜索
+   * 使用 SerpAPI 搜索（主渠道，Google 索引）
    */
   private async searchWithSerpAPI(query: string): Promise<WebSearchResult[]> {
     const params = new URLSearchParams({
@@ -236,43 +242,52 @@ export class AISearchAdapter implements RadarAdapter {
       api_key: process.env.SERPAPI_KEY!,
       engine: 'google',
       num: '10',
+      hl: 'en',
+      gl: 'us',
     });
-    
-    const response = await fetch(`https://serpapi.com/search?${params}`, {
-      signal: AbortSignal.timeout(this.timeout),
-    });
-    
+
+    const response = await fetch(
+      `https://serpapi.com/search?${params}`,
+      { signal: AbortSignal.timeout(this.timeout) }
+    );
+
     if (!response.ok) {
       throw new Error(`SerpAPI error: ${response.status}`);
     }
-    
-    const data: SearchAPIResponse = await response.json();
-    return data.organic_results || [];
+
+    const data = await response.json() as { organic_results?: Array<{ title: string; snippet: string; link: string }> };
+    return (data.organic_results || []).map(item => ({
+      title: item.title,
+      snippet: item.snippet,
+      link: item.link,
+    }));
   }
 
   /**
-   * 使用 Bing Search 搜索
+   * 使用 Brave Search 搜索（备用渠道）
    */
-  private async searchWithBing(query: string): Promise<WebSearchResult[]> {
+  private async searchWithBrave(query: string): Promise<WebSearchResult[]> {
     const response = await fetch(
-      `https://api.bing.microsoft.com/v7.0/search?q=${encodeURIComponent(query)}&count=10`,
+      `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}&count=10`,
       {
         headers: {
-          'Ocp-Apim-Subscription-Key': process.env.BING_SEARCH_KEY!,
+          'Accept': 'application/json',
+          'Accept-Encoding': 'gzip',
+          'X-Subscription-Token': process.env.BRAVE_SEARCH_API_KEY!,
         },
         signal: AbortSignal.timeout(this.timeout),
       }
     );
-    
+
     if (!response.ok) {
-      throw new Error(`Bing Search error: ${response.status}`);
+      throw new Error(`Brave Search error: ${response.status}`);
     }
-    
-    const data: SearchAPIResponse = await response.json();
+
+    const data = await response.json() as { web?: { results?: Array<{ title: string; description: string; url: string }> } };
     return (data.web?.results || []).map(r => ({
       title: r.title,
-      snippet: r.snippet,
-      link: r.link,
+      snippet: r.description,
+      link: r.url,
     }));
   }
 
@@ -402,13 +417,15 @@ ${JSON.stringify(allItems.slice(0, 15).map(item => ({
   }
 
   async healthCheck(): Promise<HealthStatus> {
-    const hasSearchApi = !!(process.env.SERPAPI_KEY || process.env.BING_SEARCH_KEY);
-    
+    const hasSerpApi = !!process.env.SERPAPI_KEY;
+    const hasBrave = !!process.env.BRAVE_SEARCH_API_KEY;
+    const channel = hasSerpApi && hasBrave ? 'SerpAPI + Brave' : hasSerpApi ? 'SerpAPI only' : hasBrave ? 'Brave only' : 'none';
+
     return {
-      healthy: hasSearchApi,
+      healthy: hasSerpApi || hasBrave,
       latency: 0,
       lastCheckedAt: new Date(),
-      error: hasSearchApi ? undefined : 'No search API key configured (SERPAPI_KEY or BING_SEARCH_KEY)',
+      error: (hasSerpApi || hasBrave) ? undefined : `No search API key configured — active: ${channel}`,
     };
   }
 }

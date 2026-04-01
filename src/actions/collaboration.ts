@@ -504,3 +504,49 @@ export async function convertCommentToTask(
     sourceCommentId: task.sourceCommentId,
   };
 }
+
+// ==================== Activity History ====================
+
+export type ActivityEntry = {
+  id: string;
+  action: string;
+  createdAt: Date;
+  metadata: Record<string, unknown>;
+  context: Record<string, unknown>;
+  user: { name: string | null } | null;
+};
+
+/**
+ * 查询某实体的 Activity 历史（用于 CollaborativeShell 历史标签页）
+ */
+export async function getEntityActivities(
+  entityType: string,
+  entityId: string,
+  limit = 50
+): Promise<ActivityEntry[]> {
+  const session = await auth();
+  if (!session?.user?.id) return [];
+
+  const activities = await prisma.activity.findMany({
+    where: { entityType, entityId },
+    orderBy: { createdAt: "desc" },
+    take: limit,
+    select: {
+      id: true,
+      action: true,
+      createdAt: true,
+      metadata: true,
+      context: true,
+      user: { select: { name: true } },
+    },
+  });
+
+  return activities.map((a) => ({
+    id: a.id,
+    action: a.action,
+    createdAt: a.createdAt,
+    metadata: (a.metadata as Record<string, unknown>) ?? {},
+    context: (a.context as Record<string, unknown>) ?? {},
+    user: a.user,
+  }));
+}

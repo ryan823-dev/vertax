@@ -1,5 +1,6 @@
 "use client";
 
+import { useSession } from "next-auth/react";
 import { CustomerSidebar } from '@/components/customer/customer-sidebar';
 import { CustomerHeader } from '@/components/customer/customer-header';
 
@@ -8,16 +9,16 @@ export default function CustomerLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // TODO: Get tenant info from context/server
-  const tenantName = '涂豆科技';
-  const tenantSlug = 'tdpaint';
+  const { data: session } = useSession();
+  const tenantName = session?.user?.tenantName;
+  const tenantSlug = session?.user?.tenantSlug;
 
   return (
     <div className="customer-theme flex min-h-screen bg-[#F7F3EA] text-[#111827]">
       <CustomerSidebar tenantName={tenantName} tenantSlug={tenantSlug} />
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
-        <CustomerHeader 
-          tenantName={tenantName} 
+        <CustomerHeader
+          tenantName={tenantName}
           tenantSlug={tenantSlug}
         />
         <section className="flex-1 overflow-y-auto bg-[#F7F3EA] scrollbar-hide">
