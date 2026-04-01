@@ -54,11 +54,11 @@ const EVIDENCE_THRESHOLD = 3;
 
 /** 步骤定义 */
 const STEP_CONFIG = [
-  { key: 'upload', label: '上传资料', href: '/c/knowledge/assets' },
-  { key: 'parse', label: '解析入库', href: '/c/knowledge/assets' },
-  { key: 'evidence', label: '抽取证据', href: '/c/knowledge/evidence' },
-  { key: 'profile', label: '生成企业档案', href: '/c/knowledge/company' },
-  { key: 'persona', label: '更新画像/规范', href: '/c/knowledge/profiles' },
+  { key: 'upload', label: '上传资料', href: '/customer/knowledge/assets' },
+  { key: 'parse', label: '解析入库', href: '/customer/knowledge/assets' },
+  { key: 'evidence', label: '抽取证据', href: '/customer/knowledge/evidence' },
+  { key: 'profile', label: '生成企业档案', href: '/customer/knowledge/company' },
+  { key: 'persona', label: '更新画像/规范', href: '/customer/knowledge/profiles' },
 ] as const;
 
 // ============================================

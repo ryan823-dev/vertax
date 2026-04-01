@@ -113,9 +113,9 @@ export async function requestChanges(
     },
   });
 
-  revalidatePath("/c/hub");
-  revalidatePath("/c/knowledge/company");
-  revalidatePath("/c/marketing/contents");
+  revalidatePath("/customer/hub");
+  revalidatePath("/customer/knowledge/company");
+  revalidatePath("/customer/marketing/contents");
 
   return {
     success: true,
@@ -188,9 +188,9 @@ export async function approveVersion(versionId: string): Promise<ApprovalResult>
     },
   });
 
-  revalidatePath("/c/hub");
-  revalidatePath("/c/knowledge/company");
-  revalidatePath("/c/marketing/contents");
+  revalidatePath("/customer/hub");
+  revalidatePath("/customer/knowledge/company");
+  revalidatePath("/customer/marketing/contents");
 
   return {
     success: true,
@@ -257,7 +257,7 @@ export async function submitForReview(versionId: string): Promise<ApprovalResult
     },
   });
 
-  revalidatePath("/c/hub");
+  revalidatePath("/customer/hub");
 
   return {
     success: true,
@@ -320,7 +320,7 @@ export async function markAsRevised(versionId: string): Promise<ApprovalResult> 
     },
   });
 
-  revalidatePath("/c/hub");
+  revalidatePath("/customer/hub");
 
   return {
     success: true,

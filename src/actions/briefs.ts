@@ -172,7 +172,7 @@ export async function createBrief(input: CreateBriefInput): Promise<BriefListIte
     context: { title: brief.title, keywords: brief.targetKeywords },
   });
 
-  revalidatePath("/c/marketing");
+  revalidatePath("/customer/marketing");
 
   return {
     id: brief.id,
@@ -217,7 +217,7 @@ export async function updateBrief(id: string, input: UpdateBriefInput): Promise<
     context: { updatedFields: Object.keys(data) },
   });
 
-  revalidatePath("/c/marketing");
+  revalidatePath("/customer/marketing");
 }
 
 export async function deleteBrief(id: string): Promise<void> {
@@ -240,7 +240,7 @@ export async function deleteBrief(id: string): Promise<void> {
     context: { softDelete: true },
   });
 
-  revalidatePath("/c/marketing");
+  revalidatePath("/customer/marketing");
 }
 
 // ==================== AI: Generate Brief from Persona ====================
@@ -484,7 +484,7 @@ export async function createBriefsFromTopicCluster(
     });
   }
   
-  revalidatePath("/c/marketing");
+  revalidatePath("/customer/marketing");
   
   return {
     success: errors.length === 0,

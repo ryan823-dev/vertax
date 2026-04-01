@@ -231,7 +231,7 @@ export async function createContentPiece(input: CreateContentInput): Promise<Con
     context: { title: content.title, briefId: content.briefId },
   });
 
-  revalidatePath("/c/marketing");
+  revalidatePath("/customer/marketing");
 
   return {
     id: content.id,
@@ -316,7 +316,7 @@ export async function updateContentPiece(id: string, input: UpdateContentInput):
     context: { updatedFields: Object.keys(data) },
   });
 
-  revalidatePath("/c/marketing");
+  revalidatePath("/customer/marketing");
 }
 
 export async function deleteContentPiece(id: string): Promise<void> {
@@ -338,7 +338,7 @@ export async function deleteContentPiece(id: string): Promise<void> {
     context: { softDelete: true },
   });
 
-  revalidatePath("/c/marketing");
+  revalidatePath("/customer/marketing");
 }
 
 // ==================== AI: Generate Outline from Brief ====================

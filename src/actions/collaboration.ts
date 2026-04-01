@@ -188,7 +188,7 @@ export async function createComment(input: CreateCommentInput): Promise<CommentD
     },
   });
 
-  revalidatePath("/c/hub");
+  revalidatePath("/customer/hub");
 
   return {
     id: comment.id,
@@ -224,7 +224,7 @@ export async function resolveComment(id: string): Promise<void> {
     severity: "info",
   });
 
-  revalidatePath("/c/hub");
+  revalidatePath("/customer/hub");
 }
 
 // ==================== Tasks ====================
@@ -333,7 +333,7 @@ export async function createTask(input: CreateTaskInput): Promise<TaskData> {
     context: { title: task.title, versionId: input.versionId },
   });
 
-  revalidatePath("/c/hub");
+  revalidatePath("/customer/hub");
 
   return {
     id: task.id,
@@ -369,7 +369,7 @@ export async function updateTaskStatus(id: string, status: TaskData["status"]): 
     context: { newStatus: status },
   });
 
-  revalidatePath("/c/hub");
+  revalidatePath("/customer/hub");
 }
 
 export async function updateTask(id: string, input: Partial<CreateTaskInput> & { status?: TaskData["status"] }): Promise<void> {
@@ -387,7 +387,7 @@ export async function updateTask(id: string, input: Partial<CreateTaskInput> & {
     data,
   });
 
-  revalidatePath("/c/hub");
+  revalidatePath("/customer/hub");
 }
 
 // ==================== Stats ====================
@@ -488,7 +488,7 @@ export async function convertCommentToTask(
     },
   });
 
-  revalidatePath("/c/hub");
+  revalidatePath("/customer/hub");
 
   return {
     id: task.id,

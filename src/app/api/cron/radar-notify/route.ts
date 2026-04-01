@@ -115,7 +115,7 @@ export async function GET(req: NextRequest) {
           tenantName: tenant.name,
           newCandidatesCount: newCount,
           topCandidates: newCandidates,
-          dashboardUrl: `https://vertax.top/zh-CN/c/radar/candidates`,
+          dashboardUrl: `https://vertax.top/zh-CN/customer/radar/candidates`,
         });
 
         if (result.success) {

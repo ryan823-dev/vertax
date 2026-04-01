@@ -169,7 +169,7 @@ export async function createConversation(title?: string): Promise<ConversationDa
     severity: "info",
   });
 
-  revalidatePath("/c/home");
+  revalidatePath("/customer/home");
 
   return {
     id: conversation.id,
@@ -187,7 +187,7 @@ export async function deleteConversation(id: string): Promise<void> {
     where: { id, tenantId: session.user.tenantId },
   });
 
-  revalidatePath("/c/home");
+  revalidatePath("/customer/home");
 }
 
 // ==================== Messages ====================
@@ -313,7 +313,7 @@ export async function sendMessage(
     context: { conversationId, hasReferences: references.length > 0 },
   });
 
-  revalidatePath("/c/home");
+  revalidatePath("/customer/home");
 
   return {
     id: assistantMessage.id,
