@@ -666,18 +666,18 @@ export function CreateDiscoveryWizard({
                       <input
                         type="range"
                         min={15}
-                        max={60}
-                        step={5}
+                        max={900}
+                        step={15}
                         value={formData.maxRunSeconds}
                         onChange={(e) => setFormData(prev => ({ ...prev, maxRunSeconds: Number(e.target.value) }))}
                         className="flex-1"
                       />
-                      <span className="text-sm text-slate-600 w-16 text-right">
+                      <span className="text-sm text-slate-600 w-20 text-right">
                         {formData.maxRunSeconds} 秒
                       </span>
                     </div>
                     <p className="text-xs text-slate-400 mt-1">
-                      建议保持在 45 秒以内，避免超时
+                      建议 45-90 秒，大规模采集可延长至 15 分钟
                     </p>
                   </div>
 

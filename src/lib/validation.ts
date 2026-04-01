@@ -91,7 +91,7 @@ export const radarQuerySchema = z.object({
     nextPage: z.number().optional(),
     nextPageToken: z.string().optional(),
   }).optional(),
-  maxResults: z.number().int().min(1).max(500).optional(),
+  maxResults: z.number().int().min(1).max(2000).optional(),
 });
 
 export const radarCandidateCreateSchema = z.object({
@@ -123,7 +123,7 @@ export const radarProfileCreateSchema = z.object({
   sourceIds: z.array(z.string()).optional(),
   scheduleRule: z.string().regex(/^[\d\*\/\-\,\s]+$/, 'Invalid cron expression').optional(),
   isActive: z.boolean().default(true),
-  maxRunSeconds: z.number().int().min(10).max(300).default(45),
+  maxRunSeconds: z.number().int().min(10).max(900).default(45),
   autoQualify: z.boolean().default(false),
   autoEnrich: z.boolean().default(false),
 });

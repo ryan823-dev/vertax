@@ -344,14 +344,20 @@ async function extractTextFromAudioVideo(
 
 /**
  * 使用 markitdown 提取文档内容（更好的表格/图表支持）
+ * 注意：markitdown 是 Python 包，仅在服务器环境可用
  */
 async function extractWithMarkitdown(filePath: string): Promise<string> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { MarkItDown } = require("markitdown");
-    const converter = new MarkItDown();
-    const result = await converter.convert(filePath);
-    return result.textContent || "";
+    // 条件性导入，避免构建时报错
+    if (typeof process !== "undefined" && process.version) {
+      // 动态 require，仅在运行时加载
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { MarkItDown } = eval("require")("markitdown");
+      const converter = new MarkItDown();
+      const result = await converter.convert(filePath);
+      return result.textContent || "";
+    }
+    return "";
   } catch (error) {
     console.warn("[text-extract] markitdown error:", error);
     return "";
