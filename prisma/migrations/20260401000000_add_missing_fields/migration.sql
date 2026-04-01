@@ -53,11 +53,11 @@ CREATE INDEX IF NOT EXISTS "radar_content_links_candidateId_idx"
     ON "radar_content_links"("candidateId");
 
 ALTER TABLE "radar_content_links"
-    ADD CONSTRAINT IF NOT EXISTS "radar_content_links_candidateId_fkey"
+    ADD CONSTRAINT "radar_content_links_candidateId_fkey"
     FOREIGN KEY ("candidateId") REFERENCES "RadarCandidate"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 ALTER TABLE "radar_content_links"
-    ADD CONSTRAINT IF NOT EXISTS "radar_content_links_contentId_fkey"
+    ADD CONSTRAINT "radar_content_links_contentId_fkey"
     FOREIGN KEY ("contentId") REFERENCES "SeoContent"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- === GeoDistributionRecord table ===
@@ -98,5 +98,5 @@ CREATE INDEX IF NOT EXISTS "geo_distribution_records_citationStatus_idx"
     ON "geo_distribution_records"("citationStatus");
 
 ALTER TABLE "geo_distribution_records"
-    ADD CONSTRAINT IF NOT EXISTS "geo_distribution_records_contentId_fkey"
+    ADD CONSTRAINT "geo_distribution_records_contentId_fkey"
     FOREIGN KEY ("contentId") REFERENCES "SeoContent"("id") ON DELETE CASCADE ON UPDATE CASCADE;
