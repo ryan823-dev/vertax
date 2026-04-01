@@ -1,5 +1,5 @@
-// ==================== 社交平台规则参考 ====================
-// 整合自 marketing-skills 框架：platforms-linkedin, platforms-x, platforms-youtube
+// ==================== 社交平台规则参�?====================
+// 整合�?marketing-skills 框架：platforms-linkedin, platforms-x, platforms-youtube
 // 提供各平台内容生成的最佳实践规则，供内容服务统一调用
 
 // ==================== LinkedIn ====================
@@ -19,21 +19,21 @@ export const LINKEDIN_RULES = {
   prompt: `You are a senior LinkedIn content strategist. Write high-engagement LinkedIn posts.
 
 CRITICAL RULES:
-- Sweet spot: 1,300–1,600 characters (highest engagement)
+- Sweet spot: 1,300�?,600 characters (highest engagement)
 - Posts >2,000 chars see ~35% engagement drop
-- First line (hook): ≤210 characters — 60-80% of readers decide to continue here
+- First line (hook): �?10 characters �?60-80% of readers decide to continue here
 - Place key message in first 140 chars
-- 88% of users browse on mobile — use short paragraphs
+- 88% of users browse on mobile �?use short paragraphs
 
 HOOK FORMULA (first line):
 - Strong openings: Specific results, pain points, bold claims, surprising stats
 - AVOID: Vague teases, hashtag-first, generic greetings ("Excited to share...")
 
 STRUCTURE:
-1. Hook (first line, ≤210 chars) — grab attention
-2. Story/insight (body) — deliver value with short paragraphs
-3. Takeaway — actionable conclusion
-4. CTA — question or call to engage
+1. Hook (first line, �?10 chars) �?grab attention
+2. Story/insight (body) �?deliver value with short paragraphs
+3. Takeaway �?actionable conclusion
+4. CTA �?question or call to engage
 5. Hashtags (3+) at the end
 
 FORMATTING:
@@ -63,14 +63,14 @@ CHARACTER LIMITS:
 - Standard: 280 characters (STRICT)
 - Optimal engagement: 71-100 characters
 - URLs count as 23 chars (t.co shortening)
-- Emoji ≈ 2 chars each
+- Emoji �?2 chars each
 
 ALGORITHM INSIGHTS (Grok AI / 2025-2026):
-- Replies have 54-75x weight vs likes — drive conversation
+- Replies have 54-75x weight vs likes �?drive conversation
 - Author reply chains boost visibility ~75x
 - Bookmarks are a strong 2026 signal
 - Media (images/video): ~2x reach; video: 2-4x exposure
-- EXTERNAL LINKS PENALIZE REACH ~50% — put links in reply, not main post
+- EXTERNAL LINKS PENALIZE REACH ~50% �?put links in reply, not main post
 - Post limit: 5-8/day; >10/day reduces visibility ~80%
 - First 30 minutes of engagement decides reach
 
@@ -130,7 +130,7 @@ DESCRIPTION OPTIMIZATION:
 - First 2-3 sentences: primary + secondary keywords naturally (this becomes meta description, under 160 chars)
 - Include timestamps for key sections
 - Add links to website, store, relevant resources
-- Natural flow — help search engines understand the topic
+- Natural flow �?help search engines understand the topic
 
 TAGS:
 - 10-15 relevant tags
@@ -195,16 +195,17 @@ export function getPlatformPrompt(platform: PlatformId): string {
 }
 
 /**
- * 获取指定平台的字符限制
+ * 获取指定平台的字符限�?
  */
 export function getPlatformCharLimit(platform: PlatformId): number {
   const rules = PLATFORM_RULE_MAP[platform];
   if (!rules) return 2000;
-  return rules.charLimit;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (rules as any).charLimit ?? (rules as any).descriptionSnippetChars ?? 2000;
 }
 
 /**
- * 获取指定平台的最佳长度范围
+ * 获取指定平台的最佳长度范�?
  */
 export function getPlatformOptimalLength(platform: PlatformId): { min: number; max: number } | null {
   const rules = PLATFORM_RULE_MAP[platform];

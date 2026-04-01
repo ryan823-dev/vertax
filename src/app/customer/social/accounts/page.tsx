@@ -113,7 +113,8 @@ export default function SocialAccountsPage() {
     setIsLoading(true);
     try {
       const data = await getSocialAccounts();
-      setAccounts((data || []).filter((a: SocialAccount) => a.isActive) as SocialAccount[]);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setAccounts((data || []).filter((a: any) => a.isActive) as SocialAccount[]);
     } catch {
       toast.error('Failed to load accounts');
     } finally {

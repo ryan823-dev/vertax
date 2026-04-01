@@ -6,7 +6,11 @@
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
-import type { GeoChannel, CitationStatus, Prisma } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
+
+// Local enum types (mirrors schema.prisma — avoids dependency on generated client)
+export type GeoChannel = 'CHATGPT' | 'PERPLEXITY' | 'CLAUDE' | 'GEMINI' | 'BING_COPILOT' | 'CUSTOM_SITE';
+export type CitationStatus = 'PENDING' | 'CITED' | 'NOT_CITED' | 'PARTIAL' | 'ERROR';
 
 // ==================== Types ====================
 

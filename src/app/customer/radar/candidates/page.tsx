@@ -59,6 +59,7 @@ import type { RadarPipelineStatus } from '@/lib/radar/pipeline';
 import type { RadarCandidate, RadarSource } from '@prisma/client';
 import type { CandidateType, CandidateStatus } from '@prisma/client';
 import { RadarHeader } from '@/components/radar/radar-header';
+import { RadarContentMatchPanel } from '@/components/radar/radar-content-match-panel';
 
 // ==================== 类型 ====================
 

@@ -28,7 +28,7 @@ import {
   getChannelLabel,
   type GeoDistributionData,
 } from "@/actions/geo-distribution";
-import type { GeoChannel, CitationStatus } from "@prisma/client";
+import type { GeoChannel, CitationStatus } from "@/actions/geo-distribution";
 
 // ==================== Types ====================
 

@@ -595,10 +595,10 @@ export default function SocialPage() {
                               Share on LinkedIn
                             </button>
                           )}
-                          {version.platform === 'linkedin' && version.metrics && (version.metrics as Record<string, string>).shareUrl && (
+                          {version.platform === 'linkedin' && version.metrics && (version.metrics as unknown as Record<string, string>).shareUrl && (
                             <button
                               onClick={() => {
-                                window.open((version.metrics as Record<string, string>).shareUrl, '_blank');
+                                window.open((version.metrics as unknown as Record<string, string>).shareUrl, '_blank');
                               }}
                               className="mt-2 px-3 py-1.5 rounded-lg text-[10px] font-medium flex items-center gap-1 bg-blue-700 text-white hover:bg-blue-800 transition-colors"
                             >

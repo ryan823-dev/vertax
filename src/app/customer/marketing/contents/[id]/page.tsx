@@ -61,6 +61,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { CollaborativeShell } from "@/components/collaboration";
+import { ContentCandidatePanel } from "@/components/radar/content-candidate-panel";
 
 export default function ContentEditorPage() {
   const params = useParams();
@@ -997,5 +998,4 @@ export default function ContentEditorPage() {
       </Dialog>
     </div>
   );
-}
 }

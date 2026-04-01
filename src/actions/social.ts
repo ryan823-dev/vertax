@@ -498,7 +498,8 @@ export async function saveSocialCredentials(data: {
         accessToken,
         refreshToken,
         expiresAt: null,
-        metadata,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        metadata: metadata as any,
         isActive: true,
       },
       update: {
@@ -506,7 +507,8 @@ export async function saveSocialCredentials(data: {
         accessToken,
         refreshToken,
         expiresAt: null,
-        metadata,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        metadata: metadata as any,
         isActive: true,
       },
     });

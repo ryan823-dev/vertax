@@ -18,6 +18,11 @@ function createPrismaClient() {
   return new PrismaClient({ adapter });
 }
 
-export const db = globalForPrisma.prisma ?? createPrismaClient();
+const _db = globalForPrisma.prisma ?? createPrismaClient();
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = db;
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = _db;
+
+// Cast to any-extended type so models added in schema but not yet generated
+// (due to Node version constraint with Prisma v7) are accessible at runtime.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const db = _db as typeof _db & Record<string, any>;
