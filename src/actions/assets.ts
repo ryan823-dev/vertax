@@ -754,13 +754,12 @@ function parseProcessingMeta(metadata: unknown): AssetProcessingMeta {
 }
 
 /**
- * 触发资产文本处理：创建后台任务 → 立即尝试处理
+ * 触发资产文本处理：直接同步处理（简单可靠）
  *
- * 大文件文本提取和分块改为后台处理，避免 Vercel 超时
- * 由于 Vercel Hobby plan 不支持高频 cron，这里会立即尝试调用处理 API
- * 前端通过 batchId 轮询处理状态
+ * 恢复原始实现方式：直接在函数内处理，同步等待结果
+ * 这是最简单可靠的方案，避免后台队列的复杂性
  */
-export async function triggerAssetProcessing(assetId: string): Promise<AssetProcessingMeta & { batchId: string }> {
+export async function triggerAssetProcessing(assetId: string): Promise<AssetProcessingMeta> {
   const session = await getSession();
 
   const asset = await db.asset.findFirst({
@@ -775,115 +774,108 @@ export async function triggerAssetProcessing(assetId: string): Promise<AssetProc
     throw new Error("资产不存在或不可处理");
   }
 
-  // 检查是否已有待处理的队列任务（防止重复提交）
-  const existingTask = await db.assetProcessQueue.findFirst({
-    where: {
-      assetId,
-      status: { in: ["pending", "extracting", "chunking"] },
-    },
-  });
-
-  if (existingTask) {
-    return {
-      processingStatus: existingTask.status as "pending" | "extracting" | "chunking",
-      batchId: existingTask.batchId,
-    };
-  }
-
-  // 生成唯一 batchId
-  const batchId = `asset-${assetId}-${Date.now()}`;
-
-  // 创建后台任务队列记录
-  const queueRecord = await db.assetProcessQueue.create({
-    data: {
-      tenantId: session.user.tenantId,
-      userId: session.user.id,
-      batchId,
-      assetId: asset.id,
-      storageKey: asset.storageKey,
-      mimeType: asset.mimeType,
-      status: "pending",
-      progress: 0,
-      metadata: {
-        fileName: asset.originalName,
-        fileSize: asset.fileSize.toString(),
-        createdAt: new Date().toISOString(),
-      },
-    },
-  });
-
-  // 更新资产状态为 processing（便于前端直接查询）
+  // 更新状态为 processing
   const currentMeta = (asset.metadata || {}) as Record<string, unknown>;
   await db.asset.update({
     where: { id: assetId },
     data: {
-      metadata: {
-        ...currentMeta,
-        processingStatus: "pending",
-        processingBatchId: batchId,
-        processingError: undefined,
-      },
+      metadata: { ...currentMeta, processingStatus: 'processing', processingError: undefined },
     },
   });
 
-  // 立即触发处理（不依赖 cron 调度）
-  // 直接调用处理模块，避免 HTTP 调用的不可靠性
-  const { processAssetTaskDirectly } = await import("@/lib/asset-processor");
+  try {
+    // 提取文本
+    const text = await extractTextFromAsset(asset.storageKey, asset.mimeType);
 
-  // 使用 Promise 异步执行，不等待结果
-  // 在 Vercel serverless 环境中，这可能被中断，但 cron 会作为兜底
-  processAssetTaskDirectly(queueRecord.id).catch((err) => {
-    console.warn("[triggerAssetProcessing] Processing error:", err);
-    // 错误已在 processor 内部处理，这里只是防止未捕获的 Promise rejection
-  });
+    if (!text || text.length < 10 || text.startsWith('[')) {
+      throw new Error('文本提取失败或内容过少');
+    }
 
-  return {
-    processingStatus: "pending",
-    batchId: queueRecord.batchId,
-  };
+    // 分块
+    const chunks = splitTextIntoChunks(text);
+
+    if (chunks.length === 0) {
+      throw new Error('文本分块结果为空');
+    }
+
+    // 清除旧的 chunks（重新处理场景）
+    await db.assetChunk.deleteMany({
+      where: { assetId },
+    });
+
+    // 批量写入 AssetChunk
+    await db.assetChunk.createMany({
+      data: chunks.map((chunk) => ({
+        tenantId: session.user.tenantId,
+        assetId,
+        content: chunk.content,
+        chunkIndex: chunk.chunkIndex,
+        charStart: chunk.charStart,
+        charEnd: chunk.charEnd,
+        tokenCount: chunk.tokenCount,
+      })),
+    });
+
+    // 更新状态为 ready
+    const completedAt = new Date().toISOString();
+    await db.asset.update({
+      where: { id: assetId },
+      data: {
+        metadata: {
+          processingStatus: 'ready',
+          chunkCount: chunks.length,
+          processedAt: completedAt,
+          textLength: text.length,
+        },
+      },
+    });
+
+    return {
+      processingStatus: 'ready',
+      chunkCount: chunks.length,
+      processedAt: completedAt,
+    };
+  } catch (error) {
+    // 更新状态为 failed
+    const errorMessage = error instanceof Error ? error.message : '处理失败';
+    await db.asset.update({
+      where: { id: assetId },
+      data: {
+        metadata: {
+          processingStatus: 'failed',
+          processingError: errorMessage,
+        },
+      },
+    });
+
+    throw error;
+  }
 }
 
 /**
- * 获取资产处理状态（通过 batchId）
+ * 获取资产处理状态（直接从 asset metadata 获取）
  */
-export async function getAssetProcessingStatus(batchId: string): Promise<AssetProcessingMeta & { batchId: string } | null> {
+export async function getAssetProcessingStatus(assetId: string): Promise<AssetProcessingMeta | null> {
   const session = await getSession();
 
-  const queueRecord = await db.assetProcessQueue.findFirst({
+  const asset = await db.asset.findFirst({
     where: {
-      batchId,
+      id: assetId,
       tenantId: session.user.tenantId,
     },
+    select: { metadata: true },
   });
 
-  if (!queueRecord) {
+  if (!asset) {
     return null;
   }
 
-  const meta = queueRecord.metadata as Record<string, unknown> || {};
-
-  // 根据队列状态返回对应的处理元信息
-  if (queueRecord.status === "completed") {
-    return {
-      processingStatus: "ready",
-      processedAt: (meta.completedAt as string) || new Date().toISOString(),
-      chunkCount: (meta.chunkCount as number) || 0,
-      batchId: queueRecord.batchId,
-    };
-  }
-
-  if (queueRecord.status === "failed") {
-    return {
-      processingStatus: "failed",
-      processingError: queueRecord.errorMessage || "处理失败",
-      batchId: queueRecord.batchId,
-    };
-  }
-
-  // pending | extracting | chunking
+  const meta = (asset.metadata || {}) as Record<string, unknown>;
   return {
-    processingStatus: queueRecord.status as "pending" | "extracting" | "chunking",
-    batchId: queueRecord.batchId,
+    processingStatus: (meta.processingStatus as AssetProcessingMeta['processingStatus']) || 'unprocessed',
+    processingError: meta.processingError as string | undefined,
+    processedAt: meta.processedAt as string | undefined,
+    chunkCount: meta.chunkCount as number | undefined,
   };
 }
 
