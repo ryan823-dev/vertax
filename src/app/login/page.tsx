@@ -112,7 +112,9 @@ export default function LoginPage() {
       if (isExternalRedirect) {
         await handleCrossDomainRedirect();
       } else {
-        const targetPath = process.env.NEXT_PUBLIC_VIEW_MODE === "customer" ? "/customer/home" : "/dashboard";
+        // 安全获取 view mode，处理可能的换行符
+        const viewMode = (process.env.NEXT_PUBLIC_VIEW_MODE || '').trim().toLowerCase();
+        const targetPath = viewMode === 'customer' ? '/customer/home' : '/dashboard';
         window.location.href = targetPath;
       }
     }
