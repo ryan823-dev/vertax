@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  const { url, maxPages = 50, folderId } = body;
+  const { url, maxPages = 500, folderId } = body;
 
   // URL validation
   if (!url || typeof url !== "string") {
@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
         });
 
         const { urls: discoveredUrls, method } = await discoverPages(normalizedRoot, {
-          maxPages: Math.min(maxPages, 200),
+          maxPages: Math.min(maxPages, 1000),
         });
 
         send({

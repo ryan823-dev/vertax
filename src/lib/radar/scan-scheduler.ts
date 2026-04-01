@@ -24,7 +24,7 @@ export interface SchedulerResult {
 
 // ==================== 调度器核心 ====================
 
-const MAX_PROFILES_PER_RUN = 3;
+const MAX_PROFILES_PER_RUN = 5;
 const LOCK_TIMEOUT_MS = 5 * 60 * 1000; // 5分钟死锁超时
 
 export async function runScheduledScans(): Promise<SchedulerResult> {

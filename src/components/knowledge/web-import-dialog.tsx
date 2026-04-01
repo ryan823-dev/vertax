@@ -29,7 +29,7 @@ interface WebImportDialogProps {
 
 export function WebImportDialog({ open, onClose, onComplete }: WebImportDialogProps) {
   const [url, setUrl] = useState("");
-  const [maxPages, setMaxPages] = useState(50);
+  const [maxPages, setMaxPages] = useState(500);
   const [phase, setPhase] = useState<Phase>("input");
   const [progress, setProgress] = useState<SSEProgress | null>(null);
   const [urlError, setUrlError] = useState("");
@@ -283,14 +283,14 @@ export function WebImportDialog({ open, onClose, onComplete }: WebImportDialogPr
                     <input
                       type="range"
                       min={5}
-                      max={200}
-                      step={5}
+                      max={1000}
+                      step={50}
                       value={maxPages}
                       onChange={(e) => setMaxPages(Number(e.target.value))}
                       className="flex-1 accent-[#D4AF37]"
                     />
                     <span
-                      className="text-sm font-mono w-12 text-right"
+                      className="text-sm font-mono w-16 text-right"
                       style={{ color: "#D4AF37" }}
                     >
                       {maxPages}
@@ -303,6 +303,9 @@ export function WebImportDialog({ open, onClose, onComplete }: WebImportDialogPr
                   style={{ color: "rgba(255,255,255,0.3)" }}
                 >
                   {"\u7CFB\u7EDF\u5C06\u81EA\u52A8\u53D1\u73B0\u7F51\u7AD9\u9875\u9762\uFF08\u4F18\u5148\u901A\u8FC7 sitemap.xml\uFF0C\u5426\u5219\u94FE\u63A5\u722C\u53D6\uFF09\uFF0C\u63D0\u53D6\u6587\u672C\u5185\u5BB9\u5E76\u5BFC\u5165\u77E5\u8BC6\u5E93\u3002"}
+                </p>
+                <p className="text-xs mt-2" style={{ color: "rgba(255,255,255,0.4)" }}>
+                  建议值：企业官网 200-500，大型网站 500-1000
                 </p>
               </>
             )}

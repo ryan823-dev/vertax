@@ -41,12 +41,22 @@ export interface CrawlProgress {
 }
 
 const DEFAULT_OPTIONS: CrawlOptions = {
-  maxPages: 50,
+  maxPages: 500,
   excludePaths: [
     "/admin", "/login", "/cart", "/checkout", "/account", "/wp-admin", "/api",
     "/privacy", "/terms", "/cookie", "/legal", "/gdpr", "/sitemap", "/feed",
     "/rss", "/tag/", "/tags/", "/author/", "/wp-content", "/cdn-cgi",
     "/unsubscribe", "/imprint", "/disclaimer",
+    // 电商相关
+    "/product/", "/products/", "/category/", "/categories/", "/collection/", "/collections/",
+    "/item/", "/shop/", "/store/", "/mall/", "/marketplace/",
+    // 用户生成内容
+    "/forum/", "/forums/", "/thread/", "/threads/", "/post/", "/posts/",
+    "/comment/", "/comments/", "/review/", "/reviews/", "/question/", "/answer/",
+    // 媒体/下载
+    "/media/", "/downloads/", "/download/", "/files/", "/file/",
+    // 搜索/过滤
+    "/search", "/?s=", "/?q=", "/filter", "/sort",
   ],
   timeout: 15000,
 };
