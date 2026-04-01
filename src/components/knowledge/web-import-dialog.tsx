@@ -25,6 +25,7 @@ interface WebImportDialogProps {
 
 export function WebImportDialog({ open, onClose, onComplete }: WebImportDialogProps) {
   const [url, setUrl] = useState("");
+  const [urlError, setUrlError] = useState("");
   const [maxPages, setMaxPages] = useState(500);
   const [taskId, setTaskId] = useState<string | null>(null);
   const [status, setStatus] = useState<PollStatus | null>(null);
@@ -61,6 +62,7 @@ export function WebImportDialog({ open, onClose, onComplete }: WebImportDialogPr
       try {
         const res = await fetch(`/api/assets/web-import?taskId=${taskId}`, {
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
         });
 
         if (!res.ok) {
@@ -99,6 +101,7 @@ export function WebImportDialog({ open, onClose, onComplete }: WebImportDialogPr
       const res = await fetch("/api/assets/web-import", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ url, maxPages }),
       });
 
@@ -271,7 +274,9 @@ export function WebImportDialog({ open, onClose, onComplete }: WebImportDialogPr
                 <button
                   onClick={async () => {
                     try {
-                      const res = await fetch(`/api/assets/web-import?taskId=${taskId}`);
+                      const res = await fetch(`/api/assets/web-import?taskId=${taskId}`, {
+                        credentials: "include",
+                      });
                       const data = await res.json();
                       setStatus(data);
                     } catch (err) {

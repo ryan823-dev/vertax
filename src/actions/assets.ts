@@ -754,9 +754,12 @@ function parseProcessingMeta(metadata: unknown): AssetProcessingMeta {
 }
 
 /**
- * 触发资产文本处理：提取文本 → 分块 → 写入 AssetChunk
+ * 触发资产文本处理：创建后台任务 → 立即返回
+ * 
+ * 大文件文本提取和分块改为后台处理，避免 Vercel 超时
+ * 前端通过 batchId 轮询处理状态
  */
-export async function triggerAssetProcessing(assetId: string): Promise<AssetProcessingMeta> {
+export async function triggerAssetProcessing(assetId: string): Promise<AssetProcessingMeta & { batchId: string }> {
   const session = await getSession();
 
   const asset = await db.asset.findFirst({
@@ -771,81 +774,106 @@ export async function triggerAssetProcessing(assetId: string): Promise<AssetProc
     throw new Error("资产不存在或不可处理");
   }
 
-  // 更新状态为 processing
+  // 检查是否已有待处理的队列任务（防止重复提交）
+  const existingTask = await db.assetProcessQueue.findFirst({
+    where: {
+      assetId,
+      status: { in: ["pending", "extracting", "chunking"] },
+    },
+  });
+
+  if (existingTask) {
+    return {
+      processingStatus: existingTask.status as "pending" | "extracting" | "chunking",
+      batchId: existingTask.batchId,
+    };
+  }
+
+  // 生成唯一 batchId
+  const batchId = `asset-${assetId}-${Date.now()}`;
+
+  // 创建后台任务队列记录
+  const queueRecord = await db.assetProcessQueue.create({
+    data: {
+      tenantId: session.user.tenantId,
+      userId: session.user.id,
+      batchId,
+      assetId: asset.id,
+      storageKey: asset.storageKey,
+      mimeType: asset.mimeType,
+      status: "pending",
+      progress: 0,
+      metadata: {
+        fileName: asset.originalName,
+        fileSize: asset.fileSize.toString(),
+        createdAt: new Date().toISOString(),
+      },
+    },
+  });
+
+  // 更新资产状态为 processing（便于前端直接查询）
   const currentMeta = (asset.metadata || {}) as Record<string, unknown>;
   await db.asset.update({
     where: { id: assetId },
     data: {
-      metadata: { ...currentMeta, processingStatus: 'processing', processingError: undefined },
+      metadata: {
+        ...currentMeta,
+        processingStatus: "pending",
+        processingBatchId: batchId,
+        processingError: undefined,
+      },
     },
   });
 
-  try {
-    // 提取文本
-    const text = await extractTextFromAsset(asset.storageKey, asset.mimeType);
+  // 立即返回，让 Cron 后台处理
+  return {
+    processingStatus: "pending",
+    batchId: queueRecord.batchId,
+  };
+}
 
-    if (!text || text.length < 10 || text.startsWith('[')) {
-      throw new Error('文本提取失败或内容过少');
-    }
+/**
+ * 获取资产处理状态（通过 batchId）
+ */
+export async function getAssetProcessingStatus(batchId: string): Promise<AssetProcessingMeta & { batchId: string } | null> {
+  const session = await getSession();
 
-    // 分块
-    const chunks = splitTextIntoChunks(text);
+  const queueRecord = await db.assetProcessQueue.findFirst({
+    where: {
+      batchId,
+      tenantId: session.user.tenantId,
+    },
+  });
 
-    if (chunks.length === 0) {
-      throw new Error('文本分块结果为空');
-    }
-
-    // 清除旧的 chunks（重新处理场景）
-    await db.assetChunk.deleteMany({
-      where: { assetId },
-    });
-
-    // 批量写入 AssetChunk
-    await db.assetChunk.createMany({
-      data: chunks.map((chunk) => ({
-        tenantId: session.user.tenantId,
-        assetId,
-        content: chunk.content,
-        chunkIndex: chunk.chunkIndex,
-        charStart: chunk.charStart,
-        charEnd: chunk.charEnd,
-        tokenCount: chunk.tokenCount,
-      })),
-    });
-
-    // 更新状态为 ready
-    const successMeta: AssetProcessingMeta = {
-      processingStatus: 'ready',
-      processedAt: new Date().toISOString(),
-      chunkCount: chunks.length,
-    };
-
-    await db.asset.update({
-      where: { id: assetId },
-      data: {
-        metadata: { ...currentMeta, ...successMeta },
-      },
-    });
-
-    revalidatePath("/zh-CN/knowledge");
-    return successMeta;
-  } catch (error) {
-    // 更新状态为 failed
-    const failMeta: AssetProcessingMeta = {
-      processingStatus: 'failed',
-      processingError: error instanceof Error ? error.message : '处理失败',
-    };
-
-    await db.asset.update({
-      where: { id: assetId },
-      data: {
-        metadata: { ...currentMeta, ...failMeta },
-      },
-    });
-
-    revalidatePath("/zh-CN/knowledge");
-    return failMeta;
+  if (!queueRecord) {
+    return null;
   }
+
+  const meta = queueRecord.metadata as Record<string, unknown> || {};
+
+  // 根据队列状态返回对应的处理元信息
+  if (queueRecord.status === "completed") {
+    return {
+      processingStatus: "ready",
+      processedAt: (meta.completedAt as string) || new Date().toISOString(),
+      chunkCount: (meta.chunkCount as number) || 0,
+      batchId: queueRecord.batchId,
+    };
+  }
+
+  if (queueRecord.status === "failed") {
+    return {
+      processingStatus: "failed",
+      processingError: queueRecord.errorMessage || "处理失败",
+      batchId: queueRecord.batchId,
+    };
+  }
+
+  // pending | extracting | chunking
+  return {
+    processingStatus: queueRecord.status as "pending" | "extracting" | "chunking",
+    batchId: queueRecord.batchId,
+  };
 }
 
 /**

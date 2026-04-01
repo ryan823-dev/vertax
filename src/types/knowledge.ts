@@ -10,13 +10,16 @@ export interface SourceLocator {
 
 // ==================== Asset 处理状态（嵌入 Asset.metadata JSON）====================
 
-export type AssetProcessingStatus = 'unprocessed' | 'processing' | 'ready' | 'failed';
+export type AssetProcessingStatus = 'unprocessed' | 'pending' | 'extracting' | 'chunking' | 'processing' | 'ready' | 'failed';
 
 export interface AssetProcessingMeta {
   processingStatus: AssetProcessingStatus;
   processingError?: string;
   processedAt?: string; // ISO 日期
   chunkCount?: number;
+  // 后台任务支持
+  processingBatchId?: string; // 关联的 AssetProcessQueue batchId
+  processingStep?: string; // 当前处理步骤
 }
 
 // ==================== Chunk 数据 ====================

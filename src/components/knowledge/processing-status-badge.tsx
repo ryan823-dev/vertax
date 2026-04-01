@@ -17,6 +17,27 @@ const STATUS_CONFIG: Record<AssetProcessingStatus, {
     border: 'rgba(0,0,0,0.08)',
     icon: Clock,
   },
+  pending: {
+    label: '排队中',
+    bg: 'rgba(59,130,246,0.08)',
+    color: '#3B82F6',
+    border: 'rgba(59,130,246,0.2)',
+    icon: Loader2,
+  },
+  extracting: {
+    label: '提取文本',
+    bg: 'rgba(59,130,246,0.08)',
+    color: '#3B82F6',
+    border: 'rgba(59,130,246,0.2)',
+    icon: Loader2,
+  },
+  chunking: {
+    label: '分块中',
+    bg: 'rgba(59,130,246,0.08)',
+    color: '#3B82F6',
+    border: 'rgba(59,130,246,0.2)',
+    icon: Loader2,
+  },
   processing: {
     label: '处理中',
     bg: 'rgba(59,130,246,0.08)',

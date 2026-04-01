@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { FileText, FileSpreadsheet, Presentation, Play, Eye, RotateCw, Loader2, File, Globe, ExternalLink } from 'lucide-react';
 import { ProcessingStatusBadge } from './processing-status-badge';
-import { triggerAssetProcessing } from '@/actions/assets';
+import { triggerAssetProcessing, getAssetProcessingStatus } from '@/actions/assets';
 import type { AssetWithProcessingStatus } from '@/types/assets';
+import type { AssetProcessingStatus } from '@/types/knowledge';
 
 function getFileIcon(mimeType: string) {
   if (mimeType.includes('pdf') || mimeType.includes('word') || mimeType.startsWith('text/')) {
@@ -34,6 +35,7 @@ interface KnowledgeAssetCardProps {
 
 export function KnowledgeAssetCard({ asset, onViewChunks, onProcessingUpdate }: KnowledgeAssetCardProps) {
   const [isProcessing, setIsProcessing] = useState(false);
+  const [pollingBatchId, setPollingBatchId] = useState<string | null>(null);
   const isWebAsset = asset.storageKey?.startsWith('web://');
   const fileIcon = isWebAsset
     ? { icon: Globe, color: '#8B5CF6', bg: 'rgba(139,92,246,0.1)', border: 'rgba(139,92,246,0.2)' }
@@ -43,10 +45,42 @@ export function KnowledgeAssetCard({ asset, onViewChunks, onProcessingUpdate }: 
   const webSourceUrl = isWebAsset ? asset.storageKey.replace('web://', '') : null;
   const webHostname = webSourceUrl ? (() => { try { return new URL(webSourceUrl).hostname; } catch { return ''; } })() : null;
 
+  // 轮询处理状态
+  const pollStatus = useCallback(async (batchId: string) => {
+    try {
+      const result = await getAssetProcessingStatus(batchId);
+      if (result) {
+        // 如果处理完成或失败，停止轮询
+        if (result.processingStatus === 'ready' || result.processingStatus === 'failed') {
+          setPollingBatchId(null);
+          onProcessingUpdate?.();
+        }
+      }
+    } catch (err) {
+      console.error('[AssetCard] Poll error:', err);
+      setPollingBatchId(null);
+    }
+  }, [onProcessingUpdate]);
+
+  // 轮询效果
+  useEffect(() => {
+    if (!pollingBatchId) return;
+
+    const interval = setInterval(() => {
+      pollStatus(pollingBatchId);
+    }, 3000); // 每 3 秒轮询一次
+
+    return () => clearInterval(interval);
+  }, [pollingBatchId, pollStatus]);
+
   const handleProcess = async () => {
     setIsProcessing(true);
     try {
-      await triggerAssetProcessing(asset.id);
+      const result = await triggerAssetProcessing(asset.id);
+      // 启动轮询
+      if (result.batchId) {
+        setPollingBatchId(result.batchId);
+      }
       onProcessingUpdate?.();
     } catch {
       // error handled server-side
@@ -54,6 +88,9 @@ export function KnowledgeAssetCard({ asset, onViewChunks, onProcessingUpdate }: 
       setIsProcessing(false);
     }
   };
+
+  // 显示正在处理的状态（包括轮询中的 pending/extracting/chunking）
+  const isBackgroundProcessing = pollingBatchId || ['pending', 'extracting', 'chunking', 'processing'].includes(status);
 
   return (
     <div
@@ -172,13 +209,13 @@ export function KnowledgeAssetCard({ asset, onViewChunks, onProcessingUpdate }: 
           </button>
         )}
 
-        {status === 'processing' && (
+        {(status === 'processing' || isBackgroundProcessing) && (
           <span
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg"
             style={{ background: 'rgba(59,130,246,0.06)', color: '#3B82F6' }}
           >
             <Loader2 size={12} className="animate-spin" />
-            正在提取文本...
+            {status === 'extracting' ? '正在提取文本...' : status === 'chunking' ? '正在分块...' : status === 'pending' ? '排队中...' : '正在提取文本...'}
           </span>
         )}
 

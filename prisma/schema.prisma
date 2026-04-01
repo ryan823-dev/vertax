@@ -21,34 +21,36 @@ model Tenant {
   updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
 
-  users             User[]
-  products          Product[]
-  seoContents       SeoContent[]
-  seoAudits         SeoAudit[]
-  socialPosts       SocialPost[]
-  socialAccounts    SocialAccount[]
-  leads             Lead[]
-  campaigns         Campaign[]
-  categories        ContentCategory[]
-  websiteConfigs    WebsiteConfig[]
-  activities        Activity[]
-  notifications     Notification[]
-  assetFolders      AssetFolder[]
-  assets            Asset[]
-  apiKeys           ApiKey[]
-  companyProfile    CompanyProfile?
-  assetChunks       AssetChunk[]
-  evidences         Evidence[]
-  brandGuidelines   BrandGuideline[]
-  icpSegments       ICPSegment[]
-  personas          Persona[]
-  messagingMatrices MessagingMatrix[]
+  users              User[]
+  products           Product[]
+  seoContents        SeoContent[]
+  seoAudits          SeoAudit[]
+  socialPosts        SocialPost[]
+  socialAccounts     SocialAccount[]
+  leads              Lead[]
+  campaigns          Campaign[]
+  categories         ContentCategory[]
+  websiteConfigs     WebsiteConfig[]
+  activities         Activity[]
+  notifications      Notification[]
+  assetFolders       AssetFolder[]
+  assets             Asset[]
+  apiKeys            ApiKey[]
+  companyProfile     CompanyProfile?
+  assetChunks        AssetChunk[]
+  evidences          Evidence[]
+  brandGuidelines    BrandGuideline[]
+  icpSegments        ICPSegment[]
+  personas           Persona[]
+  messagingMatrices  MessagingMatrix[]
   // Phase 3
-  artifactVersions  ArtifactVersion[]
-  contentBriefs     ContentBrief[]
-  chatConversations ChatConversation[]
+  artifactVersions   ArtifactVersion[]
+  contentBriefs      ContentBrief[]
+  chatConversations  ChatConversation[]
   // Web crawl queue
-  crawlQueues       CrawlQueue[]
+  crawlQueues        CrawlQueue[]
+  // Asset processing queue
+  assetProcessQueues AssetProcessQueue[]
 }
 
 model WebsiteConfig {
@@ -1681,4 +1683,41 @@ model CrawlQueue {
   @@index([batchId])
   @@index([tenantId, status])
   @@map("crawl_queue")
+}
+
+// ==================== ASSET PROCESSING QUEUE ====================
+// 后台处理大文件文本提取和分块
+
+model AssetProcessQueue {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId   String // 发起用户 ID
+  batchId  String @unique // 用于前端轮询
+
+  // 关联资产
+  assetId    String
+  storageKey String
+  mimeType   String
+
+  // 进度跟踪
+  status      String  @default("pending") // pending | extracting | chunking | completed | failed
+  progress    Int     @default(0) // 0-100 百分比
+  currentStep String? // "extracting_text" | "splitting_chunks" | "creating_records"
+
+  // 错误信息
+  errorMessage String?
+
+  // 元数据
+  metadata Json? // { fileName, fileSize, chunkCount?, textLength?, startedAt?, completedAt? }
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([batchId])
+  @@index([assetId])
+  @@index([tenantId, status])
+  @@map("asset_process_queue")
 }
