@@ -34,6 +34,14 @@ import {
 import { executeSkill } from '@/actions/skills';
 import { SKILL_NAMES } from '@/lib/skills/registry';
 import { saveContent } from '@/actions/marketing';
+import {
+  getOutreachRecords,
+  generateOutreachDraft,
+  sendOutreachDraft,
+  type OutreachRecordItem,
+  type OutreachStats,
+  type OutreachDraft,
+} from '@/actions/outreach-draft';
 
 // ==================== 类型 ====================
 
@@ -81,25 +89,42 @@ export default function RadarProspectsPage() {
   });
   const [showFilters, setShowFilters] = useState(false);
 
+  // 外联记录看板（P4）
+  const [outreachRecords, setOutreachRecords] = useState<OutreachRecordItem[]>([]);
+  const [outreachStats, setOutreachStats] = useState<OutreachStats | null>(null);
+  const [outreachView, setOutreachView] = useState<'companies' | 'outreach'>('companies');
+  const [outreachFilter, setOutreachFilter] = useState<'all' | 'noResponse' | 'replied' | 'pending'>('all');
+  // 行内跟进草稿：key = recordId
+  const [expandedRecord, setExpandedRecord] = useState<string | null>(null);
+  const [isFollowingUp, setIsFollowingUp] = useState<string | null>(null);
+  const [inlineDrafts, setInlineDrafts] = useState<Record<string, OutreachDraft>>({});
+
   // 加载数据
   const loadData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const result = await getProspectCompaniesV2({
-        status: filters.status || undefined,
-        tier: filters.tier || undefined,
-        search: filters.search || undefined,
-        limit: 100,
-      });
-      setCompanies(result.companies);
-      setTotal(result.total);
+      const [companyResult, outreachResult] = await Promise.all([
+        getProspectCompaniesV2({
+          status: filters.status || undefined,
+          tier: filters.tier || undefined,
+          search: filters.search || undefined,
+          limit: 100,
+        }),
+        getOutreachRecords({ limit: 100, filter: outreachFilter }).catch(() => null),
+      ]);
+      setCompanies(companyResult.companies);
+      setTotal(companyResult.total);
+      if (outreachResult) {
+        setOutreachRecords(outreachResult.records);
+        setOutreachStats(outreachResult.stats);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : '加载数据失败');
     } finally {
       setIsLoading(false);
     }
-  }, [filters]);
+  }, [filters, outreachFilter]);
 
   useEffect(() => {
     loadData();
@@ -216,6 +241,52 @@ export default function RadarProspectsPage() {
     }
   };
 
+  // 生成行内跟进草稿
+  const handleFollowUp = async (record: OutreachRecordItem) => {
+    if (!record.candidateId) return;
+    setExpandedRecord(record.id);
+    if (inlineDrafts[record.id]) return; // 已有草稿，只展开
+    setIsFollowingUp(record.id);
+    try {
+      const result = await generateOutreachDraft(record.candidateId, record.toEmail);
+      if (result.success && result.draft) {
+        setInlineDrafts(prev => ({ ...prev, [record.id]: result.draft! }));
+      } else {
+        setError(result.error || '生成草稿失败');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '生成草稿失败');
+    } finally {
+      setIsFollowingUp(null);
+    }
+  };
+
+  // 发送行内跟进草稿
+  const handleSendFollowUp = async (recordId: string) => {
+    const draft = inlineDrafts[recordId];
+    if (!draft) return;
+    try {
+      const result = await sendOutreachDraft(draft);
+      if (result.success) {
+        setInlineDrafts(prev => { const n = { ...prev }; delete n[recordId]; return n; });
+        setExpandedRecord(null);
+        loadData();
+      } else {
+        setError(result.error || '发送失败');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '发送失败');
+    }
+  };
+
+  // 更新行内草稿内容
+  const updateInlineDraft = (recordId: string, field: 'subject' | 'body', value: string) => {
+    setInlineDrafts(prev => ({
+      ...prev,
+      [recordId]: { ...prev[recordId], [field]: value },
+    }));
+  };
+
   return (
     <div className="space-y-8">
       {/* Header - 深蓝舞台指令台 */}
@@ -254,7 +325,218 @@ export default function RadarProspectsPage() {
         </div>
       )}
 
-      {/* Stats Bar */}
+      {/* Tab 切换 */}
+      <div className="flex gap-1 bg-[#F0EBD8] rounded-xl p-1">
+        <button
+          onClick={() => setOutreachView('companies')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all ${
+            outreachView === 'companies'
+              ? 'bg-white text-[#0B1B2B] shadow-sm'
+              : 'text-slate-500 hover:text-[#0B1B2B]'
+          }`}
+        >
+          <Users size={14} />
+          线索库 ({total})
+        </button>
+        <button
+          onClick={() => setOutreachView('outreach')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all ${
+            outreachView === 'outreach'
+              ? 'bg-white text-[#0B1B2B] shadow-sm'
+              : 'text-slate-500 hover:text-[#0B1B2B]'
+          }`}
+        >
+          <Send size={14} />
+          外联跟踪
+          {outreachStats && outreachStats.noResponse > 0 && (
+            <span className="w-5 h-5 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center">
+              {outreachStats.noResponse}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* 外联跟踪看板（P4）*/}
+      {outreachView === 'outreach' && (
+        <div className="space-y-4">
+          {/* 统计卡 */}
+          {outreachStats && (
+            <div className="grid grid-cols-4 gap-3">
+              {[
+                { label: '已发送', value: outreachStats.sent, color: 'text-[#0B1B2B]' },
+                { label: '回复率', value: `${outreachStats.replyRate}%`, color: 'text-blue-600' },
+                {
+                  label: '平均回复',
+                  value: outreachStats.avgReplyDays != null ? `${outreachStats.avgReplyDays}天` : '—',
+                  color: 'text-emerald-600',
+                },
+                { label: '7天无响应', value: outreachStats.noResponse, color: 'text-red-500' },
+              ].map(({ label, value, color }) => (
+                <div key={label} className="bg-[#F7F3E8] rounded-xl border border-[#E8E0D0] p-4 text-center">
+                  <div className={`text-2xl font-bold ${color}`}>{value}</div>
+                  <div className="text-xs text-slate-500 mt-1">{label}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* 子 Tab：过滤器 */}
+          <div className="flex gap-1 bg-[#F0EBD8] rounded-xl p-1">
+            {([
+              { key: 'all', label: '全部' },
+              { key: 'pending', label: '待跟进' },
+              { key: 'replied', label: '已回复' },
+              { key: 'noResponse', label: '无响应', badge: outreachStats?.noResponse },
+            ] as const).map(({ key, label, badge }) => (
+              <button
+                key={key}
+                onClick={() => setOutreachFilter(key)}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                  outreachFilter === key
+                    ? 'bg-white text-[#0B1B2B] shadow-sm'
+                    : 'text-slate-500 hover:text-[#0B1B2B]'
+                }`}
+              >
+                {label}
+                {badge != null && badge > 0 && (
+                  <span className="w-4 h-4 rounded-full bg-red-500 text-white text-[9px] flex items-center justify-center">
+                    {badge > 99 ? '99+' : badge}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* 外联记录列表 */}
+          {outreachRecords.length === 0 ? (
+            <div className="text-center py-12 text-slate-400 text-sm">
+              {outreachFilter === 'all' ? '暂无外联记录，去候选池发送开发信吧' : '该分类暂无记录'}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {outreachRecords.map(record => {
+                const isNoResponse = record.sentAt && !record.openedAt &&
+                  new Date(record.sentAt) < new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+                const isExpanded = expandedRecord === record.id;
+                const draft = inlineDrafts[record.id];
+
+                return (
+                  <div
+                    key={record.id}
+                    className={`rounded-xl border transition-all ${
+                      isNoResponse
+                        ? 'bg-red-50/60 border-red-200'
+                        : 'bg-[#F7F3E8] border-[#E8E0D0]'
+                    }`}
+                  >
+                    {/* 记录行 */}
+                    <div className="flex items-start gap-3 p-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-sm font-medium text-[#0B1B2B] truncate">
+                            {record.candidateName || record.toName || record.toEmail}
+                          </span>
+                          {record.candidateCountry && (
+                            <span className="text-[10px] text-slate-400 shrink-0">{record.candidateCountry}</span>
+                          )}
+                          <span className={`ml-auto text-[10px] px-2 py-0.5 rounded-full shrink-0 font-medium ${
+                            record.status === 'opened' ? 'bg-emerald-100 text-emerald-700' :
+                            record.status === 'replied' ? 'bg-blue-100 text-blue-700' :
+                            record.status === 'bounced' ? 'bg-red-100 text-red-600' :
+                            'bg-slate-100 text-slate-500'
+                          }`}>
+                            {record.status === 'opened' ? '已打开' :
+                             record.status === 'replied' ? '已回复' :
+                             record.status === 'bounced' ? '退信' :
+                             record.status === 'sent' ? '已发送' : record.status}
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-slate-500 truncate">{record.subject}</div>
+                        <div className="flex items-center gap-3 mt-2 text-[10px] text-slate-400">
+                          <span>{record.toEmail}</span>
+                          {record.sentAt && (
+                            <span className="flex items-center gap-1">
+                              <Clock size={10} />
+                              {new Date(record.sentAt).toLocaleDateString('zh-CN')}
+                            </span>
+                          )}
+                          {isNoResponse && (
+                            <span className="text-red-500 font-semibold">· 7天无响应</span>
+                          )}
+                        </div>
+                      </div>
+                      {record.candidateId && record.status !== 'replied' && (
+                        <button
+                          onClick={() => handleFollowUp(record)}
+                          disabled={isFollowingUp === record.id}
+                          className={`shrink-0 px-3 py-1.5 text-[11px] rounded-lg transition-colors disabled:opacity-50 ${
+                            isNoResponse
+                              ? 'bg-red-500 text-white hover:bg-red-600'
+                              : 'border border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37]/10'
+                          }`}
+                        >
+                          {isFollowingUp === record.id ? (
+                            <span className="flex items-center gap-1"><Loader2 size={10} className="animate-spin" />生成中</span>
+                          ) : '发跟进'}
+                        </button>
+                      )}
+                    </div>
+
+                    {/* 行内草稿展开区 */}
+                    {isExpanded && (
+                      <div className="border-t border-[#E8E0D0] px-4 pb-4 pt-3 space-y-2">
+                        {draft ? (
+                          <>
+                            <div className="text-[10px] text-slate-400 mb-1">
+                              收件人：<span className="text-slate-600">{draft.toEmail}</span>
+                            </div>
+                            <input
+                              value={draft.subject}
+                              onChange={e => updateInlineDraft(record.id, 'subject', e.target.value)}
+                              className="w-full px-3 py-2 border border-[#E8E0D0] rounded-lg text-xs focus:outline-none focus:border-[#D4AF37] bg-white"
+                              placeholder="邮件主题"
+                            />
+                            <textarea
+                              value={draft.body}
+                              onChange={e => updateInlineDraft(record.id, 'body', e.target.value)}
+                              rows={5}
+                              className="w-full px-3 py-2 border border-[#E8E0D0] rounded-lg text-xs leading-relaxed resize-none focus:outline-none focus:border-[#D4AF37] bg-white"
+                            />
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleSendFollowUp(record.id)}
+                                className="flex-1 py-2 bg-[#D4AF37] text-[#0B1B2B] rounded-xl text-xs font-medium hover:bg-[#C5A030] transition-colors flex items-center justify-center gap-1.5"
+                              >
+                                <Send size={11} />
+                                发送跟进邮件
+                              </button>
+                              <button
+                                onClick={() => setExpandedRecord(null)}
+                                className="px-3 py-2 border border-[#E8E0D0] rounded-xl text-xs text-slate-500 hover:text-slate-700 transition-colors"
+                              >
+                                收起
+                              </button>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="flex items-center justify-center py-3">
+                            <Loader2 size={16} className="animate-spin text-[#D4AF37]" />
+                            <span className="text-xs text-slate-400 ml-2">AI 生成跟进草稿中...</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 线索库（原内容，切换显示）*/}
+      {outreachView === 'companies' && (
+      <>
       <div className="flex items-center gap-6 px-4 py-3 bg-[#F0EBD8] rounded-xl">
         <div className="flex items-center gap-2">
           <Users size={16} className="text-[#D4AF37]" />
@@ -755,6 +1037,7 @@ export default function RadarProspectsPage() {
           )}
         </div>
       </div>
+      </> )} {/* end outreachView === 'companies' */}
     </div>
   );
 }

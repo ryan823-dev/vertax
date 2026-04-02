@@ -455,7 +455,32 @@ export async function qualifyCandidateV2(
       context: { tier, reason } as object,
     },
   });
-  
+
+  // 排除时异步触发：快速记录公司名 + AI 模式提炼
+  if (tier === 'excluded') {
+    const tenantId = session.user.tenantId;
+    void (async () => {
+      try {
+        const { appendExcludedCompany, learnExclusionPattern } = await import(
+          '@/lib/radar/exclusion-learner'
+        );
+        // 1. 立即把公司名追加到 excludedCompanies
+        if (candidate.profileId) {
+          await appendExcludedCompany(candidate.profileId, candidate.displayName);
+        }
+        // 2. 每 5 次排除触发一次 AI 模式提炼（节省 token）
+        const excludedCount = await prisma.radarCandidate.count({
+          where: { tenantId, status: 'EXCLUDED' },
+        });
+        if (excludedCount % 5 === 0 && candidate.profileId) {
+          await learnExclusionPattern(tenantId, candidate.profileId);
+        }
+      } catch {
+        // 静默失败
+      }
+    })();
+  }
+
   return updated;
 }
 

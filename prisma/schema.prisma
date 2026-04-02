@@ -1451,9 +1451,10 @@ model OutreachRecord {
   bodyText String?
   bodyHtml String?
 
-  // 发送状态
+  // 渠道 & 发送状态
+  channel   String  @default("email") // email, linkedin
   messageId String? @unique // Resend message ID
-  status    String  @default("pending") // pending, sent, delivered, opened, clicked, bounced, failed
+  status    String  @default("pending") // pending, sent, delivered, opened, clicked, bounced, failed, draft_copied
 
   // 追踪数据
   sentAt      DateTime?

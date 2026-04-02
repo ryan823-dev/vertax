@@ -17,7 +17,6 @@ import {
   Target,
 } from 'lucide-react';
 import { useRoleContext } from '@/contexts/role-context';
-import { DISPLAY_MODES } from '@/lib/constants';
 import {
   getDashboardStats,
   getPendingActions,
@@ -63,8 +62,7 @@ export default function CEOCockpitPage() {
   const [isSending, setIsSending] = useState(false);
   
   // 从 RoleContext 读取角色与显示模式
-  const { displayMode, isDecider } = useRoleContext();
-  const isSecretaryMode = displayMode === DISPLAY_MODES.SECRETARY;
+  const { isDecider } = useRoleContext();
 
   // ============================================
   // 数据加载
@@ -389,9 +387,8 @@ export default function CEOCockpitPage() {
               </button>
             </div>
 
-            {/* C) 待您审批列表（若有） */}
-            {isSecretaryMode && (
-              <div className="secretary-card-v2 p-4">
+            {/* C) 待您审批列表 */}
+            <div className="secretary-card-v2 p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <CheckCircle2 size={14} className="text-dark-secondary" />
                   <span className="text-dark font-bold text-sm">待您审批</span>
@@ -420,7 +417,6 @@ export default function CEOCockpitPage() {
                   <p className="text-dark-muted text-sm py-2">已为您处理完毕，暂无需确认事项。</p>
                 )}
               </div>
-            )}
           </aside>
         </div>
       </div>

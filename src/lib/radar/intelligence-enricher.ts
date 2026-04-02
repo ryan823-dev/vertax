@@ -3,6 +3,10 @@
  *
  * Phase 2: 使用 funding-tracker, news-intelligence, linkedin-research skills 的能力
  * 为候选公司丰富情报数据，提升评估准确性
+ * 
+ * 2026-04-01 增强：
+ * - 集成 Hunter.io 自动查找联系人邮箱
+ * - 集成 Tavily AI 搜索作为 Exa 的补充/备份
  */
 
 import { prisma } from '@/lib/prisma';
@@ -36,6 +40,8 @@ export interface IntelligenceData {
       name: string;
       title: string;
       linkedIn?: string;
+      email?: string; // 2026-04-01: 新增邮箱字段
+      emailConfidence?: number;
     }>;
   };
 
@@ -59,9 +65,9 @@ export interface BatchEnrichmentResult {
   totalFailed: number;
 }
 
-// ==================== Exa Search 工具 ====================
+// ==================== 搜索工具封装 ====================
 
-interface ExaSearchResult {
+interface SearchResult {
   title?: string;
   url?: string;
   publishedDate?: string;
@@ -69,250 +75,36 @@ interface ExaSearchResult {
 }
 
 /**
- * 使用 Exa 搜索获取融资信息
+ * 统一搜索封装：优先使用 Exa，若失败或无结果则尝试 Tavily
  */
-async function searchFunding(companyName: string): Promise<IntelligenceData['funding']> {
-  const query = `"${companyName}" funding raised investment`;
-  const searchResults = await exaSearch(query, 'news', 10);
-
-  if (searchResults.length === 0) {
-    return undefined;
+async function unifiedSearch(
+  query: string, 
+  type: 'news' | 'auto' = 'auto', 
+  numResults: number = 10
+): Promise<SearchResult[]> {
+  // 1. 尝试 Exa
+  let results = await exaSearch(query, type, numResults);
+  
+  // 2. 如果 Exa 没结果且有 Tavily Key，尝试 Tavily
+  if (results.length === 0 && process.env.TAVILY_API_KEY) {
+    console.log(`[RadarEnrich] Exa returned no results for "${query}", trying Tavily...`);
+    results = await tavilySearch(query, numResults);
   }
-
-  // 解析融资信息
-  const fundingData: IntelligenceData['funding'] = {
-    recentNews: searchResults
-      .slice(0, 3)
-      .map(r => r.title)
-      .filter(Boolean)
-      .join('; '),
-  };
-
-  // 使用 AI 提取结构化数据
-  const context = searchResults
-    .map(r => `Title: ${r.title}\nDate: ${r.publishedDate}\nContent: ${r.text?.slice(0, 500)}`)
-    .join('\n\n');
-
-  try {
-    const aiResponse = await chatCompletion(
-      [
-        {
-          role: 'system',
-          content: `从以下搜索结果中提取融资信息。返回 JSON 格式：
-{
-  "totalRaised": "总融资额，如 $100M",
-  "latestRound": "最新轮次，如 Series B",
-  "latestRoundDate": "日期，如 2024",
-  "valuation": "估值，如 $1B",
-  "leadInvestors": ["投资者1", "投资者2"]
-}
-如果信息不完整，只返回能确定的字段。`
-        },
-        {
-          role: 'user',
-          content: context
-        }
-      ],
-      {
-        model: 'qwen-plus',
-        temperature: 0.1,
-        maxTokens: 500,
-      }
-    );
-
-    const parsed = JSON.parse(aiResponse.content.trim());
-    return { ...parsed, recentNews: fundingData.recentNews };
-  } catch {
-    return fundingData;
-  }
+  
+  return results;
 }
 
 /**
- * 使用 Exa 搜索获取新闻动态
- */
-async function searchNews(companyName: string): Promise<IntelligenceData['news']> {
-  const query = `"${companyName}" news company`;
-  const searchResults = await exaSearch(query, 'news', 15);
-
-  if (searchResults.length === 0) {
-    return undefined;
-  }
-
-  const headlines = searchResults
-    .map(r => r.title)
-    .filter(Boolean) as string[];
-
-  const dates = searchResults
-    .map(r => r.publishedDate)
-    .filter(Boolean) as string[];
-
-  // 使用 AI 判断情绪
-  const content = searchResults
-    .slice(0, 5)
-    .map(r => r.text?.slice(0, 300))
-    .filter(Boolean)
-    .join('\n\n');
-
-  let sentiment: 'positive' | 'neutral' | 'negative' = 'neutral';
-  let themes: string[] = [];
-
-  try {
-    const aiResponse = await chatCompletion(
-      [
-        {
-          role: 'system',
-          content: `分析以下新闻内容的情绪和主题。
-返回 JSON 格式：
-{
-  "sentiment": "positive|neutral|negative",
-  "themes": ["主题1", "主题2"]
-}
-情绪判断：
-- positive: 增长、成功、积极指标
-- negative: 下滑、争议、负面指标
-- neutral: 中立报道、事实性内容`
-        },
-        {
-          role: 'user',
-          content: content.slice(0, 2000)
-        }
-      ],
-      {
-        model: 'qwen-plus',
-        temperature: 0.1,
-        maxTokens: 300,
-      }
-    );
-
-    const parsed = JSON.parse(aiResponse.content.trim());
-    sentiment = parsed.sentiment || 'neutral';
-    themes = parsed.themes || [];
-  } catch {
-    // AI 解析失败，使用默认 neutral
-  }
-
-  return {
-    recentHeadlines: headlines.slice(0, 10),
-    sentiment,
-    keyThemes: themes.slice(0, 5),
-    lastNewsDate: dates[0],
-  };
-}
-
-/**
- * 使用 Exa 搜索获取 LinkedIn 联系人
- */
-async function searchContacts(companyName: string): Promise<IntelligenceData['contacts']> {
-  const query = `"${companyName}" "LinkedIn" OR "CEO" OR "VP" OR "Director" team leadership`;
-  const searchResults = await exaSearch(query, 'auto', 15);
-
-  if (searchResults.length === 0) {
-    return undefined;
-  }
-
-  // 提取可能的联系人信息
-  const context = searchResults
-    .map(r => `${r.title}\n${r.text?.slice(0, 300)}`)
-    .join('\n\n');
-
-  try {
-    const aiResponse = await chatCompletion(
-      [
-        {
-          role: 'system',
-          content: `从以下搜索结果中提取决策者信息。
-返回 JSON 格式：
-{
-  "decisionMakers": [
-    {"name": "姓名", "title": "职位", "linkedIn": "URL如果有"}
-  ]
-}
-只返回明确能识别的决策者，最多5人。`
-        },
-        {
-          role: 'user',
-          content: context.slice(0, 3000)
-        }
-      ],
-      {
-        model: 'qwen-plus',
-        temperature: 0.1,
-        maxTokens: 500,
-      }
-    );
-
-    const parsed = JSON.parse(aiResponse.content.trim());
-    return { decisionMakers: parsed.decisionMakers || [] };
-  } catch {
-    return undefined;
-  }
-}
-
-/**
- * 使用 Exa 搜索竞品信息
- */
-async function searchCompetitors(companyName: string): Promise<IntelligenceData['competitors']> {
-  const query = `"${companyName}" competitors alternatives`;
-  const searchResults = await exaSearch(query, 'auto', 10);
-
-  if (searchResults.length === 0) {
-    return undefined;
-  }
-
-  const context = searchResults
-    .map(r => `${r.title}\n${r.text?.slice(0, 200)}`)
-    .join('\n\n');
-
-  try {
-    const aiResponse = await chatCompletion(
-      [
-        {
-          role: 'system',
-          content: `从以下搜索结果中提取竞品信息。
-返回 JSON 格式：
-{
-  "directCompetitors": ["竞品1", "竞品2"],
-  "marketPosition": "一句话描述市场定位"
-}
-只返回能确定的竞品名称。`
-        },
-        {
-          role: 'user',
-          content: context.slice(0, 2000)
-        }
-      ],
-      {
-        model: 'qwen-plus',
-        temperature: 0.1,
-        maxTokens: 300,
-      }
-    );
-
-    const parsed = JSON.parse(aiResponse.content.trim());
-    return {
-      directCompetitors: parsed.directCompetitors || [],
-      marketPosition: parsed.marketPosition,
-    };
-  } catch {
-    return undefined;
-  }
-}
-
-/**
- * Exa 搜索封装
+ * Exa 搜索实现
  */
 async function exaSearch(
   query: string,
   type: 'news' | 'auto' = 'auto',
   numResults: number = 10
-): Promise<ExaSearchResult[]> {
+): Promise<SearchResult[]> {
   try {
-    // 检查是否有 Exa API
     const apiKey = process.env.EXA_API_KEY;
-    if (!apiKey) {
-      console.log('[RadarIntelligence] No EXA_API_KEY configured');
-      return [];
-    }
+    if (!apiKey) return [];
 
     const response = await fetch('https://api.exa.ai/search', {
       method: 'POST',
@@ -325,25 +117,13 @@ async function exaSearch(
         numResults,
         type: type === 'news' ? 'news' : 'auto',
         category: type === 'news' ? undefined : 'company',
-        contents: {
-          text: true,
-          summary: true,
-        },
+        contents: { text: true, summary: true },
       }),
     });
 
-    if (!response.ok) {
-      console.error('[RadarIntelligence] Exa API error:', response.status);
-      return [];
-    }
-
+    if (!response.ok) return [];
     const data = await response.json();
-    return (data.results || []).map((r: {
-      title?: string;
-      url?: string;
-      publishedDate?: string;
-      text?: string;
-    }) => ({
+    return (data.results || []).map((r: any) => ({
       title: r.title,
       url: r.url,
       publishedDate: r.publishedDate,
@@ -355,7 +135,189 @@ async function exaSearch(
   }
 }
 
-// ==================== 核心函数 ====================
+/**
+ * Tavily 搜索实现
+ */
+async function tavilySearch(query: string, numResults: number = 5): Promise<SearchResult[]> {
+  try {
+    const apiKey = process.env.TAVILY_API_KEY;
+    if (!apiKey) return [];
+
+    const response = await fetch('https://api.tavily.com/search', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        query,
+        max_results: numResults,
+        search_depth: "advanced",
+      }),
+    });
+
+    if (!response.ok) return [];
+    const data = await response.json();
+    return (data.results || []).map((r: any) => ({
+      title: r.title,
+      url: r.url,
+      text: r.content,
+    }));
+  } catch (error) {
+    console.error('[RadarIntelligence] Tavily search failed:', error);
+    return [];
+  }
+}
+
+// ==================== Hunter.io 工具 ====================
+
+/**
+ * 使用 Hunter.io 查找个人邮箱
+ */
+async function hunterFindEmail(domain: string, fullName: string): Promise<{ email: string | null; confidence: number }> {
+  try {
+    const apiKey = process.env.HUNTER_API_KEY;
+    if (!apiKey || !domain) return { email: null, confidence: 0 };
+
+    // 简单拆分姓名
+    const parts = fullName.trim().split(/\s+/);
+    const firstName = parts[0] || '';
+    const lastName = parts.length > 1 ? parts[parts.length - 1] : '';
+
+    const params = new URLSearchParams({
+      domain,
+      first_name: firstName,
+      last_name: lastName,
+      api_key: apiKey,
+    });
+
+    const response = await fetch(`https://api.hunter.io/v2/email-finder?${params}`);
+    if (!response.ok) return { email: null, confidence: 0 };
+
+    const data = await response.json();
+    return {
+      email: data.data?.email || null,
+      confidence: data.data?.score || 0
+    };
+  } catch {
+    return { email: null, confidence: 0 };
+  }
+}
+
+// ==================== 业务逻辑函数 ====================
+
+/**
+ * 获取融资信息
+ */
+async function searchFunding(companyName: string): Promise<IntelligenceData['funding']> {
+  const query = `"${companyName}" funding raised investment round`;
+  const searchResults = await unifiedSearch(query, 'news', 10);
+
+  if (searchResults.length === 0) return undefined;
+
+  const context = searchResults
+    .map(r => `Title: ${r.title}\nDate: ${r.publishedDate}\nContent: ${r.text?.slice(0, 500)}`)
+    .join('\n\n');
+
+  try {
+    const aiResponse = await chatCompletion([
+      {
+        role: 'system',
+        content: `从以下搜索结果中提取融资信息。返回 JSON 格式：
+{
+  "totalRaised": "总融资额，如 $100M",
+  "latestRound": "最新轮次，如 Series B",
+  "latestRoundDate": "日期，如 2024",
+  "valuation": "估值，如 $1B",
+  "leadInvestors": ["投资者1", "投资者2"]
+}
+如果信息不完整，只返回能确定的字段。`
+      },
+      { role: 'user', content: context }
+    ], { model: 'qwen-plus', temperature: 0.1 });
+
+    const parsed = JSON.parse(aiResponse.content.trim().replace(/```json|```/g, ''));
+    return { 
+      ...parsed, 
+      recentNews: searchResults.slice(0, 2).map(r => r.title).join('; ') 
+    };
+  } catch {
+    return { recentNews: searchResults[0].title };
+  }
+}
+
+/**
+ * 获取新闻动态
+ */
+async function searchNews(companyName: string): Promise<IntelligenceData['news']> {
+  const query = `"${companyName}" latest business news developments`;
+  const searchResults = await unifiedSearch(query, 'news', 10);
+
+  if (searchResults.length === 0) return undefined;
+
+  const content = searchResults.slice(0, 5).map(r => r.text?.slice(0, 300)).join('\n\n');
+
+  try {
+    const aiResponse = await chatCompletion([
+      {
+        role: 'system',
+        content: `分析以下新闻内容的情绪和主题。返回 JSON：{"sentiment": "positive|neutral|negative", "themes": ["主题1"]}`
+      },
+      { role: 'user', content: content }
+    ], { model: 'qwen-plus', temperature: 0.1 });
+
+    const parsed = JSON.parse(aiResponse.content.trim().replace(/```json|```/g, ''));
+    return {
+      recentHeadlines: searchResults.map(r => r.title).filter(Boolean) as string[],
+      sentiment: parsed.sentiment || 'neutral',
+      keyThemes: parsed.themes || [],
+      lastNewsDate: searchResults[0].publishedDate,
+    };
+  } catch {
+    return { recentHeadlines: searchResults.slice(0, 3).map(r => r.title).filter(Boolean) as string[] };
+  }
+}
+
+/**
+ * 获取联系人并尝试补全邮箱
+ */
+async function searchContacts(companyName: string, domain?: string): Promise<IntelligenceData['contacts']> {
+  const query = `"${companyName}" decision makers leadership "LinkedIn"`;
+  const searchResults = await unifiedSearch(query, 'auto', 10);
+
+  if (searchResults.length === 0) return undefined;
+
+  const context = searchResults.map(r => `${r.title}\n${r.text?.slice(0, 300)}`).join('\n\n');
+
+  try {
+    const aiResponse = await chatCompletion([
+      {
+        role: 'system',
+        content: `提取决策者信息（姓名、职位、LinkedIn）。JSON：{"decisionMakers": [{"name": "...", "title": "...", "linkedIn": "..."}]}`
+      },
+      { role: 'user', content: context }
+    ], { model: 'qwen-plus', temperature: 0.1 });
+
+    const parsed = JSON.parse(aiResponse.content.trim().replace(/```json|```/g, ''));
+    const makers = parsed.decisionMakers || [];
+
+    // 如果有域名，尝试用 Hunter.io 查找邮箱
+    if (domain && makers.length > 0) {
+      console.log(`[RadarEnrich] Finding emails for ${makers.length} contacts of ${companyName} via Hunter.io...`);
+      for (const person of makers) {
+        const hResult = await hunterFindEmail(domain, person.name);
+        if (hResult.email) {
+          person.email = hResult.email;
+          person.emailConfidence = hResult.confidence;
+        }
+      }
+    }
+
+    return { decisionMakers: makers };
+  } catch {
+    return undefined;
+  }
+}
 
 /**
  * 丰富单个候选的情报数据
@@ -372,94 +334,36 @@ export async function enrichCandidateIntelligence(
   const errors: string[] = [];
   const intelligence: IntelligenceData = {};
 
-  // 获取候选信息
   const candidate = await prisma.radarCandidate.findUnique({
     where: { id: candidateId },
   });
 
-  if (!candidate) {
-    return {
-      candidateId,
-      success: false,
-      data: {},
-      errors: ['Candidate not found'],
-    };
-  }
+  if (!candidate) return { candidateId, success: false, data: {}, errors: ['Not found'] };
 
   const companyName = candidate.displayName;
-  const website = candidate.website;
+  const domain = candidate.website ? candidate.website.replace(/^https?:\/\//, '').replace(/\/.*$/, '') : undefined;
 
-  // 默认启用所有增强
-  const opts = {
-    includeFunding: options?.includeFunding ?? true,
-    includeNews: options?.includeNews ?? true,
-    includeContacts: options?.includeContacts ?? true,
-    includeCompetitors: options?.includeCompetitors ?? false,
-  };
-
-  // 并行执行各项搜索
   const tasks: Promise<unknown>[] = [];
 
-  if (opts.includeFunding) {
-    tasks.push(
-      searchFunding(companyName)
-        .then(data => {
-          if (data) intelligence.funding = data;
-        })
-        .catch(e => errors.push(`Funding: ${e.message}`))
-    );
+  if (options?.includeFunding !== false) {
+    tasks.push(searchFunding(companyName).then(d => { if (d) intelligence.funding = d; }).catch(e => errors.push(`Funding: ${e.message}`)));
   }
-
-  if (opts.includeNews) {
-    tasks.push(
-      searchNews(companyName)
-        .then(data => {
-          if (data) intelligence.news = data;
-        })
-        .catch(e => errors.push(`News: ${e.message}`))
-    );
+  if (options?.includeNews !== false) {
+    tasks.push(searchNews(companyName).then(d => { if (d) intelligence.news = d; }).catch(e => errors.push(`News: ${e.message}`)));
   }
-
-  if (opts.includeContacts) {
-    tasks.push(
-      searchContacts(companyName)
-        .then(data => {
-          if (data) intelligence.contacts = data;
-        })
-        .catch(e => errors.push(`Contacts: ${e.message}`))
-    );
-  }
-
-  if (opts.includeCompetitors) {
-    tasks.push(
-      searchCompetitors(companyName)
-        .then(data => {
-          if (data) intelligence.competitors = data;
-        })
-        .catch(e => errors.push(`Competitors: ${e.message}`))
-    );
+  if (options?.includeContacts !== false) {
+    tasks.push(searchContacts(companyName, domain).then(d => { if (d) intelligence.contacts = d; }).catch(e => errors.push(`Contacts: ${e.message}`)));
   }
 
   await Promise.allSettled(tasks);
 
-  // 如果有网站，尝试补充搜索
-  if (website && Object.keys(intelligence).length === 0) {
-    const domain = website.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
-    const domainResults = await exaSearch(domain, 'auto', 5);
-
-    if (domainResults.length > 0) {
-      intelligence.news = {
-        recentHeadlines: domainResults.map(r => r.title).filter(Boolean) as string[],
-      };
-    }
-  }
-
-  // 保存到数据库
   if (Object.keys(intelligence).length > 0) {
     await prisma.radarCandidate.update({
       where: { id: candidateId },
       data: {
         enrichedAt: new Date(),
+        // 尝试提取第一个发现的有效邮箱/网站回填主表
+        email: candidate.email || intelligence.contacts?.decisionMakers?.find(m => m.email)?.email,
         rawData: {
           ...(candidate.rawData as object || {}),
           intelligence,
@@ -476,161 +380,69 @@ export async function enrichCandidateIntelligence(
   };
 }
 
-/**
- * 批量丰富候选情报
- */
-export async function enrichCandidatesIntelligence(
-  candidateIds: string[],
-  options?: {
-    includeFunding?: boolean;
-    includeNews?: boolean;
-    includeContacts?: boolean;
-    includeCompetitors?: boolean;
-    concurrency?: number;
-  }
-): Promise<BatchEnrichmentResult> {
-  const concurrency = options?.concurrency || 5;
-  const results: EnrichmentResult[] = [];
-  let totalEnriched = 0;
-  let totalFailed = 0;
-
-  // 分批处理
-  for (let i = 0; i < candidateIds.length; i += concurrency) {
-    const batch = candidateIds.slice(i, i + concurrency);
-
-    const batchResults = await Promise.allSettled(
-      batch.map(id => enrichCandidateIntelligence(id, options))
-    );
-
-    for (const result of batchResults) {
-      if (result.status === 'fulfilled') {
-        results.push(result.value);
-        if (result.value.success) {
-          totalEnriched++;
-        } else {
-          totalFailed++;
-        }
-      } else {
-        totalFailed++;
-        results.push({
-          candidateId: 'unknown',
-          success: false,
-          data: {},
-          errors: [result.reason?.message || 'Unknown error'],
-        });
-      }
-    }
-  }
-
-  return {
-    results,
-    totalEnriched,
-    totalFailed,
-  };
-}
-
-// ==================== 信号评分 ====================
-
 export interface SignalScore {
-  fundingSignal: number;      // 0-100, 融资后通常有采购需求
-  newsSignal: number;         // 0-100, 新闻活跃度
-  timingSignal: number;       // 0-100, 接触时机成熟度
-  contactSignal: number;      // 0-100, 决策者信息完整度
-  overallScore: number;       // 综合评分
+  fundingSignal: number;
+  newsSignal: number;
+  timingSignal: number;
+  contactSignal: number;
+  overallScore: number;
 }
 
 /**
- * 从情报数据计算信号评分
+ * 信号评分计算
  */
 export function calculateSignalScores(intelligence: IntelligenceData): SignalScore {
-  let fundingSignal = 0;
-  let newsSignal = 50; // 默认中等
-  let timingSignal = 50;
-  let contactSignal = 0;
+  let funding = 0, news = 50, timing = 50, contact = 0;
 
-  // 融资信号
   if (intelligence.funding) {
-    const f = intelligence.funding;
-    if (f.latestRound) {
-      // 近期融资 +30
-      fundingSignal += 30;
-    }
-    if (f.valuation) {
-      // 有估值说明是成长型公司 +20
-      fundingSignal += 20;
-    }
-    if (f.leadInvestors && f.leadInvestors.length > 0) {
-      // 有知名投资者 +20
-      fundingSignal += 20;
-    }
-    if (f.recentNews) {
-      // 有融资相关新闻 +30
-      fundingSignal += 30;
-    }
+    if (intelligence.funding.latestRound) funding += 40;
+    if (intelligence.funding.valuation) funding += 30;
+    if (intelligence.funding.leadInvestors?.length) funding += 30;
   }
 
-  // 新闻信号
   if (intelligence.news) {
-    const n = intelligence.news;
-    if (n.sentiment === 'positive') {
-      newsSignal = 80;
-    } else if (n.sentiment === 'negative') {
-      newsSignal = 40;
-    }
-
-    // 新闻数量越多越活跃
-    if (n.recentHeadlines && n.recentHeadlines.length > 5) {
-      newsSignal += 10;
-    }
+    if (intelligence.news.sentiment === 'positive') news = 80;
+    else if (intelligence.news.sentiment === 'negative') news = 30;
+    if ((intelligence.news.recentHeadlines?.length || 0) > 3) news += 10;
   }
 
-  // 时机信号：基于融资和新闻综合判断
-  timingSignal = Math.min(100, (fundingSignal + newsSignal) / 2);
+  timing = Math.round((funding + news) / 2);
 
-  // 联系人信号
-  if (intelligence.contacts?.decisionMakers) {
-    const contacts = intelligence.contacts.decisionMakers;
-    contactSignal = Math.min(100, contacts.length * 25);
+  if (intelligence.contacts?.decisionMakers?.length) {
+    contact = Math.min(100, intelligence.contacts.decisionMakers.length * 25);
+    // 如果有邮箱，联系人分数翻倍
+    if (intelligence.contacts.decisionMakers.some(m => m.email)) contact = Math.min(100, contact + 30);
   }
 
-  const overallScore = Math.round(
-    (fundingSignal * 0.3 + newsSignal * 0.2 + timingSignal * 0.25 + contactSignal * 0.25)
-  );
+  const overall = Math.round(funding * 0.3 + news * 0.2 + timing * 0.2 + contact * 0.3);
 
   return {
-    fundingSignal: Math.min(100, fundingSignal),
-    newsSignal: Math.min(100, newsSignal),
-    timingSignal: Math.min(100, timingSignal),
-    contactSignal: Math.min(100, contactSignal),
-    overallScore,
+    fundingSignal: Math.min(100, funding),
+    newsSignal: Math.min(100, news),
+    timingSignal: Math.min(100, timing),
+    contactSignal: Math.min(100, contact),
+    overallScore: overall,
   };
 }
 
 /**
- * 丰富候选并计算信号评分
+ * 快捷调用：丰富 + 评分
  */
-export async function enrichWithSignalScore(
-  candidateId: string,
-  options?: Parameters<typeof enrichCandidateIntelligence>[1]
-): Promise<{
-  enrichment: EnrichmentResult;
-  signals: SignalScore;
-}> {
-  const enrichment = await enrichCandidateIntelligence(candidateId, options);
+export async function enrichWithSignalScore(candidateId: string) {
+  const enrichment = await enrichCandidateIntelligence(candidateId);
   const signals = calculateSignalScores(enrichment.data);
 
-  // 更新数据库中的信号评分
   if (enrichment.success) {
     await prisma.radarCandidate.update({
       where: { id: candidateId },
       data: {
+        matchScore: signals.overallScore, // 覆盖原始匹配分
         aiRelevance: {
-          ...(enrichment.data as object),
+          ...(enrichment.data as any),
           signalScores: signals,
-        } as object,
+        } as any,
       },
     });
   }
-
   return { enrichment, signals };
 }

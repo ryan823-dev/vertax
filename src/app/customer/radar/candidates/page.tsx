@@ -44,6 +44,7 @@ import {
   TrendingUp,
   Shield,
   MessageSquare,
+  Copy,
 } from 'lucide-react';
 import {
   getCandidatesV2,
@@ -54,6 +55,15 @@ import {
   getRadarStatsV2,
   type RadarStatsData,
 } from '@/actions/radar-v2';
+import {
+  generateOutreachDraft,
+  sendOutreachDraft,
+  enrichCandidateNow,
+  generateLinkedInDraft,
+  recordLinkedInCopy,
+  type OutreachDraft,
+  type LinkedInDraft,
+} from '@/actions/outreach-draft';
 import { getRadarPipelineStatus } from '@/actions/radar-pipeline';
 import type { RadarPipelineStatus } from '@/lib/radar/pipeline';
 import type { RadarCandidate, RadarSource } from '@prisma/client';
@@ -110,6 +120,22 @@ export default function RadarCandidatesPage() {
   const [emailSequence, setEmailSequence] = useState<any>(null);
   const [sequenceError, setSequenceError] = useState<string | null>(null);
   const [expandedEmailIndex, setExpandedEmailIndex] = useState<number | null>(null);
+
+  // AI 草稿生成状态（P2）
+  const [isGeneratingDraft, setIsGeneratingDraft] = useState(false);
+  const [outreachDraft, setOutreachDraft] = useState<OutreachDraft | null>(null);
+  const [draftError, setDraftError] = useState<string | null>(null);
+  const [isSendingDraft, setIsSendingDraft] = useState(false);
+  const [draftSent, setDraftSent] = useState(false);
+
+  // LinkedIn DM 状态（P6）
+  const [linkedInDraft, setLinkedInDraft] = useState<LinkedInDraft | null>(null);
+  const [isGeneratingLinkedIn, setIsGeneratingLinkedIn] = useState(false);
+  const [linkedInCopied, setLinkedInCopied] = useState(false);
+
+  // 手动丰富化状态（P3）
+  const [isEnriching, setIsEnriching] = useState(false);
+  const [enrichDone, setEnrichDone] = useState(false);
   
   // 从 URL 参数初始化筛选条件
   const initialStatus = searchParams.get('status') as CandidateStatus | null;
@@ -279,7 +305,7 @@ export default function RadarCandidatesPage() {
     }
   };
 
-  // 当选择候选时，加载背调结果
+  // 当选择候选时，加载背调结果 & 重置草稿
   useEffect(() => {
     if (selectedCandidate) {
       loadResearchData(selectedCandidate.id);
@@ -288,7 +314,101 @@ export default function RadarCandidatesPage() {
       setResearchData(null);
       setEmailSequence(null);
     }
+    setOutreachDraft(null);
+    setDraftError(null);
+    setDraftSent(false);
+    setEnrichDone(false);
+    setLinkedInDraft(null);
+    setLinkedInCopied(false);
   }, [selectedCandidate?.id]);
+
+  // 生成 AI 草稿（P2）
+  const handleGenerateDraft = async (candidate: CandidateWithSource) => {
+    setIsGeneratingDraft(true);
+    setDraftError(null);
+    setOutreachDraft(null);
+    setDraftSent(false);
+    try {
+      const result = await generateOutreachDraft(candidate.id, manualEmail || undefined);
+      if (result.success && result.draft) {
+        setOutreachDraft(result.draft);
+      } else {
+        setDraftError(result.error || '生成失败');
+      }
+    } catch (err) {
+      setDraftError(err instanceof Error ? err.message : '生成失败');
+    } finally {
+      setIsGeneratingDraft(false);
+    }
+  };
+
+  // 发送 AI 草稿（P2）
+  const handleSendDraft = async () => {
+    if (!outreachDraft) return;
+    setIsSendingDraft(true);
+    try {
+      const result = await sendOutreachDraft(outreachDraft);
+      if (result.success) {
+        setDraftSent(true);
+        setOutreachDraft(null);
+        loadData(true);
+      } else {
+        setDraftError(result.error || '发送失败');
+      }
+    } catch (err) {
+      setDraftError(err instanceof Error ? err.message : '发送失败');
+    } finally {
+      setIsSendingDraft(false);
+    }
+  };
+
+  // LinkedIn DM 草稿生成（P6）
+  const handleGenerateLinkedIn = async (candidate: CandidateWithSource, linkedInUrl: string) => {
+    setIsGeneratingLinkedIn(true);
+    setLinkedInDraft(null);
+    setLinkedInCopied(false);
+    try {
+      const result = await generateLinkedInDraft(candidate.id, linkedInUrl);
+      if (result.success && result.draft) {
+        setLinkedInDraft(result.draft);
+      } else {
+        setDraftError(result.error || 'LinkedIn 草稿生成失败');
+      }
+    } catch (err) {
+      setDraftError(err instanceof Error ? err.message : '生成失败');
+    } finally {
+      setIsGeneratingLinkedIn(false);
+    }
+  };
+
+  // 复制 LinkedIn DM 并记录外联（P6）
+  const handleCopyLinkedIn = async () => {
+    if (!linkedInDraft) return;
+    await navigator.clipboard.writeText(linkedInDraft.message);
+    setLinkedInCopied(true);
+    // 异步记录，不阻塞 UI
+    void recordLinkedInCopy(linkedInDraft.candidateId, linkedInDraft.linkedInUrl, linkedInDraft.message);
+    setTimeout(() => setLinkedInCopied(false), 3000);
+  };
+
+  // 手动立即丰富化（P3）
+  const handleEnrichNow = async (candidate: CandidateWithSource) => {
+    setIsEnriching(true);
+    setEnrichDone(false);
+    try {
+      const result = await enrichCandidateNow(candidate.id);
+      if (result.success) {
+        setEnrichDone(true);
+        loadData(true);
+      } else {
+        setError(result.error || '丰富化失败');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '丰富化失败');
+    } finally {
+      setIsEnriching(false);
+    }
+  };
 
   // 生成邮件序列
   const handleGenerateSequence = async (candidate: CandidateWithSource) => {
@@ -867,6 +987,162 @@ export default function RadarCandidatesPage() {
                   );
                 })()}
 
+                {/* 情报面板：融资 + 决策者邮箱 + 信号评分 */}
+                {(() => {
+                  const raw = selectedCandidate.rawData as {
+                    intelligence?: {
+                      funding?: {
+                        totalRaised?: string;
+                        latestRound?: string;
+                        latestRoundDate?: string;
+                        valuation?: string;
+                        leadInvestors?: string[];
+                        recentNews?: string;
+                      };
+                      news?: {
+                        recentHeadlines?: string[];
+                        sentiment?: string;
+                        keyThemes?: string[];
+                      };
+                      contacts?: {
+                        decisionMakers?: Array<{
+                          name: string;
+                          title: string;
+                          linkedIn?: string;
+                          email?: string;
+                          emailConfidence?: number;
+                        }>;
+                      };
+                    };
+                    signalScores?: {
+                      fundingSignal?: number;
+                      newsSignal?: number;
+                      contactSignal?: number;
+                      overallScore?: number;
+                    };
+                  } | null;
+
+                  const intel = raw?.intelligence;
+                  const signals = raw?.signalScores || (selectedCandidate.aiRelevance as any)?.signalScores;
+                  if (!intel && !signals) return null;
+
+                  return (
+                    <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-5">
+                      <h4 className="flex items-center gap-2 text-sm font-bold text-[#0B1B2B] mb-4">
+                        <TrendingUp size={14} className="text-[#D4AF37]" />
+                        情报雷达
+                      </h4>
+
+                      {/* 信号评分可视化 */}
+                      {signals && (
+                        <div className="mb-4 space-y-2">
+                          {[
+                            { label: '融资信号', value: signals.fundingSignal ?? 0, color: 'bg-emerald-400' },
+                            { label: '新闻热度', value: signals.newsSignal ?? 0, color: 'bg-blue-400' },
+                            { label: '联系人', value: signals.contactSignal ?? 0, color: 'bg-amber-400' },
+                          ].map(({ label, value, color }) => (
+                            <div key={label}>
+                              <div className="flex justify-between text-[10px] text-slate-500 mb-1">
+                                <span>{label}</span>
+                                <span>{value}</span>
+                              </div>
+                              <div className="h-1.5 bg-[#E8E0D0] rounded-full overflow-hidden">
+                                <div className={`h-full ${color} rounded-full transition-all`} style={{ width: `${value}%` }} />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* 融资信息 */}
+                      {intel?.funding && (intel.funding.latestRound || intel.funding.totalRaised) && (
+                        <div className="mb-3 bg-[#FFFCF7] rounded-xl border border-[#E8E0D0] p-3">
+                          <div className="text-xs font-medium text-[#0B1B2B] mb-2 flex items-center gap-1">
+                            <DollarSign size={11} className="text-[#D4AF37]" />
+                            融资动态
+                          </div>
+                          <div className="grid grid-cols-2 gap-1 text-[11px]">
+                            {intel.funding.latestRound && (
+                              <div><span className="text-slate-400">轮次：</span>{intel.funding.latestRound} {intel.funding.latestRoundDate}</div>
+                            )}
+                            {intel.funding.totalRaised && (
+                              <div><span className="text-slate-400">累计：</span>{intel.funding.totalRaised}</div>
+                            )}
+                            {intel.funding.valuation && (
+                              <div><span className="text-slate-400">估值：</span>{intel.funding.valuation}</div>
+                            )}
+                            {intel.funding.leadInvestors?.length ? (
+                              <div className="col-span-2"><span className="text-slate-400">投资方：</span>{intel.funding.leadInvestors.slice(0, 3).join('、')}</div>
+                            ) : null}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 决策者联系人 */}
+                      {intel?.contacts?.decisionMakers?.length ? (
+                        <div className="mb-3 bg-[#FFFCF7] rounded-xl border border-[#E8E0D0] p-3">
+                          <div className="text-xs font-medium text-[#0B1B2B] mb-2 flex items-center gap-1">
+                            <Users size={11} className="text-[#D4AF37]" />
+                            决策者联系人
+                          </div>
+                          <div className="space-y-2">
+                            {intel.contacts.decisionMakers.slice(0, 3).map((person, i) => (
+                              <div key={i} className="flex items-start gap-2">
+                                <div className="w-6 h-6 rounded-full bg-[#D4AF37]/20 flex items-center justify-center shrink-0 mt-0.5">
+                                  <span className="text-[9px] font-bold text-[#D4AF37]">{person.name.charAt(0)}</span>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-[11px] font-medium text-[#0B1B2B] truncate">{person.name}</div>
+                                  <div className="text-[10px] text-slate-400 truncate">{person.title}</div>
+                                  {person.email && (
+                                    <a
+                                      href={`mailto:${person.email}`}
+                                      className="text-[10px] text-[#D4AF37] hover:underline flex items-center gap-1 truncate"
+                                    >
+                                      <Mail size={9} />
+                                      {person.email}
+                                      {person.emailConfidence && (
+                                        <span className="text-slate-400 shrink-0">({person.emailConfidence}%)</span>
+                                      )}
+                                    </a>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
+
+                      {/* 最新新闻 */}
+                      {intel?.news?.recentHeadlines?.length ? (
+                        <div className="bg-[#FFFCF7] rounded-xl border border-[#E8E0D0] p-3">
+                          <div className="text-xs font-medium text-[#0B1B2B] mb-2 flex items-center gap-1.5">
+                            <Clock size={11} className="text-[#D4AF37]" />
+                            近期动态
+                            {intel.news.sentiment && (
+                              <span className={`ml-auto text-[9px] px-1.5 py-0.5 rounded-full ${
+                                intel.news.sentiment === 'positive' ? 'bg-emerald-100 text-emerald-700' :
+                                intel.news.sentiment === 'negative' ? 'bg-red-100 text-red-700' :
+                                'bg-slate-100 text-slate-500'
+                              }`}>
+                                {intel.news.sentiment === 'positive' ? '积极' : intel.news.sentiment === 'negative' ? '消极' : '中性'}
+                              </span>
+                            )}
+                          </div>
+                          <div className="space-y-1">
+                            {intel.news.recentHeadlines.slice(0, 3).map((headline, i) => (
+                              <div key={i} className="text-[11px] text-slate-600 flex items-start gap-1.5">
+                                <span className="text-[#D4AF37] mt-0.5 shrink-0">•</span>
+                                <span className="line-clamp-2">{headline}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })()}
+
                 {/* AI背调模块 */}
                 <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-5">
                   <div className="flex items-center justify-between mb-3">
@@ -1166,14 +1442,14 @@ export default function RadarCandidatesPage() {
                     </button>
                   )}
 
-                  {/* Send Outreach Email */}
+                  {/* 发送开发信（AI 草稿生成）*/}
                   {(selectedCandidate.status === 'QUALIFIED' || selectedCandidate.status === 'NEW') &&
                    selectedCandidate.qualifyTier && selectedCandidate.qualifyTier !== 'excluded' && (
                     <div className="mt-3 pt-3 border-t border-[#E8E0D0]">
                       <p className="text-xs text-slate-500 mb-2">发送开发信</p>
 
-                      {/* 如果没有email，显示输入框 */}
-                      {!selectedCandidate.email && (
+                      {/* 手动输入邮箱（候选无邮箱时）*/}
+                      {!selectedCandidate.email && !outreachDraft && (
                         <input
                           type="email"
                           value={manualEmail}
@@ -1183,35 +1459,172 @@ export default function RadarCandidatesPage() {
                         />
                       )}
 
-                      {/* 发送成功提示 */}
-                      {emailSent ? (
+                      {draftSent ? (
                         <div className="flex items-center gap-2 py-2.5 px-4 bg-emerald-50 text-emerald-600 rounded-xl text-sm">
                           <CheckCircle2 size={16} />
                           邮件已发送！
                         </div>
+                      ) : outreachDraft ? (
+                        /* 草稿预览 + 编辑 + 发送 */
+                        <div className="space-y-2">
+                          <div className="bg-[#FFFCF7] rounded-xl border border-[#E8E0D0] p-3">
+                            <div className="text-[10px] text-slate-400 mb-1">收件人</div>
+                            <div className="text-xs text-slate-700 font-medium truncate">{outreachDraft.toEmail}</div>
+                            <div className="text-[10px] text-slate-400 mt-2 mb-1">主题</div>
+                            <input
+                              value={outreachDraft.subject}
+                              onChange={(e) => setOutreachDraft({ ...outreachDraft, subject: e.target.value })}
+                              className="w-full text-xs text-[#0B1B2B] bg-transparent border-0 focus:outline-none font-medium"
+                            />
+                            <div className="text-[10px] text-slate-400 mt-2 mb-1">正文</div>
+                            <textarea
+                              value={outreachDraft.body}
+                              onChange={(e) => setOutreachDraft({ ...outreachDraft, body: e.target.value })}
+                              rows={8}
+                              className="w-full text-[11px] text-slate-600 bg-transparent border-0 resize-none focus:outline-none leading-relaxed"
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => setOutreachDraft(null)}
+                              className="flex-1 py-2 text-xs text-slate-500 border border-[#E8E0D0] rounded-xl hover:bg-[#F7F3E8] transition-colors"
+                            >
+                              重新生成
+                            </button>
+                            <button
+                              onClick={handleSendDraft}
+                              disabled={isSendingDraft}
+                              className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#D4AF37] text-[#0B1B2B] rounded-xl text-xs font-medium hover:bg-[#C5A030] transition-colors disabled:opacity-50"
+                            >
+                              {isSendingDraft ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
+                              {isSendingDraft ? '发送中...' : '确认发送'}
+                            </button>
+                          </div>
+                          {draftError && <p className="text-[11px] text-red-500">{draftError}</p>}
+                        </div>
                       ) : (
+                        /* 生成草稿按钮 */
                         <button
-                          onClick={() => handleSendEmail(selectedCandidate)}
-                          disabled={isSendingEmail || (!selectedCandidate.email && !manualEmail)}
+                          onClick={() => handleGenerateDraft(selectedCandidate)}
+                          disabled={isGeneratingDraft || (!selectedCandidate.email && !manualEmail)}
                           className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#D4AF37] text-[#0B1B2B] rounded-xl text-sm font-medium hover:bg-[#C5A030] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          {isSendingEmail ? (
-                            <>
-                              <Loader2 size={16} className="animate-spin" />
-                              发送中...
-                            </>
+                          {isGeneratingDraft ? (
+                            <><Loader2 size={16} className="animate-spin" />AI 生成草稿中...</>
                           ) : (
-                            <>
-                              <Send size={16} />
-                              发送开发信
-                            </>
+                            <><Sparkles size={16} />AI 生成开发信草稿</>
                           )}
                         </button>
                       )}
+                      {draftError && !outreachDraft && <p className="text-xs text-red-500 mt-2">{draftError}</p>}
+                    </div>
+                  )}
 
-                      {/* 错误提示 */}
-                      {emailError && (
-                        <p className="text-xs text-red-500 mt-2">{emailError}</p>
+                  {/* LinkedIn DM（P6）— 有决策者 linkedIn 时显示 */}
+                  {(() => {
+                    const intel = (selectedCandidate.rawData as {
+                      intelligence?: {
+                        contacts?: {
+                          decisionMakers?: Array<{ name: string; title: string; linkedIn?: string }>;
+                        };
+                      };
+                    } | null)?.intelligence;
+                    const linkedInProfiles = intel?.contacts?.decisionMakers?.filter(p => p.linkedIn) ?? [];
+                    if (linkedInProfiles.length === 0) return null;
+                    const targetPerson = linkedInProfiles[0];
+                    const linkedInUrl = targetPerson.linkedIn!;
+                    return (
+                      <div className="mt-3 pt-3 border-t border-[#E8E0D0]">
+                        <div className="text-[11px] font-medium text-[#0B1B2B] mb-2 flex items-center gap-1.5">
+                          <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-[#0A66C2]" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                          </svg>
+                          LinkedIn DM — {targetPerson.name}
+                          <a
+                            href={linkedInUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="ml-auto text-[10px] text-[#0A66C2] hover:underline"
+                          >
+                            查看主页 →
+                          </a>
+                        </div>
+
+                        {linkedInDraft?.candidateId === selectedCandidate.id ? (
+                          <div className="space-y-2">
+                            <textarea
+                              value={linkedInDraft.message}
+                              onChange={e => setLinkedInDraft({ ...linkedInDraft, message: e.target.value })}
+                              rows={4}
+                              maxLength={300}
+                              className="w-full px-3 py-2 border border-[#E8E0D0] rounded-xl text-[11px] leading-relaxed resize-none focus:outline-none focus:border-[#0A66C2] bg-white"
+                            />
+                            <div className="flex items-center justify-between text-[10px] text-slate-400">
+                              <span>{linkedInDraft.message.length}/300 字符</span>
+                              <button
+                                onClick={() => setLinkedInDraft(null)}
+                                className="hover:text-slate-600"
+                              >
+                                重新生成
+                              </button>
+                            </div>
+                            <button
+                              onClick={handleCopyLinkedIn}
+                              className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                                linkedInCopied
+                                  ? 'bg-emerald-500 text-white'
+                                  : 'bg-[#0A66C2] text-white hover:bg-[#004182]'
+                              }`}
+                            >
+                              {linkedInCopied ? (
+                                <><CheckCircle2 size={15} />已复制！去 LinkedIn 粘贴发送</>
+                              ) : (
+                                <><Copy size={15} />一键复制 DM</>
+                              )}
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => handleGenerateLinkedIn(selectedCandidate, linkedInUrl)}
+                            disabled={isGeneratingLinkedIn}
+                            className="w-full flex items-center justify-center gap-2 py-2.5 border-2 border-[#0A66C2] text-[#0A66C2] rounded-xl text-sm font-medium hover:bg-[#0A66C2]/5 transition-colors disabled:opacity-50"
+                          >
+                            {isGeneratingLinkedIn ? (
+                              <><Loader2 size={15} className="animate-spin" />AI 生成 DM 中...</>
+                            ) : (
+                              <>
+                                <svg viewBox="0 0 24 24" className="w-4 h-4 fill-[#0A66C2]" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                                </svg>
+                                AI 生成 LinkedIn DM
+                              </>
+                            )}
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })()}
+
+                  {/* 立即丰富化（P3）*/}
+                  {selectedCandidate.status !== 'IMPORTED' && (
+                    <div className="mt-3 pt-3 border-t border-[#E8E0D0]">
+                      {enrichDone ? (
+                        <div className="flex items-center gap-2 py-2 text-emerald-600 text-xs">
+                          <CheckCircle2 size={14} />
+                          情报丰富化完成，已更新数据
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => handleEnrichNow(selectedCandidate)}
+                          disabled={isEnriching}
+                          className="w-full flex items-center justify-center gap-2 py-2 border border-[#E8E0D0] text-slate-500 rounded-xl text-xs hover:bg-[#F7F3E8] hover:text-[#0B1B2B] transition-colors disabled:opacity-50"
+                        >
+                          {isEnriching ? (
+                            <><Loader2 size={13} className="animate-spin" />情报丰富化中...</>
+                          ) : (
+                            <><Zap size={13} />立即丰富情报</>
+                          )}
+                        </button>
                       )}
                     </div>
                   )}

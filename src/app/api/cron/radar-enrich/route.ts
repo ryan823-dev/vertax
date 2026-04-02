@@ -1,19 +1,22 @@
 /**
- * Cron: 雷达详情补全
+ * Cron: 雷达详情补全 & 情报丰富化 (Exa + Tavily + Hunter.io)
  * 
- * 每小时执行一次，对 status=ENRICHING 的候选调用 adapter.getDetails() 补全。
- * 条款E: 仅 Tier A/B + 缺关键字段 + supportsDetails 才会进入此队列。
- * 条款F: 硬超时 50 秒。
+ * 每 6 小时执行一次 (vercel.json: 0 *\/6 * * *)
+ * 对 status=ENRICHING 的候选进行深度丰富。
  * 
- * 配置 vercel.json cron: 0 * * * *
+ * 2026-04-01 增强：
+ * - 结合原始适配器 getDetails() 与通用的 Intelligence Enricher
+ * - 引入 Hunter.io 查找决策者邮箱
+ * - 引入 Tavily 作为备用搜索
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAdapter, ensureAdaptersInitialized } from '@/lib/radar/adapters';
+import { enrichWithSignalScore } from '@/lib/radar/intelligence-enricher';
 
-const MAX_RUN_SECONDS = 50;
-const MAX_BATCH_SIZE = 20;
+const MAX_RUN_SECONDS = 55; // Vercel Hobby max is 60s, leave buffer
+const MAX_BATCH_SIZE = 10;  // 深度丰富耗时较长，减小批次
 
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get('authorization');
@@ -28,14 +31,15 @@ export async function GET(req: NextRequest) {
 
   const stats = {
     processed: 0,
-    enriched: 0,
+    adapterEnriched: 0,
+    intelligenceEnriched: 0,
     failed: 0,
     skipped: 0,
     errors: [] as string[],
   };
 
   try {
-    // 查询 ENRICHING 候选（带 source 信息）
+    // 查询 ENRICHING 候选
     const candidates = await prisma.radarCandidate.findMany({
       where: { status: 'ENRICHING' },
       include: { source: true },
@@ -47,44 +51,20 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ ok: true, ...stats, message: 'No ENRICHING candidates' });
     }
 
-    // 按 sourceId 分组
-    const grouped = new Map<string, typeof candidates>();
-    for (const c of candidates) {
-      if (!grouped.has(c.sourceId)) grouped.set(c.sourceId, []);
-      grouped.get(c.sourceId)!.push(c);
-    }
-
-    for (const [sourceId, batch] of grouped) {
+    for (const candidate of candidates) {
       if (Date.now() >= deadline) {
-        stats.skipped += batch.length;
-        stats.errors.push('Timeout reached');
-        break;
+        stats.skipped++;
+        continue;
       }
 
-      const source = batch[0].source;
-
+      console.log(`[RadarEnrich] Enriching candidate: ${candidate.displayName} (${candidate.id})`);
+      
       try {
-        const adapter = getAdapter(source.code, source.adapterConfig as Record<string, unknown>);
-
-        if (!adapter.getDetails) {
-          // 适配器不支持 getDetails，直接跳过并标记为 QUALIFIED
-          await prisma.radarCandidate.updateMany({
-            where: { id: { in: batch.map(c => c.id) } },
-            data: { status: 'QUALIFIED', enrichedAt: new Date() },
-          });
-          stats.skipped += batch.length;
-          continue;
-        }
-
-        for (const candidate of batch) {
-          if (Date.now() >= deadline) {
-            stats.skipped++;
-            break;
-          }
-
-          try {
+        // 1. 尝试原始适配器的 getDetails (比如从 Google Places 拿电话/详情)
+        try {
+          const adapter = getAdapter(candidate.source.code, candidate.source.adapterConfig as any);
+          if (adapter.getDetails) {
             const details = await adapter.getDetails(candidate.externalId);
-
             if (details) {
               await prisma.radarCandidate.update({
                 where: { id: candidate.id },
@@ -94,55 +74,47 @@ export async function GET(req: NextRequest) {
                   website: details.website || candidate.website,
                   address: details.address || candidate.address,
                   description: details.description || candidate.description,
-                  status: 'QUALIFIED',
-                  enrichedAt: new Date(),
                 },
               });
-              stats.enriched++;
-            } else {
-              // 无详情返回，直接标记为 QUALIFIED
-              await prisma.radarCandidate.update({
-                where: { id: candidate.id },
-                data: { status: 'QUALIFIED', enrichedAt: new Date() },
-              });
-              stats.skipped++;
+              stats.adapterEnriched++;
             }
+          }
+        } catch (err) {
+          console.warn(`[RadarEnrich] Adapter getDetails failed for ${candidate.id}, continuing to intelligence enrich...`);
+        }
 
-            stats.processed++;
-
-            // 速率限制
-            await new Promise(r => setTimeout(r, 500));
-          } catch (candidateError) {
-            stats.failed++;
-            stats.errors.push(
-              `Candidate ${candidate.id}: ${candidateError instanceof Error ? candidateError.message : 'Unknown'}`
-            );
-
-            // 失败后恢复为 QUALIFIED（不卡死在 ENRICHING）
-            await prisma.radarCandidate.update({
-              where: { id: candidate.id },
-              data: { status: 'QUALIFIED' },
-            }).catch(() => {});
+        // 2. 深度情报丰富 (Exa + Tavily + Hunter.io)
+        // 只有配置了 key 才会真正执行
+        if (process.env.EXA_API_KEY || process.env.TAVILY_API_KEY) {
+          const enrichResult = await enrichWithSignalScore(candidate.id);
+          if (enrichResult.enrichment.success) {
+            stats.intelligenceEnriched++;
           }
         }
-      } catch (sourceError) {
-        stats.errors.push(
-          `Source ${sourceId}: ${sourceError instanceof Error ? sourceError.message : 'Unknown'}`
-        );
+
+        // 3. 标记为 QUALIFIED
+        await prisma.radarCandidate.update({
+          where: { id: candidate.id },
+          data: { status: 'QUALIFIED' },
+        });
+
+        stats.processed++;
+      } catch (error) {
+        console.error(`[RadarEnrich] Failed to enrich candidate ${candidate.id}:`, error);
+        stats.failed++;
+        stats.errors.push(`${candidate.displayName}: ${error instanceof Error ? error.message : 'Unknown'}`);
+        
+        // 报错也要流转状态，避免卡死
+        await prisma.radarCandidate.update({
+          where: { id: candidate.id },
+          data: { status: 'QUALIFIED' },
+        }).catch(() => {});
       }
     }
 
-    console.log(
-      `[radar-enrich] Processed ${stats.processed}, ` +
-      `enriched: ${stats.enriched}, failed: ${stats.failed}, skipped: ${stats.skipped}`
-    );
-
     return NextResponse.json({ ok: true, ...stats });
   } catch (error) {
-    console.error('[radar-enrich] Error:', error);
-    return NextResponse.json(
-      { error: 'Internal error', message: error instanceof Error ? error.message : 'Unknown' },
-      { status: 500 }
-    );
+    console.error('[radar-enrich] Fatal Error:', error);
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }
 }
