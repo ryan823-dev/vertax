@@ -1452,15 +1452,19 @@ model OutreachRecord {
   bodyHtml String?
 
   // 渠道 & 发送状态
-  channel   String  @default("email") // email, linkedin
+  channel   String  @default("email") // email, linkedin, whatsapp, phone
   messageId String? @unique // Resend message ID
-  status    String  @default("pending") // pending, sent, delivered, opened, clicked, bounced, failed, draft_copied
+  status    String  @default("pending") // pending, sent, delivered, opened, clicked, bounced, failed, draft_copied, manual_sent
 
   // 追踪数据
   sentAt      DateTime?
   deliveredAt DateTime?
   openedAt    DateTime?
   clickedAt   DateTime?
+  repliedAt   DateTime?
+
+  // 通话结果 (phone channel)
+  callResult  String? // connected, no_answer, voicemail, meeting_booked, not_interested, callback
 
   // 错误信息
   error String?

@@ -472,7 +472,8 @@ export async function getOutreachRecords(options?: {
   });
 
   // 全量统计（不受 filter 影响）
-  const allRecords = await prisma.outreachRecord.findMany({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- repliedAt added in migration, Prisma client stale
+  const allRecords: Array<{ status: string; sentAt: Date | null; openedAt: Date | null; repliedAt: Date | null }> = await (prisma.outreachRecord as any).findMany({
     where: { tenantId },
     select: { status: true, sentAt: true, openedAt: true, repliedAt: true },
   });
@@ -508,4 +509,137 @@ export async function getOutreachRecords(options?: {
   };
 
   return { records, stats, total };
+}
+
+// ==================== 手动外联记录（WhatsApp / Phone）====================
+
+export async function recordManualOutreach(params: {
+  companyId: string;
+  contactId?: string;
+  channel: 'whatsapp' | 'phone' | 'linkedin';
+  toPhone?: string;
+  toName?: string;
+  messageText?: string;
+  callResult?: string;
+}): Promise<{ success: boolean; recordId?: string; error?: string }> {
+  const session = await auth();
+  if (!session?.user?.tenantId) return { success: false, error: 'Unauthorized' };
+
+  const tenantId = session.user.tenantId;
+
+  // 验证公司存在
+  const company = await prisma.prospectCompany.findUnique({
+    where: { id: params.companyId, tenantId },
+    select: { id: true, name: true, sourceCandidateId: true },
+  });
+  if (!company) return { success: false, error: '公司不存在' };
+
+  // 查找关联的候选
+  const candidateId = company.sourceCandidateId || null;
+  let profileId: string | null = null;
+  if (candidateId) {
+    const candidate = await prisma.radarCandidate.findUnique({
+      where: { id: candidateId },
+      select: { profileId: true },
+    });
+    profileId = candidate?.profileId || null;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- callResult added in migration but Prisma client not yet regenerated
+  const record = await (prisma.outreachRecord.create as any)({
+    data: {
+      tenantId,
+      candidateId,
+      profileId,
+      channel: params.channel,
+      toEmail: params.toPhone || '',
+      toName: params.toName || company.name,
+      subject: params.channel === 'phone' ? '电话外联' : 'WhatsApp 消息',
+      bodyText: params.messageText || null,
+      status: 'manual_sent',
+      sentAt: new Date(),
+      callResult: params.callResult || null,
+      metadata: {
+        companyId: params.companyId,
+        contactId: params.contactId || null,
+      },
+    },
+  });
+
+  // 更新公司跟进状态
+  await prisma.prospectCompany.update({
+    where: { id: params.companyId },
+    data: {
+      status: 'contacted',
+      lastContactedAt: new Date(),
+    },
+  });
+
+  return { success: true, recordId: record.id };
+}
+
+export interface CompanyOutreachRecord {
+  id: string;
+  channel: string;
+  status: string;
+  toName: string | null;
+  toPhone: string;
+  messageText: string | null;
+  callResult: string | null;
+  sentAt: Date | null;
+  repliedAt: Date | null;
+  createdAt: Date;
+}
+
+export async function getCompanyOutreachHistory(
+  companyId: string
+): Promise<{ records: CompanyOutreachRecord[] }> {
+  const session = await auth();
+  if (!session?.user?.tenantId) return { records: [] };
+
+  const tenantId = session.user.tenantId;
+
+  // 获取公司的 candidateId
+  const company = await prisma.prospectCompany.findUnique({
+    where: { id: companyId, tenantId },
+    select: { sourceCandidateId: true },
+  });
+
+  // 查找所有关联的外联记录
+  const whereConditions = [];
+
+  if (company?.sourceCandidateId) {
+    whereConditions.push({ candidateId: company.sourceCandidateId });
+  }
+
+  // 也通过 metadata 中的 companyId 查找
+  whereConditions.push({
+    metadata: { path: ['companyId'], equals: companyId },
+  });
+
+  if (whereConditions.length === 0) return { records: [] };
+
+  const rawRecords = await prisma.outreachRecord.findMany({
+    where: {
+      tenantId,
+      OR: whereConditions,
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 50,
+  });
+
+  const records: CompanyOutreachRecord[] = rawRecords.map(r => ({
+    id: r.id,
+    channel: r.channel,
+    status: r.status,
+    toName: r.toName,
+    toPhone: r.toEmail,
+    messageText: r.bodyText,
+    callResult: (r as Record<string, unknown>).callResult as string | null,
+    sentAt: r.sentAt,
+    repliedAt: (r as Record<string, unknown>).repliedAt as Date | null,
+    createdAt: r.createdAt,
+  }));
+
+  return { records };
 }

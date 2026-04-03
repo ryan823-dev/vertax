@@ -35,6 +35,9 @@ import {
   Info,
   ChevronDown,
   ChevronUp,
+  MessageCircle,
+  PhoneCall,
+  History,
 } from 'lucide-react';
 import {
   getProspectCompaniesV2,
@@ -55,9 +58,12 @@ import {
   getOutreachRecords,
   generateOutreachDraft,
   sendOutreachDraft,
+  recordManualOutreach,
+  getCompanyOutreachHistory,
   type OutreachRecordItem,
   type OutreachStats,
   type OutreachDraft,
+  type CompanyOutreachRecord,
 } from '@/actions/outreach-draft';
 
 // ==================== 类型 ====================
@@ -128,6 +134,13 @@ export default function RadarProspectsPage() {
   const [isFollowingUp, setIsFollowingUp] = useState<string | null>(null);
   const [inlineDrafts, setInlineDrafts] = useState<Record<string, OutreachDraft>>({});
 
+  // 手动外联追踪
+  const [outreachHistory, setOutreachHistory] = useState<CompanyOutreachRecord[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [isSendingManual, setIsSendingManual] = useState<string | null>(null);
+  const [showCallResultForm, setShowCallResultForm] = useState<string | null>(null);
+  const [callResult, setCallResult] = useState<string>('');
+
   // 加载数据
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -159,14 +172,16 @@ export default function RadarProspectsPage() {
     loadData();
   }, [loadData]);
 
-  // 加载联系人（懒加载，切换到联系人 tab 时触发）
+  // 加载联系人（contacts / outreach tab 都需要）
   useEffect(() => {
-    if (selectedCompany && activeTab === 'contacts') {
-      setIsLoadingContacts(true);
-      getProspectContacts(selectedCompany.id)
-        .then(setContacts)
-        .catch(() => setContacts([]))
-        .finally(() => setIsLoadingContacts(false));
+    if (selectedCompany && (activeTab === 'contacts' || activeTab === 'outreach')) {
+      if (contacts.length === 0) {
+        setIsLoadingContacts(true);
+        getProspectContacts(selectedCompany.id)
+          .then(setContacts)
+          .catch(() => setContacts([]))
+          .finally(() => setIsLoadingContacts(false));
+      }
     }
   }, [selectedCompany?.id, activeTab]);
 
@@ -535,11 +550,14 @@ export default function RadarProspectsPage() {
               { key: 'pending', label: '待跟进' },
               { key: 'replied', label: '已回复' },
               { key: 'noResponse', label: '无响应', badge: outreachStats?.noResponse },
-            ] as const).map(({ key, label, badge }) => (
-              <button
-                key={key}
-                onClick={() => setOutreachFilter(key)}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+            ] as const).map((item) => {
+              const { key, label } = item;
+              const badge = 'badge' in item ? item.badge : undefined;
+              return (
+                <button
+                  key={key}
+                  onClick={() => setOutreachFilter(key)}
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
                   outreachFilter === key
                     ? 'bg-white text-[#0B1B2B] shadow-sm'
                     : 'text-slate-500 hover:text-[#0B1B2B]'
@@ -552,7 +570,7 @@ export default function RadarProspectsPage() {
                   </span>
                 )}
               </button>
-            ))}
+            )})}
           </div>
 
           {/* 外联记录列表 */}
@@ -802,6 +820,7 @@ export default function RadarProspectsPage() {
                       setContacts([]);
                       setDossierData(null);
                       setShowContactForm(false);
+                      setOutreachHistory([]);
                     }}
                     className={`p-3 border rounded-xl cursor-pointer transition-all ${
                       isSelected 
@@ -1285,29 +1304,278 @@ export default function RadarProspectsPage() {
                       {/* WhatsApp Templates */}
                       <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
                         <div className="flex items-center gap-2 mb-4">
-                          <Send size={18} className="text-[#D4AF37]" />
+                          <MessageCircle size={18} className="text-[#25D366]" />
                           <h4 className="font-bold text-[#0B1B2B]">WhatsApp 消息</h4>
                           <span className="text-xs text-slate-400 ml-auto">
                             {outreachPack.outreachPack.whatsapps.length} 条
                           </span>
                         </div>
+
+                        {/* 联系人电话选择提示 */}
+                        {contacts.filter(c => c.phone).length > 0 && (
+                          <div className="mb-3 flex flex-wrap gap-2">
+                            {contacts.filter(c => c.phone).map(c => (
+                              <span key={c.id} className="text-xs bg-emerald-50 text-emerald-700 px-2 py-1 rounded-full border border-emerald-200">
+                                <Phone size={10} className="inline mr-1" />
+                                {c.name}: {c.phone}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
                         <div className="space-y-3">
                           {outreachPack.outreachPack.whatsapps.map((wa, idx) => (
                             <div key={idx} className="bg-[#DCF8C6] rounded-xl p-4 relative group">
-                              <p className="text-sm text-slate-800 leading-relaxed pr-8">{wa.text}</p>
-                              <button
-                                onClick={() => handleCopy(wa.text, `wa-${idx}`)}
-                                className="absolute top-3 right-3 p-1.5 text-slate-500 hover:text-slate-700 transition-colors"
-                              >
-                                {copiedId === `wa-${idx}` ? (
-                                  <Check size={14} className="text-emerald-600" />
-                                ) : (
-                                  <Copy size={14} />
+                              <p className="text-sm text-slate-800 leading-relaxed pr-20">{wa.text}</p>
+
+                              {/* Action buttons */}
+                              <div className="absolute top-3 right-3 flex items-center gap-1">
+                                {/* Copy */}
+                                <button
+                                  onClick={() => handleCopy(wa.text, `wa-${idx}`)}
+                                  className="p-1.5 text-slate-500 hover:text-slate-700 transition-colors"
+                                  title="复制消息"
+                                >
+                                  {copiedId === `wa-${idx}` ? (
+                                    <Check size={14} className="text-emerald-600" />
+                                  ) : (
+                                    <Copy size={14} />
+                                  )}
+                                </button>
+
+                                {/* Open WhatsApp — pick first contact with phone */}
+                                {contacts.filter(c => c.phone).length > 0 && (
+                                  <a
+                                    href={`https://wa.me/${contacts.find(c => c.phone)!.phone!.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(wa.text)}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="p-1.5 text-[#25D366] hover:text-[#128C7E] transition-colors"
+                                    title="打开 WhatsApp"
+                                  >
+                                    <ExternalLink size={14} />
+                                  </a>
                                 )}
-                              </button>
+
+                                {/* Mark as sent */}
+                                <button
+                                  onClick={async () => {
+                                    const contact = contacts.find(c => c.phone);
+                                    setIsSendingManual(`wa-${idx}`);
+                                    await recordManualOutreach({
+                                      companyId: selectedCompany.id,
+                                      contactId: contact?.id,
+                                      channel: 'whatsapp',
+                                      toPhone: contact?.phone || '',
+                                      toName: contact?.name || selectedCompany.name,
+                                      messageText: wa.text,
+                                    });
+                                    setIsSendingManual(null);
+                                    setCopiedId(`wa-sent-${idx}`);
+                                    setTimeout(() => setCopiedId(null), 2000);
+                                    // Reload history
+                                    const hist = await getCompanyOutreachHistory(selectedCompany.id);
+                                    setOutreachHistory(hist.records);
+                                  }}
+                                  disabled={isSendingManual === `wa-${idx}`}
+                                  className="p-1.5 text-slate-400 hover:text-emerald-600 transition-colors disabled:opacity-50"
+                                  title="标记为已发送"
+                                >
+                                  {copiedId === `wa-sent-${idx}` ? (
+                                    <Check size={14} className="text-emerald-600" />
+                                  ) : isSendingManual === `wa-${idx}` ? (
+                                    <Loader2 size={14} className="animate-spin" />
+                                  ) : (
+                                    <Send size={14} />
+                                  )}
+                                </button>
+                              </div>
                             </div>
                           ))}
                         </div>
+                      </div>
+
+                      {/* Phone Outreach */}
+                      {contacts.filter(c => c.phone).length > 0 && (
+                        <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
+                          <div className="flex items-center gap-2 mb-4">
+                            <PhoneCall size={18} className="text-[#D4AF37]" />
+                            <h4 className="font-bold text-[#0B1B2B]">电话外联</h4>
+                          </div>
+                          <div className="space-y-3">
+                            {contacts.filter(c => c.phone).map(contact => (
+                              <div key={contact.id} className="bg-[#FFFCF7] rounded-xl border border-[#E8E0D0] p-4">
+                                <div className="flex items-center justify-between mb-2">
+                                  <div>
+                                    <span className="text-sm font-medium text-[#0B1B2B]">{contact.name}</span>
+                                    {contact.role && <span className="text-xs text-slate-500 ml-2">{contact.role}</span>}
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <a
+                                      href={`tel:${contact.phone}`}
+                                      className="flex items-center gap-1 text-xs bg-[#D4AF37] text-white px-3 py-1.5 rounded-lg hover:bg-[#B8973B] transition-colors"
+                                    >
+                                      <Phone size={12} />
+                                      {contact.phone}
+                                    </a>
+                                  </div>
+                                </div>
+
+                                {/* Call result form */}
+                                {showCallResultForm === contact.id ? (
+                                  <div className="mt-3 pt-3 border-t border-[#E8E0D0]">
+                                    <p className="text-xs text-slate-500 mb-2">通话结果:</p>
+                                    <div className="flex flex-wrap gap-2">
+                                      {[
+                                        { value: 'connected', label: '已接通', color: 'emerald' },
+                                        { value: 'no_answer', label: '未接听', color: 'amber' },
+                                        { value: 'voicemail', label: '留言', color: 'blue' },
+                                        { value: 'meeting_booked', label: '已约会议', color: 'emerald' },
+                                        { value: 'not_interested', label: '无意向', color: 'red' },
+                                        { value: 'callback', label: '回拨', color: 'blue' },
+                                      ].map(opt => (
+                                        <button
+                                          key={opt.value}
+                                          onClick={async () => {
+                                            setIsSendingManual(contact.id);
+                                            await recordManualOutreach({
+                                              companyId: selectedCompany.id,
+                                              contactId: contact.id,
+                                              channel: 'phone',
+                                              toPhone: contact.phone || '',
+                                              toName: contact.name,
+                                              callResult: opt.value,
+                                            });
+                                            setIsSendingManual(null);
+                                            setShowCallResultForm(null);
+                                            const hist = await getCompanyOutreachHistory(selectedCompany.id);
+                                            setOutreachHistory(hist.records);
+                                          }}
+                                          disabled={isSendingManual === contact.id}
+                                          className={`text-xs px-3 py-1.5 rounded-lg border transition-colors disabled:opacity-50 ${
+                                            opt.color === 'emerald' ? 'border-emerald-200 text-emerald-700 hover:bg-emerald-50' :
+                                            opt.color === 'amber' ? 'border-amber-200 text-amber-700 hover:bg-amber-50' :
+                                            opt.color === 'blue' ? 'border-blue-200 text-blue-700 hover:bg-blue-50' :
+                                            'border-red-200 text-red-700 hover:bg-red-50'
+                                          }`}
+                                        >
+                                          {isSendingManual === contact.id ? '...' : opt.label}
+                                        </button>
+                                      ))}
+                                    </div>
+                                    <button
+                                      onClick={() => setShowCallResultForm(null)}
+                                      className="text-xs text-slate-400 hover:text-slate-600 mt-2"
+                                    >
+                                      取消
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={() => setShowCallResultForm(contact.id)}
+                                    className="text-xs text-slate-500 hover:text-[#D4AF37] transition-colors mt-1"
+                                  >
+                                    记录通话结果
+                                  </button>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Outreach History */}
+                      <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-2">
+                            <History size={18} className="text-[#D4AF37]" />
+                            <h4 className="font-bold text-[#0B1B2B]">外联记录</h4>
+                          </div>
+                          <button
+                            onClick={async () => {
+                              setIsLoadingHistory(true);
+                              const hist = await getCompanyOutreachHistory(selectedCompany.id);
+                              setOutreachHistory(hist.records);
+                              setIsLoadingHistory(false);
+                            }}
+                            className="text-xs text-[#D4AF37] hover:text-[#B8973B] flex items-center gap-1"
+                          >
+                            {isLoadingHistory ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                            刷新
+                          </button>
+                        </div>
+                        {outreachHistory.length === 0 ? (
+                          <button
+                            onClick={async () => {
+                              setIsLoadingHistory(true);
+                              const hist = await getCompanyOutreachHistory(selectedCompany.id);
+                              setOutreachHistory(hist.records);
+                              setIsLoadingHistory(false);
+                            }}
+                            className="w-full py-6 text-center text-sm text-slate-400 hover:text-[#D4AF37] transition-colors"
+                          >
+                            {isLoadingHistory ? '加载中...' : '点击加载外联历史'}
+                          </button>
+                        ) : (
+                          <div className="space-y-2">
+                            {outreachHistory.map(record => (
+                              <div key={record.id} className="flex items-start gap-3 py-2 border-b border-[#E8E0D0] last:border-0">
+                                <div className={`mt-0.5 p-1.5 rounded-full ${
+                                  record.channel === 'email' ? 'bg-blue-100' :
+                                  record.channel === 'whatsapp' ? 'bg-emerald-100' :
+                                  record.channel === 'phone' ? 'bg-amber-100' :
+                                  record.channel === 'linkedin' ? 'bg-sky-100' :
+                                  'bg-slate-100'
+                                }`}>
+                                  {record.channel === 'email' ? <Mail size={12} className="text-blue-600" /> :
+                                   record.channel === 'whatsapp' ? <MessageCircle size={12} className="text-emerald-600" /> :
+                                   record.channel === 'phone' ? <PhoneCall size={12} className="text-amber-600" /> :
+                                   record.channel === 'linkedin' ? <Linkedin size={12} className="text-sky-600" /> :
+                                   <Send size={12} className="text-slate-600" />}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs font-medium text-[#0B1B2B] capitalize">{record.channel}</span>
+                                    <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                                      record.status === 'manual_sent' || record.status === 'sent' ? 'bg-emerald-100 text-emerald-700' :
+                                      record.status === 'draft_copied' ? 'bg-amber-100 text-amber-700' :
+                                      record.status === 'opened' ? 'bg-blue-100 text-blue-700' :
+                                      'bg-slate-100 text-slate-600'
+                                    }`}>
+                                      {record.status === 'manual_sent' ? '已发送' :
+                                       record.status === 'draft_copied' ? '已复制' :
+                                       record.status}
+                                    </span>
+                                    {record.callResult && (
+                                      <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                                        record.callResult === 'meeting_booked' ? 'bg-emerald-100 text-emerald-700' :
+                                        record.callResult === 'connected' ? 'bg-blue-100 text-blue-700' :
+                                        record.callResult === 'not_interested' ? 'bg-red-100 text-red-700' :
+                                        'bg-slate-100 text-slate-600'
+                                      }`}>
+                                        {record.callResult === 'connected' ? '已接通' :
+                                         record.callResult === 'no_answer' ? '未接听' :
+                                         record.callResult === 'voicemail' ? '留言' :
+                                         record.callResult === 'meeting_booked' ? '已约会议' :
+                                         record.callResult === 'not_interested' ? '无意向' :
+                                         record.callResult === 'callback' ? '回拨' :
+                                         record.callResult}
+                                      </span>
+                                    )}
+                                  </div>
+                                  {record.toName && (
+                                    <p className="text-xs text-slate-500 mt-0.5">{record.toName}{record.toPhone ? ` · ${record.toPhone}` : ''}</p>
+                                  )}
+                                  {record.messageText && (
+                                    <p className="text-xs text-slate-600 mt-1 line-clamp-2">{record.messageText}</p>
+                                  )}
+                                </div>
+                                <span className="text-[10px] text-slate-400 whitespace-nowrap">
+                                  {record.sentAt ? new Date(record.sentAt).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
 
                       {/* Follow-up Playbook */}
