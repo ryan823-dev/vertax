@@ -20,9 +20,9 @@ function unauthorized(msg = "Unauthorized") {
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { tenantId: string } }
+  { params }: { params: Promise<{ tenantId: string }> }
 ) {
-  const { tenantId } = params;
+  const { tenantId } = await params;
 
   // 1. Auth — Bearer token must match WebsiteConfig.pushSecret
   const authHeader = req.headers.get("authorization") ?? "";

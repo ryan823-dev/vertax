@@ -122,6 +122,7 @@ export async function POST(req: NextRequest) {
 
       transcript = await pollRes.json();
 
+      if (!transcript) continue;
       if (transcript.status === "completed") {
         break;
       } else if (transcript.status === "error") {

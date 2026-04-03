@@ -46,6 +46,17 @@
     "scripts",
     "doc_tools",
     "hanwei-cnc",
-    "stonehub"
+    "stonehub",
+    "epxfresh",
+    "epxfresh-website",
+    "fadreamworks",
+    "sunmay-b2b",
+    "ViciVidi",
+    "supabase",
+    "backup",
+    "workspace",
+    "generated",
+    "vibe_images",
+    "processor-service"
   ]
 }

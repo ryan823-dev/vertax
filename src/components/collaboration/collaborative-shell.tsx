@@ -98,7 +98,7 @@ export function CollaborativeShell({
 
         // Load activity history for this entity
         const activityList = await getEntityActivities(entityType, entityId);
-        setHistory(convertActivityToHistory(activityList));
+        setHistory(convertActivityToHistory(activityList as any));
       }
     } catch (err) {
       console.error("Failed to load collaboration data:", err);

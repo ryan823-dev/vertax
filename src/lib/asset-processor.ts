@@ -37,7 +37,7 @@ export async function processAssetTaskDirectly(taskId: string): Promise<{
         currentStep: "extracting_text",
         progress: 10,
         metadata: {
-          ...metadata,
+          ...(metadata as Record<string, unknown> ?? {}),
           startedAt: new Date().toISOString(),
         },
       },
@@ -58,7 +58,7 @@ export async function processAssetTaskDirectly(taskId: string): Promise<{
       data: {
         progress: 50,
         metadata: {
-          ...metadata,
+          ...(metadata as Record<string, unknown> ?? {}),
           textLength: text.length,
         },
       },
@@ -120,7 +120,7 @@ export async function processAssetTaskDirectly(taskId: string): Promise<{
         status: "completed",
         progress: 100,
         metadata: {
-          ...metadata,
+          ...(metadata as Record<string, unknown> ?? {}),
           chunkCount: chunks.length,
           textLength: text.length,
           completedAt,
@@ -146,7 +146,7 @@ export async function processAssetTaskDirectly(taskId: string): Promise<{
         status: "failed",
         errorMessage,
         metadata: {
-          ...metadata,
+          ...(metadata as Record<string, unknown> ?? {}),
           failedAt: new Date().toISOString(),
         },
       },
@@ -202,7 +202,7 @@ async function updateAssetStatus(
 
     await db.asset.update({
       where: { id: assetId },
-      data: { metadata: newMeta },
+      data: { metadata: newMeta as any },
     });
   } catch (err) {
     console.error(`[asset-processor] Failed to update asset ${assetId} status:`, err);

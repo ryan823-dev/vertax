@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
           data: {
             status: "failed",
             metadata: {
-              ...task.metadata,
+              ...(task.metadata as Record<string, unknown> ?? {}),
               lastError: err instanceof Error ? err.message : "Unknown error",
               failedAt: new Date().toISOString(),
             },
