@@ -57,6 +57,7 @@ export const SKILL_NAMES = {
   RADAR_BUILD_CONTACT_ROLE_MAP: 'radar.buildContactRoleMap',
   RADAR_GENERATE_OUTREACH_PACK: 'radar.generateOutreachPack',
   RADAR_GENERATE_WEEKLY_CADENCE: 'radar.generateWeeklyCadence',
+  RADAR_GENERATE_PROSPECT_DOSSIER: 'radar.generateProspectDossier',
   
   // 增长系统
   MARKETING_BUILD_TOPIC_CLUSTER: 'marketing.buildTopicCluster',

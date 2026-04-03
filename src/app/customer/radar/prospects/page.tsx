@@ -26,10 +26,27 @@ import {
   Star,
   Clock,
   BookmarkPlus,
+  Plus,
+  Edit2,
+  Trash2,
+  Linkedin,
+  Shield,
+  TrendingUp,
+  Info,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import {
   getProspectCompaniesV2,
+  getProspectContacts,
+  createProspectContact,
+  updateProspectContact,
+  deleteProspectContact,
+  generateProspectDossier,
+  getLatestProspectDossier,
   type ProspectCompanyData,
+  type ProspectContactData,
+  type CreateProspectContactInput,
 } from '@/actions/radar-v2';
 import { executeSkill } from '@/actions/skills';
 import { SKILL_NAMES } from '@/lib/skills/registry';
@@ -76,10 +93,22 @@ export default function RadarProspectsPage() {
   // Outreach Pack state
   const [isGenerating, setIsGenerating] = useState(false);
   const [outreachPack, setOutreachPack] = useState<OutreachPackContent | null>(null);
-  const [activeTab, setActiveTab] = useState<'info' | 'outreach'>('info');
+  const [activeTab, setActiveTab] = useState<'info' | 'contacts' | 'outreach' | 'dossier'>('info');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [savedContentId, setSavedContentId] = useState<string | null>(null);
+
+  // 联系人 state
+  const [contacts, setContacts] = useState<ProspectContactData[]>([]);
+  const [isLoadingContacts, setIsLoadingContacts] = useState(false);
+  const [showContactForm, setShowContactForm] = useState(false);
+  const [editingContact, setEditingContact] = useState<ProspectContactData | null>(null);
+  const [contactForm, setContactForm] = useState<Partial<CreateProspectContactInput>>({});
+
+  // 背调简报 state
+  const [dossierData, setDossierData] = useState<{ id: string; version: number; content: Record<string, unknown>; createdAt: Date } | null>(null);
+  const [isGeneratingDossier, setIsGeneratingDossier] = useState(false);
+  const [dossierExpanded, setDossierExpanded] = useState<Record<string, boolean>>({});
   
   // 筛选条件
   const [filters, setFilters] = useState({
@@ -129,6 +158,125 @@ export default function RadarProspectsPage() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // 加载联系人（懒加载，切换到联系人 tab 时触发）
+  useEffect(() => {
+    if (selectedCompany && activeTab === 'contacts') {
+      setIsLoadingContacts(true);
+      getProspectContacts(selectedCompany.id)
+        .then(setContacts)
+        .catch(() => setContacts([]))
+        .finally(() => setIsLoadingContacts(false));
+    }
+  }, [selectedCompany?.id, activeTab]);
+
+  // 加载背调简报（懒加载）
+  useEffect(() => {
+    if (selectedCompany && activeTab === 'dossier') {
+      getLatestProspectDossier(selectedCompany.id)
+        .then(setDossierData)
+        .catch(() => setDossierData(null));
+    }
+  }, [selectedCompany?.id, activeTab]);
+
+  // 联系人 CRUD 操作
+  const handleCreateContact = async () => {
+    if (!selectedCompany || !contactForm.name) return;
+    try {
+      await createProspectContact({ ...contactForm, companyId: selectedCompany.id, name: contactForm.name! });
+      setShowContactForm(false);
+      setContactForm({});
+      const updated = await getProspectContacts(selectedCompany.id);
+      setContacts(updated);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '创建联系人失败');
+    }
+  };
+
+  const handleUpdateContact = async () => {
+    if (!editingContact || !contactForm.name) return;
+    try {
+      await updateProspectContact(editingContact.id, contactForm);
+      setEditingContact(null);
+      setShowContactForm(false);
+      setContactForm({});
+      if (selectedCompany) {
+        const updated = await getProspectContacts(selectedCompany.id);
+        setContacts(updated);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '更新联系人失败');
+    }
+  };
+
+  const handleDeleteContact = async (contactId: string) => {
+    try {
+      await deleteProspectContact(contactId);
+      if (selectedCompany) {
+        const updated = await getProspectContacts(selectedCompany.id);
+        setContacts(updated);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '删除联系人失败');
+    }
+  };
+
+  const openEditForm = (contact: ProspectContactData) => {
+    setEditingContact(contact);
+    setContactForm({
+      name: contact.name,
+      email: contact.email || '',
+      phone: contact.phone || '',
+      role: contact.role || '',
+      department: contact.department || '',
+      seniority: contact.seniority || '',
+      linkedInUrl: contact.linkedInUrl || '',
+      notes: contact.notes || '',
+    });
+    setShowContactForm(true);
+  };
+
+  const openCreateForm = () => {
+    setEditingContact(null);
+    setContactForm({});
+    setShowContactForm(true);
+  };
+
+  // 生成背调简报
+  const handleGenerateDossier = async () => {
+    if (!selectedCompany) return;
+    setIsGeneratingDossier(true);
+    setError(null);
+    try {
+      const result = await generateProspectDossier(selectedCompany.id);
+      if (result.ok && result.content) {
+        setDossierData({
+          id: result.versionId || '',
+          version: (dossierData?.version || 0) + 1,
+          content: result.content,
+          createdAt: new Date(),
+        });
+      } else {
+        setError(result.error || '生成简报失败');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '生成简报失败');
+    } finally {
+      setIsGeneratingDossier(false);
+    }
+  };
+
+  // 职级标签颜色
+  const getSeniorityStyle = (seniority: string | null) => {
+    const map: Record<string, string> = {
+      'C-level': 'bg-emerald-100 text-emerald-700',
+      'VP': 'bg-blue-100 text-blue-700',
+      'Director': 'bg-amber-100 text-amber-700',
+      'Manager': 'bg-slate-100 text-slate-700',
+      'Staff': 'bg-gray-100 text-gray-600',
+    };
+    return map[seniority || ''] || 'bg-slate-100 text-slate-600';
+  };
 
   // 生成外联包
   const handleGenerateOutreach = async (company: ProspectCompanyData) => {
@@ -651,6 +799,9 @@ export default function RadarProspectsPage() {
                       setSelectedCompany(isSelected ? null : company);
                       setOutreachPack(null);
                       setActiveTab('info');
+                      setContacts([]);
+                      setDossierData(null);
+                      setShowContactForm(false);
                     }}
                     className={`p-3 border rounded-xl cursor-pointer transition-all ${
                       isSelected 
@@ -676,6 +827,12 @@ export default function RadarProspectsPage() {
                       {company.country && (
                         <span className="text-[10px] text-slate-400">{company.country}</span>
                       )}
+                      {(company._count?.contacts ?? 0) > 0 && (
+                        <span className="text-[10px] text-slate-400 flex items-center gap-0.5 ml-auto">
+                          <Users size={10} />
+                          {company._count!.contacts}
+                        </span>
+                      )}
                     </div>
                   </div>
                 );
@@ -689,7 +846,7 @@ export default function RadarProspectsPage() {
           {selectedCompany ? (
             <>
               {/* Tabs */}
-              <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-2 flex gap-2">
+              <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-2 flex gap-1">
                 <button
                   onClick={() => setActiveTab('info')}
                   className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all ${
@@ -701,19 +858,51 @@ export default function RadarProspectsPage() {
                   基本信息
                 </button>
                 <button
+                  onClick={() => setActiveTab('contacts')}
+                  className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${
+                    activeTab === 'contacts'
+                      ? 'bg-[#0B1220] text-[#D4AF37]'
+                      : 'text-[#4A5568] hover:text-[#0B1B2B]'
+                  }`}
+                >
+                  <Users size={13} />
+                  联系人
+                  {contacts.length > 0 && (
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                      activeTab === 'contacts' ? 'bg-[#D4AF37]/20 text-[#D4AF37]' : 'bg-slate-200 text-slate-500'
+                    }`}>{contacts.length}</span>
+                  )}
+                </button>
+                <button
                   onClick={() => setActiveTab('outreach')}
-                  className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+                  className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${
                     activeTab === 'outreach'
                       ? 'bg-[#0B1220] text-[#D4AF37]'
                       : 'text-[#4A5568] hover:text-[#0B1B2B]'
                   }`}
                 >
-                  <Sparkles size={14} />
+                  <Sparkles size={13} />
                   外联方案
+                </button>
+                <button
+                  onClick={() => setActiveTab('dossier')}
+                  className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${
+                    activeTab === 'dossier'
+                      ? 'bg-[#0B1220] text-[#D4AF37]'
+                      : 'text-[#4A5568] hover:text-[#0B1B2B]'
+                  }`}
+                >
+                  <Shield size={13} />
+                  背调简报
+                  {dossierData && (
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                      activeTab === 'dossier' ? 'bg-[#D4AF37]/20 text-[#D4AF37]' : 'bg-emerald-100 text-emerald-600'
+                    }`}>v{dossierData.version}</span>
+                  )}
                 </button>
               </div>
 
-              {activeTab === 'info' ? (
+              {activeTab === 'info' && (
                 /* Basic Info Tab */
                 <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
                   <div className="flex items-center gap-3 mb-6">
@@ -805,7 +994,203 @@ export default function RadarProspectsPage() {
                     </button>
                   </div>
                 </div>
-              ) : (
+              )}
+
+              {activeTab === 'contacts' && (
+                /* Contacts Tab */
+                <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <Users size={18} className="text-[#D4AF37]" />
+                      <h4 className="font-bold text-[#0B1B2B]">联系人</h4>
+                      <span className="text-xs text-slate-400">{contacts.length} 人</span>
+                    </div>
+                    <button
+                      onClick={openCreateForm}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-[#D4AF37] text-[#0B1220] rounded-lg text-xs font-medium hover:bg-[#C5A030] transition-colors"
+                    >
+                      <Plus size={13} />
+                      添加联系人
+                    </button>
+                  </div>
+
+                  {/* Contact Form */}
+                  {showContactForm && (
+                    <div className="bg-[#FFFCF7] rounded-xl border border-[#E8E0D0] p-4 mb-4">
+                      <h5 className="text-sm font-medium text-[#0B1B2B] mb-3">
+                        {editingContact ? '编辑联系人' : '新增联系人'}
+                      </h5>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-[10px] text-slate-500 mb-1 block">姓名 *</label>
+                          <input
+                            value={contactForm.name || ''}
+                            onChange={e => setContactForm({ ...contactForm, name: e.target.value })}
+                            className="w-full px-3 py-2 border border-[#E8E0D0] rounded-lg text-xs focus:outline-none focus:border-[#D4AF37] bg-white"
+                            placeholder="联系人姓名"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-slate-500 mb-1 block">职位</label>
+                          <input
+                            value={contactForm.role || ''}
+                            onChange={e => setContactForm({ ...contactForm, role: e.target.value })}
+                            className="w-full px-3 py-2 border border-[#E8E0D0] rounded-lg text-xs focus:outline-none focus:border-[#D4AF37] bg-white"
+                            placeholder="如 VP of Sales"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-slate-500 mb-1 block">邮箱</label>
+                          <input
+                            value={contactForm.email || ''}
+                            onChange={e => setContactForm({ ...contactForm, email: e.target.value })}
+                            className="w-full px-3 py-2 border border-[#E8E0D0] rounded-lg text-xs focus:outline-none focus:border-[#D4AF37] bg-white"
+                            placeholder="email@example.com"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-slate-500 mb-1 block">电话</label>
+                          <input
+                            value={contactForm.phone || ''}
+                            onChange={e => setContactForm({ ...contactForm, phone: e.target.value })}
+                            className="w-full px-3 py-2 border border-[#E8E0D0] rounded-lg text-xs focus:outline-none focus:border-[#D4AF37] bg-white"
+                            placeholder="+1 xxx-xxx-xxxx"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-slate-500 mb-1 block">部门</label>
+                          <input
+                            value={contactForm.department || ''}
+                            onChange={e => setContactForm({ ...contactForm, department: e.target.value })}
+                            className="w-full px-3 py-2 border border-[#E8E0D0] rounded-lg text-xs focus:outline-none focus:border-[#D4AF37] bg-white"
+                            placeholder="如 Engineering"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-slate-500 mb-1 block">职级</label>
+                          <select
+                            value={contactForm.seniority || ''}
+                            onChange={e => setContactForm({ ...contactForm, seniority: e.target.value })}
+                            className="w-full px-3 py-2 border border-[#E8E0D0] rounded-lg text-xs focus:outline-none focus:border-[#D4AF37] bg-white"
+                          >
+                            <option value="">选择职级</option>
+                            <option value="C-level">C-level</option>
+                            <option value="VP">VP</option>
+                            <option value="Director">Director</option>
+                            <option value="Manager">Manager</option>
+                            <option value="Staff">Staff</option>
+                          </select>
+                        </div>
+                        <div className="col-span-2">
+                          <label className="text-[10px] text-slate-500 mb-1 block">LinkedIn</label>
+                          <input
+                            value={contactForm.linkedInUrl || ''}
+                            onChange={e => setContactForm({ ...contactForm, linkedInUrl: e.target.value })}
+                            className="w-full px-3 py-2 border border-[#E8E0D0] rounded-lg text-xs focus:outline-none focus:border-[#D4AF37] bg-white"
+                            placeholder="https://linkedin.com/in/..."
+                          />
+                        </div>
+                      </div>
+                      <div className="flex gap-2 mt-3">
+                        <button
+                          onClick={editingContact ? handleUpdateContact : handleCreateContact}
+                          disabled={!contactForm.name}
+                          className="flex-1 py-2 bg-[#D4AF37] text-[#0B1220] rounded-xl text-xs font-medium hover:bg-[#C5A030] transition-colors disabled:opacity-50"
+                        >
+                          {editingContact ? '保存修改' : '添加'}
+                        </button>
+                        <button
+                          onClick={() => { setShowContactForm(false); setEditingContact(null); setContactForm({}); }}
+                          className="px-4 py-2 border border-[#E8E0D0] rounded-xl text-xs text-slate-500 hover:text-slate-700 transition-colors"
+                        >
+                          取消
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Contact List */}
+                  {isLoadingContacts ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 size={20} className="animate-spin text-[#D4AF37]" />
+                      <span className="text-xs text-slate-400 ml-2">加载联系人...</span>
+                    </div>
+                  ) : contacts.length === 0 ? (
+                    <div className="relative rounded-2xl overflow-hidden py-12 text-center" style={{ background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)' }}>
+                      <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 70% 60% at 50% -20%, rgba(212,175,55,0.14) 0%, transparent 65%)' }} />
+                      <div className="relative">
+                        <div className="w-12 h-12 rounded-xl bg-[#D4AF37]/10 flex items-center justify-center mx-auto mb-3">
+                          <Users size={24} className="text-[#D4AF37]" />
+                        </div>
+                        <p className="text-slate-300 text-sm">暂无联系人</p>
+                        <p className="text-xs text-slate-500 mt-1">添加决策者联系人，或从候选池导入时自动提取</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {contacts.map(contact => (
+                        <div key={contact.id} className="bg-[#FFFCF7] rounded-xl border border-[#E8E0D0] p-4 group">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-medium text-sm text-[#0B1B2B]">{contact.name}</span>
+                                {contact.seniority && (
+                                  <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${getSeniorityStyle(contact.seniority)}`}>
+                                    {contact.seniority}
+                                  </span>
+                                )}
+                              </div>
+                              {(contact.role || contact.department) && (
+                                <p className="text-xs text-slate-500">
+                                  {[contact.role, contact.department].filter(Boolean).join(' · ')}
+                                </p>
+                              )}
+                              <div className="flex flex-wrap items-center gap-3 mt-2">
+                                {contact.email && (
+                                  <a href={`mailto:${contact.email}`} className="flex items-center gap-1 text-[11px] text-slate-500 hover:text-[#D4AF37] transition-colors">
+                                    <Mail size={11} />
+                                    {contact.email}
+                                  </a>
+                                )}
+                                {contact.phone && (
+                                  <span className="flex items-center gap-1 text-[11px] text-slate-500">
+                                    <Phone size={11} />
+                                    {contact.phone}
+                                  </span>
+                                )}
+                                {contact.linkedInUrl && (
+                                  <a href={contact.linkedInUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[11px] text-blue-500 hover:text-blue-600 transition-colors">
+                                    <Linkedin size={11} />
+                                    LinkedIn
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button
+                                onClick={() => openEditForm(contact)}
+                                className="p-1.5 text-slate-400 hover:text-[#D4AF37] transition-colors"
+                                title="编辑"
+                              >
+                                <Edit2 size={13} />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteContact(contact.id)}
+                                className="p-1.5 text-slate-400 hover:text-red-500 transition-colors"
+                                title="删除"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'outreach' && (
                 /* Outreach Tab */
                 <div className="space-y-4">
                   {isGenerating ? (
@@ -1022,6 +1407,374 @@ export default function RadarProspectsPage() {
                   )}
                 </div>
               )}
+
+              {activeTab === 'dossier' && (
+                /* Dossier Tab - 背调简报 */
+                <div className="space-y-4">
+                  {isGeneratingDossier ? (
+                    <div className="relative rounded-2xl overflow-hidden p-12 text-center" style={{ background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)', boxShadow: '0 8px 32px -8px rgba(0,0,0,0.45)' }}>
+                      <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 70% 60% at 50% -20%, rgba(212,175,55,0.14) 0%, transparent 65%)' }} />
+                      <div className="relative">
+                        <Loader2 size={40} className="text-[#D4AF37] mx-auto mb-4 animate-spin" />
+                        <p className="text-slate-300">AI 正在为 {selectedCompany.name} 生成背调简报...</p>
+                        <p className="text-xs text-slate-500 mt-2">基于已采集数据综合分析，不会编造信息</p>
+                      </div>
+                    </div>
+                  ) : dossierData?.content ? (
+                    <>
+                      {/* Version indicator */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-xs text-slate-500">
+                          <Shield size={14} className="text-[#D4AF37]" />
+                          <span>v{dossierData.version}</span>
+                          <span>·</span>
+                          <span>{new Date(dossierData.createdAt).toLocaleString('zh-CN')}</span>
+                        </div>
+                        <button
+                          onClick={handleGenerateDossier}
+                          className="flex items-center gap-1.5 px-3 py-1.5 border border-[#D4AF37] text-[#D4AF37] rounded-lg text-xs font-medium hover:bg-[#D4AF37]/10 transition-colors"
+                        >
+                          <RefreshCw size={12} />
+                          重新生成
+                        </button>
+                      </div>
+
+                      {(() => {
+                        const dossier = (dossierData.content as Record<string, unknown>).dossier as Record<string, unknown> | undefined
+                          ?? dossierData.content as Record<string, unknown>;
+
+                        const renderDataGaps = (gaps: string[] | undefined) => {
+                          if (!gaps || gaps.length === 0) return null;
+                          return (
+                            <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-[#E8E0D0]">
+                              {gaps.map((gap, i) => (
+                                <span key={i} className="text-[10px] px-2 py-0.5 rounded bg-amber-50 text-amber-600 border border-amber-200">
+                                  {gap}
+                                </span>
+                              ))}
+                            </div>
+                          );
+                        };
+
+                        const companyOverview = dossier.companyOverview as { summary?: string; keyFacts?: Array<{ label: string; value: string; source: string }>; dataGaps?: string[] } | undefined;
+                        const decisionMakers = dossier.decisionMakerAnalysis as { contacts?: Array<{ name: string; role: string; seniority: string; influence: string; approachAngle: string; source: string }>; orgStructureInsight?: string; dataGaps?: string[] } | undefined;
+                        const bizOpps = dossier.businessOpportunities as { opportunities?: Array<{ title: string; stage: string; value: string; deadline: string; relevance: string }>; dataGaps?: string[] } | undefined;
+                        const intel = dossier.intelligenceSummary as { funding?: string; news?: string; competitors?: string; dataGaps?: string[] } | undefined;
+                        const matchAnalysis = dossier.matchAnalysis as { overallScore?: number | null; matchReasons?: string[]; relevanceInsights?: string[]; dataGaps?: string[] } | undefined;
+                        const riskAlerts = dossier.riskAlerts as Array<{ risk: string; severity: string; basis: string }> | undefined;
+                        const approach = dossier.recommendedApproach as { nextSteps?: Array<{ action: string; priority: string; rationale: string }>; talkingPoints?: string[]; avoidTopics?: string[] } | undefined;
+                        const dataSources = dossier.dataSources as Array<{ field: string; source: string; status: string }> | undefined;
+
+                        return (
+                          <>
+                            {/* 1. 公司概况 */}
+                            {companyOverview && (
+                              <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <Building2 size={18} className="text-[#D4AF37]" />
+                                  <h4 className="font-bold text-[#0B1B2B]">公司概况</h4>
+                                </div>
+                                {companyOverview.summary && (
+                                  <p className="text-sm text-slate-700 leading-relaxed mb-3">{companyOverview.summary}</p>
+                                )}
+                                {companyOverview.keyFacts && companyOverview.keyFacts.length > 0 && (
+                                  <div className="grid grid-cols-2 gap-2">
+                                    {companyOverview.keyFacts.map((fact, i) => (
+                                      <div key={i} className="bg-[#FFFCF7] rounded-lg border border-[#E8E0D0] px-3 py-2">
+                                        <div className="text-[10px] text-slate-400">{fact.label}</div>
+                                        <div className="text-sm font-medium text-[#0B1B2B]">{fact.value}</div>
+                                        <div className="text-[9px] text-slate-400">[{fact.source}]</div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                                {renderDataGaps(companyOverview.dataGaps)}
+                              </div>
+                            )}
+
+                            {/* 2. 决策者分析 */}
+                            {decisionMakers && (
+                              <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <Users size={18} className="text-[#D4AF37]" />
+                                  <h4 className="font-bold text-[#0B1B2B]">决策者分析</h4>
+                                </div>
+                                {decisionMakers.contacts && decisionMakers.contacts.length > 0 ? (
+                                  <div className="space-y-2 mb-3">
+                                    {decisionMakers.contacts.map((c, i) => (
+                                      <div key={i} className="bg-[#FFFCF7] rounded-xl border border-[#E8E0D0] p-3">
+                                        <div className="flex items-center gap-2 mb-1">
+                                          <span className="font-medium text-sm text-[#0B1B2B]">{c.name}</span>
+                                          {c.seniority && (
+                                            <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${getSeniorityStyle(c.seniority)}`}>{c.seniority}</span>
+                                          )}
+                                          <span className="text-[10px] text-slate-400 ml-auto">[{c.source}]</span>
+                                        </div>
+                                        <p className="text-xs text-slate-500">{c.role}</p>
+                                        {c.influence && <p className="text-xs text-slate-600 mt-1">影响力: {c.influence}</p>}
+                                        {c.approachAngle && <p className="text-xs text-[#D4AF37] mt-1">接触策略: {c.approachAngle}</p>}
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : null}
+                                {decisionMakers.orgStructureInsight && (
+                                  <p className="text-sm text-slate-600 leading-relaxed">{decisionMakers.orgStructureInsight}</p>
+                                )}
+                                {renderDataGaps(decisionMakers.dataGaps)}
+                              </div>
+                            )}
+
+                            {/* 3. 商业机会 */}
+                            {bizOpps && (
+                              <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <Target size={18} className="text-[#D4AF37]" />
+                                  <h4 className="font-bold text-[#0B1B2B]">商业机会</h4>
+                                </div>
+                                {bizOpps.opportunities && bizOpps.opportunities.length > 0 ? (
+                                  <div className="space-y-2">
+                                    {bizOpps.opportunities.map((opp, i) => (
+                                      <div key={i} className="bg-[#FFFCF7] rounded-xl border border-[#E8E0D0] p-3">
+                                        <div className="flex items-center gap-2 mb-1">
+                                          <span className="text-sm font-medium text-[#0B1B2B]">{opp.title}</span>
+                                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-600">{opp.stage}</span>
+                                        </div>
+                                        <div className="flex items-center gap-4 text-xs text-slate-500">
+                                          {opp.value && <span>价值: {opp.value}</span>}
+                                          {opp.deadline && <span>截止: {opp.deadline}</span>}
+                                        </div>
+                                        {opp.relevance && <p className="text-xs text-slate-600 mt-1">{opp.relevance}</p>}
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : null}
+                                {renderDataGaps(bizOpps.dataGaps)}
+                              </div>
+                            )}
+
+                            {/* 4. 情报摘要 */}
+                            {intel && (
+                              <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <TrendingUp size={18} className="text-[#D4AF37]" />
+                                  <h4 className="font-bold text-[#0B1B2B]">情报摘要</h4>
+                                </div>
+                                <div className="space-y-3">
+                                  {intel.funding && (
+                                    <div>
+                                      <h5 className="text-xs font-medium text-slate-500 mb-1">融资动态</h5>
+                                      <p className="text-sm text-slate-700 leading-relaxed">{intel.funding}</p>
+                                    </div>
+                                  )}
+                                  {intel.news && (
+                                    <div>
+                                      <h5 className="text-xs font-medium text-slate-500 mb-1">新闻舆情</h5>
+                                      <p className="text-sm text-slate-700 leading-relaxed">{intel.news}</p>
+                                    </div>
+                                  )}
+                                  {intel.competitors && (
+                                    <div>
+                                      <h5 className="text-xs font-medium text-slate-500 mb-1">竞品态势</h5>
+                                      <p className="text-sm text-slate-700 leading-relaxed">{intel.competitors}</p>
+                                    </div>
+                                  )}
+                                </div>
+                                {renderDataGaps(intel.dataGaps)}
+                              </div>
+                            )}
+
+                            {/* 5. 匹配度分析 */}
+                            {matchAnalysis && (
+                              <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <Star size={18} className="text-[#D4AF37]" />
+                                  <h4 className="font-bold text-[#0B1B2B]">匹配度分析</h4>
+                                  {matchAnalysis.overallScore != null && (
+                                    <span className="ml-auto text-lg font-bold text-[#D4AF37]">{Math.round(matchAnalysis.overallScore * 100)}%</span>
+                                  )}
+                                </div>
+                                {matchAnalysis.overallScore != null && (
+                                  <div className="w-full bg-[#E8E0D0] rounded-full h-2 mb-3">
+                                    <div className="bg-[#D4AF37] h-2 rounded-full transition-all" style={{ width: `${Math.round(matchAnalysis.overallScore * 100)}%` }} />
+                                  </div>
+                                )}
+                                {matchAnalysis.matchReasons && matchAnalysis.matchReasons.length > 0 && (
+                                  <div className="mb-2">
+                                    <h5 className="text-xs font-medium text-slate-500 mb-1">匹配原因</h5>
+                                    <ul className="space-y-1">
+                                      {matchAnalysis.matchReasons.map((r, i) => (
+                                        <li key={i} className="text-sm text-slate-700 flex items-start gap-2">
+                                          <Check size={14} className="text-emerald-500 mt-0.5 shrink-0" />
+                                          {r}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+                                {matchAnalysis.relevanceInsights && matchAnalysis.relevanceInsights.length > 0 && (
+                                  <div>
+                                    <h5 className="text-xs font-medium text-slate-500 mb-1">关联洞察</h5>
+                                    <ul className="space-y-1">
+                                      {matchAnalysis.relevanceInsights.map((r, i) => (
+                                        <li key={i} className="text-sm text-slate-600">- {r}</li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+                                {renderDataGaps(matchAnalysis.dataGaps)}
+                              </div>
+                            )}
+
+                            {/* 6. 风险提示 */}
+                            {riskAlerts && riskAlerts.length > 0 && (
+                              <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <AlertCircle size={18} className="text-[#D4AF37]" />
+                                  <h4 className="font-bold text-[#0B1B2B]">风险提示</h4>
+                                </div>
+                                <div className="space-y-2">
+                                  {riskAlerts.map((alert, i) => (
+                                    <div key={i} className={`rounded-xl border p-3 ${
+                                      alert.severity === 'high' ? 'bg-red-50/60 border-red-200' :
+                                      alert.severity === 'medium' ? 'bg-amber-50/60 border-amber-200' :
+                                      'bg-emerald-50/60 border-emerald-200'
+                                    }`}>
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                                          alert.severity === 'high' ? 'bg-red-100 text-red-700' :
+                                          alert.severity === 'medium' ? 'bg-amber-100 text-amber-700' :
+                                          'bg-emerald-100 text-emerald-700'
+                                        }`}>
+                                          {alert.severity === 'high' ? '高风险' : alert.severity === 'medium' ? '中风险' : '低风险'}
+                                        </span>
+                                      </div>
+                                      <p className="text-sm text-slate-700">{alert.risk}</p>
+                                      <p className="text-[11px] text-slate-500 mt-1">依据: {alert.basis}</p>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* 7. 建议策略 */}
+                            {approach && (
+                              <div className="bg-[#F7F3E8] rounded-2xl border-2 border-[#D4AF37]/30 p-6">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <Sparkles size={18} className="text-[#D4AF37]" />
+                                  <h4 className="font-bold text-[#0B1B2B]">建议策略</h4>
+                                </div>
+                                {approach.nextSteps && approach.nextSteps.length > 0 && (
+                                  <div className="mb-3">
+                                    <h5 className="text-xs font-medium text-slate-500 mb-2">下一步行动</h5>
+                                    <div className="space-y-2">
+                                      {approach.nextSteps.map((step, i) => (
+                                        <div key={i} className="bg-[#FFFCF7] rounded-xl border border-[#E8E0D0] p-3 flex items-start gap-3">
+                                          <span className="w-6 h-6 rounded-full bg-[#D4AF37]/10 text-[#D4AF37] text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
+                                            {i + 1}
+                                          </span>
+                                          <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-0.5">
+                                              <span className="text-sm font-medium text-[#0B1B2B]">{step.action}</span>
+                                              <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                                                step.priority === 'high' ? 'bg-red-50 text-red-600' :
+                                                step.priority === 'medium' ? 'bg-amber-50 text-amber-600' :
+                                                'bg-slate-100 text-slate-500'
+                                              }`}>{step.priority === 'high' ? '优先' : step.priority === 'medium' ? '建议' : '可选'}</span>
+                                            </div>
+                                            <p className="text-xs text-slate-500">{step.rationale}</p>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                                {approach.talkingPoints && approach.talkingPoints.length > 0 && (
+                                  <div className="mb-3">
+                                    <h5 className="text-xs font-medium text-slate-500 mb-1">沟通要点</h5>
+                                    <ul className="space-y-1">
+                                      {approach.talkingPoints.map((t, i) => (
+                                        <li key={i} className="text-sm text-slate-700 flex items-start gap-2">
+                                          <Check size={14} className="text-[#D4AF37] mt-0.5 shrink-0" />
+                                          {t}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+                                {approach.avoidTopics && approach.avoidTopics.length > 0 && (
+                                  <div>
+                                    <h5 className="text-xs font-medium text-slate-500 mb-1">避免话题</h5>
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {approach.avoidTopics.map((t, i) => (
+                                        <span key={i} className="text-[10px] px-2 py-0.5 rounded bg-red-50 text-red-500 border border-red-200">{t}</span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* 数据来源溯源 */}
+                            {dataSources && dataSources.length > 0 && (
+                              <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
+                                <button
+                                  onClick={() => setDossierExpanded(prev => ({ ...prev, sources: !prev.sources }))}
+                                  className="flex items-center gap-2 w-full text-left"
+                                >
+                                  <Info size={14} className="text-slate-400" />
+                                  <span className="text-xs font-medium text-slate-500">数据来源溯源</span>
+                                  <span className="text-[10px] text-slate-400 ml-1">
+                                    {dataSources.filter(s => s.status === 'available').length}/{dataSources.length} 项可用
+                                  </span>
+                                  {dossierExpanded.sources ? <ChevronUp size={14} className="text-slate-400 ml-auto" /> : <ChevronDown size={14} className="text-slate-400 ml-auto" />}
+                                </button>
+                                {dossierExpanded.sources && (
+                                  <div className="mt-3 space-y-1">
+                                    {dataSources.map((ds, i) => (
+                                      <div key={i} className="flex items-center gap-2 text-[11px] py-1">
+                                        <span className={`w-1.5 h-1.5 rounded-full ${ds.status === 'available' ? 'bg-emerald-500' : 'bg-amber-400'}`} />
+                                        <span className="text-slate-500 w-24 shrink-0">{ds.field}</span>
+                                        <span className="text-slate-400">{ds.source}</span>
+                                        <span className={`ml-auto text-[10px] px-1.5 py-0.5 rounded ${
+                                          ds.status === 'available' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
+                                        }`}>{ds.status === 'available' ? '已获取' : '待补充'}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </>
+                  ) : (
+                    /* Dossier Empty State */
+                    <div className="relative rounded-2xl overflow-hidden p-12 text-center" style={{ background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)', boxShadow: '0 8px 32px -8px rgba(0,0,0,0.45)' }}>
+                      <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 70% 60% at 50% -20%, rgba(212,175,55,0.14) 0%, transparent 65%)' }} />
+                      <div className="relative">
+                        <div className="w-16 h-16 rounded-2xl bg-[#D4AF37]/10 flex items-center justify-center mx-auto mb-4">
+                          <Shield size={32} className="text-[#D4AF37]" />
+                        </div>
+                        <p className="text-slate-300">AI 背调评估简报</p>
+                        <p className="text-xs text-slate-500 mt-2">基于已采集数据生成综合分析，不编造信息</p>
+                        <button
+                          onClick={handleGenerateDossier}
+                          disabled={isGeneratingDossier}
+                          className="mt-4 px-6 py-2.5 bg-[#D4AF37] text-[#0B1220] rounded-xl text-sm font-medium hover:bg-[#C5A030] transition-colors inline-flex items-center gap-2 disabled:opacity-50"
+                        >
+                          {isGeneratingDossier ? (
+                            <><Loader2 size={14} className="animate-spin" />生成中...</>
+                          ) : (
+                            <><Shield size={14} />生成背调简报</>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
             </>
           ) : (
             <div className="relative rounded-2xl overflow-hidden p-12 text-center" style={{ background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)', boxShadow: '0 8px 32px -8px rgba(0,0,0,0.45)' }}>

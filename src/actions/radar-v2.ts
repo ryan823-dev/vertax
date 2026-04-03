@@ -21,6 +21,7 @@ import type {
   RadarTask,
   RadarCandidate,
   ProspectCompany,
+  ProspectContact,
   Opportunity,
 } from '@prisma/client';
 import {
@@ -43,8 +44,21 @@ import type { RadarSearchQuery } from '@/lib/radar/adapters/types';
 export type RadarSourceData = RadarSource;
 export type RadarTaskData = RadarTask;
 export type RadarCandidateData = RadarCandidate;
-export type ProspectCompanyData = ProspectCompany;
+export type ProspectCompanyData = ProspectCompany & { _count?: { contacts: number } };
+export type ProspectContactData = ProspectContact;
 export type OpportunityData = Opportunity;
+
+export interface CreateProspectContactInput {
+  companyId: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  role?: string;
+  department?: string;
+  seniority?: string;
+  linkedInUrl?: string;
+  notes?: string;
+}
 
 export interface SyncResultData {
   success: boolean;
@@ -638,6 +652,13 @@ export async function importCandidateToCompanyV2(
     },
   });
   
+  // 自动提取决策者联系人（失败不阻塞导入）
+  try {
+    await extractContactsFromCandidate(candidate, company.id, session.user.tenantId, candidateId);
+  } catch (err) {
+    console.error('[importCandidateToCompanyV2] Contact extraction failed (non-blocking):', err);
+  }
+  
   // 更新候选状态
   await prisma.radarCandidate.update({
     where: { id: candidateId },
@@ -789,7 +810,7 @@ export async function getProspectCompaniesV2(options?: {
   search?: string;
   limit?: number;
   offset?: number;
-}): Promise<{ companies: ProspectCompany[]; total: number }> {
+}): Promise<{ companies: ProspectCompanyData[]; total: number }> {
   const session = await auth();
   if (!session?.user?.tenantId) throw new Error('Unauthorized');
   
@@ -817,6 +838,7 @@ export async function getProspectCompaniesV2(options?: {
   const [companies, total] = await Promise.all([
     prisma.prospectCompany.findMany({
       where,
+      include: { _count: { select: { contacts: { where: { deletedAt: null } } } } },
       orderBy: { createdAt: 'desc' },
       take: options?.limit || 50,
       skip: options?.offset || 0,
@@ -824,7 +846,7 @@ export async function getProspectCompaniesV2(options?: {
     prisma.prospectCompany.count({ where }),
   ]);
   
-  return { companies, total };
+  return { companies: companies as ProspectCompanyData[], total };
 }
 
 // ==================== Opportunity 管理 ====================
@@ -924,6 +946,329 @@ export async function updateOpportunityStageV2(
   });
   
   return updated;
+}
+
+// ==================== ProspectContact 管理 ====================
+
+/**
+ * 从候选原始数据中推断联系人职级
+ */
+function inferSeniority(title: string | undefined): string | null {
+  if (!title) return null;
+  const t = title.toLowerCase();
+  if (/\b(ceo|cto|cfo|coo|cmo|cio|founder|co-founder|owner|president|chairman)\b/.test(t)) return 'C-level';
+  if (/\b(vp|vice president)\b/.test(t)) return 'VP';
+  if (/\bdirector\b/.test(t)) return 'Director';
+  if (/\bmanager\b/.test(t)) return 'Manager';
+  return 'Staff';
+}
+
+/**
+ * 从候选数据的 intelligence 中提取联系人并创建 ProspectContact
+ */
+async function extractContactsFromCandidate(
+  candidate: RadarCandidate,
+  companyId: string,
+  tenantId: string,
+  candidateId: string
+): Promise<number> {
+  const rawData = candidate.rawData as Record<string, unknown> | null;
+  if (!rawData) return 0;
+
+  const intelligence = rawData.intelligence as Record<string, unknown> | undefined;
+  const contactsData = intelligence?.contacts as Record<string, unknown> | undefined;
+  const decisionMakers = contactsData?.decisionMakers as Array<{
+    name?: string;
+    title?: string;
+    email?: string;
+    linkedIn?: string;
+    linkedin?: string;
+    emailConfidence?: number;
+  }> | undefined;
+
+  if (!decisionMakers || decisionMakers.length === 0) return 0;
+
+  let created = 0;
+  for (const dm of decisionMakers) {
+    if (!dm.name) continue;
+    // 去重：同公司同名跳过
+    const exists = await prisma.prospectContact.findFirst({
+      where: { tenantId, companyId, name: dm.name, deletedAt: null },
+    });
+    if (exists) continue;
+
+    await prisma.prospectContact.create({
+      data: {
+        tenantId,
+        companyId,
+        name: dm.name,
+        role: dm.title || null,
+        email: dm.email || null,
+        linkedInUrl: dm.linkedIn || dm.linkedin || null,
+        seniority: inferSeniority(dm.title),
+        sourceCandidateId: candidateId,
+        status: 'new',
+      },
+    });
+    created++;
+  }
+  return created;
+}
+
+/**
+ * 获取公司联系人列表
+ */
+export async function getProspectContacts(companyId: string): Promise<ProspectContactData[]> {
+  const session = await auth();
+  if (!session?.user?.tenantId) throw new Error('Unauthorized');
+
+  const company = await prisma.prospectCompany.findUnique({ where: { id: companyId } });
+  if (!company || company.tenantId !== session.user.tenantId) {
+    throw new Error('Company not found');
+  }
+
+  return prisma.prospectContact.findMany({
+    where: { tenantId: session.user.tenantId, companyId, deletedAt: null },
+    orderBy: [
+      { createdAt: 'asc' },
+    ],
+  });
+}
+
+/**
+ * 创建联系人
+ */
+export async function createProspectContact(input: CreateProspectContactInput): Promise<ProspectContactData> {
+  const session = await auth();
+  if (!session?.user?.tenantId || !session.user.id) throw new Error('Unauthorized');
+
+  const company = await prisma.prospectCompany.findUnique({ where: { id: input.companyId } });
+  if (!company || company.tenantId !== session.user.tenantId) {
+    throw new Error('Company not found');
+  }
+
+  const contact = await prisma.prospectContact.create({
+    data: {
+      tenantId: session.user.tenantId,
+      companyId: input.companyId,
+      name: input.name,
+      email: input.email || null,
+      phone: input.phone || null,
+      role: input.role || null,
+      department: input.department || null,
+      seniority: input.seniority || null,
+      linkedInUrl: input.linkedInUrl || null,
+      notes: input.notes || null,
+      status: 'new',
+    },
+  });
+
+  await prisma.activity.create({
+    data: {
+      tenantId: session.user.tenantId,
+      userId: session.user.id,
+      action: 'prospect_contact_created',
+      entityType: 'ProspectContact',
+      entityId: contact.id,
+      eventCategory: 'radar',
+      context: { companyId: input.companyId, contactName: input.name } as object,
+    },
+  });
+
+  return contact;
+}
+
+/**
+ * 更新联系人
+ */
+export async function updateProspectContact(
+  contactId: string,
+  input: Partial<Omit<CreateProspectContactInput, 'companyId'>>
+): Promise<ProspectContactData> {
+  const session = await auth();
+  if (!session?.user?.tenantId || !session.user.id) throw new Error('Unauthorized');
+
+  const contact = await prisma.prospectContact.findUnique({ where: { id: contactId } });
+  if (!contact || contact.tenantId !== session.user.tenantId || contact.deletedAt) {
+    throw new Error('Contact not found');
+  }
+
+  const updated = await prisma.prospectContact.update({
+    where: { id: contactId },
+    data: {
+      ...(input.name !== undefined && { name: input.name }),
+      ...(input.email !== undefined && { email: input.email || null }),
+      ...(input.phone !== undefined && { phone: input.phone || null }),
+      ...(input.role !== undefined && { role: input.role || null }),
+      ...(input.department !== undefined && { department: input.department || null }),
+      ...(input.seniority !== undefined && { seniority: input.seniority || null }),
+      ...(input.linkedInUrl !== undefined && { linkedInUrl: input.linkedInUrl || null }),
+      ...(input.notes !== undefined && { notes: input.notes || null }),
+    },
+  });
+
+  return updated;
+}
+
+/**
+ * 删除联系人（软删除）
+ */
+export async function deleteProspectContact(contactId: string): Promise<void> {
+  const session = await auth();
+  if (!session?.user?.tenantId || !session.user.id) throw new Error('Unauthorized');
+
+  const contact = await prisma.prospectContact.findUnique({ where: { id: contactId } });
+  if (!contact || contact.tenantId !== session.user.tenantId || contact.deletedAt) {
+    throw new Error('Contact not found');
+  }
+
+  await prisma.prospectContact.update({
+    where: { id: contactId },
+    data: { deletedAt: new Date() },
+  });
+
+  await prisma.activity.create({
+    data: {
+      tenantId: session.user.tenantId,
+      userId: session.user.id,
+      action: 'prospect_contact_deleted',
+      entityType: 'ProspectContact',
+      entityId: contactId,
+      eventCategory: 'radar',
+      context: { contactName: contact.name, companyId: contact.companyId } as object,
+    },
+  });
+}
+
+// ==================== 背调简报 ====================
+
+/**
+ * 生成客户背调简报
+ */
+export async function generateProspectDossier(companyId: string): Promise<{
+  ok: boolean;
+  versionId?: string;
+  content?: Record<string, unknown>;
+  error?: string;
+}> {
+  const session = await auth();
+  if (!session?.user?.tenantId || !session.user.id) throw new Error('Unauthorized');
+
+  const company = await prisma.prospectCompany.findUnique({ where: { id: companyId } });
+  if (!company || company.tenantId !== session.user.tenantId) {
+    throw new Error('Company not found');
+  }
+
+  // 收集所有相关数据
+  const [contacts, opportunities, sourceCandidate] = await Promise.all([
+    prisma.prospectContact.findMany({
+      where: { tenantId: session.user.tenantId, companyId, deletedAt: null },
+    }),
+    prisma.opportunity.findMany({
+      where: { tenantId: session.user.tenantId, companyId, deletedAt: null },
+    }),
+    company.sourceCandidateId
+      ? prisma.radarCandidate.findUnique({ where: { id: company.sourceCandidateId } })
+      : null,
+  ]);
+
+  // 提取 intelligence 数据
+  const rawData = sourceCandidate?.rawData as Record<string, unknown> | null;
+  const intelligence = rawData?.intelligence as Record<string, unknown> | undefined;
+
+  // 调用 AI 技能
+  const { executeSkill } = await import('@/actions/skills');
+  const result = await executeSkill(
+    'radar.generateProspectDossier',
+    {
+      entityType: 'ProspectDossier',
+      entityId: companyId,
+      mode: 'generate',
+      useCompanyProfile: true,
+      input: {
+        prospectCompany: {
+          id: company.id,
+          name: company.name,
+          website: company.website,
+          phone: company.phone,
+          email: company.email,
+          address: company.address,
+          country: company.country,
+          city: company.city,
+          industry: company.industry,
+          companySize: company.companySize,
+          description: company.description,
+          tier: company.tier,
+          status: company.status,
+          sourceType: company.sourceType,
+          sourceUrl: company.sourceUrl,
+        },
+        contacts: contacts.map(c => ({
+          name: c.name,
+          email: c.email,
+          phone: c.phone,
+          role: c.role,
+          department: c.department,
+          seniority: c.seniority,
+          linkedInUrl: c.linkedInUrl,
+        })),
+        opportunities: opportunities.map(o => ({
+          title: o.title,
+          description: o.description,
+          stage: o.stage,
+          estimatedValue: o.estimatedValue,
+          currency: o.currency,
+          deadline: o.deadline,
+          sourceType: o.sourceType,
+        })),
+        candidateData: sourceCandidate ? {
+          matchScore: sourceCandidate.matchScore,
+          matchExplain: sourceCandidate.matchExplain,
+          aiRelevance: sourceCandidate.aiRelevance,
+          aiSummary: sourceCandidate.aiSummary,
+        } : null,
+        intelligence: intelligence || null,
+      },
+    }
+  );
+
+  return {
+    ok: result.ok,
+    versionId: result.versionId,
+    content: result.output,
+    error: result.ok ? undefined : 'Skill execution failed',
+  };
+}
+
+/**
+ * 获取最新背调简报
+ */
+export async function getLatestProspectDossier(companyId: string): Promise<{
+  id: string;
+  version: number;
+  content: Record<string, unknown>;
+  createdAt: Date;
+} | null> {
+  const session = await auth();
+  if (!session?.user?.tenantId) throw new Error('Unauthorized');
+
+  const version = await prisma.artifactVersion.findFirst({
+    where: {
+      tenantId: session.user.tenantId,
+      entityType: 'ProspectDossier',
+      entityId: companyId,
+    },
+    orderBy: { version: 'desc' },
+  });
+
+  if (!version) return null;
+
+  return {
+    id: version.id,
+    version: version.version,
+    content: version.content as Record<string, unknown>,
+    createdAt: version.createdAt,
+  };
 }
 
 // ==================== 统计 ====================
