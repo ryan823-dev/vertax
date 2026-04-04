@@ -13,10 +13,10 @@ export const CROSS_PLATFORM_JWT_CONFIG = {
 // The actual authorize logic is in auth.ts
 export const authConfig: NextAuthConfig = {
   trustHost: true, // Trust x-forwarded-host header for custom domains
-  secret: process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET,
+  secret: process.env.AUTH_SECRET || process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET,
   session: { strategy: "jwt" },
   pages: {
-    signIn: "/zh-CN/login",
+    signIn: "/login",
   },
   providers: [
     Credentials({

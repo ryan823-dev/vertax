@@ -76,7 +76,7 @@ function RadarStepper({
   };
 
   return (
-    <div className="flex items-center gap-0.5">
+    <div className="flex items-center gap-0.5" data-testid="radar-stepper">
       {steps.map((step, idx) => {
         const isCurrentStep = idx + 1 === currentStep;
         const isDone = step.status === 'DONE';
