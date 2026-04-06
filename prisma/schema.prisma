@@ -1445,7 +1445,34 @@ model ApiKeyConfig {
   @@map("api_key_configs")
 }
 
-// ==================== 澶栬仈閭欢璁板綍 ====================
+// ==================== 邮件附件模板 ====================
+
+model AttachmentTemplate {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId    String
+
+  // 模板信息
+  name        String   // 显示名称
+  filename    String   // 实际文件名
+  contentType String   // MIME类型
+  storageKey  String   // OSS 存储路径
+  size        Int      // 文件大小(bytes)
+
+  // 分类
+  category    String   @default("other") // catalog, brochure, presentation, other
+  industry    String?  // 可选：特定行业
+  isDefault   Boolean  @default(false)   // 默认附件
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([tenantId, isDefault])
+  @@index([tenantId, category])
+  @@map("attachment_templates")
+}
+
+// ==================== 外联邮件记录 ====================
+
 
 model OutreachRecord {
   id       String @id @default(cuid())
