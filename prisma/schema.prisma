@@ -1448,7 +1448,7 @@ model ApiKeyConfig {
 // ==================== 邮件附件模板 ====================
 
 model AttachmentTemplate {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  id          String   @id @default(cuid())
   tenantId    String
 
   // 模板信息
