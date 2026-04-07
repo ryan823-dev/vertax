@@ -109,6 +109,20 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    // Phase 3: Immediately trigger processing (don't wait for cron)
+    // Fire-and-forget: start processing in background without blocking response
+    // Cron will act as fallback if this background task is interrupted
+    const processUrl = new URL("/api/cron/web-crawl", req.url).toString();
+    fetch(processUrl, {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${process.env.CRON_SECRET || "dev-secret"}`,
+      },
+    }).catch((err) => {
+      console.warn("[web-import] Failed to trigger immediate processing:", err);
+      // Cron will handle it as fallback
+    });
+
     // Return immediately with task info
     return new Response(JSON.stringify({
       success: true,
