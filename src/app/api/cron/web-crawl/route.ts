@@ -1,8 +1,7 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { fetchWebContent } from "@/lib/services/web-scraper";
 import { splitTextIntoChunks } from "@/lib/utils/chunk-utils";
-import { auth } from "@/lib/auth";
 
 export const maxDuration = 300; // 5 minutes per batch
 
@@ -26,14 +25,17 @@ function isLowValuePage(url: string, content: string): boolean {
  * Web Crawl Background Worker
  * 
  * 分段处理爬取任务，每次处理 20 页
- * 由 Cron 定时调用：每 5 分钟执行一次
+ * 由 Vercel Cron 定时调用：每 5 分钟执行一次
+ * 
+ * 重要：Vercel Cron Jobs 只发送 GET 请求，必须导出 GET handler
  */
-export async function POST(req: NextRequest) {
-  // Auth check for cron (using header token or API key)
+export async function GET(req: NextRequest) {
+  // 验证 cron secret
   const authHeader = req.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET || "dev-secret"}`) {
-    // For development, allow without auth
-    console.warn("[web-crawl] Missing or invalid auth header, proceeding in dev mode");
+  const cronSecret = process.env.CRON_SECRET;
+
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
@@ -49,12 +51,9 @@ export async function POST(req: NextRequest) {
     });
 
     if (tasks.length === 0) {
-      return new Response(JSON.stringify({ 
+      return NextResponse.json({ 
         message: "No pending crawl tasks",
         processed: 0,
-      }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
       });
     }
 
@@ -89,22 +88,16 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return new Response(JSON.stringify({
+    return NextResponse.json({
       message: `Processed ${totalProcessed} pages across ${tasks.length} tasks`,
       tasks: results,
       totalProcessed,
-    }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
     console.error("[web-crawl] Critical error:", err);
-    return new Response(JSON.stringify({ 
+    return NextResponse.json({ 
       error: err instanceof Error ? err.message : "Critical error" 
-    }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    }, { status: 500 });
   }
 }
 
