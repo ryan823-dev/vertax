@@ -7,38 +7,10 @@ import {
   ChevronRight, Zap, Shield, BarChart3,
   Rocket, Building2, CheckCircle2, Users,
   BookOpen, Search, MessageCircle, Database,
-  BarChart, Globe, DollarSign, Clock, AlertTriangle, Menu, Award, TrendingUp as TrendUp
+  BarChart, Globe, DollarSign, Clock, AlertTriangle, Menu, Award, TrendingUp as TrendUp,
+  Cpu, Sparkles, Activity
 } from 'lucide-react';
-
-/* ── Design Tokens ── */
-// 与租户端统一的设计语言
-const colors = {
-  // 背景色
-  bg: {
-    primary: '#F7F3EA',      // 奶油白主背景
-    secondary: '#FFFFFF',     // 卡片背景
-    dark: '#0B1220',          // 深色区块
-    gradient: 'linear-gradient(180deg, #F7F3EA 0%, #EDE8DC 100%)',
-  },
-  // 品牌色
-  brand: {
-    gold: '#D4AF37',          // 金色主色
-    goldLight: '#E8C547',     // 金色浅
-    goldDark: '#B8972E',      // 金色深
-  },
-  // 文字色
-  text: {
-    primary: '#111827',       // 主文字
-    secondary: '#4B5563',     // 次文字
-    muted: '#9CA3AF',         // 弱化文字
-    inverse: '#FFFFFF',       // 反色文字
-  },
-  // 边框色
-  border: {
-    light: 'rgba(212,175,55,0.15)',
-    medium: 'rgba(212,175,55,0.3)',
-  },
-};
+import { colors, shadows, gradients } from '@/lib/design-tokens';
 
 /* ── Modal ── */
 function DemoModal({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -50,9 +22,9 @@ function DemoModal({ open, onClose }: { open: boolean; onClose: () => void }) {
       <div
         className="rounded-2xl w-full max-w-md p-8 relative"
         style={{
-          background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 100%)',
-          border: '1px solid rgba(212,175,55,0.2)',
-          boxShadow: '0 25px 50px -12px rgba(0,0,0,0.4)',
+          background: colors.bg.secondary,
+          border: `1px solid ${colors.border.brand}`,
+          boxShadow: shadows.xl,
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -62,8 +34,8 @@ function DemoModal({ open, onClose }: { open: boolean; onClose: () => void }) {
 
         {submitted ? (
           <div className="text-center py-8">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ background: 'rgba(212,175,55,0.15)' }}>
-              <CheckCircle2 className="w-8 h-8" style={{ color: colors.brand.gold }} />
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ background: colors.border.glow }}>
+              <CheckCircle2 className="w-8 h-8" style={{ color: colors.data.positive }} />
             </div>
             <h3 className="text-xl font-bold text-white mb-2">提交成功</h3>
             <p className="text-gray-400 text-sm">我们会在 1 个工作日内联系您。</p>
@@ -79,7 +51,6 @@ function DemoModal({ open, onClose }: { open: boolean; onClose: () => void }) {
               <input
                 required placeholder="姓名" type="text"
                 className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-sm text-white placeholder:text-gray-500 focus:outline-none"
-                style={{ ':focus': { borderColor: colors.brand.gold } }}
               />
               <input
                 required placeholder="公司名称" type="text"
@@ -95,10 +66,10 @@ function DemoModal({ open, onClose }: { open: boolean; onClose: () => void }) {
               />
               <button
                 type="submit"
-                className="w-full font-semibold py-3 rounded-lg transition-all text-sm"
+                className="w-full font-semibold py-3 rounded-lg transition-all text-sm hover:scale-[1.02]"
                 style={{
-                  background: colors.brand.gold,
-                  color: '#0B1220',
+                  background: colors.brand.gradient,
+                  color: colors.text.inverse,
                 }}
               >
                 提交预约
@@ -125,9 +96,9 @@ export default function LandingPage() {
       <nav
         className="sticky top-0 z-50"
         style={{
-          background: 'rgba(11,18,32,0.95)',
+          background: 'rgba(10,10,10,0.95)',
           backdropFilter: 'blur(20px)',
-          borderBottom: '1px solid rgba(212,175,55,0.12)',
+          borderBottom: `1px solid ${colors.border.brand}`,
         }}
       >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
@@ -136,17 +107,17 @@ export default function LandingPage() {
             <div
               className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black"
               style={{
-                background: colors.brand.gold,
-                color: '#0B1220',
-                boxShadow: '0 0 20px rgba(212,175,55,0.3)',
+                background: colors.brand.gradient,
+                color: colors.text.inverse,
+                boxShadow: shadows.glow,
               }}
             >
               V
             </div>
             <div>
               <span className="text-lg font-bold text-white tracking-tight">VertaX</span>
-              <span className="hidden sm:inline text-[9px] ml-2 px-2 py-0.5 rounded font-bold uppercase tracking-widest" style={{ color: colors.brand.gold, background: 'rgba(212,175,55,0.1)' }}>
-                Growth Chamber
+              <span className="hidden sm:inline text-[9px] ml-2 px-2 py-0.5 rounded font-bold uppercase tracking-widest" style={{ color: colors.brand.primary, background: colors.border.glow }}>
+                Intelligence OS
               </span>
             </div>
           </a>
@@ -170,10 +141,10 @@ export default function LandingPage() {
             </a>
             <button
               onClick={openModal}
-              className="font-semibold px-5 py-2 rounded-lg transition-all text-sm"
+              className="font-semibold px-5 py-2 rounded-lg transition-all text-sm hover:scale-105"
               style={{
-                background: colors.brand.gold,
-                color: '#0B1220',
+                background: colors.brand.gradient,
+                color: colors.text.inverse,
               }}
             >
               预约演示
@@ -190,7 +161,7 @@ export default function LandingPage() {
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-white/5 px-4 py-4 space-y-1" style={{ background: '#0B1220' }}>
+          <div className="md:hidden border-t border-white/5 px-4 py-4 space-y-1" style={{ background: colors.bg.primary }}>
             <a href="/features" className="block text-sm text-gray-300 hover:text-white py-3 px-3 rounded-lg hover:bg-white/5">产品功能</a>
             <a href="/solutions" className="block text-sm text-gray-300 hover:text-white py-3 px-3 rounded-lg hover:bg-white/5">解决方案</a>
             <a href="/cases" className="block text-sm text-gray-300 hover:text-white py-3 px-3 rounded-lg hover:bg-white/5">客户案例</a>
@@ -207,28 +178,33 @@ export default function LandingPage() {
 
       {/* ── Hero Section ── */}
       <section
-        className="py-16 md:py-24 px-4 sm:px-6"
-        style={{ background: 'linear-gradient(180deg, #0B1220 0%, #0D1526 50%, #F7F3EA 100%)' }}
+        className="py-16 md:py-24 px-4 sm:px-6 relative overflow-hidden"
+        style={{ background: colors.bg.heroGradient }}
       >
-        <div className="max-w-4xl mx-auto text-center">
+        {/* Animated Background */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ background: gradients.mesh }}>
+          <div className="absolute inset-0" style={{ background: gradients.grid, backgroundSize: '60px 60px' }} />
+        </div>
+
+        <div className="max-w-4xl mx-auto text-center relative z-10">
           {/* Badge */}
           <div
             className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-medium mb-8"
             style={{
-              background: 'rgba(212,175,55,0.1)',
-              border: '1px solid rgba(212,175,55,0.3)',
-              color: colors.brand.gold,
+              background: colors.border.glow,
+              border: `1px solid ${colors.border.brand}`,
+              color: colors.brand.primary,
             }}
           >
-            <Zap className="w-3.5 h-3.5" />
-            <span>出海获客智能体</span>
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Intelligence OS for Global Growth</span>
           </div>
 
           {/* Headline */}
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6 text-white">
             让每一家中国企业
             <br />
-            <span style={{ color: colors.brand.gold }}>拥有自主进化的全球增长大脑</span>
+            <span style={{ background: colors.brand.gradient, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>拥有自主进化的全球增长大脑</span>
           </h1>
 
           {/* Subheadline */}
@@ -241,19 +217,19 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
             <button
               onClick={openModal}
-              className="w-full sm:w-auto font-semibold px-8 py-4 rounded-xl transition-all inline-flex items-center justify-center gap-2 text-base"
+              className="w-full sm:w-auto font-semibold px-8 py-4 rounded-xl transition-all inline-flex items-center justify-center gap-2 text-base hover:scale-105"
               style={{
-                background: colors.brand.gold,
-                color: '#0B1220',
-                boxShadow: '0 0 30px rgba(212,175,55,0.3)',
+                background: colors.brand.gradient,
+                color: colors.text.inverse,
+                boxShadow: shadows.glowLg,
               }}
             >
               预约演示 <ArrowRight className="w-4 h-4" />
             </button>
             <button
               onClick={openModal}
-              className="w-full sm:w-auto border px-8 py-4 rounded-xl transition-colors font-medium text-base text-white"
-              style={{ borderColor: 'rgba(255,255,255,0.15)' }}
+              className="w-full sm:w-auto border px-8 py-4 rounded-xl transition-colors font-medium text-base text-white hover:bg-white/5"
+              style={{ borderColor: colors.border.strong }}
             >
               获取行业方案
             </button>
@@ -262,15 +238,15 @@ export default function LandingPage() {
           {/* Trust Indicators */}
           <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-gray-500">
             <span className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4" style={{ color: colors.brand.gold }} />
+              <CheckCircle2 className="w-4 h-4" style={{ color: colors.data.positive }} />
               面向制造业、工业品企业
             </span>
             <span className="flex items-center gap-2">
-              <Shield className="w-4 h-4" style={{ color: colors.brand.gold }} />
+              <Shield className="w-4 h-4" style={{ color: colors.brand.accent }} />
               数据安全合规
             </span>
             <span className="flex items-center gap-2">
-              <Users className="w-4 h-4" style={{ color: colors.brand.gold }} />
+              <Users className="w-4 h-4" style={{ color: colors.brand.primary }} />
               100+ 企业信赖
             </span>
           </div>
@@ -298,7 +274,7 @@ export default function LandingPage() {
           <div className="text-center mb-12">
             <span
               className="text-xs font-bold uppercase tracking-widest mb-3 inline-block"
-              style={{ color: colors.brand.gold }}
+              style={{ color: colors.brand.primary }}
             >
               目标客户
             </span>
@@ -336,9 +312,9 @@ export default function LandingPage() {
               >
                 <div
                   className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
-                  style={{ background: 'rgba(212,175,55,0.1)' }}
+                  style={{ background: colors.border.glow }}
                 >
-                  <Icon className="w-6 h-6" style={{ color: colors.brand.gold }} />
+                  <Icon className="w-6 h-6" style={{ color: colors.brand.primary }} />
                 </div>
                 <h3 className="text-lg font-bold mb-2" style={{ color: colors.text.primary }}>{title}</h3>
                 <p className="text-sm leading-relaxed" style={{ color: colors.text.secondary }}>{desc}</p>
@@ -354,7 +330,7 @@ export default function LandingPage() {
           <div className="text-center mb-12">
             <span
               className="text-xs font-bold uppercase tracking-widest mb-3 inline-block"
-              style={{ color: colors.brand.gold }}
+              style={{ color: colors.brand.primary }}
             >
               行业痛点
             </span>
@@ -380,7 +356,7 @@ export default function LandingPage() {
                   border: `1px solid ${colors.border.light}`,
                 }}
               >
-                <Icon className="w-6 h-6 mb-3" style={{ color: '#F59E0B' }} />
+                <Icon className="w-6 h-6 mb-3" style={{ color: colors.data.neutral }} />
                 <h3 className="font-bold mb-1.5" style={{ color: colors.text.primary }}>{title}</h3>
                 <p className="text-sm leading-relaxed" style={{ color: colors.text.secondary }}>{desc}</p>
               </div>
@@ -391,11 +367,11 @@ export default function LandingPage() {
           <div
             className="rounded-2xl p-6 text-center"
             style={{
-              background: 'rgba(212,175,55,0.08)',
+              background: colors.border.glow,
               border: `1px solid ${colors.border.medium}`,
             }}
           >
-            <p className="text-lg font-medium" style={{ color: colors.brand.gold }}>
+            <p className="text-lg font-medium" style={{ color: colors.brand.primary }}>
               这些挑战不是靠多招人就能解决的，需要一套系统化的增长机制。
             </p>
           </div>
@@ -408,7 +384,7 @@ export default function LandingPage() {
           <div className="text-center mb-12">
             <span
               className="text-xs font-bold uppercase tracking-widest mb-3 inline-block"
-              style={{ color: colors.brand.gold }}
+              style={{ color: colors.brand.primary }}
             >
               核心价值
             </span>
@@ -422,9 +398,9 @@ export default function LandingPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
-              { icon: Brain, title: '资产化', desc: '每一次获客动作都沉淀为可复用的组织资产，不因人员流动归零。', color: colors.brand.gold },
-              { icon: Shield, title: '标准化', desc: '从 ICP 定义到跟进节奏，全流程有标准、可度量。', color: '#8B5CF6' },
-              { icon: BarChart3, title: '可审计', desc: '动作记录、效果归因、成本核算，全链路透明可追溯。', color: '#F59E0B' }
+              { icon: Brain, title: '资产化', desc: '每一次获客动作都沉淀为可复用的组织资产，不因人员流动归零。', color: colors.brand.primary },
+              { icon: Shield, title: '标准化', desc: '从 ICP 定义到跟进节奏，全流程有标准、可度量。', color: colors.brand.secondary },
+              { icon: BarChart3, title: '可审计', desc: '动作记录、效果归因、成本核算，全链路透明可追溯。', color: colors.brand.accent }
             ].map(({ icon: Icon, title, desc, color }) => (
               <div
                 key={title}
@@ -455,7 +431,7 @@ export default function LandingPage() {
           <div className="text-center mb-12">
             <span
               className="text-xs font-bold uppercase tracking-widest mb-3 inline-block"
-              style={{ color: colors.brand.gold }}
+              style={{ color: colors.brand.primary }}
             >
               六大模块
             </span>
@@ -484,7 +460,7 @@ export default function LandingPage() {
                   border: '1px solid rgba(255,255,255,0.06)',
                 }}
               >
-                <Icon className="w-7 h-7 mb-3" style={{ color: colors.brand.gold }} />
+                <Icon className="w-7 h-7 mb-3" style={{ color: colors.brand.primary }} />
                 <h3 className="font-bold text-white mb-2">{title}</h3>
                 <p className="text-sm text-gray-400 leading-relaxed">{desc}</p>
               </div>
@@ -499,7 +475,7 @@ export default function LandingPage() {
           <div className="text-center mb-12">
             <span
               className="text-xs font-bold uppercase tracking-widest mb-3 inline-block"
-              style={{ color: colors.brand.gold }}
+              style={{ color: colors.brand.primary }}
             >
               方案对比
             </span>
@@ -534,8 +510,8 @@ export default function LandingPage() {
                     <span className="text-sm" style={{ color: colors.text.secondary }}>{traditional}</span>
                   </div>
                   <div className="flex items-start gap-2">
-                    <span className="text-xs px-1.5 py-0.5 rounded shrink-0 font-medium" style={{ background: 'rgba(212,175,55,0.1)', color: colors.brand.gold }}>VertaX</span>
-                    <span className="text-sm font-medium" style={{ color: colors.brand.gold }}>{vertax}</span>
+                    <span className="text-xs px-1.5 py-0.5 rounded shrink-0 font-medium" style={{ background: colors.border.glow, color: colors.brand.primary }}>VertaX</span>
+                    <span className="text-sm font-medium" style={{ color: colors.brand.primary }}>{vertax}</span>
                   </div>
                 </div>
               </div>
@@ -549,7 +525,7 @@ export default function LandingPage() {
                 <tr style={{ borderBottom: `1px solid ${colors.border.light}` }}>
                   <th className="text-left py-4 px-4 font-bold" style={{ color: colors.text.primary }}>维度</th>
                   <th className="text-center py-4 px-4 font-bold" style={{ color: colors.text.muted }}>传统方案</th>
-                  <th className="text-center py-4 px-4 font-bold" style={{ color: colors.brand.gold }}>VertaX</th>
+                  <th className="text-center py-4 px-4 font-bold" style={{ color: colors.brand.primary }}>VertaX</th>
                 </tr>
               </thead>
               <tbody>
@@ -565,7 +541,7 @@ export default function LandingPage() {
                   <tr key={dim} style={{ borderBottom: `1px solid ${colors.border.light}` }}>
                     <td className="py-4 px-4 font-medium" style={{ color: colors.text.primary }}>{dim}</td>
                     <td className="py-4 px-4 text-center" style={{ color: colors.text.muted }}>{traditional}</td>
-                    <td className="py-4 px-4 text-center font-medium" style={{ color: colors.brand.gold }}>{vertax}</td>
+                    <td className="py-4 px-4 text-center font-medium" style={{ color: colors.brand.primary }}>{vertax}</td>
                   </tr>
                 ))}
               </tbody>
@@ -580,7 +556,7 @@ export default function LandingPage() {
           <div className="text-center mb-12">
             <span
               className="text-xs font-bold uppercase tracking-widest mb-3 inline-block"
-              style={{ color: colors.brand.gold }}
+              style={{ color: colors.brand.primary }}
             >
               实力验证
             </span>
@@ -605,7 +581,7 @@ export default function LandingPage() {
                   border: `1px solid ${colors.border.light}`,
                 }}
               >
-                <div className="text-3xl font-bold mb-1" style={{ color: colors.brand.gold }}>
+                <div className="text-3xl font-bold mb-1" style={{ color: colors.brand.primary }}>
                   {s.value}<span className="text-base text-gray-400 ml-0.5">{s.unit}</span>
                 </div>
                 <p className="text-xs font-medium" style={{ color: colors.text.primary }}>{s.label}</p>
@@ -697,19 +673,19 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <button
               onClick={openModal}
-              className="w-full sm:w-auto font-semibold px-8 py-4 rounded-xl transition-all inline-flex items-center justify-center gap-2 text-base"
+              className="w-full sm:w-auto font-semibold px-8 py-4 rounded-xl transition-all inline-flex items-center justify-center gap-2 text-base hover:scale-105"
               style={{
-                background: colors.brand.gold,
-                color: '#0B1220',
-                boxShadow: '0 0 30px rgba(212,175,55,0.3)',
+                background: colors.brand.gradient,
+                color: colors.text.inverse,
+                boxShadow: shadows.glowLg,
               }}
             >
               预约演示 <ArrowRight className="w-4 h-4" />
             </button>
             <button
               onClick={openModal}
-              className="w-full sm:w-auto border px-8 py-4 rounded-xl transition-colors font-medium text-base text-white"
-              style={{ borderColor: 'rgba(255,255,255,0.15)' }}
+              className="w-full sm:w-auto border px-8 py-4 rounded-xl transition-colors font-medium text-base text-white hover:bg-white/5"
+              style={{ borderColor: colors.border.strong }}
             >
               获取行业方案
             </button>
@@ -721,8 +697,8 @@ export default function LandingPage() {
       <footer
         className="py-12 px-4 sm:px-6"
         style={{
-          background: '#0B1220',
-          borderTop: '1px solid rgba(212,175,55,0.1)',
+          background: colors.bg.dark,
+          borderTop: `1px solid ${colors.border.brand}`,
         }}
       >
         <div className="max-w-6xl mx-auto">
@@ -734,8 +710,8 @@ export default function LandingPage() {
                 <div
                   className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-black"
                   style={{
-                    background: colors.brand.gold,
-                    color: '#0B1220',
+                    background: colors.brand.gradient,
+                    color: colors.text.inverse,
                   }}
                 >
                   V
@@ -748,23 +724,23 @@ export default function LandingPage() {
             {/* Navigation */}
             <div className="flex gap-12 text-sm">
               <div className="flex flex-col gap-3">
-                <span className="text-xs font-bold uppercase tracking-wider" style={{ color: colors.brand.gold }}>产品</span>
+                <span className="text-xs font-bold uppercase tracking-wider" style={{ color: colors.brand.primary }}>产品</span>
                 <a href="/features" className="text-gray-400 hover:text-white transition-colors">产品功能</a>
                 <a href="/features/modules" className="text-gray-400 hover:text-white transition-colors">六大模块</a>
                 <a href="/pricing" className="text-gray-400 hover:text-white transition-colors">价格</a>
               </div>
               <div className="flex flex-col gap-3">
-                <span className="text-xs font-bold uppercase tracking-wider" style={{ color: colors.brand.gold }}>解决方案</span>
+                <span className="text-xs font-bold uppercase tracking-wider" style={{ color: colors.brand.primary }}>解决方案</span>
                 <a href="/solutions" className="text-gray-400 hover:text-white transition-colors">解决方案</a>
                 <a href="/cases" className="text-gray-400 hover:text-white transition-colors">客户案例</a>
               </div>
               <div className="flex flex-col gap-3">
-                <span className="text-xs font-bold uppercase tracking-wider" style={{ color: colors.brand.gold }}>关于</span>
+                <span className="text-xs font-bold uppercase tracking-wider" style={{ color: colors.brand.primary }}>关于</span>
                 <a href="/about/what-is-vertax" className="text-gray-400 hover:text-white transition-colors">关于我们</a>
                 <a href="/faq" className="text-gray-400 hover:text-white transition-colors">常见问题</a>
               </div>
               <div className="flex flex-col gap-3">
-                <span className="text-xs font-bold uppercase tracking-wider" style={{ color: colors.brand.gold }}>联系</span>
+                <span className="text-xs font-bold uppercase tracking-wider" style={{ color: colors.brand.primary }}>联系</span>
                 <span className="text-gray-500">contact@vertax.top</span>
                 <a href="/en" className="text-gray-400 hover:text-white transition-colors">English</a>
               </div>
@@ -790,8 +766,8 @@ export default function LandingPage() {
                 <div
                   className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black"
                   style={{
-                    background: colors.brand.gold,
-                    color: '#0B1220',
+                    background: colors.brand.gradient,
+                    color: colors.text.inverse,
                   }}
                 >
                   V
