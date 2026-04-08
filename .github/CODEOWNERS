@@ -1,0 +1,51 @@
+# CODEOWNERS - 代码所有者配置
+# 文档：https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# ============================================
+# 公开区域（所有协作者可访问）
+# ============================================
+# Marketing 官网页面 - 对外宣传网站
+src/app/\(marketing\)/    @ryan823-dev
+src/components/LandingPage.tsx    @ryan823-dev
+src/components/marketing/    @ryan823-dev
+src/lib/design-tokens.ts    @ryan823-dev
+docs/    @ryan823-dev
+public/*.jpg    @ryan823-dev
+
+# ============================================
+# 敏感区域（需要管理员审批）
+# ============================================
+# 租户端核心业务代码
+src/app/customer/    @ryan823-dev
+src/app/dashboard/    @ryan823-dev
+
+# Tower 平台后台
+src/app/\(tower\)/    @ryan823-dev
+
+# 核心业务逻辑
+src/lib/radar/    @ryan823-dev
+src/lib/marketing/    @ryan823-dev
+src/lib/email/    @ryan823-dev
+src/lib/ai/    @ryan823-dev
+
+# API 路由（除公开 API 外）
+src/app/api/    @ryan823-dev
+
+# 数据库相关
+prisma/    @ryan823-dev
+src/actions/    @ryan823-dev
+
+# ============================================
+# 共享组件（所有协作者可访问）
+# ============================================
+src/components/ui/    @ryan823-dev
+src/components/seo/    @ryan823-dev
+src/lib/utils.ts    @ryan823-dev
+
+# ============================================
+# 配置文件（管理员专属）
+# ============================================
+.env*    @ryan823-dev
+package.json    @ryan823-dev
+next.config.*    @ryan823-dev
+.github/    @ryan823-dev
