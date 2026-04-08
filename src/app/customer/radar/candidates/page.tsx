@@ -1432,7 +1432,7 @@ export default function RadarCandidatesPage() {
                   {selectedCandidate.status !== 'IMPORTED' && (
                     <div className="mb-4">
                       <p className="text-xs text-slate-500 mb-2">分层评级</p>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 w-full">
                         {(['A', 'B', 'C', 'excluded'] as const).map((tier) => {
                           const isActive = selectedCandidate.qualifyTier === tier || 
                             (tier === 'excluded' && selectedCandidate.status === 'EXCLUDED');
@@ -1440,7 +1440,7 @@ export default function RadarCandidatesPage() {
                             <button
                               key={tier}
                               onClick={() => handleQualify(selectedCandidate.id, tier)}
-                              className={`flex-1 py-2 rounded-lg text-xs font-medium transition-all ${
+                              className={`flex-1 min-w-0 py-2 rounded-lg text-xs font-medium transition-all truncate ${
                                 isActive
                                   ? tier === 'A' ? 'bg-emerald-500 text-white' :
                                     tier === 'B' ? 'bg-amber-500 text-white' :
@@ -1512,17 +1512,17 @@ export default function RadarCandidatesPage() {
                               className="w-full text-[11px] text-slate-600 bg-transparent border-0 resize-none focus:outline-none leading-relaxed"
                             />
                           </div>
-                          <div className="flex gap-2">
+                          <div className="flex gap-2 w-full">
                             <button
                               onClick={() => setOutreachDraft(null)}
-                              className="flex-1 py-2 text-xs text-slate-500 border border-[#E8E0D0] rounded-xl hover:bg-[#F7F3E8] transition-colors"
+                              className="flex-1 min-w-0 py-2 text-xs text-slate-500 border border-[#E8E0D0] rounded-xl hover:bg-[#F7F3E8] transition-colors truncate"
                             >
                               重新生成
                             </button>
                             <button
                               onClick={handleSendDraft}
                               disabled={isSendingDraft}
-                              className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#D4AF37] text-[#0B1B2B] rounded-xl text-xs font-medium hover:bg-[#C5A030] transition-colors disabled:opacity-50"
+                              className="flex-1 min-w-0 flex items-center justify-center gap-1.5 py-2 bg-[#D4AF37] text-[#0B1B2B] rounded-xl text-xs font-medium hover:bg-[#C5A030] transition-colors disabled:opacity-50"
                             >
                               {isSendingDraft ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
                               {isSendingDraft ? '发送中...' : '确认发送'}
@@ -1725,20 +1725,20 @@ export default function RadarCandidatesPage() {
               </div>
             </div>
             
-            <div className="flex border-t border-[#E8E0D0]">
+            <div className="flex border-t border-[#E8E0D0] w-full">
               <button
                 onClick={() => {
                   setShowExclusionModal(null);
                   setExclusionReason('');
                 }}
-                className="flex-1 py-5 text-sm font-medium text-slate-500 hover:bg-slate-50 transition-colors"
+                className="flex-1 min-w-0 py-5 text-sm font-medium text-slate-500 hover:bg-slate-50 transition-colors truncate"
               >
                 返回
               </button>
               <button
                 onClick={confirmExclusion}
                 disabled={isExcluding}
-                className="flex-1 py-5 text-sm font-bold text-red-500 hover:bg-red-50 transition-colors border-l border-[#E8E0D0] disabled:opacity-50"
+                className="flex-1 min-w-0 py-5 text-sm font-bold text-red-500 hover:bg-red-50 transition-colors border-l border-[#E8E0D0] disabled:opacity-50 truncate"
               >
                 {isExcluding ? '正在处理...' : '确认排除'}
               </button>

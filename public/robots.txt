@@ -1,30 +1,45 @@
 # VertaX Robots.txt
-# 允许搜索引擎收录主站（营销页面）
+# 允许所有搜索引擎收录主站（营销页面）
 # 禁止收录租户后台、API、文档等敏感区域
 
 User-agent: *
-
-# ✅ 允许收录主站营销页面
 Allow: /
 
-# ❌ 禁止收录租户后台
+# 禁止收录租户后台
 Disallow: /customer/
 Disallow: /dashboard/
 Disallow: /admin/
+Disallow: /tower/
 
-# ❌ 禁止收录 API 和系统路径
+# 禁止收录 API 和系统路径
 Disallow: /api/
 Disallow: /_next/
 Disallow: /static/
 
-# ❌ 禁止收录认证相关页面
+# 禁止收录认证相关页面
 Disallow: /auth/
 Disallow: /login
 Disallow: /signup
 
-# ❌ 禁止收录文档和内部工具
+# 禁止收录文档和内部工具
 Disallow: /docs/
 Disallow: /tools/
 
-# Sitemap
+# 百度爬虫特殊规则
+User-agent: Baiduspider
+Allow: /
+Crawl-delay: 1
+
+# Google 爬虫
+User-agent: Googlebot
+Allow: /
+
+# Bing 爬虫
+User-agent: Bingbot
+Allow: /
+
+# Sitemap 位置
 Sitemap: https://vertax.top/sitemap.xml
+
+# 网站管理员联系信息（可选）
+# Contact: mailto:contact@vertax.top

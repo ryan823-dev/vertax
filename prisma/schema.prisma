@@ -360,11 +360,17 @@ model SeoContent {
   evidenceRefs     String[] // 寮曠敤鐨?Evidence id
   schemaJson       Json? // Schema.org 缁撴瀯鍖栨暟鎹?(FAQPage JSON-LD)
   geoVersion       String? // GEO-optimized short version (300-500 words, for AI citation)
+
+  // Auto-publish grace period (24h window for AI-generated content)
+  autoPublishAt    DateTime? // Non-null = awaiting publish, cron will auto-publish when reached
+  generatedBy      String? // "ai" | "human" | null, marks content origin
+
   pushRecords      PushRecord[] // 鎺ㄩ€佽褰?
   contentLinks     RadarContentLink[] // 鑾峰闆疯揪鍐呭鑱斿姩
   geoDistributions GeoDistributionRecord[] // GEO 鍒嗗彂杩借釜
 
   @@unique([tenantId, slug])
+  @@index([status, autoPublishAt]) // For auto-publish cron query
 }
 
 // ==================== MODULE 3: SOCIAL MEDIA ====================
@@ -557,6 +563,7 @@ model CompanyProfile {
   buyerPersonas    Json @default("[]") // 涔板瑙掕壊
   painPoints       Json @default("[]") // 瀹㈡埛鐥涚偣
   buyingTriggers   Json @default("[]") // 璐拱瑙﹀彂鍥犵礌
+  exploredRegions  Json @default("[]") // 已探索过的区域记录 [{ region, countries, exploredAt }]
 
   // AI 鍒嗘瀽鍏冩暟鎹?
   lastAnalyzedAt DateTime?

@@ -258,6 +258,13 @@ export async function createContentPiece(input: CreateContentInput): Promise<Con
 export async function updateContentPiece(id: string, input: UpdateContentInput): Promise<void> {
   const session = await getSession();
 
+  // Get current content to check if already published
+  const currentContent = await prisma.seoContent.findFirst({
+    where: { id, tenantId: session.user.tenantId },
+    select: { status: true },
+  });
+  const wasPublished = currentContent?.status === "published";
+
   const data: Record<string, unknown> = {};
   if (input.title !== undefined) data.title = input.title;
   if (input.slug !== undefined) data.slug = input.slug;
@@ -271,6 +278,7 @@ export async function updateContentPiece(id: string, input: UpdateContentInput):
   if (input.categoryId !== undefined) data.categoryId = input.categoryId;
   if (input.briefId !== undefined) data.briefId = input.briefId || null;
   if (input.status !== undefined) data.status = input.status;
+  if (input.status === "published") data.autoPublishAt = null; // Clear grace period when manually publishing
 
   const updated = await prisma.seoContent.update({
     where: { id, tenantId: session.user.tenantId },
@@ -296,8 +304,11 @@ export async function updateContentPiece(id: string, input: UpdateContentInput):
     }).catch(() => {});
   }
 
-  // Auto-push when content is published
-  if (input.status === "published") {
+  // Auto-push when content is published OR re-publish when already published content is edited
+  const shouldPush = input.status === "published" || 
+    (wasPublished && (input.content !== undefined || input.title !== undefined || input.metaTitle !== undefined || input.metaDescription !== undefined));
+  
+  if (shouldPush) {
     const { pushContentToWebsite } = await import("./publishing");
     pushContentToWebsite(id).catch((err: unknown) =>
       console.warn("[auto-push] Failed for", id, err)
@@ -584,7 +595,7 @@ export async function generateFullContentPackage(briefId: string): Promise<FullC
       products,
       advantages,
       targetMarket: Array.isArray(companyProfile.targetRegions)
-        ? (companyProfile.targetRegions as string[]).join(', ')
+        ? (companyProfile.targetRegions as Array<unknown>).map((r: unknown) => typeof r === 'string' ? r : (r as { region: string }).region).join(', ')
         : Array.isArray(companyProfile.targetIndustries)
           ? (companyProfile.targetIndustries as string[]).join(', ')
           : 'global B2B buyers',
@@ -656,7 +667,10 @@ ${pkg.faqMarkdown}` : '');
       evidenceRefs: evidenceIds,
       schemaJson: pkg.schemaJsonLd as Prisma.InputJsonValue,
       aiMetadata: aiMetadata as Prisma.InputJsonValue,
-      status: "draft",
+      // Auto-publish grace period: AI-generated content enters 24h window
+      status: "awaiting_publish",
+      autoPublishAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
+      generatedBy: "ai",
     },
   });
 
@@ -693,6 +707,7 @@ ${pkg.faqMarkdown}` : '');
   });
 
   // Auto-register GEO distribution for all default AI channels
+  // Note: Actual push to website will happen via auto-publish cron (24h grace period) or user manual publish
   if (pkg.geoVersion) {
     const defaultChannels: GeoChannel[] = [
       'CHATGPT', 'PERPLEXITY', 'CLAUDE', 'GEMINI', 'BING_COPILOT',
@@ -703,28 +718,9 @@ ${pkg.faqMarkdown}` : '');
         channels: defaultChannels,
         queryKeywords: [pkg.primaryKeyword, ...pkg.supportingKeywords.slice(0, 3)],
       });
-
-      // Task #133: Auto-publish to official site & register in llms.txt (Mock log)
-      const { pushContentToWebsite } = await import("./publishing");
-      const pushRes = await pushContentToWebsite(seoContent.id);
-      
-      if (pushRes.success) {
-        logActivity({
-          tenantId: session.user.tenantId,
-          userId: session.user.id,
-          action: "content.geo_auto_published",
-          entityType: "SeoContent",
-          entityId: seoContent.id,
-          eventCategory: EVENT_CATEGORIES.MARKETING,
-          context: { 
-            message: "Content published and registered in remote llms.txt",
-            pushRecordId: pushRes.pushRecordId 
-          },
-        });
-      }
     } catch (err) {
       // Non-fatal: log but don't fail the pipeline
-      console.warn('[seo-geo-pipeline] Auto-register/publish GEO distribution failed:', err);
+      console.warn('[seo-geo-pipeline] GEO distribution registration failed:', err);
     }
   }
 

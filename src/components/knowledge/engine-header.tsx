@@ -195,38 +195,40 @@ export function EngineHeader({
         </div>
 
         {/* Right: CTA + Meta */}
-        <div className="shrink-0 flex items-center gap-2.5">
-          {/* Processing Indicator */}
-          {processingHint && (
-            <div
-              className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px]"
-              style={{
-                background: 'rgba(245,158,11,0.1)',
-                color: '#F59E0B',
-                border: '1px solid rgba(245,158,11,0.2)',
-              }}
-            >
-              <Loader2 size={11} className="animate-spin" />
-              {processingHint}
-            </div>
-          )}
+        <div className="shrink-0 flex items-center gap-2.5 max-w-[40%] min-w-0">
+          <div className="flex items-center gap-2.5">
+            {/* Processing Indicator */}
+            {processingHint && (
+              <div
+                className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] whitespace-nowrap"
+                style={{
+                  background: 'rgba(245,158,11,0.1)',
+                  color: '#F59E0B',
+                  border: '1px solid rgba(245,158,11,0.2)',
+                }}
+              >
+                <Loader2 size={11} className="animate-spin shrink-0" />
+                <span className="truncate">{processingHint}</span>
+              </div>
+            )}
 
-          {/* Last Sync Time */}
-          <div
-            className="flex items-center gap-1 text-[10px]"
-            style={{ color: 'rgba(255,255,255,0.3)' }}
-          >
-            <Clock size={10} />
-            <span>{formatDate(counts.lastUpdatedAt)}</span>
+            {/* Last Sync Time */}
+            <div
+              className="flex items-center gap-1 text-[10px] whitespace-nowrap"
+              style={{ color: 'rgba(255,255,255,0.3)' }}
+            >
+              <Clock size={10} className="shrink-0" />
+              <span className="truncate">{formatDate(counts.lastUpdatedAt)}</span>
+            </div>
           </div>
 
           {/* Primary CTA */}
           {primaryAction && (
-            <div className="relative">
+            <div className="relative shrink-0">
               {primaryAction.href ? (
                 <Link
                   href={primaryAction.href}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all whitespace-nowrap"
                   style={
                     primaryAction.disabled
                       ? {
@@ -244,14 +246,14 @@ export function EngineHeader({
                         }
                   }
                 >
-                  <Upload size={15} />
-                  {primaryAction.label}
+                  <Upload size={15} className="shrink-0" />
+                  <span className="truncate">{primaryAction.label}</span>
                 </Link>
               ) : (
                 <button
                   onClick={primaryAction.onClick}
                   disabled={primaryAction.disabled || primaryAction.loading}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all disabled:opacity-50 whitespace-nowrap"
                   style={
                     primaryAction.disabled
                       ? {
@@ -269,11 +271,11 @@ export function EngineHeader({
                   }
                 >
                   {primaryAction.loading ? (
-                    <Loader2 size={15} className="animate-spin" />
+                    <Loader2 size={15} className="animate-spin shrink-0" />
                   ) : (
-                    <Sparkles size={15} />
+                    <Sparkles size={15} className="shrink-0" />
                   )}
-                  {primaryAction.label}
+                  <span className="truncate">{primaryAction.label}</span>
                 </button>
               )}
 

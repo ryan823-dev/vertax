@@ -350,3 +350,81 @@ export async function sendNewCandidatesNotification(options: {
     },
   });
 }
+
+/**
+ * Send auto-publish notification email
+ * Notifies user when AI-generated content is automatically published after 24h grace period
+ */
+export async function sendAutoPublishNotification(options: {
+  to: string;
+  tenantId: string;
+  tenantName: string;
+  contentTitle: string;
+  contentUrl: string;
+  dashboardUrl: string;
+}): Promise<SendResult> {
+  const { to, tenantId, tenantName, contentTitle, contentUrl, dashboardUrl } = options;
+
+  const truncatedTitle = contentTitle.length > 60 ? contentTitle.slice(0, 60) + '...' : contentTitle;
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #0B1829 0%, #162033 100%); color: #fff; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+        .header h1 { margin: 0; font-size: 24px; }
+        .header p { margin: 10px 0 0; opacity: 0.9; }
+        .content { background: #fff; padding: 30px; border: 1px solid #eee; }
+        .highlight { color: #D4AF37; font-weight: bold; }
+        .content-title { background: #f8f9fa; padding: 16px; border-radius: 8px; margin: 16px 0; font-weight: 500; }
+        .cta-button { display: inline-block; background: #D4AF37; color: #0B1829; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; margin-top: 20px; }
+        .cta-button.secondary { background: #0B1829; color: #fff; margin-left: 10px; }
+        .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>📝 内容已自动发布</h1>
+          <p>AI 生成的内容已通过 24 小时审核期，自动发布至您的官网</p>
+        </div>
+        <div class="content">
+          <p>尊敬的 ${tenantName} 团队：</p>
+          <p>您通过 VertaX AI 生成的内容已自动发布至官网。以下是发布详情：</p>
+          
+          <div class="content-title">
+            📄 ${truncatedTitle}
+          </div>
+          
+          <p>此内容在生成后经过了 <span class="highlight">24 小时</span> 的审核等待期，未收到修改请求，现已自动发布。</p>
+          
+          <a href="${contentUrl}" class="cta-button">查看内容</a>
+          <a href="${dashboardUrl}" class="cta-button secondary">进入控制台</a>
+          
+          <p style="margin-top: 24px; color: #666; font-size: 14px;">
+            如需修改，可直接在控制台编辑内容，保存后将立即更新到官网。
+          </p>
+        </div>
+        <div class="footer">
+          <p>© 2026 VertaX AI · 智能出海获客平台</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  return sendEmail({
+    to,
+    tenantId,
+    subject: `📝 内容已自动发布: ${truncatedTitle} - VertaX AI`,
+    html,
+    tags: {
+      type: 'auto_publish',
+      tenant: tenantName,
+    },
+  });
+}

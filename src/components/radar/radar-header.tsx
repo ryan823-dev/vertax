@@ -198,68 +198,70 @@ export function RadarHeader({
         </div>
 
         {/* Right: CTA + Meta */}
-        <div className="shrink-0 flex items-center gap-2.5">
-          {/* Error Indicator */}
-          {hasErrors && (
-            <div
-              className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] cursor-help"
-              style={{
-                background: 'rgba(239,68,68,0.1)',
-                color: '#EF4444',
-                border: '1px solid rgba(239,68,68,0.2)',
-              }}
-              title={errors[0]}
-            >
-              <AlertTriangle size={11} />
-              扫描异常
-            </div>
-          )}
-
-          {/* Pending Indicator */}
-          {pendingHint && !hasErrors && (
-            <div
-              className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px]"
-              style={{
-                background: 'rgba(245,158,11,0.1)',
-                color: '#F59E0B',
-                border: '1px solid rgba(245,158,11,0.2)',
-              }}
-            >
-              <Loader2 size={11} className="animate-spin" />
-              {pendingHint}
-            </div>
-          )}
-
-          {/* Last Scan Time + Refresh */}
-          <div className="flex items-center gap-1.5">
-            <div
-              className="flex items-center gap-1 text-[10px]"
-              style={{ color: 'rgba(255,255,255,0.3)' }}
-            >
-              <Clock size={10} />
-              <span>{formatDate(counts.lastScanAt)}</span>
-            </div>
-            {onRefresh && (
-              <button
-                onClick={onRefresh}
-                disabled={isRefreshing}
-                className="p-1 rounded transition-all disabled:opacity-40"
-                style={{ color: 'rgba(255,255,255,0.35)' }}
-                title="刷新状态"
-                onMouseEnter={(e) => (e.currentTarget.style.color = '#D4AF37')}
-                onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.35)')}
+        <div className="shrink-0 flex items-center gap-2.5 max-w-[40%] min-w-0">
+          <div className="flex items-center gap-2.5">
+            {/* Error Indicator */}
+            {hasErrors && (
+              <div
+                className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] cursor-help whitespace-nowrap"
+                style={{
+                  background: 'rgba(239,68,68,0.1)',
+                  color: '#EF4444',
+                  border: '1px solid rgba(239,68,68,0.2)',
+                }}
+                title={errors[0]}
               >
-                <RefreshCw size={12} className={isRefreshing ? 'animate-spin' : ''} />
-              </button>
+                <AlertTriangle size={11} />
+                <span className="truncate">扫描异常</span>
+              </div>
             )}
+
+            {/* Pending Indicator */}
+            {pendingHint && !hasErrors && (
+              <div
+                className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] whitespace-nowrap"
+                style={{
+                  background: 'rgba(245,158,11,0.1)',
+                  color: '#F59E0B',
+                  border: '1px solid rgba(245,158,11,0.2)',
+                }}
+              >
+                <Loader2 size={11} className="animate-spin" />
+                <span className="truncate">{pendingHint}</span>
+              </div>
+            )}
+
+            {/* Last Scan Time + Refresh */}
+            <div className="flex items-center gap-1.5">
+              <div
+                className="flex items-center gap-1 text-[10px] whitespace-nowrap"
+                style={{ color: 'rgba(255,255,255,0.3)' }}
+              >
+                <Clock size={10} />
+                <span className="truncate">{formatDate(counts.lastScanAt)}</span>
+              </div>
+              {onRefresh && (
+                <button
+                  onClick={onRefresh}
+                  disabled={isRefreshing}
+                  className="p-1 rounded transition-all disabled:opacity-40 shrink-0"
+                  style={{ color: 'rgba(255,255,255,0.35)' }}
+                  title="刷新状态"
+                  onMouseEnter={(e) => (e.currentTarget.style.color = '#D4AF37')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.35)')}
+                >
+                  <RefreshCw size={12} className={isRefreshing ? 'animate-spin' : ''} />
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Primary CTA */}
           {primaryCTA && (
-            <div className="relative">
+            <div className="relative shrink-0">
               <Link
                 href={primaryCTA.href}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[13px] font-semibold transition-all"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[13px] font-semibold transition-all whitespace-nowrap"
                 style={
                   primaryCTA.disabled
                     ? {
@@ -278,8 +280,8 @@ export function RadarHeader({
                 }
                 onClick={(e) => primaryCTA.disabled && e.preventDefault()}
               >
-                <Sparkles size={14} />
-                {primaryCTA.label}
+                <Sparkles size={14} className="shrink-0" />
+                <span className="truncate">{primaryCTA.label}</span>
               </Link>
 
               {primaryCTA.disabled && primaryCTA.disabledReason && (

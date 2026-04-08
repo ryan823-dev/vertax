@@ -68,6 +68,7 @@ export const PRODUCT_STATUS = {
 
 export const CONTENT_STATUS = {
   DRAFT: "draft",
+  AWAITING_PUBLISH: "awaiting_publish", // AI-generated content in 24h grace period
   PUBLISHED: "published",
   SCHEDULED: "scheduled",
 } as const;

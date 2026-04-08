@@ -63,7 +63,7 @@ async function loadCompanyProfile(tenantId: string) {
     scenarios: profile.scenarios as Array<{ industry: string; scenario: string }>,
     differentiators: profile.differentiators as Array<{ point: string; description: string }>,
     targetIndustries: profile.targetIndustries as string[],
-    targetRegions: profile.targetRegions as string[],
+    targetRegions: profile.targetRegions as Array<{ region: string; countries: string[]; rationale: string }> | string[],
     buyerPersonas: profile.buyerPersonas as Array<{ role: string; title: string; concerns: string[] }>,
     painPoints: profile.painPoints as Array<{ pain: string; howWeHelp: string }>,
     buyingTriggers: profile.buyingTriggers as string[],

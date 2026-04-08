@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import React from 'react';
 import {
   Target,
   TrendingUp,
@@ -16,12 +17,12 @@ import {
 } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: '功能特性 - VertaX GTM Intelligence OS',
-  description: 'VertaX 提供完整的 GTM 增长操作系统：ICP Intelligence 目标计算、Inbound Growth Engine 增长生产、Outbound Execution Layer 精准触达。',
-  keywords: ['GTM 系统', '获客功能', 'ICP 画像', '增长引擎', '销售自动化', '营销自动化'],
+  title: '功能特性 - VertaX 六大核心模块 | VertaX',
+  description: 'VertaX 六大核心模块：决策中心、知识引擎、获客雷达、增长系统、声量枢纽、推进中台。帮助制造业、工业品、技术服务型企业建立完整的全球增长闭环。',
+  keywords: ['VertaX功能', '决策中心', '知识引擎', '获客雷达', '增长系统', '声量枢纽', '推进中台'],
   openGraph: {
-    title: '功能特性 - VertaX GTM Intelligence OS',
-    description: '完整的海外获客增长操作系统，让获客从靠人变成靠系统。',
+    title: '功能特性 - VertaX 六大核心模块',
+    description: 'VertaX 六大核心模块，帮助制造业、工业品、技术服务型企业建立完整的全球增长闭环。',
     type: 'website',
   },
 };
@@ -68,32 +69,32 @@ const features = [
 const capabilities = [
   {
     icon: Brain,
-    title: 'Knowledge Engine',
+    title: 'Knowledge Engine · 知识引擎',
     description: '产品 / 资质 / 竞品 / 市场结构化沉淀',
   },
   {
     icon: Layers,
-    title: 'GTM Copilot',
+    title: 'GTM Copilot · 决策中心',
     description: '趋势简报 / 阶段汇报 / 动作建议',
   },
   {
     icon: Megaphone,
-    title: 'Brand Station',
+    title: 'Brand Station · 声量枢纽',
     description: '社媒矩阵 / PR 协同 / 声量运营',
   },
   {
     icon: Radar,
-    title: 'Acquisition Radar',
+    title: 'Acquisition Radar · 获客雷达',
     description: 'ICP → 公司 → 穿透 → 联系人',
   },
   {
     icon: Gauge,
-    title: 'Opportunity Accelerator',
+    title: 'Opportunity Accelerator · 协作审批',
     description: '审批 / 待办 / 跟进 / 协作 / 复盘',
   },
   {
     icon: Shield,
-    title: 'Pipeline Discipline',
+    title: 'Pipeline Discipline · 推进中台',
     description: '商机推进纪律与可审计性',
   },
 ];
@@ -250,7 +251,7 @@ export default function FeaturesPage() {
           </div>
           <div className="flex items-center gap-6 text-xs text-gray-500">
             <span>contact@vertax.top</span>
-            <a href="https://tower.vertax.top" className="hover:text-gray-300 transition-colors">管理后台</a>
+            <a href="/faq" className="hover:text-gray-300 transition-colors">常见问题</a>
           </div>
         </div>
       </footer>

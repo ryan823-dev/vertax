@@ -616,10 +616,10 @@ export default function RadarProspectsPage() {
       )}
 
       {/* Tab 切换 */}
-      <div className="flex gap-1 bg-[#F0EBD8] rounded-xl p-1">
+      <div className="flex gap-1 bg-[#F0EBD8] rounded-xl p-1 w-full">
         <button
           onClick={() => setOutreachView('companies')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all ${
+          className={`flex-1 min-w-0 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all truncate ${
             outreachView === 'companies'
               ? 'bg-white text-[#0B1B2B] shadow-sm'
               : 'text-slate-500 hover:text-[#0B1B2B]'
@@ -630,7 +630,7 @@ export default function RadarProspectsPage() {
         </button>
         <button
           onClick={() => setOutreachView('outreach')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all ${
+          className={`flex-1 min-w-0 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all truncate ${
             outreachView === 'outreach'
               ? 'bg-white text-[#0B1B2B] shadow-sm'
               : 'text-slate-500 hover:text-[#0B1B2B]'
@@ -671,7 +671,7 @@ export default function RadarProspectsPage() {
           )}
 
           {/* 子 Tab：过滤器 */}
-          <div className="flex gap-1 bg-[#F0EBD8] rounded-xl p-1">
+          <div className="flex gap-1 bg-[#F0EBD8] rounded-xl p-1 w-full">
             {([
               { key: 'all', label: '全部' },
               { key: 'pending', label: '待跟进' },
@@ -1000,10 +1000,10 @@ export default function RadarProspectsPage() {
           {selectedCompany ? (
             <>
               {/* Tabs */}
-              <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-2 flex gap-1">
+              <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-2 flex gap-1 w-full">
                 <button
                   onClick={() => setActiveTab('info')}
-                  className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all ${
+                  className={`flex-1 min-w-0 py-2 rounded-xl text-sm font-medium transition-all truncate ${
                     activeTab === 'info'
                       ? 'bg-[#0B1220] text-[#D4AF37]'
                       : 'text-[#4A5568] hover:text-[#0B1B2B]'
@@ -1013,7 +1013,7 @@ export default function RadarProspectsPage() {
                 </button>
                 <button
                   onClick={() => setActiveTab('contacts')}
-                  className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${
+                  className={`flex-1 min-w-0 py-2 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-1.5 truncate ${
                     activeTab === 'contacts'
                       ? 'bg-[#0B1220] text-[#D4AF37]'
                       : 'text-[#4A5568] hover:text-[#0B1B2B]'
@@ -1029,7 +1029,7 @@ export default function RadarProspectsPage() {
                 </button>
                 <button
                   onClick={() => setActiveTab('outreach')}
-                  className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${
+                  className={`flex-1 min-w-0 py-2 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-1.5 truncate ${
                     activeTab === 'outreach'
                       ? 'bg-[#0B1220] text-[#D4AF37]'
                       : 'text-[#4A5568] hover:text-[#0B1B2B]'
@@ -1040,7 +1040,7 @@ export default function RadarProspectsPage() {
                 </button>
                 <button
                   onClick={() => setActiveTab('dossier')}
-                  className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${
+                  className={`flex-1 min-w-0 py-2 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-1.5 truncate ${
                     activeTab === 'dossier'
                       ? 'bg-[#0B1220] text-[#D4AF37]'
                       : 'text-[#4A5568] hover:text-[#0B1B2B]'

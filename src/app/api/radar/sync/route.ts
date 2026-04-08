@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
     const techAdvantages = (companyProfile.techAdvantages as Array<{ title: string; description: string }>) || [];
     const coreProducts = (companyProfile.coreProducts as Array<{ name: string; description: string }>) || [];
     const targetIndustries = (companyProfile.targetIndustries as string[]) || [];
-    const targetRegions = (companyProfile.targetRegions as string[]) || [];
+    const targetRegions = (companyProfile.targetRegions as Array<{ region: string; countries: string[]; rationale: string }> | string[]) || [];
 
     let ctx = `企业：${companyProfile.companyName}\n简介：${(companyProfile.companyIntro || '').slice(0, 600)}`;
     if (coreProducts.length > 0) {

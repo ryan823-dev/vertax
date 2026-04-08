@@ -35,7 +35,7 @@ export interface CompanyProfileData {
   }>;
   differentiators: Array<{ point: string; description: string }>;
   targetIndustries: string[];
-  targetRegions: string[];
+  targetRegions: Array<{ region: string; countries: string[]; rationale: string }> | string[];
   buyerPersonas: Array<{
     role: string;
     title: string;
@@ -43,6 +43,7 @@ export interface CompanyProfileData {
   }>;
   painPoints: Array<{ pain: string; howWeHelp: string }>;
   buyingTriggers: string[];
+  exploredRegions?: Array<{ region: string; countries: string[]; rationale: string; exploredAt?: string }>;
   lastAnalyzedAt: Date | null;
   aiModel: string | null;
   analysisSource: string[];
@@ -80,7 +81,9 @@ export async function getCompanyProfile(): Promise<CompanyProfileData | null> {
     painPoints: profile.painPoints as CompanyProfileData["painPoints"],
     buyingTriggers:
       profile.buyingTriggers as CompanyProfileData["buyingTriggers"],
-    lastAnalyzedAt: profile.lastAnalyzedAt,
+    exploredRegions:
+      (profile.exploredRegions as CompanyProfileData["exploredRegions"]) || [],
+        lastAnalyzedAt: profile.lastAnalyzedAt,
     aiModel: profile.aiModel,
     analysisSource: profile.analysisSource as string[],
     createdAt: profile.createdAt,

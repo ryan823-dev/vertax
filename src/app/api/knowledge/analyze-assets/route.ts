@@ -108,10 +108,35 @@ export async function POST(request: NextRequest) {
 
     console.log(`[analyze-assets] Sending ${textResults.length} texts (total ${textResults.join('').length} chars) to AI...`);
 
-    // 调用 AI 分析
-    const { analysis, model } = await analyzeCompanyProfile(textResults);
+    // 读取已探索区域，用于指导 AI 推荐新市场
+    const existingProfile = await db.companyProfile.findUnique({
+      where: { tenantId },
+      select: { exploredRegions: true, targetRegions: true },
+    });
+    const exploredRegions = (existingProfile?.exploredRegions as Array<{ region: string; countries?: string[]; exploredAt?: string }>) || [];
+    const exploredNames = exploredRegions.map(r => r.region);
+
+    // 将已探索区域注入到分析文本中，作为额外上下文
+    const exploredContext = exploredNames.length > 0
+      ? `\n\n【已探索过的海外市场】\n以下区域已在之前的分析中推荐过，请优先探索其他未覆盖的海外区域和国家。如果确实没有更多适合的新区域，可以在已探索区域内推荐新的具体国家。\n已探索：${exploredNames.join('、')}\n`
+      : '';
+
+    // 调用 AI 分析（将已探索信息追加到第一个文本块末尾）
+    const { analysis, model } = await analyzeCompanyProfile(
+      textResults.map((t, i) => i === 0 ? t + exploredContext : t)
+    );
 
     console.log(`[analyze-assets] AI analysis completed, model: ${model}`);
+
+    // 合并区域探索记录：将本次新推荐的区域追加到已探索列表
+    const newRegions = (analysis.targetRegions as Array<{ region: string; countries: string[]; rationale: string }>) || [];
+    const now = new Date().toISOString();
+    const updatedExplored = [...exploredRegions];
+    for (const nr of newRegions) {
+      if (!updatedExplored.some(er => er.region === nr.region)) {
+        updatedExplored.push({ ...nr, exploredAt: now });
+      }
+    }
 
     // 保存/更新企业画像
     const profile = await db.companyProfile.upsert({
@@ -129,6 +154,7 @@ export async function POST(request: NextRequest) {
         buyerPersonas: (analysis.buyerPersonas as object) || [],
         painPoints: (analysis.painPoints as object) || [],
         buyingTriggers: (analysis.buyingTriggers as object) || [],
+        exploredRegions: updatedExplored,
         lastAnalyzedAt: new Date(),
         analysisSource: assetIds,
         aiModel: model,
@@ -145,6 +171,7 @@ export async function POST(request: NextRequest) {
         buyerPersonas: (analysis.buyerPersonas as object) || [],
         painPoints: (analysis.painPoints as object) || [],
         buyingTriggers: (analysis.buyingTriggers as object) || [],
+        exploredRegions: updatedExplored,
         lastAnalyzedAt: new Date(),
         analysisSource: assetIds,
         aiModel: model,

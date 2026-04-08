@@ -20,6 +20,8 @@ export type ContentData = {
   status: string;
   publishedAt: Date | null;
   scheduledAt: Date | null;
+  autoPublishAt: Date | null;
+  generatedBy: string | null;
   categoryId: string;
   categoryName?: string;
   createdAt: Date;
@@ -31,6 +33,7 @@ export type MarketingStats = {
   published: number;
   draft: number;
   scheduled: number;
+  awaitingPublish: number;
 };
 
 export type ContentCategory = {
@@ -350,6 +353,7 @@ export async function saveContent(data: {
   keywords?: string[];
   categoryId?: string;
   status?: string;
+  generatedBy?: "ai" | "human"; // Mark content origin for auto-publish logic
 }): Promise<ContentData> {
   const session = await auth();
   if (!session?.user?.id) {
@@ -373,6 +377,11 @@ export async function saveContent(data: {
     .replace(/^-|-$/g, "")
     .slice(0, 100) + "-" + Date.now().toString(36);
 
+  // Determine status and autoPublishAt based on generatedBy
+  const isAiGenerated = data.generatedBy === "ai";
+  const status = isAiGenerated ? "awaiting_publish" : (data.status || "draft");
+  const autoPublishAt = isAiGenerated ? new Date(Date.now() + 24 * 60 * 60 * 1000) : null;
+
   const content = await prisma.seoContent.create({
     data: {
       tenantId: tenantId,
@@ -384,7 +393,9 @@ export async function saveContent(data: {
       metaTitle: data.metaTitle,
       metaDescription: data.metaDescription,
       keywords: data.keywords || [],
-      status: data.status || "draft",
+      status,
+      autoPublishAt,
+      generatedBy: data.generatedBy || null,
     },
     include: {
       category: { select: { name: true } },
@@ -404,6 +415,8 @@ export async function saveContent(data: {
     status: content.status,
     publishedAt: content.publishedAt,
     scheduledAt: content.scheduledAt,
+    autoPublishAt: content.autoPublishAt,
+    generatedBy: content.generatedBy,
     categoryId: content.categoryId,
     categoryName: content.category.name,
     createdAt: content.createdAt,
@@ -435,6 +448,8 @@ export async function updateContentStatus(
     data: {
       status,
       publishedAt: status === "published" ? new Date() : undefined,
+      // Clear autoPublishAt when manually publishing or changing status
+      autoPublishAt: status === "published" ? null : undefined,
     },
     include: {
       category: { select: { name: true } },
@@ -454,6 +469,8 @@ export async function updateContentStatus(
     status: content.status,
     publishedAt: content.publishedAt,
     scheduledAt: content.scheduledAt,
+    autoPublishAt: content.autoPublishAt,
+    generatedBy: content.generatedBy,
     categoryId: content.categoryId,
     categoryName: content.category.name,
     createdAt: content.createdAt,

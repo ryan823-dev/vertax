@@ -495,14 +495,14 @@ export default function SocialPage() {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex gap-3 pt-4 border-t border-[#E8E0D0]">
+                <div className="flex gap-3 pt-4 border-t border-[#E8E0D0] w-full">
                   <button
                     onClick={() => handleSavePost(false)}
-                    className="flex-1 py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2"
+                    className="flex-1 min-w-0 py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2 truncate"
                     style={{ background: '#0B1220', color: '#D4AF37' }}
                   >
-                    <Edit2 size={14} />
-                    保存草稿
+                    <Edit2 size={14} className="shrink-0" />
+                    <span className="truncate">保存草稿</span>
                   </button>
                   <div className="flex-1 space-y-2">
                     {/* 发布模式切换 */}

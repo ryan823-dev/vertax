@@ -95,7 +95,7 @@ export async function getICP(): Promise<ICPData | null> {
 
   return {
     targetIndustries: (profile.targetIndustries as string[]) || [],
-    targetRegions: (profile.targetRegions as string[]) || [],
+    targetRegions: (profile.targetRegions as Array<{ region: string; countries: string[]; rationale: string }> | string[]) || [],
     buyerPersonas: (profile.buyerPersonas as ICPData['buyerPersonas']) || [],
     painPoints: (profile.painPoints as ICPData['painPoints']) || [],
   };
@@ -225,7 +225,7 @@ export async function runAIResearch(query: string): Promise<LeadData[]> {
 ${icp ? `
 用户的ICP画像：
 - 目标行业：${icp.targetIndustries.join('、') || '未指定'}
-- 目标地区：${icp.targetRegions.join('、') || '未指定'}
+- 海外目标市场：${icp.targetRegions.map(r => typeof r === 'string' ? r : r.region).join('、') || '未指定'}
 - 目标买家角色：${icp.buyerPersonas.map(p => p.role).join('、') || '未指定'}
 - 客户痛点：${icp.painPoints.map(p => p.pain).join('、') || '未指定'}
 ` : '用户尚未设置ICP画像，请基于查询条件生成通用结果。'}

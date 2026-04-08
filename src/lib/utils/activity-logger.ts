@@ -65,6 +65,7 @@ export const ACTIVITY_ACTIONS = {
   CONTENT_CREATED: "content.created",
   CONTENT_UPDATED: "content.updated",
   CONTENT_PUBLISHED: "content.published",
+  CONTENT_AUTO_PUBLISHED: "content.auto_published", // 24h grace period auto-publish
 
   // Collaboration
   COMMENT_ADDED: "comment.added",

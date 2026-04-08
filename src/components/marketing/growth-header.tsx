@@ -305,36 +305,38 @@ export function GrowthHeader({
         </div>
 
         {/* Right: Knowledge + time + refresh + CTA */}
-        <div className="shrink-0 flex items-center gap-2">
-          <KnowledgeIndicator counts={counts} />
+        <div className="shrink-0 flex items-center gap-2 max-w-[40%] min-w-0">
+          <div className="flex items-center gap-2">
+            <KnowledgeIndicator counts={counts} />
 
-          {/* Last update + refresh */}
-          <div className="flex items-center gap-1">
-            <div className="flex items-center gap-1 text-[10px] text-slate-600">
-              <Clock size={10} />
-              <span>{formatDate(counts.lastUpdatedAt)}</span>
+            {/* Last update + refresh */}
+            <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 text-[10px] text-slate-600 whitespace-nowrap">
+                <Clock size={10} className="shrink-0" />
+                <span className="truncate">{formatDate(counts.lastUpdatedAt)}</span>
+              </div>
+              {onRefresh && (
+                <button
+                  onClick={onRefresh}
+                  disabled={isRefreshing}
+                  className="p-1 rounded hover:bg-white/5 transition-colors disabled:opacity-40 shrink-0"
+                  title="刷新状态"
+                >
+                  <RefreshCw
+                    size={11}
+                    className={`text-slate-500 ${isRefreshing ? "animate-spin" : ""}`}
+                  />
+                </button>
+              )}
             </div>
-            {onRefresh && (
-              <button
-                onClick={onRefresh}
-                disabled={isRefreshing}
-                className="p-1 rounded hover:bg-white/5 transition-colors disabled:opacity-40"
-                title="刷新状态"
-              >
-                <RefreshCw
-                  size={11}
-                  className={`text-slate-500 ${isRefreshing ? "animate-spin" : ""}`}
-                />
-              </button>
-            )}
           </div>
 
           {/* Primary CTA */}
           {primaryCTA && (
-            <div className="relative">
+            <div className="relative shrink-0">
               <Link
                 href={primaryCTA.href}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all whitespace-nowrap ${
                   primaryCTA.disabled
                     ? "bg-white/5 text-slate-500 cursor-not-allowed pointer-events-none"
                     : "text-[#0B1220] hover:opacity-90 hover:shadow-lg"
@@ -349,8 +351,8 @@ export function GrowthHeader({
                 }
                 onClick={(e) => primaryCTA.disabled && e.preventDefault()}
               >
-                <Sparkles size={13} />
-                {primaryCTA.label}
+                <Sparkles size={13} className="shrink-0" />
+                <span className="truncate">{primaryCTA.label}</span>
               </Link>
               {primaryCTA.disabled && primaryCTA.disabledReason && (
                 <div

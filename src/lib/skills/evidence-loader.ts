@@ -112,7 +112,7 @@ export function formatCompanyProfileForPrompt(profile: {
   techAdvantages: Array<{ title: string; description: string }>;
   differentiators: Array<{ point: string; description: string }>;
   targetIndustries: string[];
-  targetRegions: string[];
+  targetRegions: Array<{ region: string; countries: string[]; rationale: string }> | string[];
   buyerPersonas: Array<{ role: string; title: string; concerns: string[] }>;
   painPoints: Array<{ pain: string; howWeHelp: string }>;
 }): string {
@@ -131,7 +131,7 @@ ${profile.techAdvantages.map(a => `- ${a.title}：${a.description}`).join('\n')}
 ${profile.differentiators.map(d => `- ${d.point}：${d.description}`).join('\n')}
 
 目标行业：${profile.targetIndustries.join('、')}
-目标区域：${profile.targetRegions.join('、')}
+海外目标市场：${profile.targetRegions.map(r => typeof r === 'string' ? r : `${r.region}(${r.countries.join('/')}): ${r.rationale}`).join('; ')}
 
 买家角色：
 ${profile.buyerPersonas.map(p => `- ${p.role}（${p.title}）：关注 ${p.concerns.join('、')}`).join('\n')}

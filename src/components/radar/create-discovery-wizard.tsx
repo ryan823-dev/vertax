@@ -47,7 +47,7 @@ interface WizardProps {
   /** 从知识引擎继承的数据 */
   inheritedData?: {
     targetIndustries?: string[];
-    targetRegions?: string[];
+    targetRegions?: Array<{ region: string; countries?: string[]; rationale?: string }> | string[];
     keywords?: string[];
     personaId?: string;
     segmentId?: string;
@@ -208,7 +208,13 @@ export function CreateDiscoveryWizard({
       if (inheritedData) {
         setFormData(prev => ({
           ...prev,
-          targetCountries: inheritedData.targetRegions || [],
+          targetCountries: (() => {
+              const regions = inheritedData.targetRegions || [];
+              if (regions.length === 0) return [];
+              if (typeof regions[0] === 'string') return regions as string[];
+              return (regions as Array<{ region: string; countries?: string[] }>)
+                .flatMap(r => r.countries || []);
+            })(),
           industryCodes: inheritedData.targetIndustries || [],
           keywords: {
             en: inheritedData.keywords || [],

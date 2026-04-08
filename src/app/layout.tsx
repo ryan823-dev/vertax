@@ -15,10 +15,10 @@ const inter = Inter({
 export const metadata: Metadata = {
   // 基础 SEO
   title: {
-    default: "VertaX · AI 驱动的企业出海增长引擎",
+    default: "VertaX · 面向中国企业出海的智能获客平台",
     template: "%s | VertaX",
   },
-  description: "VertaX 是 AI 驱动的企业出海获客与增长引擎，帮助 B2B 企业通过智能客户画像、全球渠道发现、自动化外联实现海外业务增长。",
+  description: "VertaX 是面向中国企业出海的智能获客平台，围绕知识引擎、内容增长、商机挖掘、品牌声量、协同推进与经营决策六大能力，帮助制造业、工业品、技术服务型企业建立可持续、可进化的全球增长体系。",
   
   // 搜索引擎收录控制
   robots: {
@@ -39,8 +39,8 @@ export const metadata: Metadata = {
   
   // Open Graph (社交媒体分享)
   openGraph: {
-    title: "VertaX · AI 驱动的企业出海增长引擎",
-    description: "帮助 B2B 企业通过智能客户画像、全球渠道发现、自动化外联实现海外业务增长",
+    title: "VertaX · 面向中国企业出海的智能获客平台",
+    description: "围绕知识引擎、内容增长、商机挖掘与协同推进能力，帮助制造业、工业品、技术服务型企业建立全球增长体系。",
     url: "https://vertax.top",
     siteName: "VertaX",
     locale: 'zh_CN',
@@ -50,24 +50,29 @@ export const metadata: Metadata = {
   // Twitter Cards
   twitter: {
     card: 'summary_large_image',
-    title: "VertaX · AI 驱动的企业出海增长引擎",
-    description: "帮助 B2B 企业通过智能客户画像、全球渠道发现、自动化外联实现海外业务增长",
+    title: "VertaX · 面向中国企业出海的智能获客平台",
+    description: "围绕知识引擎、内容增长、商机挖掘与协同推进能力，帮助制造业、工业品、技术服务型企业建立全球增长体系。",
   },
   
   // 其他 SEO 标签
   keywords: [
-    'B2B 获客',
+    '出海获客',
     '企业出海',
-    'AI 营销',
-    '客户画像',
-    '海外获客',
-    '外贸获客',
-    '智能营销',
-    '销售自动化',
-    'CRM',
-    '营销自动化',
+    '智能获客平台',
+    '制造业出海',
+    '工业品出海',
+    'B2B 获客',
+    '知识引擎',
+    '获客雷达',
+    '增长系统',
+    'GTM 系统',
   ].join(', '),
-  
+
+  // 百度站点验证
+  verification: {
+    baidu: 'codeva-Y0nSSpkmX1',
+  },
+
   // 作者信息
   authors: [
     {

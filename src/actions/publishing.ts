@@ -54,32 +54,19 @@ export async function getWebsiteConfig(): Promise<WebsiteConfigData | null> {
   };
 }
 
-// ===================== 推送内容到官网 =====================
+// ===================== 推送内容到官网（内部函数，无 session）=====================
 
-export async function pushContentToWebsite(
+/**
+ * Internal function for cron/auto-publish scenarios where no user session exists.
+ * Skips auth and permission checks, uses provided tenantId directly.
+ */
+export async function pushContentToWebsiteInternal(
   contentId: string,
+  tenantId: string,
   options?: {
     category?: string;
   }
 ): Promise<{ success: boolean; error?: string; pushRecordId?: string }> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { success: false, error: "未登录" };
-  }
-  const roleCheck = requireDecider(session);
-  if (!roleCheck.authorized) {
-    return { success: false, error: roleCheck.error };
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { tenantId: true },
-  });
-  if (!user) {
-    return { success: false, error: "用户不存在" };
-  }
-  const tenantId = user!.tenantId as string;
-
   // 1. 查找内容
   const content = await prisma.seoContent.findFirst({
     where: { id: contentId, tenantId: tenantId, deletedAt: null },
@@ -89,7 +76,7 @@ export async function pushContentToWebsite(
     return { success: false, error: "内容不存在" };
   }
 
-  // 2. 查找网站配置（取第一个无参数调用时）
+  // 2. 查找网站配置
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const websiteConfig = await (prisma.websiteConfig as any).findFirst({
     where: { tenantId: tenantId, isActive: true },
@@ -136,7 +123,7 @@ export async function pushContentToWebsite(
     },
     {
       category: options?.category as never,
-      status: "published", // 内容审核在 Vertax 完成，推到对面直接发布
+      status: "published",
     }
   );
 
@@ -199,7 +186,7 @@ export async function pushContentToWebsite(
   if (result.success && content.status !== "published") {
     await prisma.seoContent.update({
       where: { id: content.id },
-      data: { status: "published", publishedAt: now },
+      data: { status: "published", publishedAt: now, autoPublishAt: null },
     });
   }
 
@@ -208,6 +195,36 @@ export async function pushContentToWebsite(
     error: result.error,
     pushRecordId: pushRecord.id,
   };
+}
+
+// ===================== 推送内容到官网（用户调用）=====================
+
+export async function pushContentToWebsite(
+  contentId: string,
+  options?: {
+    category?: string;
+  }
+): Promise<{ success: boolean; error?: string; pushRecordId?: string }> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: "未登录" };
+  }
+  const roleCheck = requireDecider(session);
+  if (!roleCheck.authorized) {
+    return { success: false, error: roleCheck.error };
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { tenantId: true },
+  });
+  if (!user) {
+    return { success: false, error: "用户不存在" };
+  }
+  const tenantId = user!.tenantId as string;
+
+  // Delegate to internal function
+  return pushContentToWebsiteInternal(contentId, tenantId, options);
 }
 
 // ===================== 获取推送记录 =====================

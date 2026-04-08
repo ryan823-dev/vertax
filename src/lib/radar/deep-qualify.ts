@@ -81,7 +81,7 @@ async function loadCompanyProfile(tenantId: string): Promise<CompanyProfileConte
     scenarios: (profile.scenarios as Array<{ industry: string; scenario: string }>) || [],
     differentiators: (profile.differentiators as Array<{ point: string; description: string }>) || [],
     targetIndustries: (profile.targetIndustries as string[]) || [],
-    targetRegions: (profile.targetRegions as string[]) || [],
+    targetRegions: (profile.targetRegions as Array<{ region: string; countries: string[]; rationale: string }> | string[]) || [],
     buyerPersonas: (profile.buyerPersonas as Array<{ role: string; title: string; concerns: string[] }>) || [],
     painPoints: (profile.painPoints as Array<{ pain: string; howWeHelp: string }>) || [],
     buyingTriggers: (profile.buyingTriggers as string[]) || [],
@@ -131,7 +131,7 @@ function buildCompanyContext(profile: CompanyProfileContext): string {
     sections.push(`\n目标行业：${profile.targetIndustries.join('、')}`);
   }
   if (profile.targetRegions.length > 0) {
-    sections.push(`目标地区：${profile.targetRegions.join('、')}`);
+    sections.push(`海外目标市场：${profile.targetRegions.map(r => typeof r === 'string' ? r : r.region).join('、')}`);
   }
 
   if (profile.painPoints.length > 0) {

@@ -207,7 +207,7 @@ export async function generatePersonasFromProfile(
 
   const buyerPersonas = (profile.buyerPersonas as Array<{ role: string; title: string; concerns: string[] }>) || [];
   const targetIndustries = (profile.targetIndustries as string[]) || [];
-  const targetRegions = (profile.targetRegions as string[]) || [];
+  const targetRegions = (profile.targetRegions as Array<{ region: string; countries: string[]; rationale: string }> | string[]) || [];
 
   // 企业档案中没有 buyerPersonas → 让前端走 AI fallback
   if (buyerPersonas.length === 0 && targetIndustries.length === 0) {

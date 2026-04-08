@@ -700,18 +700,54 @@ export default function CompanyKnowledgePage() {
                   </div>
                   <div className="p-3 bg-[#F0EBD8] rounded-xl">
                     <p className="text-xs text-slate-500 mb-2 flex items-center gap-1">
-                      <Globe2 size={12} />目标区域
+                      <Globe2 size={12} />海外目标市场
                     </p>
-                    <div className="flex flex-wrap gap-1.5">
+                    <div className="space-y-2">
                       {profile.targetRegions?.length > 0 ? (
-                        profile.targetRegions.map((item, i) => (
-                          <span key={i} className="px-2 py-1 bg-[#FFFCF7] text-xs text-[#0B1220] rounded border border-[#E8E0D0]">{item}</span>
-                        ))
+                        profile.targetRegions.map((item, i) => {
+                          if (typeof item === 'object' && item !== null && 'region' in item) {
+                            const r = item as { region: string; countries?: string[]; rationale?: string };
+                            return (
+                              <div key={i} className="p-2 bg-[#FFFCF7] rounded border border-[#E8E0D0]">
+                                <div className="flex items-center gap-1.5 mb-1">
+                                  <span className="font-medium text-xs text-[#0B1220]">{r.region}</span>
+                                  {r.countries?.map((c, j) => (
+                                    <span key={j} className="px-1.5 py-0.5 text-[10px] rounded bg-[#F0EBD8] text-[#6B5D3E]">{c}</span>
+                                  ))}
+                                </div>
+                                {r.rationale && <p className="text-[11px] text-slate-500 leading-relaxed">{r.rationale}</p>}
+                              </div>
+                            );
+                          }
+                          return <span key={i} className="px-2 py-1 bg-[#FFFCF7] text-xs text-[#0B1220] rounded border border-[#E8E0D0]">{String(item)}</span>;
+                        })
                       ) : (
                         <span className="text-xs text-slate-400">暂无数据</span>
                       )}
                     </div>
                   </div>
+                   {/* 已探索过的市场记录 */}
+                   {(profile as Record<string, unknown>).exploredRegions && ((profile as Record<string, unknown>).exploredRegions as Array<{ region: string; countries?: string[]; rationale?: string; exploredAt?: string }>).length > 0 && (
+                     <details className="p-3 bg-[#F5F0E5] rounded-xl">
+                       <summary className="text-xs text-slate-500 cursor-pointer flex items-center gap-1">
+                         <Globe2 size={12} />已探索的市场记录（{((profile as Record<string, unknown>).exploredRegions as Array<unknown>).length} 个区域）
+                       </summary>
+                       <div className="space-y-2 mt-2">
+                         {((profile as Record<string, unknown>).exploredRegions as Array<{ region: string; countries?: string[]; rationale?: string; exploredAt?: string }>).map((r, i) => (
+                           <div key={i} className="p-2 bg-[#FFFCF7] rounded border border-[#E8E0D0] opacity-80">
+                             <div className="flex items-center gap-1.5 mb-1">
+                               <span className="font-medium text-xs text-[#0B1220]">{r.region}</span>
+                               {r.countries?.map((c, j) => (
+                                 <span key={j} className="px-1.5 py-0.5 text-[10px] rounded bg-[#F0EBD8] text-[#6B5D3E]">{c}</span>
+                               ))}
+                               {r.exploredAt && <span className="text-[10px] text-slate-400 ml-auto">{new Date(r.exploredAt).toLocaleDateString("zh-CN")}</span>}
+                             </div>
+                             {r.rationale && <p className="text-[11px] text-slate-400 leading-relaxed">{r.rationale}</p>}
+                           </div>
+                         ))}
+                       </div>
+                     </details>
+                   )}
                 </div>
 
                 {profile.buyerPersonas?.length > 0 && (

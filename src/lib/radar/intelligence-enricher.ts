@@ -42,6 +42,7 @@ export interface IntelligenceData {
       linkedIn?: string;
       email?: string; // 2026-04-01: 新增邮箱字段
       emailConfidence?: number;
+      phone?: string; // 2026-04-07: 新增电话字段
     }>;
   };
 
@@ -279,21 +280,31 @@ async function searchNews(companyName: string): Promise<IntelligenceData['news']
 }
 
 /**
- * 获取联系人并尝试补全邮箱
+ * 从文本中提取电话号码（简单正则）
+ */
+function extractPhone(text: string): string | null {
+  // 匹配国际电话号码格式
+  const phoneRegex = /(?:\+?\d{1,3}[-.\s]?)?(?:\(?\d{2,4}\)?[-.\s]?)?\d{3,4}[-.\s]?\d{4}/;
+  const match = text.match(phoneRegex);
+  return match ? match[0] : null;
+}
+
+/**
+ * 获取联系人并尝试补全邮箱和电话
  */
 async function searchContacts(companyName: string, domain?: string): Promise<IntelligenceData['contacts']> {
-  const query = `"${companyName}" decision makers leadership "LinkedIn"`;
+  const query = `"${companyName}" decision makers leadership "LinkedIn" contact information`;
   const searchResults = await unifiedSearch(query, 'auto', 10);
 
   if (searchResults.length === 0) return undefined;
 
-  const context = searchResults.map(r => `${r.title}\n${r.text?.slice(0, 300)}`).join('\n\n');
+  const context = searchResults.map(r => `${r.title}\n${r.text?.slice(0, 500)}`).join('\n\n');
 
   try {
     const aiResponse = await chatCompletion([
       {
         role: 'system',
-        content: `提取决策者信息（姓名、职位、LinkedIn）。JSON：{"decisionMakers": [{"name": "...", "title": "...", "linkedIn": "..."}]}`
+        content: `提取决策者信息（姓名、职位、LinkedIn、邮箱、电话）。尽可能提取所有可用的联系方式。JSON：{"decisionMakers": [{"name": "...", "title": "...", "linkedIn": "...", "email": "...", "phone": "..."}]}`
       },
       { role: 'user', content: context }
     ], { model: 'qwen-plus', temperature: 0.1 });
@@ -305,10 +316,23 @@ async function searchContacts(companyName: string, domain?: string): Promise<Int
     if (domain && makers.length > 0) {
       console.log(`[RadarEnrich] Finding emails for ${makers.length} contacts of ${companyName} via Hunter.io...`);
       for (const person of makers) {
-        const hResult = await hunterFindEmail(domain, person.name);
-        if (hResult.email) {
-          person.email = hResult.email;
-          person.emailConfidence = hResult.confidence;
+        // 只查找还没有邮箱的联系人
+        if (!person.email) {
+          const hResult = await hunterFindEmail(domain, person.name);
+          if (hResult.email) {
+            person.email = hResult.email;
+            person.emailConfidence = hResult.confidence;
+          }
+        }
+        // 如果还没有电话，尝试从上下文中提取
+        if (!person.phone) {
+          const personContext = searchResults.find(r => r.text?.includes(person.name))?.text || '';
+          if (personContext) {
+            const phone = extractPhone(personContext);
+            if (phone) {
+              person.phone = phone;
+            }
+          }
         }
       }
     }
@@ -358,17 +382,25 @@ export async function enrichCandidateIntelligence(
   await Promise.allSettled(tasks);
 
   if (Object.keys(intelligence).length > 0) {
+    // 尝试从决策者联系人中提取邮箱和电话
+    const foundEmail = intelligence.contacts?.decisionMakers?.find(m => m.email)?.email;
+    const foundPhone = intelligence.contacts?.decisionMakers?.find(m => m.phone)?.phone;
+    
+    const updateData: Record<string, unknown> = {
+      enrichedAt: new Date(),
+      // 优先使用 Hunter.io 找到的邮箱，如果没有则保持原有值
+      ...(foundEmail && !candidate.email && { email: foundEmail }),
+      // 回填电话（如果有）
+      ...(foundPhone && !candidate.phone && { phone: foundPhone }),
+      rawData: {
+        ...(candidate.rawData as object || {}),
+        intelligence,
+      } as object,
+    };
+    
     await prisma.radarCandidate.update({
       where: { id: candidateId },
-      data: {
-        enrichedAt: new Date(),
-        // 尝试提取第一个发现的有效邮箱/网站回填主表
-        email: candidate.email || intelligence.contacts?.decisionMakers?.find(m => m.email)?.email,
-        rawData: {
-          ...(candidate.rawData as object || {}),
-          intelligence,
-        } as object,
-      },
+      data: updateData,
     });
   }
 
@@ -433,10 +465,23 @@ export async function enrichWithSignalScore(candidateId: string) {
   const signals = calculateSignalScores(enrichment.data);
 
   if (enrichment.success) {
+    // 提取联系方式
+    const foundEmail = enrichment.data.contacts?.decisionMakers?.find(m => m.email)?.email;
+    const foundPhone = enrichment.data.contacts?.decisionMakers?.find(m => m.phone)?.phone;
+    
+    // 获取候选当前状态
+    const candidate = await prisma.radarCandidate.findUnique({
+      where: { id: candidateId },
+      select: { email: true, phone: true }
+    });
+    
     await prisma.radarCandidate.update({
       where: { id: candidateId },
       data: {
         matchScore: signals.overallScore, // 覆盖原始匹配分
+        // 回填邮箱和电话（如果之前没有）
+        ...(foundEmail && !candidate?.email && { email: foundEmail }),
+        ...(foundPhone && !candidate?.phone && { phone: foundPhone }),
         aiRelevance: {
           ...(enrichment.data as any),
           signalScores: signals,

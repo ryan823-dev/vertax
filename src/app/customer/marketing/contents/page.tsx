@@ -52,6 +52,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   draft: { label: "草稿", color: "bg-[#F7F3E8]0" },
   review: { label: "待审核", color: "bg-amber-500" },
   approved: { label: "已批准", color: "bg-blue-500" },
+  awaiting_publish: { label: "待发布", color: "bg-orange-500" },
   published: { label: "已发布", color: "bg-emerald-500" },
 };
 
