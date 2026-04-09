@@ -11,7 +11,10 @@ export async function GET(request: NextRequest) {
   try {
     const count = await db.tenant.count();
     return NextResponse.json({ ok: true, tenantCount: count });
-  } catch (e: any) {
-    return NextResponse.json({ ok: false, error: e.message }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json(
+      { ok: false, error: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    );
   }
 }

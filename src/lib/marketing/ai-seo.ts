@@ -184,7 +184,7 @@ export function checkExtractability(options: {
   citations: number;
   authorExpertise: string;
 }): ExtractabilityCheck {
-  const { title, content, hasSchema, lastUpdated, citations, authorExpertise } = options;
+  const { content, hasSchema, lastUpdated, citations, authorExpertise } = options;
 
   const issues: ExtractabilityIssue[] = [];
   let score = 100;

@@ -1,4 +1,4 @@
-import { ROLES, APP_ROLES, DECIDER_ONLY_ACTIONS, type AppRole, type DeciderAction } from "./constants";
+import { ROLES, APP_ROLES, DECIDER_ONLY_ACTIONS, type AppRole } from "./constants";
 import type { Session } from "next-auth";
 
 export type UserPermissions = {

@@ -206,7 +206,7 @@ export default function ApiKeysPage() {
       } else {
         toast.error("保存失败");
       }
-    } catch (error) {
+    } catch {
       toast.error("保存失败");
     } finally {
       setSaving(null);
@@ -225,7 +225,7 @@ export default function ApiKeysPage() {
         toast.success(`${service} 已${isEnabled ? "启用" : "禁用"}`);
         loadConfigs();
       }
-    } catch (error) {
+    } catch {
       toast.error("操作失败");
     }
   };

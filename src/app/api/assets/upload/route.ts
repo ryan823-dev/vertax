@@ -119,7 +119,7 @@ async function triggerProcessingAsync(
   storageKey: string,
   mimeType: string,
   tenantId: string,
-  userId: string
+  _userId: string
 ) {
   try {
     // 标记为处理中

@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowRight, FileText, BookOpen, Download, ExternalLink } from 'lucide-react';
-import { BreadcrumbSchema, breadcrumbPaths } from '@/components/seo/breadcrumb-schema';
+import { ArrowRight, FileText, BookOpen, Download } from 'lucide-react';
+import { BreadcrumbSchema } from '@/components/seo/breadcrumb-schema';
 
 export const metadata: Metadata = {
   title: 'VertaX 资源中心 - 白皮书、案例与工具',

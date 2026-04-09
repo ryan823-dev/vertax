@@ -4,7 +4,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { chatCompletion } from "@/lib/ai-client";
-import { logActivity, ACTIVITY_ACTIONS, EVENT_CATEGORIES } from "@/lib/utils/activity-logger";
+import { logActivity, EVENT_CATEGORIES } from "@/lib/utils/activity-logger";
 import { requireDecider } from "@/lib/permissions";
 import { normalizeTargetRegions } from "@/lib/regions";
 import type {

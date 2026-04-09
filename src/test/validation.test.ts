@@ -3,7 +3,6 @@
 import { describe, it, expect } from 'vitest';
 import {
   validateRequest,
-  validateFormData,
   radarQuerySchema,
   radarCandidateCreateSchema,
   radarProfileCreateSchema,

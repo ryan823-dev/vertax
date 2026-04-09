@@ -73,10 +73,6 @@ export function ShellCommentsTab({
     }
   };
 
-  const baseStyles = variant === "light"
-    ? "text-[#0B1B2B]"
-    : "text-white";
-
   const subTextStyles = variant === "light"
     ? "text-slate-500"
     : "text-slate-400";

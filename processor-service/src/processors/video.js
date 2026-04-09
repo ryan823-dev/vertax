@@ -4,8 +4,8 @@ import Tesseract from 'tesseract.js';
 /**
  * 视频处理配置
  */
-const FRAME_INTERVAL = 5; // 每 5 秒提取一帧
-const MAX_FRAMES = 20; // 最多提取 20 帧
+const _FRAME_INTERVAL = 5; // 每 5 秒提取一帧
+const _MAX_FRAMES = 20; // 最多提取 20 帧
 const MIN_TEXT_LENGTH = 10; // 最小有效文本长度
 
 /**
@@ -17,7 +17,7 @@ const MIN_TEXT_LENGTH = 10; // 最小有效文本长度
  * @param {string} mimeType MIME 类型
  * @returns {object} { text, chunks }
  */
-export async function processVideo(fileBuffer, mimeType) {
+export async function processVideo(_fileBuffer, _mimeType) {
   // 视频处理需要特殊处理
   // Railway 环境下没有 ffmpeg，所以有两种方案：
   // 1. 调用外部 API 处理视频帧提取

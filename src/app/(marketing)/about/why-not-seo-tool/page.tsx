@@ -2,6 +2,8 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight, Search, Target, Zap, Brain, Globe, X, Check, TrendingUp } from 'lucide-react';
 import { BreadcrumbSchema, breadcrumbPaths } from '@/components/seo/breadcrumb-schema';
+import { ArticleSchema } from '@/components/seo/article-schema';
+import { SemanticTripleList as _SemanticTripleList } from '@/components/seo/semantic-content';
 
 export const metadata: Metadata = {
   title: 'VertaX 与传统 SEO、外包代运营、线索工具有什么不同 | VertaX',
@@ -14,6 +16,14 @@ export const metadata: Metadata = {
     url: 'https://vertax.top/about/why-not-seo-tool',
   },
 };
+
+// 语义三元组
+const _comparisonTriples = [
+  { subject: "VertaX", verb: "是", object: "GTM 智能操作系统，覆盖获客全流程" },
+  { subject: "传统 SEO 工具", verb: "只解决", object: "关键词排名问题" },
+  { subject: "VertaX", verb: "覆盖", object: "知识引擎 → 客户发现 → 内容生产 → 外联触达 → 效果追踪" },
+  { subject: "VertaX", verb: "支持", object: "SEO + AEO + GEO 全链路优化" },
+];
 
 const comparisons = [
   {
@@ -82,9 +92,19 @@ const keyDifferences = [
 ];
 
 export default function WhyNotSeoToolPage() {
+  const lastUpdated = "2026-04-09";
+  
   return (
     <>
       <BreadcrumbSchema items={breadcrumbPaths.whyNotSeoTool} />
+      <ArticleSchema
+        headline="VertaX 与传统 SEO、外包代运营、线索工具有什么不同"
+        description="传统 SEO 工具只解决关键词优化，VertaX 是面向中国企业出海的智能获客平台，覆盖知识沉淀、内容增长、商机挖掘全链路。"
+        url="https://vertax.top/about/why-not-seo-tool"
+        datePublished="2025-02-01"
+        dateModified={lastUpdated}
+        keywords={['VertaX vs SEO工具', '出海获客工具对比', '智能获客平台']}
+      />
       <div className="min-h-screen bg-[#0a0a14] text-gray-100">
         {/* Navigation */}
         <nav className="sticky top-0 z-50 border-b border-white/5 bg-[#0a0a14]/80 backdrop-blur-md">

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { getObjectInfo } from "@/lib/oss";
 
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { assetId, metadata } = body as {
       assetId: string;
-      metadata?: Record<string, any>;
+      metadata?: Record<string, unknown>;
     };
 
     if (!assetId) {
@@ -80,7 +81,7 @@ export async function POST(request: NextRequest) {
       data: {
         status: "active",
         fileSize: BigInt(ossMetadata.contentLength),
-        metadata: metadata || {},
+        metadata: (metadata || {}) as Prisma.InputJsonValue,
       },
     });
 
@@ -97,10 +98,11 @@ export async function POST(request: NextRequest) {
         createdAt: updatedAsset.createdAt,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Internal server error";
     console.error("Upload confirmation failed:", error);
     return NextResponse.json(
-      { error: error.message || "Internal server error" },
+      { error: message },
       { status: 500 }
     );
   }

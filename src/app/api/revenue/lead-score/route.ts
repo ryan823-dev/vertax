@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { candidateId, interactiveData } = body;
+    const { interactiveData } = body;
 
     // 如果提供了候选ID，从数据库获取信息
     // 这里简化处理，直接使用传入的数据

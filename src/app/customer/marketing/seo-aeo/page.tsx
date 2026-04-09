@@ -40,56 +40,6 @@ import { SkillStreamTrigger } from "@/components/skills";
 import { SKILL_NAMES } from "@/lib/skills/registry";
 
 // ============================================
-// Score Ring
-// ============================================
-
-function ScoreRing({
-  score,
-  size = 48,
-  label,
-}: {
-  score: number;
-  size?: number;
-  label?: string;
-}) {
-  const r = (size - 8) / 2;
-  const circ = 2 * Math.PI * r;
-  const fill = (score / 100) * circ;
-  const color =
-    score >= 80 ? "#10b981" : score >= 60 ? "#D4AF37" : "#ef4444";
-
-  return (
-    <div className="flex flex-col items-center gap-1">
-      <svg width={size} height={size} className="-rotate-90">
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          fill="none"
-          stroke="rgba(255,255,255,0.07)"
-          strokeWidth={5}
-        />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          fill="none"
-          stroke={color}
-          strokeWidth={5}
-          strokeDasharray={`${fill} ${circ}`}
-          strokeLinecap="round"
-          style={{ transition: "stroke-dasharray 0.5s ease" }}
-        />
-      </svg>
-      <span className="text-[11px] font-bold" style={{ color, marginTop: -size * 0.65, zIndex: 1, position: "relative" }}>
-        {score}
-      </span>
-      {label && <span className="text-[10px] text-slate-500 -mt-1">{label}</span>}
-    </div>
-  );
-}
-
-// ============================================
 // Check Row
 // ============================================
 

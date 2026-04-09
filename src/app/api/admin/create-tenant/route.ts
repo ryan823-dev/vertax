@@ -8,7 +8,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { hash } from 'bcryptjs';
-import { randomUUID } from 'crypto';
 
 interface CreateTenantRequest {
   name: string;

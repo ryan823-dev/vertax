@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, useCallback, useSyncExternalStore, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useSyncExternalStore, type ReactNode } from 'react';
 import { useSession } from 'next-auth/react';
 import { mapRoleToAppRole, canPerformAction } from '@/lib/permissions';
 import { APP_ROLES, DISPLAY_MODES, type AppRole, type DisplayMode } from '@/lib/constants';

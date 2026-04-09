@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { ArrowRight, Building2, Zap, Target, Globe, TrendingUp, CheckCircle2 } from 'lucide-react';
 import { BreadcrumbSchema, breadcrumbPaths } from '@/components/seo/breadcrumb-schema';
 import { colors } from '@/lib/design-tokens';
-import { MarketingNav, MarketingFooter, SectionHeader, Card, GoldButton, OutlineButton, GoldBadge } from '@/components/marketing/design-system';
+import { MarketingNav, MarketingFooter, SectionHeader, Card, GoldButton, OutlineButton } from '@/components/marketing/design-system';
 
 export const metadata: Metadata = {
   title: '解决方案 - VertaX 行业化 GTM 方案',

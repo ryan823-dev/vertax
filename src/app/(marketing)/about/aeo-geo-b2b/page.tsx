@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight, Search, Brain, Target, TrendingUp, Zap, Globe, MessageSquare, BookOpen } from 'lucide-react';
 import { BreadcrumbSchema, breadcrumbPaths } from '@/components/seo/breadcrumb-schema';
-import { ArticleSchema, AuthorAttribution, authors } from '@/components/seo/article-schema';
+import { ArticleSchema } from '@/components/seo/article-schema';
 
 export const metadata: Metadata = {
   title: 'AEO/GEO 与 B2B 出海获客的关系 - AI 搜索优化指南 | VertaX',
@@ -109,7 +109,6 @@ export default function AeoGeoB2bPage() {
         url="https://vertax.top/about/aeo-geo-b2b"
         datePublished="2025-03-01"
         dateModified="2026-04-09"
-        author={{ name: authors.siturenzhi.name, url: authors.siturenzhi.url }}
         keywords={['AEO优化', 'GEO优化', 'AI搜索引擎优化', 'B2B出海', '豆包', '元宝', 'Kimi', 'DeepSeek']}
       />
       <div className="min-h-screen bg-[#0a0a14] text-gray-100">
@@ -359,11 +358,6 @@ export default function AeoGeoB2bPage() {
           </div>
         </div>
       </section>
-
-      {/* Author Attribution */}
-      <div className="max-w-3xl mx-auto px-6 py-6 border-t border-white/5">
-        <AuthorAttribution author={authors.siturenzhi} lastUpdated="2026-04-09" />
-      </div>
 
       {/* Footer */}
       <footer className="border-t border-white/5 py-10 px-6">

@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { getMicroserviceUrl, getMicroserviceApiKey } from '@/lib/processing-service';
-import { splitTextIntoChunks } from '@/lib/utils/chunk-utils';
 
 /**
  * 微服务处理 API

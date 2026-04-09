@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { MessageSquare, Check, ListTodo, Reply, MoreHorizontal } from "lucide-react";
+import { MessageSquare, Check, ListTodo, Reply } from "lucide-react";
 import { AnchorBadge } from "./anchor-badge";
 import type { CommentData, AnchorSpec } from "@/types/artifact";
 import { formatDistanceToNow } from "date-fns";

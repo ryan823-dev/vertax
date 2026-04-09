@@ -29,7 +29,6 @@ export interface AssetProcessingMetadata {
 }
 
 // Prisma JSON 字段类型
-type JsonField = object | null;
 
 /**
  * 将任意值安全地转换为对象
@@ -111,10 +110,6 @@ export async function processAsset(
   });
 
   try {
-    // 获取当前重试次数
-    const currentMeta = toObject(asset.metadata)?.processing as AssetProcessingMetadata | undefined;
-    const retryCount = currentMeta?.retryCount || 0;
-
     // 提取文本（带重试机制）
     const text = await extractTextFromAsset(asset.storageKey, asset.mimeType);
 

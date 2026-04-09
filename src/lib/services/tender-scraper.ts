@@ -11,7 +11,7 @@
  */
 
 import * as cheerio from 'cheerio';
-import { fetchWebContent, ScrapedContent } from './web-scraper';
+import { fetchWebContent } from './web-scraper';
 
 // ==================== 类型定义 ====================
 
@@ -483,8 +483,10 @@ function sleep(ms: number): Promise<void> {
 
 // ==================== 导出 ====================
 
-export default {
+const tenderScraper = {
   scrapeTenderPage,
   scrapeTenderBatch,
   TENDER_SITES,
 };
+
+export default tenderScraper;

@@ -211,7 +211,7 @@ export default function BlogPage() {
         <div className="max-w-6xl mx-auto">
           <h2 className="text-2xl md:text-3xl font-bold mb-8">最新文章</h2>
           <div className="space-y-4">
-            {recentPosts.map((post, index) => (
+            {recentPosts.map((post) => (
               <article
                 key={post.title}
                 className="group flex flex-col md:flex-row gap-6 p-6 bg-[#1A1A1A] border border-white/[0.06] rounded-xl hover:border-cyan-500/20 transition-colors"

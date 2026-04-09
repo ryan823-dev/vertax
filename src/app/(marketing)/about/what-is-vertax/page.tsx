@@ -2,6 +2,8 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight, Building2, Globe, Brain, Target, Zap, Shield, MessageSquare } from 'lucide-react';
 import { BreadcrumbSchema, breadcrumbPaths } from '@/components/seo/breadcrumb-schema';
+import { ArticleSchema } from '@/components/seo/article-schema';
+import { SemanticTripleList as _SemanticTripleList } from '@/components/seo/semantic-content';
 
 export const metadata: Metadata = {
   title: 'VertaX 是什么 - 出海获客智能体 | VertaX',
@@ -10,38 +12,20 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'VertaX 是什么 - 出海获客智能体',
     description: '面向中国企业出海的智能获客平台，围绕知识引擎、内容增长、商机挖掘六大能力，帮助制造业、工业品、技术服务型企业建立全球增长体系。',
-    type: 'website',
+    type: 'article',
     url: 'https://vertax.top/about/what-is-vertax',
   },
 };
 
-// JSON-LD 结构化数据，便于搜索引擎和AI理解
-const jsonLd = {
-  "@context": "https://schema.org",
-  "@type": "SoftwareApplication",
-  "name": "VertaX",
-  "alternateName": "VertaX 出海获客智能体",
-  "description": "VertaX 是面向中国企业出海的智能获客平台，围绕知识引擎、内容增长、商机挖掘、品牌声量、协同推进与经营决策六大能力，帮助制造业、工业品、技术服务型企业建立全球增长体系。",
-  "applicationCategory": "BusinessApplication",
-  "operatingSystem": "Web",
-  "offers": {
-    "@type": "Offer",
-    "category": "SaaS"
-  },
-  "provider": {
-    "@type": "Organization",
-    "name": "VERTAX LIMITED",
-    "url": "https://vertax.top"
-  },
-  "featureList": [
-    "决策中心 - 全球增长驾驶舱",
-    "知识引擎 - 企业私有知识库",
-    "获客雷达 - AI 客户发现",
-    "增长系统 - SEO/GEO 内容生产",
-    "声量枢纽 - 多平台品牌传播",
-    "推进中台 - 团队协同推进"
-  ]
-};
+// 语义三元组 - 核心定义
+const _vertaxTriples = [
+  { subject: "VertaX", verb: "是", object: "面向中国企业出海的智能获客平台" },
+  { subject: "VertaX", verb: "包含", object: "六大核心模块：决策中心、知识引擎、获客雷达、增长系统、声量枢纽、推进中台" },
+  { subject: "知识引擎", verb: "沉淀", object: "企业私有知识库，让 AI 理解业务" },
+  { subject: "获客雷达", verb: "发现", object: "ICP 匹配的潜在客户" },
+  { subject: "增长系统", verb: "生产", object: "多语言 SEO/AEO 内容" },
+  { subject: "VertaX", verb: "服务", object: "制造业、工业品、技术服务型 B2B 出海企业" },
+];
 
 const faqData = [
   {
@@ -79,13 +63,18 @@ const faqData = [
 ];
 
 export default function WhatIsVertaxPage() {
+  const lastUpdated = "2026-04-09";
+  
   return (
     <>
       <BreadcrumbSchema items={breadcrumbPaths.whatIsVertax} />
-      {/* JSON-LD 结构化数据 */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      <ArticleSchema
+        headline="VertaX 是什么？"
+        description="VertaX 是面向中国企业出海的智能获客平台，围绕知识引擎、内容增长、商机挖掘、品牌声量、协同推进与经营决策六大能力，帮助企业建立全球增长体系。"
+        url="https://vertax.top/about/what-is-vertax"
+        datePublished="2025-01-01"
+        dateModified={lastUpdated}
+        keywords={['VertaX是什么', '出海获客智能体', '智能获客平台', 'B2B出海工具']}
       />
       
       <div className="min-h-screen bg-[#0a0a14] text-gray-100">

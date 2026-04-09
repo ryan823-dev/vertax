@@ -26,6 +26,39 @@ export interface AttachmentTemplate {
   createdAt: Date;
 }
 
+type AttachmentTemplateRecord = AttachmentTemplate & {
+  tenantId: string;
+};
+
+type AttachmentTemplateDelegate = {
+  updateMany?: (args: {
+    where: { tenantId: string; isDefault: boolean };
+    data: { isDefault: boolean };
+  }) => Promise<unknown>;
+  create?: (args: {
+    data: {
+      tenantId: string;
+      name: string;
+      filename: string;
+      contentType: string;
+      storageKey: string;
+      size: number;
+      category: string;
+      industry?: string;
+      isDefault: boolean;
+    };
+  }) => Promise<AttachmentTemplateRecord | null>;
+  findMany?: (args: {
+    where: { tenantId: string; category?: string; industry?: string };
+    orderBy: { isDefault: "desc" };
+  }) => Promise<AttachmentTemplateRecord[] | null>;
+  findFirst?: (args: {
+    where: { tenantId: string; isDefault: boolean };
+  }) => Promise<AttachmentTemplateRecord | null>;
+};
+
+const attachmentTemplateDb = (db as unknown as { attachmentTemplate?: AttachmentTemplateDelegate }).attachmentTemplate;
+
 // ==================== 创建附件模板 ====================
 
 export async function createAttachmentTemplate(
@@ -44,13 +77,13 @@ export async function createAttachmentTemplate(
   try {
     // 如果设为默认，取消其他默认
     if (options?.isDefault) {
-      await (db as any).attachmentTemplate?.updateMany?.({
+      await attachmentTemplateDb?.updateMany?.({
         where: { tenantId, isDefault: true },
         data: { isDefault: false },
       });
     }
 
-    const template = await (db as any).attachmentTemplate?.create?.({
+    const template = await attachmentTemplateDb?.create?.({
       data: {
         tenantId,
         name,
@@ -78,7 +111,7 @@ export async function getAttachmentTemplates(
   options?: { category?: string; industry?: string }
 ): Promise<AttachmentTemplate[]> {
   try {
-    const templates = await (db as any).attachmentTemplate?.findMany?.({
+    const templates = await attachmentTemplateDb?.findMany?.({
       where: {
         tenantId,
         ...(options?.category && { category: options.category }),
@@ -98,7 +131,7 @@ export async function getDefaultAttachmentTemplate(
   tenantId: string
 ): Promise<AttachmentTemplate | null> {
   try {
-    const template = await (db as any).attachmentTemplate?.findFirst?.({
+    const template = await attachmentTemplateDb?.findFirst?.({
       where: { tenantId, isDefault: true },
     });
 
@@ -131,9 +164,11 @@ export async function sendEmailWithAttachments(
   });
 }
 
-export default {
+const attachmentTemplateService = {
   createAttachmentTemplate,
   getAttachmentTemplates,
   getDefaultAttachmentTemplate,
   sendEmailWithAttachments,
 };
+
+export default attachmentTemplateService;

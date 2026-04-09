@@ -1,9 +1,9 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowRight, MessageSquare, Users, Target, Zap, Shield, Globe, BookOpen, Search, MessageCircle, DollarSign, Clock, Rocket, ChevronRight } from 'lucide-react';
+import { ArrowRight, MessageSquare, Users, Target, Zap, Shield, Globe, BookOpen, Search, MessageCircle, DollarSign, Rocket, ChevronRight } from 'lucide-react';
 import { BreadcrumbSchema, breadcrumbPaths } from '@/components/seo/breadcrumb-schema';
 import { colors } from '@/lib/design-tokens';
-import { MarketingNav, MarketingFooter, SectionHeader, Card, GoldButton, OutlineButton, GoldBadge } from '@/components/marketing/design-system';
+import { MarketingNav, MarketingFooter, Card, GoldButton, OutlineButton, GoldBadge } from '@/components/marketing/design-system';
 
 export const metadata: Metadata = {
   title: 'VertaX 常见问题 FAQ - 价格、周期、适用行业等 | VertaX',

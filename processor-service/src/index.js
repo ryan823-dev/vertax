@@ -5,7 +5,7 @@ import { processDocument } from './processors/document.js';
 import { processVideo } from './processors/video.js';
 import { processImage } from './processors/image.js';
 import { saveToDatabase } from './services/database.js';
-import { downloadFromOSS, uploadToOSS } from './services/oss.js';
+import { downloadFromOSS } from './services/oss.js';
 
 const fastify = Fastify({
   logger: {

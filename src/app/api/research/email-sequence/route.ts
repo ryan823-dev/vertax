@@ -1,9 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { generateOutreachSequence } from '@/lib/research/email-sequence';
 
 export const maxDuration = 60;
+
+type CandidateResearchData = {
+  companyResearch?: {
+    painPoints?: {
+      operational?: string[];
+    };
+    outreachStrategy?: {
+      valueProposition?: string;
+      talkingPoints?: string[];
+      psychologicalHooks?: string[];
+      socialProofAngles?: string[];
+    };
+  };
+  emailSequence?: unknown;
+};
 
 /**
  * 生成邮件序列API
@@ -33,7 +49,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 获取背调结果
-    const rawData = candidate.rawData as { companyResearch?: any } | null;
+    const rawData = candidate.rawData as CandidateResearchData | null;
     const research = rawData?.companyResearch;
 
     // 生成邮件序列
@@ -63,7 +79,7 @@ export async function POST(request: NextRequest) {
           ...(typeof candidate.rawData === 'object' && candidate.rawData !== null ? candidate.rawData : {}),
           emailSequence: JSON.parse(JSON.stringify(result.data)),
           sequenceGeneratedAt: new Date().toISOString(),
-        } as any,
+        } as Prisma.InputJsonValue,
       },
     });
 
@@ -116,7 +132,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Candidate not found' }, { status: 404 });
     }
 
-    const rawData = candidate.rawData as { emailSequence?: any } | null;
+    const rawData = candidate.rawData as CandidateResearchData | null;
     const sequence = rawData?.emailSequence || null;
 
     return NextResponse.json({

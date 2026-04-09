@@ -1,11 +1,11 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowRight, Bot, Database, Target, TrendingUp, Users, Zap, Globe, Shield, Clock } from 'lucide-react';
+import { ArrowRight, Bot, Database, Target, TrendingUp, Users, Zap, Globe, Shield } from 'lucide-react';
 import { OrganizationSchema } from '@/components/seo/organization-schema';
-import { BreadcrumbSchema, breadcrumbPaths } from '@/components/seo/breadcrumb-schema';
-import { ArticleSchema, AuthorAttribution, authors } from '@/components/seo/article-schema';
-import { SemanticTripleList, KeyDefinition, vertaxCoreTriples } from '@/components/seo/semantic-content';
-import { MarketingNav, MarketingFooter, SectionHeader, Card, GoldButton } from '@/components/marketing/design-system';
+import { BreadcrumbSchema } from '@/components/seo/breadcrumb-schema';
+import { ArticleSchema } from '@/components/seo/article-schema';
+import { SemanticTripleList, KeyDefinition } from '@/components/seo/semantic-content';
+import { MarketingNav, MarketingFooter } from '@/components/marketing/design-system';
 import { colors } from '@/lib/design-tokens';
 
 export const metadata: Metadata = {
@@ -266,11 +266,6 @@ export default function WhatIsOverseasAcquisitionAgentPage() {
             </Link>
           </div>
         </section>
-
-        {/* Author Attribution */}
-        <div className="max-w-3xl mx-auto px-6 pb-8">
-          <AuthorAttribution author={authors.siturenzhi} lastUpdated={lastUpdated} />
-        </div>
 
         <MarketingFooter />
       </div>

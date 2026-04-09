@@ -91,7 +91,6 @@ export function ShellTasksTab({
     const isUpdating = updatingTaskId === task.id;
     const priorityConfig = PRIORITY_CONFIG[task.priority];
     const statusConfig = STATUS_CONFIG[task.status];
-    const StatusIcon = statusConfig.icon;
 
     return (
       <div className={`rounded-xl border p-3 ${cardStyles}`}>

@@ -2,6 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
 
+type ProcessedChunk = {
+  content: string;
+  chunkIndex: number;
+  charStart: number;
+  charEnd: number;
+  tokenCount: number;
+};
+
 /**
  * 保存浏览器端处理后的文本和分块
  * POST /api/assets/process-text
@@ -13,7 +21,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { assetId, text, chunks, processor } = await req.json();
+    const { assetId, text, chunks, processor } = await req.json() as {
+      assetId?: string;
+      text?: string;
+      chunks?: ProcessedChunk[];
+      processor?: string;
+    };
 
     if (!assetId || !text) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -42,7 +55,7 @@ export async function POST(req: NextRequest) {
       for (let i = 0; i < chunks.length; i += CHUNK_BATCH_SIZE) {
         const batch = chunks.slice(i, i + CHUNK_BATCH_SIZE);
         await db.assetChunk.createMany({
-          data: batch.map((chunk: any) => ({
+          data: batch.map((chunk) => ({
             tenantId: session.user.tenantId,
             assetId,
             content: chunk.content,

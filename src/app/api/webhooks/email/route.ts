@@ -184,7 +184,7 @@ async function handleEmailBounced(data: {
 /**
  * 查找邮件日志
  */
-async function findEmailLog(emailId: string, to: string): Promise<{
+async function findEmailLog(emailId: string, _to: string): Promise<{
   tenantId: string;
   candidateId: string | null;
   companyId: string | null;

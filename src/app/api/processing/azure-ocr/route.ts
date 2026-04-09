@@ -140,7 +140,7 @@ export async function POST(req: NextRequest) {
       text = result.content;
     } else if (result.pages) {
       text = result.pages
-        .map((page: any) => page.lines?.map((line: any) => line.content).join("\n") || "")
+        .map((page) => page.lines?.map((line) => line.content).join("\n") || "")
         .join("\n\n");
     }
 

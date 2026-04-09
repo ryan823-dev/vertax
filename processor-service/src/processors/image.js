@@ -7,7 +7,7 @@ import sharp from 'sharp';
  * @param {string} mimeType MIME 类型
  * @returns {object} { text, chunks }
  */
-export async function processImage(fileBuffer, mimeType) {
+export async function processImage(fileBuffer, _mimeType) {
   // 预处理图片以提高 OCR 效果
   const processedBuffer = await preprocessImage(fileBuffer);
 

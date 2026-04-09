@@ -35,7 +35,7 @@ export async function executeSkill(
   request: SkillRequest,
   config: RunnerConfig
 ): Promise<SkillResponse> {
-  const { tenantId, userId } = config;
+  const { tenantId } = config;
   
   // 获取 Skill 定义（需要在调用前注册好）
   const skill = getSkill(skillName);

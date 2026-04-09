@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect } from "react";
 import {
   Brain,
   Loader2,
@@ -355,7 +355,6 @@ function ProfileDisplay({ profile }: { profile: CompanyProfileData }) {
 // ==================== 主页面 ====================
 
 export default function KnowledgePage() {
-  const [isPending, startTransition] = useTransition();
   const [profile, setProfile] = useState<CompanyProfileData | null>(null);
   const [assets, setAssets] = useState<
     Array<{

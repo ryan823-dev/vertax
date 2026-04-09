@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { batchSendToCandidates } from "@/lib/outreach/email-sequence";
-import { generateOutreachSequence } from "@/lib/research/email-sequence";
 
 export const maxDuration = 180;
 

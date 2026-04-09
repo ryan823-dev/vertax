@@ -16,8 +16,6 @@
 import { generatePresignedGetUrl } from "@/lib/oss";
 import {
   LARGE_DOCUMENT_THRESHOLD,
-  AUDIO_MAX_DURATION,
-  AUDIO_CHUNK_DURATION,
   MAX_RETRY_COUNT,
   RETRY_INITIAL_DELAY,
   RETRY_MAX_DELAY,
@@ -119,7 +117,7 @@ const OFFICE_MIME_TYPES = new Set([
 ]);
 
 // PPT 格式（markitdown 特别擅长）
-const PPT_MIME_TYPES = new Set([
+const _PPT_MIME_TYPES = new Set([
   "application/vnd.openxmlformats-officedocument.presentationml.presentation",
   "application/vnd.ms-powerpoint",
 ]);
@@ -351,7 +349,6 @@ async function extractWithMarkitdown(filePath: string): Promise<string> {
     // 条件性导入，避免构建时报错
     if (typeof process !== "undefined" && process.version) {
       // 动态 require，仅在运行时加载
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const { MarkItDown } = eval("require")("markitdown");
       const converter = new MarkItDown();
       const result = await converter.convert(filePath);

@@ -280,7 +280,7 @@ export async function sendNewCandidatesNotification(options: {
   const { to, tenantId, tenantName, newCandidatesCount, topCandidates, dashboardUrl } = options;
 
   // 获取租户配置
-  const { config } = await getTenantClient(tenantId);
+  await getTenantClient(tenantId);
 
   const candidatesList = topCandidates
     .slice(0, 5)

@@ -4,7 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 // 需要保护的路由路径
-const PROTECTED_PATTERNS = [
+const _PROTECTED_PATTERNS = [
   '/api/debug/',
   '/api/cron/debug',
 ];
@@ -15,7 +15,7 @@ const CRON_ROUTES = [
 ];
 
 // 开发/测试环境允许的路由
-const ALLOWED_IN_PRODUCTION = [
+const _ALLOWED_IN_PRODUCTION = [
   '/api/health',
   '/api/debug/route.ts', // 保留基本的健康检查
 ];

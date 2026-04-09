@@ -4,6 +4,30 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { generateCSVString, CSVColumn } from '@/lib/utils/csv-export';
 
+type ProspectExportContact = {
+  name?: string | null;
+  role?: string | null;
+  email?: string | null;
+  phone?: string | null;
+};
+
+type ProspectDossierExport = {
+  dossier?: {
+    companyOverview?: {
+      summary?: string | null;
+    };
+  };
+};
+
+type ProspectOutreachExport = {
+  outreachPack?: {
+    emails?: Array<{
+      subject?: string | null;
+      body?: string | null;
+    }>;
+  };
+};
+
 /**
  * 导出线索库为 CSV
  * 
@@ -34,7 +58,9 @@ export async function exportProspectsToCSV() {
   }
 
   // 2. 定义 CSV 列
-  const columns: CSVColumn<any>[] = [
+  type ProspectExportRow = (typeof prospects)[number];
+
+  const columns: CSVColumn<ProspectExportRow>[] = [
     { header: '公司名称', key: 'name' },
     { header: '官网', key: 'website' },
     { header: '国家', key: 'country' },
@@ -46,7 +72,8 @@ export async function exportProspectsToCSV() {
     { 
       header: '联系人信息', 
       key: 'contacts',
-      transform: (contacts: any[]) => {
+      transform: (value: unknown) => {
+        const contacts = Array.isArray(value) ? (value as ProspectExportContact[]) : [];
         if (!contacts || contacts.length === 0) return '无';
         return contacts.map(c => `${c.name} (${c.role || '未知'}): ${c.email || '无邮箱'} | ${c.phone || '无电话'}`).join(' ; ');
       }
@@ -54,7 +81,8 @@ export async function exportProspectsToCSV() {
     {
       header: 'AI 背调摘要',
       key: 'aiDossier',
-      transform: (dossier: any) => {
+      transform: (value: unknown) => {
+        const dossier = value as ProspectDossierExport | null;
         if (!dossier || !dossier.dossier) return '待生成';
         return dossier.dossier.companyOverview?.summary || '无摘要';
       }
@@ -62,7 +90,8 @@ export async function exportProspectsToCSV() {
     {
       header: '外联建议 (首封邮件)',
       key: 'outreachArtifacts',
-      transform: (artifacts: any) => {
+      transform: (value: unknown) => {
+        const artifacts = value as ProspectOutreachExport | null;
         if (!artifacts || !artifacts.outreachPack) return '待生成';
         const pack = artifacts.outreachPack;
         if (pack.emails && pack.emails.length > 0) {
@@ -74,7 +103,7 @@ export async function exportProspectsToCSV() {
     {
       header: '创建时间',
       key: 'createdAt',
-      transform: (val: Date) => val.toISOString().split('T')[0]
+      transform: (value: unknown) => value instanceof Date ? value.toISOString().split('T')[0] : ''
     }
   ];
 

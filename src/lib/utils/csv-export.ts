@@ -7,7 +7,7 @@
 export interface CSVColumn<T> {
   header: string;
   key: keyof T | string;
-  transform?: (value: any, row: T) => string;
+  transform?: (value: unknown, row: T) => string;
 }
 
 /**
@@ -22,8 +22,9 @@ export function generateCSVString<T>(
   
   // 数据行
   const rows = data.map(row => {
+    const rowRecord = row as Record<string, unknown>;
     return columns.map(col => {
-      let val = (row as any)[col.key];
+      let val: unknown = rowRecord[String(col.key)];
       if (col.transform) {
         val = col.transform(val, row);
       }

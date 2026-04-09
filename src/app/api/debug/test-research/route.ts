@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
           ...(typeof candidate.rawData === 'object' && candidate.rawData !== null ? candidate.rawData : {}),
           companyResearch: JSON.parse(JSON.stringify(result.data)),
           researchAt: new Date().toISOString(),
-        } as any,
+        } as Record<string, unknown>,
       },
     });
 

@@ -1,7 +1,6 @@
 "use client";
 
 import { GitBranch, MessageSquare, ListTodo, Check, AlertTriangle, Send, Clock } from "lucide-react";
-import type { ArtifactStatusValue } from "@/types/artifact";
 import { formatDistanceToNow, format } from "date-fns";
 import { zhCN } from "date-fns/locale";
 

@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
       take: MAX_BATCH_SIZE,
       orderBy: [
         { tier: 'asc' }, // A before B
-        { lastEnrichedAt: { sort: 'asc', nulls: 'first' } as any }
+        { lastEnrichedAt: { sort: 'asc', nulls: 'first' } as { sort: 'asc'; nulls: 'first' } }
       ]
     });
 

@@ -1,8 +1,8 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowRight, CheckCircle2, XCircle, Building2, Factory, Zap, Shield, Globe, Users, TrendingUp, Target } from 'lucide-react';
+import { ArrowRight, CheckCircle2, XCircle, Building2, Factory, Shield, Globe, Users, TrendingUp, Target } from 'lucide-react';
 import { BreadcrumbSchema, breadcrumbPaths } from '@/components/seo/breadcrumb-schema';
-
+import { ArticleSchema } from '@/components/seo/article-schema';
 export const metadata: Metadata = {
   title: '哪些企业适合 VertaX - 适用客户分析 | VertaX',
   description: 'VertaX 适合有海外市场拓展需求的中国企业，尤其适合制造业、工业品、设备、技术服务型和中大型 B2B 出海团队。了解 VertaX 的适用条件和典型客户画像。',
@@ -94,9 +94,19 @@ const decisionChecklist = [
 ];
 
 export default function WhoIsVertaxForPage() {
+  const lastUpdated = "2026-04-09";
+  
   return (
     <>
       <BreadcrumbSchema items={breadcrumbPaths.whoIsVertaxFor} />
+      <ArticleSchema
+        headline="哪些企业适合 VertaX？"
+        description="VertaX 适合有海外市场拓展需求的中国企业，尤其适合制造业、工业品、设备、技术服务型和中大型 B2B 出海团队。"
+        url="https://vertax.top/about/who-is-vertax-for"
+        datePublished="2025-01-15"
+        dateModified={lastUpdated}
+        keywords={['VertaX适合谁', '制造业出海', '工业品出海', 'B2B出海企业']}
+      />
       <div className="min-h-screen bg-[#0a0a14] text-gray-100">
         {/* Navigation */}
         <nav className="sticky top-0 z-50 border-b border-white/5 bg-[#0a0a14]/80 backdrop-blur-md">

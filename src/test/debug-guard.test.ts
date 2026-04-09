@@ -1,7 +1,6 @@
 // ==================== Debug Guard Tests ====================
 
-import { describe, it, expect, vi } from 'vitest';
-import { NextRequest } from 'next/server';
+import { describe, it, expect } from 'vitest';
 
 describe('Debug Guard', () => {
   // Skip environment-specific tests as they require complex mocking

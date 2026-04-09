@@ -20,7 +20,7 @@
  */
 
 import { prisma } from '@/lib/prisma';
-import { scrapeCompanyInfo, fetchWebContent } from './web-scraper';
+import { scrapeCompanyInfo } from './web-scraper';
 
 // ==================== 类型定义 ====================
 
@@ -612,7 +612,7 @@ async function getApiKey(service: string): Promise<string | null> {
     });
 
     return config?.apiKey || process.env[`${service.toUpperCase()}_API_KEY`] || null;
-  } catch (error) {
+  } catch {
     // 回退到环境变量
     return process.env[`${service.toUpperCase()}_API_KEY`] || null;
   }

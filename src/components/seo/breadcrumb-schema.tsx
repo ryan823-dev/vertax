@@ -110,5 +110,25 @@ export const breadcrumbPaths = {
     { name: "首页", url: "https://vertax.top" },
     { name: "关于", url: "https://vertax.top/about" },
     { name: "VertaX vs 传统工具", url: "https://vertax.top/about/vertax-vs-traditional-tools" }
+  ],
+  privateDeployment: [
+    { name: "首页", url: "https://vertax.top" },
+    { name: "关于", url: "https://vertax.top/about" },
+    { name: "私有化部署方案", url: "https://vertax.top/about/private-deployment" }
+  ],
+  startOverseasFromZero: [
+    { name: "首页", url: "https://vertax.top" },
+    { name: "关于", url: "https://vertax.top/about" },
+    { name: "从0启动海外市场", url: "https://vertax.top/about/start-overseas-from-zero" }
+  ],
+  b2bOverseasMarketing: [
+    { name: "首页", url: "https://vertax.top" },
+    { name: "关于", url: "https://vertax.top/about" },
+    { name: "B2B海外营销", url: "https://vertax.top/about/b2b-overseas-marketing" }
+  ],
+  implementationGuide: [
+    { name: "首页", url: "https://vertax.top" },
+    { name: "关于", url: "https://vertax.top/about" },
+    { name: "实施指南", url: "https://vertax.top/about/implementation-guide" }
   ]
 };

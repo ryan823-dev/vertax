@@ -37,7 +37,7 @@ function timeAgo(date: Date): string {
   return `${Math.floor(hrs / 24)}天前`;
 }
 
-export function NotificationBell({ tenantId }: { tenantId?: string }) {
+export function NotificationBell({ tenantId: _tenantId }: { tenantId?: string }) {
   const [open, setOpen] = useState(false);
   const [unread, setUnread] = useState(0);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);

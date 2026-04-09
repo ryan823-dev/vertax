@@ -91,13 +91,13 @@ export async function generateOutreachEmail(options: {
     valueProposition,
     evidencePoints,
     language = 'en',
-    tone = 'professional',
+    tone: _tone = 'professional',
     tenantId,
     candidateId,
     emailId,
   } = options;
 
-  const toneInstructions: Record<string, string> = {
+  const _toneInstructions: Record<string, string> = {
     professional: '保持专业、正式的商务语气',
     friendly: '友好、轻松但专业的语气',
     technical: '技术导向，使用行业术语展示专业度',
@@ -319,7 +319,7 @@ function addEmailTracking(
 /**
  * 根据行业推测痛点
  */
-function inferPainPoints(industry?: string, country?: string): string[] {
+function inferPainPoints(industry?: string, _country?: string): string[] {
   const painPointsByIndustry: Record<string, string[]> = {
     'automotive': [
       '涂装质量稳定性',

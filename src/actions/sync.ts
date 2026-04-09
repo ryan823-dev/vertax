@@ -277,7 +277,7 @@ export async function syncRadarFromKnowledge(options?: {
   
   try {
     // 1. 加载知识上下文
-    const [companyProfile, icpSegments, personas, evidences] = await Promise.all([
+    const [companyProfile, _icpSegments, personas, evidences] = await Promise.all([
       loadCompanyProfile(tenantId),
       loadICPSegments(tenantId),
       loadPersonas(tenantId),

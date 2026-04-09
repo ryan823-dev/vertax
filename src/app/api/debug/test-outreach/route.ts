@@ -4,7 +4,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { generateOutreachEmail, getOutreachEligibleCandidates } from '@/lib/email/outreach-service';
+import { generateOutreachEmail } from '@/lib/email/outreach-service';
 import { sendEmail } from '@/lib/email/resend-client';
 
 export async function GET(req: NextRequest) {

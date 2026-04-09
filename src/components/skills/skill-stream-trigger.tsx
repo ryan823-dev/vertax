@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from 'react';
-import { Sparkles, Loader2, AlertCircle, X, Copy, CheckCircle2 } from 'lucide-react';
+import { Sparkles, Loader2, AlertCircle, Copy, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -18,7 +18,7 @@ interface SkillStreamTriggerProps {
   skillName: string;
   displayName: string;
   description?: string;
-  entityType: string;
+  entityType: SkillRequest['entityType'];
   entityId: string;
   input: Record<string, unknown>;
   evidenceIds?: string[];
@@ -72,7 +72,7 @@ export function SkillStreamTrigger({
 
     try {
       const request: SkillRequest = {
-        entityType: entityType as any,
+        entityType,
         entityId,
         input,
         mode: 'generate',

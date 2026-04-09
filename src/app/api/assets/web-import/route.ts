@@ -4,15 +4,6 @@ import { db } from "@/lib/db";
 import { discoverPages, normalizeUrl } from "@/lib/services/site-crawler";
 import crypto from "crypto";
 
-// URL patterns that indicate low-value pages (legal/nav noise)
-const LOW_VALUE_URL_PATTERNS = [
-  /\/privacy/i, /\/terms/i, /\/cookie/i, /\/legal/i, /\/gdpr/i,
-  /\/disclaimer/i, /\/imprint/i, /\/unsubscribe/i,
-  /\/sitemap/i, /\/feed/i, /\/rss/i,
-  /\/tag\//i, /\/tags\//i, /\/author\//i,
-  /\/wp-content/i, /\/cdn-cgi/i,
-];
-
 export const maxDuration = 60; // 1 minute - return quickly after queueing task
 
 /**

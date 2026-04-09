@@ -1,10 +1,10 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowRight, Check, X, HelpCircle, Zap, Database, Target, Users, TrendingUp, Globe } from 'lucide-react';
+import { ArrowRight, Check, HelpCircle, Zap, Database, Target, TrendingUp, Globe } from 'lucide-react';
 import { OrganizationSchema } from '@/components/seo/organization-schema';
 import { BreadcrumbSchema } from '@/components/seo/breadcrumb-schema';
-import { ArticleSchema, AuthorAttribution, authors } from '@/components/seo/article-schema';
-import { SemanticTripleList, ComparisonTable, vertaxCoreTriples } from '@/components/seo/semantic-content';
+import { ArticleSchema } from '@/components/seo/article-schema';
+import { SemanticTripleList } from '@/components/seo/semantic-content';
 import { MarketingNav, MarketingFooter } from '@/components/marketing/design-system';
 import { colors } from '@/lib/design-tokens';
 
@@ -236,11 +236,6 @@ export default function VertaxVsTraditionalToolsPage() {
             </Link>
           </div>
         </section>
-
-        {/* Author */}
-        <div className="max-w-4xl mx-auto px-6 pb-8">
-          <AuthorAttribution author={authors.siturenzhi} lastUpdated={lastUpdated} />
-        </div>
 
         <MarketingFooter />
       </div>

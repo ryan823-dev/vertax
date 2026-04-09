@@ -9,10 +9,20 @@
  */
 
 import { auth } from '@/lib/auth';
+import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { chatCompletion } from '@/lib/ai-client';
 import { sendEmail } from '@/lib/email/resend-client';
 import { enrichWithSignalScore } from '@/lib/radar/intelligence-enricher';
+
+type StoredOutreachArtifact = Prisma.JsonObject & {
+  timestamp?: string;
+  version?: number;
+};
+
+function isStoredOutreachArtifact(value: unknown): value is StoredOutreachArtifact {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
 
 // ==================== 类型 ====================
 
@@ -649,7 +659,7 @@ export async function getCompanyOutreachHistory(
  */
 export async function saveOutreachArtifacts(
   companyId: string,
-  artifacts: any
+  artifacts: unknown
 ): Promise<{ success: boolean; error?: string }> {
   const session = await auth();
   if (!session?.user?.tenantId) return { success: false, error: 'Unauthorized' };
@@ -660,21 +670,25 @@ export async function saveOutreachArtifacts(
       select: { outreachArtifacts: true }
     });
 
-    let currentArtifacts = company?.outreachArtifacts as any;
-    const newEntry = {
-      ...artifacts,
+    const existingArtifacts = company?.outreachArtifacts;
+    let currentArtifacts: StoredOutreachArtifact[];
+    const newEntry: StoredOutreachArtifact = {
+      ...(isStoredOutreachArtifact(artifacts) ? artifacts : {}),
       timestamp: new Date().toISOString(),
       version: 1
     };
 
-    if (!currentArtifacts) {
+    if (!existingArtifacts) {
       currentArtifacts = [newEntry];
-    } else if (Array.isArray(currentArtifacts)) {
+    } else if (Array.isArray(existingArtifacts)) {
+      currentArtifacts = (existingArtifacts as unknown[]).filter(isStoredOutreachArtifact);
       newEntry.version = currentArtifacts.length + 1;
       currentArtifacts = [newEntry, ...currentArtifacts].slice(0, 10); // Keep last 10
-    } else {
+    } else if (isStoredOutreachArtifact(existingArtifacts)) {
       // Legacy single object format
-      currentArtifacts = [newEntry, { ...currentArtifacts, version: 0, timestamp: new Date(0).toISOString() }];
+      currentArtifacts = [newEntry, { ...existingArtifacts, version: 0, timestamp: new Date(0).toISOString() }];
+    } else {
+      currentArtifacts = [newEntry];
     }
 
     await prisma.prospectCompany.update({
@@ -683,7 +697,7 @@ export async function saveOutreachArtifacts(
         tenantId: session.user.tenantId
       },
       data: {
-        outreachArtifacts: currentArtifacts
+        outreachArtifacts: currentArtifacts as unknown as Prisma.InputJsonValue
       }
     });
     return { success: true };
@@ -700,7 +714,7 @@ export async function saveOutreachArtifacts(
  */
 export async function getSavedOutreachArtifacts(
   companyId: string
-): Promise<{ success: boolean; artifacts?: any; latest?: any; all?: any[]; error?: string }> {
+): Promise<{ success: boolean; artifacts?: StoredOutreachArtifact | null; latest?: StoredOutreachArtifact | null; all?: StoredOutreachArtifact[]; error?: string }> {
   const session = await auth();
   if (!session?.user?.tenantId) return { success: false, error: 'Unauthorized' };
 
@@ -717,10 +731,12 @@ export async function getSavedOutreachArtifacts(
 
     const artifacts = company?.outreachArtifacts;
     if (Array.isArray(artifacts)) {
-      return { success: true, artifacts: artifacts[0], latest: artifacts[0], all: artifacts };
+      const artifactList = (artifacts as unknown[]).filter(isStoredOutreachArtifact);
+      return { success: true, artifacts: artifactList[0] || null, latest: artifactList[0] || null, all: artifactList };
     }
-    
-    return { success: true, artifacts: artifacts || null, latest: artifacts || null, all: artifacts ? [artifacts] : [] };
+
+    const artifact = isStoredOutreachArtifact(artifacts) ? artifacts : null;
+    return { success: true, artifacts: artifact, latest: artifact, all: artifact ? [artifact] : [] };
   } catch (err) {
     return { 
       success: false, 

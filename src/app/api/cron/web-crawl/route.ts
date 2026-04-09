@@ -21,6 +21,17 @@ function isLowValuePage(url: string, content: string): boolean {
   return false;
 }
 
+type CrawlQueueUrlItem = {
+  url: string;
+  status: string;
+  priority: number;
+  assetId?: string;
+  error?: string;
+  processedAt?: string;
+};
+
+type CrawlQueueMetadata = Record<string, unknown>;
+
 /**
  * Web Crawl Background Worker
  * 
@@ -114,10 +125,14 @@ async function processCrawlTask(task: {
   processedPages: number;
   status: string;
   folderId: string | null;
-  urls: any;
-  metadata: any;
+  urls: unknown;
+  metadata: unknown;
 }) {
   const { id: taskId, tenantId, userId, batchId, folderId, urls, metadata } = task;
+  const taskMetadata: CrawlQueueMetadata =
+    metadata && typeof metadata === "object"
+      ? (metadata as CrawlQueueMetadata)
+      : {};
   
   // Mark as processing
   await db.crawlQueue.update({
@@ -125,14 +140,9 @@ async function processCrawlTask(task: {
     data: { status: "processing" },
   });
 
-  const urlsArray = urls as Array<{
-    url: string;
-    status: string;
-    priority: number;
-    assetId?: string;
-    error?: string;
-    processedAt?: string;
-  }>;
+  const urlsArray: CrawlQueueUrlItem[] = Array.isArray(urls)
+    ? (urls as CrawlQueueUrlItem[])
+    : [];
 
   // Find next 20 unprocessed URLs (respecting priority)
   const pendingUrls = urlsArray
@@ -147,7 +157,7 @@ async function processCrawlTask(task: {
       data: {
         status: "completed",
         metadata: {
-          ...metadata,
+          ...taskMetadata,
           completedAt: new Date().toISOString(),
         },
       },
@@ -277,7 +287,7 @@ async function processCrawlTask(task: {
       processedPages: newProcessedCount,
       status: isComplete ? "completed" : "processing",
       metadata: {
-        ...metadata,
+        ...taskMetadata,
         lastProcessedAt: new Date().toISOString(),
         lastStats: { processed, failed, skipped },
       },

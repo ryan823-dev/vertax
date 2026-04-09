@@ -9,7 +9,6 @@ import { db } from "@/lib/db";
 import {
   extractTextFromAsset,
   extractStructuredData,
-  ExtractionType,
 } from "@/lib/utils/text-extract";
 
 // ==================== 类型定义 ====================

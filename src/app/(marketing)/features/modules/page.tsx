@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowRight, Brain, Target, TrendingUp, Globe, MessageSquare, Building2, Layers, Database, Search, Send, BarChart3, Users, FileText, Zap, Shield, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, Brain, Target, TrendingUp, Globe, MessageSquare, Building2, Layers, Database, Search, Send, BarChart3, Users, FileText, Zap, Shield } from 'lucide-react';
 import { BreadcrumbSchema, breadcrumbPaths } from '@/components/seo/breadcrumb-schema';
 
 export const metadata: Metadata = {

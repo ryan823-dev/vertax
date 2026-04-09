@@ -13,7 +13,6 @@
 import { db } from "@/lib/db";
 import {
   extractTextFromAsset,
-  extractStructuredData,
 } from "@/lib/utils/text-extract";
 
 // ==================== 类型定义 ====================
@@ -146,7 +145,7 @@ async function generateDocumentSummary(text: string): Promise<DocumentSummary | 
 /**
  * 为文档分块生成摘要
  */
-async function generateChunkSummary(chunkText: string): Promise<string> {
+async function _generateChunkSummary(chunkText: string): Promise<string> {
   const apiKey = process.env.DASHSCOPE_API_KEY;
   if (!apiKey) return "";
 

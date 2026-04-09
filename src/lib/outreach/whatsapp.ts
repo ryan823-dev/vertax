@@ -295,7 +295,7 @@ export class WhatsAppService {
         components: [
           {
             type: 'body',
-            parameters: template.variables.map((v, i) => ({
+            parameters: template.variables.map((v) => ({
               type: 'text',
               text: message.templateData?.[v] || '',
             })),

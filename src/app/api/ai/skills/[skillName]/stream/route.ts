@@ -7,7 +7,6 @@ import { prisma } from '@/lib/prisma';
 import { normalizeTargetRegions } from '@/lib/regions';
 import {
   type SkillDefinition,
-  type SkillRequest,
   type PromptContext,
   type CompanyProfileContext,
   COMMON_OUTPUT_INSTRUCTIONS,

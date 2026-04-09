@@ -80,14 +80,8 @@ function testNonStreaming() {
   });
 
   let stdout = '';
-  let stderr = '';
-
   curl.stdout.on('data', (chunk) => {
     stdout += chunk.toString('utf-8');
-  });
-
-  curl.stderr.on('data', (chunk) => {
-    stderr += chunk.toString('utf-8');
   });
 
   curl.on('close', (code) => {

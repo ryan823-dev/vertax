@@ -1,5 +1,4 @@
 import OpenAI from "openai";
-import { PLATFORM_CONFIG } from "@/lib/constants";
 import { getPlatformPrompt, getPlatformCharLimit, type PlatformId } from "@/lib/marketing/platform-rules";
 
 const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true";

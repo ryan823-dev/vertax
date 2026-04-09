@@ -7,8 +7,6 @@ const { auth } = NextAuth(authConfig);
 
 const publicPaths = ["/login", "/register", "/api/auth", "/api/inquiry"];
 
-const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
-
 const BASE_DOMAIN = process.env.NEXT_PUBLIC_BASE_DOMAIN || "vertax.top";
 
 export default auth((req) => {

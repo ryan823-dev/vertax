@@ -4,6 +4,20 @@ import { generateOutreachSequence } from '@/lib/research/email-sequence';
 
 export const maxDuration = 60;
 
+type CandidateResearchData = {
+  companyResearch?: {
+    painPoints?: {
+      operational?: string[];
+    };
+    outreachStrategy?: {
+      valueProposition?: string;
+      talkingPoints?: string[];
+      psychologicalHooks?: string[];
+      socialProofAngles?: string[];
+    };
+  };
+};
+
 /**
  * 测试邮件序列生成
  * GET /api/debug/test-email-sequence?secret=xxx&candidateId=xxx
@@ -30,7 +44,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Candidate not found' }, { status: 404 });
     }
 
-    const rawData = candidate.rawData as { companyResearch?: any } | null;
+    const rawData = candidate.rawData as CandidateResearchData | null;
     const research = rawData?.companyResearch;
 
     const result = await generateOutreachSequence({

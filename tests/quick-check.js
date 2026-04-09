@@ -18,7 +18,7 @@ async function main() {
   const r2 = await req({ hostname:'localhost', port:3000, path:'/api/auth/csrf', timeout:15000 });
   console.log('csrf:', r2.s, (r2.h && r2.h['content-type'] || ''), (r2.b || '').slice(0,80));
   let tok, ck = '';
-  try { tok = JSON.parse(r2.b).csrfToken; ck = (r2.h['set-cookie'] || []).map(c => c.split(';')[0]).join('; '); } catch(e) {}
+  try { tok = JSON.parse(r2.b).csrfToken; ck = (r2.h['set-cookie'] || []).map(c => c.split(';')[0]).join('; '); } catch {}
   if (!tok) { console.log('No CSRF token, stopping'); return; }
   const ld = 'csrfToken=' + tok + '&email=admin%40tdpaint.com&password=Tdpaint2026!&json=true';
   const r3 = await req({ hostname:'localhost', port:3000, path:'/api/auth/callback/credentials', method:'POST',
@@ -36,6 +36,6 @@ async function main() {
     } else {
       console.log('no user in session');
     }
-  } catch(e) { console.log('not json:', (r4.b || '').slice(0,150)); }
+  } catch { console.log('not json:', (r4.b || '').slice(0,150)); }
 }
 main().catch(e => console.error(e));

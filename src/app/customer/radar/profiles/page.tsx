@@ -93,7 +93,15 @@ interface ProfileFormDialogProps {
   onSave: (data: CreateRadarSearchProfileInput) => Promise<void>;
 }
 
+type ProfileFormFields = Pick<
+  CreateRadarSearchProfileInput,
+  'targetCustomerType' | 'businessScenario' | 'exampleCustomers' | 'myProduct'
+>;
+
+type EditableRadarSearchProfile = RadarSearchProfileData & ProfileFormFields;
+
 function ProfileFormDialog({ profile, segments, sources, onClose, onSave }: ProfileFormDialogProps) {
+  const profileExtras = profile as Partial<EditableRadarSearchProfile> | null;
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState<CreateRadarSearchProfileInput>({
     name: profile?.name || '',
@@ -109,10 +117,10 @@ function ProfileFormDialog({ profile, segments, sources, onClose, onSave }: Prof
     autoQualify: profile?.autoQualify ?? true,
     autoEnrich: profile?.autoEnrich ?? false,
     // 新增字段
-    targetCustomerType: (profile as any)?.targetCustomerType || [],
-    businessScenario: (profile as any)?.businessScenario || '',
-    exampleCustomers: (profile as any)?.exampleCustomers || [],
-    myProduct: (profile as any)?.myProduct || '',
+    targetCustomerType: profileExtras?.targetCustomerType || [],
+    businessScenario: profileExtras?.businessScenario || '',
+    exampleCustomers: profileExtras?.exampleCustomers || [],
+    myProduct: profileExtras?.myProduct || '',
   });
   
   const [keywordsText, setKeywordsText] = useState(
@@ -124,10 +132,6 @@ function ProfileFormDialog({ profile, segments, sources, onClose, onSave }: Prof
   const [countriesText, setCountriesText] = useState(
     (profile?.targetCountries || []).join(', ')
   );
-  const [exampleCustomersText, setExampleCustomersText] = useState(
-    ((profile as any)?.exampleCustomers || []).join(', ')
-  );
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);

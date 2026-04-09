@@ -98,12 +98,78 @@ interface OutreachPackContent {
 
 // ==================== 页面组件 ====================
 
+interface SuggestedContent {
+  contentId: string;
+  title: string;
+  slug: string;
+  score: number;
+  matchedKeywords: string[];
+  reason: string;
+}
+
+type ProspectCompanyView = Omit<ProspectCompanyData, 'matchReasons' | 'outreachArtifacts'> & {
+  matchReasons: string[] | null;
+  outreachArtifacts: OutreachPackContent[] | null;
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function isOutreachPackContent(value: unknown): value is OutreachPackContent {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  const outreachPack = value.outreachPack;
+  if (!isRecord(outreachPack)) {
+    return false;
+  }
+
+  return (
+    Array.isArray(outreachPack.openings) &&
+    Array.isArray(outreachPack.emails) &&
+    Array.isArray(outreachPack.whatsapps) &&
+    Array.isArray(outreachPack.playbook) &&
+    Array.isArray(outreachPack.evidenceMap) &&
+    Array.isArray(outreachPack.warnings)
+  );
+}
+
+function normalizeMatchReasons(value: ProspectCompanyData['matchReasons']): string[] | null {
+  if (!Array.isArray(value)) {
+    return null;
+  }
+
+  const reasons = value.filter((entry): entry is string => typeof entry === 'string');
+  return reasons.length > 0 ? reasons : null;
+}
+
+function normalizeOutreachArtifacts(
+  value: ProspectCompanyData['outreachArtifacts']
+): OutreachPackContent[] | null {
+  if (Array.isArray(value)) {
+    const artifacts = (value as unknown[]).filter(isOutreachPackContent);
+    return artifacts.length > 0 ? artifacts : null;
+  }
+
+  return isOutreachPackContent(value) ? [value] : null;
+}
+
+function normalizeProspectCompany(company: ProspectCompanyData): ProspectCompanyView {
+  return {
+    ...company,
+    matchReasons: normalizeMatchReasons(company.matchReasons),
+    outreachArtifacts: normalizeOutreachArtifacts(company.outreachArtifacts),
+  };
+}
+
 export default function RadarProspectsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [companies, setCompanies] = useState<ProspectCompanyData[]>([]);
+  const [companies, setCompanies] = useState<ProspectCompanyView[]>([]);
   const [total, setTotal] = useState(0);
-  const [selectedCompany, setSelectedCompany] = useState<ProspectCompanyData | null>(null);
+  const [selectedCompany, setSelectedCompany] = useState<ProspectCompanyView | null>(null);
   
   // Outreach Pack state
   const [isGenerating, setIsGenerating] = useState(false);
@@ -148,14 +214,15 @@ export default function RadarProspectsPage() {
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [isSendingManual, setIsSendingManual] = useState<string | null>(null);
   const [showCallResultForm, setShowCallResultForm] = useState<string | null>(null);
-  const [callResult, setCallResult] = useState<string>('');
-
   const [isEnriching, setIsEnriching] = useState(false);
   const [enrichResult, setEnrichResult] = useState<{ count?: number; error?: string } | null>(null);
 
   // Task #30: 营销内容建议
-  const [suggestedContents, setSuggestedContents] = useState<any[]>([]);
+  const [suggestedContents, setSuggestedContents] = useState<SuggestedContent[]>([]);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const selectedCompanyId = selectedCompany?.id ?? null;
+  const selectedMatchReasons = selectedCompany?.matchReasons ?? [];
+  const selectedOutreachArtifacts = selectedCompany?.outreachArtifacts ?? [];
 
   const handleExport = async () => {
     setIsExporting(true);
@@ -191,10 +258,10 @@ export default function RadarProspectsPage() {
       if (res.success) {
         setEnrichResult({ count: res.personCount });
         // 刷新列表和联系人
-        loadData();
+        await loadData();
         if (selectedCompany.id) {
           const res = await getProspectContacts(selectedCompany.id);
-          setContacts(res as any);
+          setContacts(res);
         }
       } else {
         setEnrichResult({ error: res.error });
@@ -222,8 +289,16 @@ export default function RadarProspectsPage() {
         }),
         getOutreachRecords({ limit: 100, filter: outreachFilter }).catch(() => null),
       ]);
-      setCompanies(companyResult.companies);
+      const normalizedCompanies = companyResult.companies.map(normalizeProspectCompany);
+      setCompanies(normalizedCompanies);
       setTotal(companyResult.total);
+      setSelectedCompany((current) => {
+        if (!current) {
+          return current;
+        }
+
+        return normalizedCompanies.find((company) => company.id === current.id) ?? current;
+      });
       if (outreachResult) {
         setOutreachRecords(outreachResult.records);
         setOutreachStats(outreachResult.stats);
@@ -241,61 +316,71 @@ export default function RadarProspectsPage() {
 
   // 加载联系人（contacts / outreach tab 都需要）
   useEffect(() => {
-    if (selectedCompany && (activeTab === 'contacts' || activeTab === 'outreach')) {
-      if (contacts.length === 0) {
-        setIsLoadingContacts(true);
-        getProspectContacts(selectedCompany.id)
-          .then(setContacts)
-          .catch(() => setContacts([]))
-          .finally(() => setIsLoadingContacts(false));
-      }
+    if (!selectedCompanyId || (activeTab !== 'contacts' && activeTab !== 'outreach') || contacts.length > 0) {
+      return;
     }
-  }, [selectedCompany?.id, activeTab]);
+
+    setIsLoadingContacts(true);
+    getProspectContacts(selectedCompanyId)
+      .then(setContacts)
+      .catch(() => setContacts([]))
+      .finally(() => setIsLoadingContacts(false));
+  }, [selectedCompanyId, activeTab, contacts.length]);
 
   // 加载外联历史与营销内容建议 (Task #30 & P4)
   useEffect(() => {
-    if (selectedCompany && activeTab === 'outreach') {
-      const loadOutreachData = async () => {
-        setIsLoadingHistory(true);
-        setIsLoadingSuggestions(true);
-        try {
-          const [hist, suggestions] = await Promise.all([
-            getCompanyOutreachHistory(selectedCompany.id),
-            suggestLinksForProspect(selectedCompany.id)
-          ]);
-          setOutreachHistory(hist.records || []);
-          setSuggestedContents(suggestions || []);
-        } catch (err) {
-          console.error('Failed to load outreach data:', err);
-        } finally {
-          setIsLoadingHistory(false);
-          setIsLoadingSuggestions(false);
-        }
-      };
-      loadOutreachData();
+    if (!selectedCompanyId || activeTab !== 'outreach') {
+      return;
     }
-  }, [selectedCompany?.id, activeTab]);
+
+    const loadOutreachData = async () => {
+      setIsLoadingHistory(true);
+      setIsLoadingSuggestions(true);
+      try {
+        const [hist, suggestions] = await Promise.all([
+          getCompanyOutreachHistory(selectedCompanyId),
+          suggestLinksForProspect(selectedCompanyId)
+        ]);
+        setOutreachHistory(hist.records || []);
+        setSuggestedContents(suggestions || []);
+      } catch (err) {
+        console.error('Failed to load outreach data:', err);
+      } finally {
+        setIsLoadingHistory(false);
+        setIsLoadingSuggestions(false);
+      }
+    };
+
+    void loadOutreachData();
+  }, [selectedCompanyId, activeTab]);
 
   // 加载背调简报（懒加载）
   useEffect(() => {
-    if (selectedCompany && activeTab === 'dossier') {
-      getLatestProspectDossier(selectedCompany.id)
-        .then(setDossierData)
-        .catch(() => setDossierData(null));
+    if (!selectedCompanyId || activeTab !== 'dossier') {
+      return;
     }
-  }, [selectedCompany?.id, activeTab]);
+
+    getLatestProspectDossier(selectedCompanyId)
+      .then(setDossierData)
+      .catch(() => setDossierData(null));
+  }, [selectedCompanyId, activeTab]);
 
   // 加载已保存的外联包 (Task #130)
   useEffect(() => {
-    if (selectedCompany && activeTab === 'outreach' && !outreachPack && !isGenerating) {
-      getSavedOutreachArtifacts(selectedCompany.id)
-        .then(res => {
-          if (res.success && res.artifacts) {
-            setOutreachPack(res.artifacts as unknown as OutreachPackContent);
-          }
-        });
+    if (!selectedCompanyId || activeTab !== 'outreach' || outreachPack || isGenerating) {
+      return;
     }
-  }, [selectedCompany?.id, activeTab, outreachPack, isGenerating]);
+
+    getSavedOutreachArtifacts(selectedCompanyId).then((res) => {
+      const latestArtifact = normalizeOutreachArtifacts(
+        (res.success ? res.artifacts : null) as ProspectCompanyData['outreachArtifacts']
+      )?.[0] ?? null;
+
+      if (latestArtifact) {
+        setOutreachPack(latestArtifact);
+      }
+    });
+  }, [selectedCompanyId, activeTab, outreachPack, isGenerating]);
 
   // 联系人 CRUD 操作
   const handleCreateContact = async () => {
@@ -397,7 +482,7 @@ export default function RadarProspectsPage() {
   };
 
   // 生成外联包
-  const handleGenerateOutreach = async (company: ProspectCompanyData) => {
+  const handleGenerateOutreach = async (company: ProspectCompanyView) => {
     setIsGenerating(true);
     setError(null);
     setActiveTab('outreach');
@@ -432,13 +517,11 @@ export default function RadarProspectsPage() {
         await saveOutreachArtifacts(company.id, pack);
 
         // Task #124: 更新本地状态以立即显示版本历史
-        setSelectedCompany((prev: any) => {
+        setSelectedCompany((prev) => {
           if (!prev || prev.id !== company.id) return prev;
-          const current = prev.outreachArtifacts || [];
-          const history = Array.isArray(current) ? current : [current];
           return {
             ...prev,
-            outreachArtifacts: [newEntry, ...history].slice(0, 10)
+            outreachArtifacts: [newEntry, ...(prev.outreachArtifacts || [])].slice(0, 10)
           };
         });
       }
@@ -943,14 +1026,8 @@ export default function RadarProspectsPage() {
                     onClick={() => {
                       setSelectedCompany(isSelected ? null : company);
                       // Task #124: 加载已保存的外联工具包
-                      const artifacts = company.outreachArtifacts;
-                      if (Array.isArray(artifacts) && artifacts.length > 0) {
-                        setOutreachPack(artifacts[0] as any); // Load latest
-                      } else if (artifacts && !Array.isArray(artifacts)) {
-                        setOutreachPack(artifacts as any); // Legacy support
-                      } else {
-                        setOutreachPack(null);
-                      }
+                      const latestArtifact = company.outreachArtifacts?.[0] ?? null;
+                      setOutreachPack(isSelected ? null : latestArtifact);
                       setActiveTab('info');
                       setContacts([]);
                       setDossierData(null);
@@ -1108,18 +1185,18 @@ export default function RadarProspectsPage() {
                   </div>
 
                   {/* Task #140: AI Matching Insights */}
-                  {(selectedCompany.matchReasons || (selectedCompany as any).approachAngle) && (
+                  {(selectedMatchReasons.length > 0 || selectedCompany.approachAngle) && (
                     <div className="mb-6 p-4 bg-[#0B1220] rounded-xl border border-[#D4AF37]/30 shadow-[0_0_15px_rgba(212,175,55,0.05)]">
                       <div className="flex items-center gap-2 mb-3">
                         <Sparkles size={14} className="text-[#D4AF37]" />
                         <span className="text-xs font-bold text-[#D4AF37] uppercase tracking-wider">AI 匹配洞察</span>
                       </div>
                       
-                      {selectedCompany.matchReasons && Array.isArray(selectedCompany.matchReasons) && (selectedCompany.matchReasons.length > 0) && (
+                      {selectedMatchReasons.length > 0 && (
                         <div className="space-y-2 mb-4">
                           <p className="text-[10px] text-slate-400 font-medium uppercase tracking-tight">核心匹配理由:</p>
                           <div className="flex flex-wrap gap-2">
-                            {(selectedCompany.matchReasons as string[]).map((reason, idx) => (
+                            {selectedMatchReasons.map((reason, idx) => (
                               <div key={idx} className="flex items-center gap-1.5 bg-[#D4AF37]/10 border border-[#D4AF37]/20 px-2 py-1 rounded-md">
                                 <Check size={10} className="text-[#D4AF37]" />
                                 <span className="text-xs text-slate-200">{reason}</span>
@@ -1129,11 +1206,11 @@ export default function RadarProspectsPage() {
                         </div>
                       )}
 
-                      {(selectedCompany as any).approachAngle && (
+                      {selectedCompany.approachAngle && (
                         <div className="pt-3 border-t border-white/5">
                           <p className="text-[10px] text-slate-400 font-medium uppercase tracking-tight mb-1.5">建议切入点:</p>
                           <p className="text-xs text-slate-300 leading-relaxed italic">
-                            &ldquo;{(selectedCompany as any).approachAngle}&rdquo;
+                            &ldquo;{selectedCompany.approachAngle}&rdquo;
                           </p>
                         </div>
                       )}
@@ -1410,11 +1487,11 @@ export default function RadarProspectsPage() {
                 /* Outreach Tab */
                 <div className="space-y-4">
                   {/* Task #124: Version Selector */}
-                  {Array.isArray(selectedCompany.outreachArtifacts) && (selectedCompany.outreachArtifacts as any[]).length > 1 && (
+                  {selectedOutreachArtifacts.length > 1 && (
                     <div className="flex items-center gap-2 mb-4 p-2 bg-[#D4AF37]/5 rounded-xl border border-[#D4AF37]/20">
                       <span className="text-[10px] text-slate-500 font-medium uppercase tracking-wider ml-2">历史方案:</span>
                       <div className="flex gap-1 overflow-x-auto no-scrollbar">
-                        {(selectedCompany.outreachArtifacts as any[]).map((entry, idx) => (
+                        {selectedOutreachArtifacts.map((entry, idx) => (
                           <button
                             key={idx}
                             onClick={() => setOutreachPack(entry)}
@@ -1424,7 +1501,7 @@ export default function RadarProspectsPage() {
                                 : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
                             }`}
                           >
-                            版本 {entry.version || (selectedCompany.outreachArtifacts as any[]).length - idx} ({new Date(entry.timestamp).toLocaleDateString()})
+                            版本 {entry.version || selectedOutreachArtifacts.length - idx} ({new Date(entry.timestamp || Date.now()).toLocaleDateString()})
                           </button>
                         ))}
                       </div>

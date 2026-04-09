@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Bell, Check, Loader2, Sparkles, AlertCircle, ExternalLink } from "lucide-react";
+import { Bell, Loader2, Sparkles, AlertCircle, ExternalLink } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -15,8 +15,18 @@ import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import Link from "next/link";
 
+type NotificationItem = {
+  id: string;
+  type: string;
+  title: string;
+  body: string;
+  actionUrl: string | null;
+  readAt: Date | null;
+  createdAt: Date;
+};
+
 export function NotificationBell() {
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 

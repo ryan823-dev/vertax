@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, ExternalLink } from "lucide-react";
+import { Plus } from "lucide-react";
 import { createTenantWithAdmin } from "@/actions/admin";
 
 function generateSlug(name: string): string {

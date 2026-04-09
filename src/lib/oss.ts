@@ -117,7 +117,7 @@ export async function generatePresignedGetUrl(
 export async function getThumbnailUrl(
   storageKey: string,
   fileCategory: FileCategory,
-  mimeType: string
+  _mimeType: string
 ): Promise<string | null> {
   const client = getOSSClient();
   

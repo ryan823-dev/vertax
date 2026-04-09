@@ -2,17 +2,19 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import { Check, ArrowRight, Building2, Rocket, Handshake } from 'lucide-react';
 import { BreadcrumbSchema, breadcrumbPaths } from '@/components/seo/breadcrumb-schema';
+import { ArticleSchema } from '@/components/seo/article-schema';
 import { colors } from '@/lib/design-tokens';
-import { MarketingNav, MarketingFooter, SectionHeader, Card, GoldButton, OutlineButton, GoldBadge } from '@/components/marketing/design-system';
+import { MarketingNav, MarketingFooter, SectionHeader, Card, GoldButton, OutlineButton } from '@/components/marketing/design-system';
 
 export const metadata: Metadata = {
-  title: '合作方案 - VertaX GTM Intelligence OS',
-  description: 'VertaX 提供标准化的企业级 GTM 系统，采用商务洽谈制。根据企业规模、行业特性、部署需求定制方案。',
-  keywords: ['企业版 GTM', '定制方案', '商务洽谈', '私有部署', '企业获客系统'],
+  title: '出海获客平台价格 - VertaX 合作方案 | VertaX',
+  description: '出海获客平台一般多少钱？VertaX 企业版首年投入约 20 万元，采用商务洽谈制，根据企业规模和需求定制方案。了解三种服务层级及定价说明。',
+  keywords: ['出海获客平台价格', '出海获客多少钱', '企业获客系统报价', 'GTM系统定价', 'VertaX价格'],
   openGraph: {
-    title: '合作方案 - VertaX GTM Intelligence OS',
-    description: '企业级 GTM 系统，采用商务洽谈制。根据企业需求定制方案与报价。',
-    type: 'website',
+    title: '出海获客平台价格 - VertaX 合作方案',
+    description: '企业级出海获客平台定价说明。VertaX 采用商务洽谈制，企业版首年约 20 万元。',
+    type: 'article',
+    url: 'https://vertax.top/pricing',
   },
 };
 
@@ -102,9 +104,61 @@ const processSteps = [
 ];
 
 export default function PricingPage() {
+  const lastUpdated = "2026-04-09";
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "出海获客平台一般多少钱？",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "出海获客平台的价格因功能范围和服务层级而异。VertaX 企业版首年投入约 20 万元，包含知识引擎、获客雷达、AI内容生成等六大模块。快速上车版价格更低，适合初次尝试的企业；企业定制版根据需求单独报价。"
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "出海获客平台为什么采用商务洽谈制？",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "因为每家企业的行业特性、目标市场、团队规模、合规需求都不同，需要定制配置方案。标准化订阅难以满足不同企业的个性化需求，商务洽谈能确保方案与报价匹配企业实际情况。"
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "VertaX 和其他出海获客平台的价格差异在哪里？",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "VertaX 是完整的 GTM 智能操作系统，包含知识引擎、获客雷达、内容生成、社交媒体自动化等六大模块，不是单一工具。价格反映的是系统性获客能力而非单点功能。相比组合多个工具的总成本，VertaX 通常更经济。"
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "出海获客平台有隐藏费用吗？",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "VertaX 报价透明，包含平台使用、技术支持、培训服务。可能的额外费用：超出额度的线索挖掘或内容生成、私有部署的运维成本、定制开发需求。所有费用在签约前明确说明。"
+        }
+      }
+    ]
+  };
+
   return (
     <>
       <BreadcrumbSchema items={breadcrumbPaths.pricing} />
+      <ArticleSchema
+        headline="出海获客平台一般多少钱？"
+        description="出海获客平台的价格因功能范围和服务层级而异。VertaX 企业版首年投入约 20 万元，采用商务洽谈制，根据企业规模和需求定制方案。"
+        url="https://vertax.top/pricing"
+        datePublished="2025-01-15"
+        dateModified={lastUpdated}
+        keywords={['出海获客平台价格', '出海获客多少钱', '企业获客系统报价']}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
       <div className="min-h-screen" style={{ background: colors.bg.primary, fontFamily: '-apple-system, "PingFang SC", "Microsoft YaHei", sans-serif' }}>
         <MarketingNav />
 

@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowRight, Target, Brain, Zap, Globe, Shield, Users } from 'lucide-react';
+import { ArrowRight, Target, Brain, Globe, Shield, Users } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: '关于我们 - VertaX GTM Intelligence OS',

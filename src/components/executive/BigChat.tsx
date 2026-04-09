@@ -7,7 +7,6 @@ import {
   Sparkles, 
   Loader2, 
   ChevronDown,
-  ChevronRight,
   ExternalLink,
   FileText,
   CheckCircle2,

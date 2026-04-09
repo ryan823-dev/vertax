@@ -17,7 +17,6 @@ import {
   Layers,
   CheckCircle2,
   ArrowLeft,
-  Check,
   Square,
   CheckSquare,
   Zap,

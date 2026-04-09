@@ -31,7 +31,6 @@ import {
   HardDrive,
   FileType,
   Folder,
-  Play,
 } from "lucide-react";
 import {
   formatFileSize,
@@ -39,7 +38,6 @@ import {
   getFileCategoryColor,
   isPreviewable,
 } from "@/lib/utils/file-utils";
-import { cn } from "@/lib/utils";
 import type {
   AssetWithUrls,
   UpdateAssetInput,

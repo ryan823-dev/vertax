@@ -6,8 +6,6 @@ import {
   Building2,
   Users,
   Activity,
-  Plus,
-  ExternalLink,
   Search,
   ChevronRight,
 } from "lucide-react";

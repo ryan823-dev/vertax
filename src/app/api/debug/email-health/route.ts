@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
     try {
       const startTime = Date.now();
       // Resend 没有专门的 health check 端点，尝试获取域名列表
-      const { data, error } = await client.domains.list();
+      const { data: _data, error } = await client.domains.list();
       latency = Date.now() - startTime;
 
       if (error) {
@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
       } else {
         healthStatus = 'healthy';
       }
-    } catch (e) {
+    } catch {
       healthStatus = 'error';
     }
   }

@@ -2,7 +2,7 @@
 
 import { auth } from "@/lib/auth";
 import { executeSkill as runSkill, executeSkillChain } from "@/lib/skills/runner";
-import { getSkill, listSkills, ensureSkillsRegistered, SKILL_NAMES } from "@/lib/skills/registry";
+import { getSkill, listSkills, ensureSkillsRegistered } from "@/lib/skills/registry";
 import type { SkillRequest, SkillResponse, SkillEngine } from "@/lib/skills/types";
 
 // ==================== Session Helper ====================
