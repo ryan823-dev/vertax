@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { analyzeCompanyProfile } from "@/lib/ai-client";
 import { extractTextFromAsset } from "@/lib/utils/text-extract";
+import { normalizeTargetRegions } from "@/lib/regions";
 
 // ==================== 认证辅助 ====================
 
@@ -50,6 +51,13 @@ export interface CompanyProfileData {
   createdAt: Date;
   updatedAt: Date;
 }
+
+type RadarSearchProfileSyncBridge = {
+  updateMany(args: {
+    where: Record<string, unknown>;
+    data: Record<string, unknown>;
+  }): Promise<unknown>;
+};
 
 // ==================== 获取企业能力画像 ====================
 
@@ -308,13 +316,17 @@ export async function updateCompanyProfile(
   revalidatePath("/customer/knowledge/company");
   revalidatePath("/customer/radar");
 
+  const radarSearchProfile = (
+    db as typeof db & { radarSearchProfile: RadarSearchProfileSyncBridge }
+  ).radarSearchProfile;
+
   // Sync targetIndustries -> RadarSearchProfile.industryCodes (non-blocking)
   if (data.targetIndustries !== undefined) {
     const industries = (data.targetIndustries as Array<{ name?: string } | string>)
       .map((i) => (typeof i === 'string' ? i : i.name ?? ''))
       .filter(Boolean);
     if (industries.length) {
-      (db as any).radarSearchProfile.updateMany({
+      radarSearchProfile.updateMany({
         where: { tenantId: session.user.tenantId, industryCodes: { isEmpty: true } },
         data: { industryCodes: industries },
       }).catch(() => { /* non-critical */ });
@@ -323,11 +335,9 @@ export async function updateCompanyProfile(
 
   // Sync targetRegions -> RadarSearchProfile.targetRegions (Task #132)
   if (data.targetRegions !== undefined) {
-    const regions = (data.targetRegions as Array<{ name?: string } | string>)
-      .map((i) => (typeof i === 'string' ? i : i.name ?? ''))
-      .filter(Boolean);
+    const regions = normalizeTargetRegions(data.targetRegions);
     if (regions.length) {
-      (db as any).radarSearchProfile.updateMany({
+      radarSearchProfile.updateMany({
         where: { tenantId: session.user.tenantId, targetRegions: { isEmpty: true } },
         data: { targetRegions: regions },
       }).catch(() => { /* non-critical */ });

@@ -13,14 +13,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { 
-  Upload, FileText, Loader2, Sparkles, CheckCircle2,
+  Upload, Loader2, Sparkles, CheckCircle2,
   Building2, Target, Award, Zap, TrendingUp, Globe2,
-  RefreshCw, AlertCircle, Clock, Pencil, Check, X,
-  Lock, MessageSquarePlus, BarChart3, Radar, ArrowRight,
+  AlertCircle, Clock, Pencil, X,
+  Lock, BarChart3, Radar, ArrowRight,
   Users, FileStack,
 } from 'lucide-react';
 import { 
-  getCompanyProfile, getAnalyzableAssets, analyzeAssets,
+  getCompanyProfile, getAnalyzableAssets,
   updateCompanyProfile, type CompanyProfileData 
 } from '@/actions/knowledge';
 import { getKnowledgePipelineStatus } from '@/actions/pipeline';
@@ -28,7 +28,7 @@ import { getKnowledgePipelineStatus } from '@/actions/pipeline';
 import { toast } from 'sonner';
 import { getLatestVersion, createVersion } from '@/actions/versions';
 import { CollaborativeShell } from '@/components/collaboration';
-import { EngineHeader, EmptyStateGuide, NextStepBanner } from '@/components/knowledge/engine-header';
+import { EngineHeader, NextStepBanner } from '@/components/knowledge/engine-header';
 import type { AnchorSpec, ArtifactStatusValue } from '@/types/artifact';
 import type { PipelineStatus } from '@/lib/knowledge/pipeline';
 
@@ -76,7 +76,7 @@ export default function CompanyKnowledgePage() {
   // Collaboration states
   const [currentVersionId, setCurrentVersionId] = useState<string | null>(null);
   const [isReadOnly, setIsReadOnly] = useState(false);
-  const [activeAnchor, setActiveAnchor] = useState<AnchorSpec | null>(null);
+  const [activeAnchor] = useState<AnchorSpec | null>(null);
   const [highlightedSection, setHighlightedSection] = useState<string | null>(null);
   
   // Sync states
@@ -727,13 +727,13 @@ export default function CompanyKnowledgePage() {
                     </div>
                   </div>
                    {/* 已探索过的市场记录 */}
-                   {(profile as Record<string, unknown>).exploredRegions && ((profile as Record<string, unknown>).exploredRegions as Array<{ region: string; countries?: string[]; rationale?: string; exploredAt?: string }>).length > 0 && (
+                   {profile.exploredRegions && profile.exploredRegions.length > 0 && (
                      <details className="p-3 bg-[#F5F0E5] rounded-xl">
                        <summary className="text-xs text-slate-500 cursor-pointer flex items-center gap-1">
-                         <Globe2 size={12} />已探索的市场记录（{((profile as Record<string, unknown>).exploredRegions as Array<unknown>).length} 个区域）
+                         <Globe2 size={12} />已探索的市场记录（{profile.exploredRegions.length} 个区域）
                        </summary>
                        <div className="space-y-2 mt-2">
-                         {((profile as Record<string, unknown>).exploredRegions as Array<{ region: string; countries?: string[]; rationale?: string; exploredAt?: string }>).map((r, i) => (
+                         {profile.exploredRegions.map((r, i) => (
                            <div key={i} className="p-2 bg-[#FFFCF7] rounded border border-[#E8E0D0] opacity-80">
                              <div className="flex items-center gap-1.5 mb-1">
                                <span className="font-medium text-xs text-[#0B1220]">{r.region}</span>

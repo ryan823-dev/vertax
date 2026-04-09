@@ -64,7 +64,7 @@ export interface PublisherAdapter {
 
 // ==================== WebsiteConfig siteType ====================
 
-export type SiteType = "supabase" | "nextjs" | "wordpress" | "rest";
+export type SiteType = "supabase" | "nextjs" | "wordpress" | "rest" | "custom";
 
 // ==================== 工厂配置 ====================
 

@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { chatCompletion } from "@/lib/ai-client";
 import { logActivity, ACTIVITY_ACTIONS, EVENT_CATEGORIES } from "@/lib/utils/activity-logger";
 import { requireDecider } from "@/lib/permissions";
+import { normalizeTargetRegions } from "@/lib/regions";
 import type {
   ICPSegmentData,
   CreateICPSegmentInput,
@@ -207,7 +208,7 @@ export async function generatePersonasFromProfile(
 
   const buyerPersonas = (profile.buyerPersonas as Array<{ role: string; title: string; concerns: string[] }>) || [];
   const targetIndustries = (profile.targetIndustries as string[]) || [];
-  const targetRegions = (profile.targetRegions as Array<{ region: string; countries: string[]; rationale: string }> | string[]) || [];
+  const targetRegions = normalizeTargetRegions(profile.targetRegions);
 
   // 企业档案中没有 buyerPersonas → 让前端走 AI fallback
   if (buyerPersonas.length === 0 && targetIndustries.length === 0) {

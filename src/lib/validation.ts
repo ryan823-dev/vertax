@@ -91,7 +91,7 @@ export const radarQuerySchema = z.object({
     nextPage: z.number().optional(),
     nextPageToken: z.string().optional(),
   }).optional(),
-  maxResults: z.number().int().min(1).max(2000).optional(),
+  maxResults: z.number().int().min(1).max(500).optional(),
 });
 
 export const radarCandidateCreateSchema = z.object({

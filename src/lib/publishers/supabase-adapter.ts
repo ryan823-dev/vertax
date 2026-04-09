@@ -132,7 +132,11 @@ export function createPublisherAdapter(config: PublisherAdapterConfig): Publishe
       });
     }
 
+    case "custom": {
+      throw new Error("Website publishing is not configured yet. Please choose a supported siteType and complete the adapter settings.");
+    }
+
     default:
-      throw new Error(`Unsupported siteType: "${config.siteType}". Valid values: supabase | nextjs | wordpress | rest`);
+      throw new Error(`Unsupported siteType: "${config.siteType}". Valid values: supabase | nextjs | wordpress | rest | custom`);
   }
 }

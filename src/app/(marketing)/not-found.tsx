@@ -52,7 +52,7 @@ export default function NotFound() {
           <div className="grid grid-cols-2 gap-4 mb-8">
             <Link
               href="/"
-              className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 hover:border-cyan-500/20 transition-colors text-left"
+              className="bg-[#1A1A1A] border border-white/[0.06] rounded-xl p-4 hover:border-cyan-500/20 transition-colors text-left"
             >
               <Home className="w-5 h-5 text-cyan-400 mb-2" />
               <h3 className="text-sm font-semibold mb-1">返回首页</h3>
@@ -60,7 +60,7 @@ export default function NotFound() {
             </Link>
             <Link
               href="/features"
-              className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 hover:border-cyan-500/20 transition-colors text-left"
+              className="bg-[#1A1A1A] border border-white/[0.06] rounded-xl p-4 hover:border-cyan-500/20 transition-colors text-left"
             >
               <Search className="w-5 h-5 text-cyan-400 mb-2" />
               <h3 className="text-sm font-semibold mb-1">产品功能</h3>
@@ -68,7 +68,7 @@ export default function NotFound() {
             </Link>
             <Link
               href="/faq"
-              className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 hover:border-cyan-500/20 transition-colors text-left"
+              className="bg-[#1A1A1A] border border-white/[0.06] rounded-xl p-4 hover:border-cyan-500/20 transition-colors text-left"
             >
               <HelpCircle className="w-5 h-5 text-cyan-400 mb-2" />
               <h3 className="text-sm font-semibold mb-1">常见问题</h3>
@@ -76,7 +76,7 @@ export default function NotFound() {
             </Link>
             <Link
               href="/blog"
-              className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 hover:border-cyan-500/20 transition-colors text-left"
+              className="bg-[#1A1A1A] border border-white/[0.06] rounded-xl p-4 hover:border-cyan-500/20 transition-colors text-left"
             >
               <FileText className="w-5 h-5 text-cyan-400 mb-2" />
               <h3 className="text-sm font-semibold mb-1">博客文章</h3>
@@ -98,10 +98,12 @@ export default function NotFound() {
       <footer className="border-t border-white/5 py-6 px-6">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-cyan-500 rounded flex items-center justify-center">
-              <span className="text-black font-bold text-xs">V</span>
-            </div>
-            <span className="text-sm font-medium">VertaX</span>
+            <Link href="/" className="flex items-center gap-2">
+              <div className="w-6 h-6 bg-cyan-500 rounded flex items-center justify-center">
+                <span className="text-black font-bold text-xs">V</span>
+              </div>
+              <span className="text-sm font-medium">VertaX</span>
+            </Link>
             <span className="text-xs text-gray-600 ml-2">© {new Date().getFullYear()} VERTAX LIMITED</span>
           </div>
           <div className="flex items-center gap-6 text-xs text-gray-500">

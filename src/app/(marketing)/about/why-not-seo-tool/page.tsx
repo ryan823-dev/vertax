@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import Link from 'next/link';
 import { ArrowRight, Search, Target, Zap, Brain, Globe, X, Check, TrendingUp } from 'lucide-react';
 import { BreadcrumbSchema, breadcrumbPaths } from '@/components/seo/breadcrumb-schema';
 
@@ -88,14 +89,14 @@ export default function WhyNotSeoToolPage() {
         {/* Navigation */}
         <nav className="sticky top-0 z-50 border-b border-white/5 bg-[#0a0a14]/80 backdrop-blur-md">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2">
             <div className="w-7 h-7 bg-cyan-500 rounded-md flex items-center justify-center">
               <span className="text-black font-bold text-xs">V</span>
             </div>
             <span className="text-lg font-bold tracking-tight">VertaX</span>
-          </div>
+          </Link>
           <div className="flex items-center gap-4 text-sm">
-            <a href="/" className="text-gray-400 hover:text-white transition-colors">首页</a>
+            <Link href="/" className="text-gray-400 hover:text-white transition-colors">首页</Link>
             <a href="/features" className="text-gray-400 hover:text-white transition-colors">功能</a>
             <a href="/about" className="text-gray-400 hover:text-white transition-colors">关于</a>
             <a href="/contact" className="bg-cyan-500 hover:bg-cyan-400 text-black font-semibold px-4 py-1.5 rounded-lg transition-colors">
@@ -122,7 +123,7 @@ export default function WhyNotSeoToolPage() {
       </header>
 
       {/* Core Statement */}
-      <section className="py-12 px-6 bg-white/[0.02]">
+      <section className="py-12 px-6 bg-[#111111]">
         <div className="max-w-3xl mx-auto">
           <div className="bg-cyan-500/5 border border-cyan-500/10 rounded-xl p-8">
             <h2 className="text-xl font-bold mb-4 text-cyan-400">核心区别</h2>
@@ -141,7 +142,7 @@ export default function WhyNotSeoToolPage() {
           <h2 className="text-2xl font-bold mb-8">四大本质区别</h2>
           <div className="space-y-6">
             {keyDifferences.map(({ icon: Icon, title, description }) => (
-              <div key={title} className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-6 hover:border-cyan-500/20 transition-colors">
+              <div key={title} className="bg-[#1A1A1A] border border-white/[0.06] rounded-xl p-6 hover:border-cyan-500/20 transition-colors">
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 bg-cyan-500/10 rounded-lg flex items-center justify-center shrink-0">
                     <Icon className="w-5 h-5 text-cyan-400" />
@@ -158,7 +159,7 @@ export default function WhyNotSeoToolPage() {
       </section>
 
       {/* Comparison Table */}
-      <section className="py-16 px-6 bg-white/[0.02]">
+      <section className="py-16 px-6 bg-[#111111]">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-2xl font-bold mb-8 text-center">详细对比</h2>
           <div className="overflow-x-auto">
@@ -199,7 +200,7 @@ export default function WhyNotSeoToolPage() {
         <div className="max-w-3xl mx-auto">
           <h2 className="text-2xl font-bold mb-6">SEO 与 GEO 的区别</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-6">
+            <div className="bg-[#1A1A1A] border border-white/[0.06] rounded-xl p-6">
               <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
                 <Search className="w-5 h-5 text-gray-400" />
                 SEO（搜索引擎优化）
@@ -230,7 +231,7 @@ export default function WhyNotSeoToolPage() {
               </ul>
             </div>
           </div>
-          <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-6">
+          <div className="bg-[#1A1A1A] border border-white/[0.06] rounded-xl p-6">
             <p className="text-gray-400 text-sm leading-relaxed">
               <span className="text-cyan-400 font-medium">VertaX 采用 SEO + GEO 双策略</span>：既优化传统搜索引擎排名，也优化 AI 搜索推荐逻辑。当用户在 ChatGPT 问「有什么好的出海获客工具」时，VertaX 有更大的概率被 AI 推荐和引用。
             </p>
@@ -239,11 +240,11 @@ export default function WhyNotSeoToolPage() {
       </section>
 
       {/* Who Should Choose What */}
-      <section className="py-16 px-6 bg-white/[0.02]">
+      <section className="py-16 px-6 bg-[#111111]">
         <div className="max-w-3xl mx-auto">
           <h2 className="text-2xl font-bold mb-8">选哪个？</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-6">
+            <div className="bg-[#1A1A1A] border border-white/[0.06] rounded-xl p-6">
               <h3 className="text-base font-semibold mb-4 text-gray-300">适合传统 SEO 工具的企业：</h3>
               <ul className="space-y-2 text-sm text-gray-400">
                 <li className="flex items-start gap-2">
@@ -319,10 +320,12 @@ export default function WhyNotSeoToolPage() {
       <footer className="border-t border-white/5 py-10 px-6">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-cyan-500 rounded flex items-center justify-center">
-              <span className="text-black font-bold text-xs">V</span>
-            </div>
-            <span className="text-sm font-medium">VertaX</span>
+            <Link href="/" className="flex items-center gap-2">
+              <div className="w-6 h-6 bg-cyan-500 rounded flex items-center justify-center">
+                <span className="text-black font-bold text-xs">V</span>
+              </div>
+              <span className="text-sm font-medium">VertaX</span>
+            </Link>
             <span className="text-xs text-gray-600 ml-2">© {new Date().getFullYear()} VERTAX LIMITED</span>
           </div>
           <div className="flex items-center gap-6 text-xs text-gray-500">

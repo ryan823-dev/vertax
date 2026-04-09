@@ -35,6 +35,8 @@ export type AIBriefing = {
 export type TenantInfo = {
   name: string;
   companyName?: string;
+  socialConnectedCount: number;
+  isPublishingSetupPending: boolean;
 };
 
 // ===================== Get Dashboard Stats =====================
@@ -288,14 +290,24 @@ export async function getTenantInfo(): Promise<TenantInfo | null> {
 
   const tenantId = user.tenantId;
 
-  const profile = await prisma.companyProfile.findUnique({
-    where: { tenantId },
-    select: { companyName: true },
-  });
+  const [profile, socialConnectedCount] = await Promise.all([
+    prisma.companyProfile.findUnique({
+      where: { tenantId },
+      select: { companyName: true },
+    }),
+    prisma.socialAccount.count({
+      where: {
+        tenantId,
+        isActive: true,
+      },
+    }),
+  ]);
 
   return {
     name: user.tenant.name,
     companyName: profile?.companyName ?? undefined,
+    socialConnectedCount,
+    isPublishingSetupPending: socialConnectedCount === 0,
   };
 }
 

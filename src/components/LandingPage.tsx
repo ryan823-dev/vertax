@@ -1,14 +1,15 @@
 'use client';
 
+import Image from 'next/image';
+import Link from 'next/link';
 import React, { useState } from 'react';
 import {
   ArrowRight, X, Target, TrendingUp, Send,
-  Layers, Brain, Megaphone, Radar, Gauge,
-  ChevronRight, Zap, Shield, BarChart3,
-  Rocket, Building2, CheckCircle2, Users,
-  BookOpen, Search, MessageCircle, Database,
-  BarChart, Globe, DollarSign, Clock, AlertTriangle, Menu, Award, TrendingUp as TrendUp,
-  Cpu, Sparkles, Activity
+  Brain, Megaphone, Radar,
+  Shield, BarChart3,
+  Building2, CheckCircle2, Users,
+  Search, MessageCircle, Database,
+  BarChart, Globe, AlertTriangle, Menu, Sparkles
 } from 'lucide-react';
 import { colors, shadows, gradients } from '@/lib/design-tokens';
 
@@ -103,7 +104,7 @@ export default function LandingPage() {
       >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           {/* Logo */}
-          <a href="/" className="flex items-center gap-3">
+          <Link href="/" className="flex items-center gap-3">
             <div
               className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black"
               style={{
@@ -120,7 +121,7 @@ export default function LandingPage() {
                 Intelligence OS
               </span>
             </div>
-          </a>
+          </Link>
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-8 text-sm">
@@ -706,7 +707,7 @@ export default function LandingPage() {
           <div className="hidden md:flex items-start justify-between gap-8">
             {/* Logo & Copyright */}
             <div className="flex flex-col gap-4">
-              <a href="/" className="flex items-center gap-3">
+              <Link href="/" className="flex items-center gap-3">
                 <div
                   className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-black"
                   style={{
@@ -717,7 +718,7 @@ export default function LandingPage() {
                   V
                 </div>
                 <span className="text-base font-bold text-white">VertaX</span>
-              </a>
+              </Link>
               <p className="text-xs text-gray-600">&copy; {new Date().getFullYear()} VERTAX LIMITED</p>
             </div>
 
@@ -749,11 +750,11 @@ export default function LandingPage() {
             {/* QR Codes */}
             <div className="flex items-center gap-4">
               <div className="flex flex-col items-center gap-1">
-                <img src="/wechat-qr.jpg" alt="微信公众号" className="w-16 h-16 rounded-lg" />
+                <Image src="/wechat-qr.jpg" alt="微信公众号" width={64} height={64} className="w-16 h-16 rounded-lg" />
                 <span className="text-[10px] text-gray-600">微信公众号</span>
               </div>
               <div className="flex flex-col items-center gap-1">
-                <img src="/contact-wechat.jpg" alt="业务联系人微信" className="w-16 h-16 rounded-lg" />
+                <Image src="/contact-wechat.jpg" alt="业务联系人微信" width={64} height={64} className="w-16 h-16 rounded-lg" />
                 <span className="text-[10px] text-gray-600">业务联系</span>
               </div>
             </div>
@@ -762,7 +763,7 @@ export default function LandingPage() {
           {/* Mobile Layout */}
           <div className="md:hidden space-y-6">
             <div className="flex items-center justify-between">
-              <a href="/" className="flex items-center gap-2">
+              <Link href="/" className="flex items-center gap-2">
                 <div
                   className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black"
                   style={{
@@ -773,7 +774,7 @@ export default function LandingPage() {
                   V
                 </div>
                 <span className="text-sm font-bold text-white">VertaX</span>
-              </a>
+              </Link>
               <span className="text-xs text-gray-600">&copy; {new Date().getFullYear()} VERTAX LIMITED</span>
             </div>
 
@@ -792,11 +793,11 @@ export default function LandingPage() {
               <span className="text-xs text-gray-500">contact@vertax.top</span>
               <div className="flex items-center gap-3">
                 <div className="flex flex-col items-center gap-1">
-                  <img src="/wechat-qr.jpg" alt="微信公众号" className="w-12 h-12 rounded" />
+                  <Image src="/wechat-qr.jpg" alt="微信公众号" width={48} height={48} className="w-12 h-12 rounded" />
                   <span className="text-[10px] text-gray-600">公众号</span>
                 </div>
                 <div className="flex flex-col items-center gap-1">
-                  <img src="/contact-wechat.jpg" alt="业务联系人微信" className="w-12 h-12 rounded" />
+                  <Image src="/contact-wechat.jpg" alt="业务联系人微信" width={48} height={48} className="w-12 h-12 rounded" />
                   <span className="text-[10px] text-gray-600">业务联系</span>
                 </div>
               </div>

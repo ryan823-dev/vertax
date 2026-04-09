@@ -4,6 +4,7 @@ import { createStreamingResponse } from '@/lib/ai-client';
 import { hasSkill, ensureSkillsRegistered, getSkill } from '@/lib/skills/registry';
 import { loadEvidenceContext } from '@/lib/skills/evidence-loader';
 import { prisma } from '@/lib/prisma';
+import { normalizeTargetRegions } from '@/lib/regions';
 import {
   type SkillDefinition,
   type SkillRequest,
@@ -146,7 +147,7 @@ async function loadCompanyProfile(tenantId: string): Promise<CompanyProfileConte
     scenarios: (profile.scenarios as Array<{ industry: string; scenario: string }>) || [],
     differentiators: (profile.differentiators as Array<{ point: string; description: string }>) || [],
     targetIndustries: (profile.targetIndustries as string[]) || [],
-    targetRegions: (profile.targetRegions as Array<{ region: string; countries: string[]; rationale: string }> | string[]) || [],
+    targetRegions: normalizeTargetRegions(profile.targetRegions),
     buyerPersonas: (profile.buyerPersonas as Array<{ role: string; title: string; concerns: string[] }>) || [],
     painPoints: (profile.painPoints as Array<{ pain: string; howWeHelp: string }>) || [],
     buyingTriggers: (profile.buyingTriggers as string[]) || [],

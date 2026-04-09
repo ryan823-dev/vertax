@@ -27,6 +27,10 @@ export type WebsiteConfigDetail = {
   siteName: string | null;
   url: string | null;
   siteType: string;
+  status: string;
+  statusLabel: string;
+  statusMessage: string;
+  isPublishReady: boolean;
   supabaseUrl: string | null;
   functionName: string | null;
   webhookUrl: string | null;

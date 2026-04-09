@@ -8,14 +8,14 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import {
-  Plus, Trash2, Save, RotateCcw, ChevronDown, ChevronUp,
-  Target, XCircle, CheckCircle, Settings, Info, Sparkles,
-  AlertCircle, Zap, Building2, Globe, Phone, Mail
+  Plus, Trash2, Save, RotateCcw,
+  Target, XCircle, CheckCircle, Sparkles,
+  AlertCircle, Zap, Globe, Phone, Mail
 } from 'lucide-react';
 import {
   getScoringProfile, saveScoringProfile, resetScoringProfile,
-  addPositiveSignal, updatePositiveSignal, deletePositiveSignal,
-  addNegativeSignal, updateNegativeSignal, deleteNegativeSignal,
+  addPositiveSignal, deletePositiveSignal,
+  addNegativeSignal, deleteNegativeSignal,
   updateThresholds
 } from '@/actions/scoring-profile';
 import type { ScoringProfile, ScoringSignal, ExclusionSignal } from '@/types/scoring-profile';
@@ -32,8 +32,6 @@ export function ScoringProfileConfig({ segmentId, onSaveSuccess }: Props) {
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // 编辑状态
-  const [editingSignal, setEditingSignal] = useState<string | null>(null);
   const [showAddPositive, setShowAddPositive] = useState(false);
   const [showAddNegative, setShowAddNegative] = useState(false);
 
@@ -83,7 +81,7 @@ export function ScoringProfileConfig({ segmentId, onSaveSuccess }: Props) {
       } else {
         setMessage({ type: 'error', text: result.message });
       }
-    } catch (e) {
+    } catch {
       setMessage({ type: 'error', text: '保存失败' });
     } finally {
       setIsSaving(false);
@@ -98,7 +96,7 @@ export function ScoringProfileConfig({ segmentId, onSaveSuccess }: Props) {
       await resetScoringProfile(segmentId);
       setProfile(DEFAULT_SCORING_PROFILE);
       setMessage({ type: 'success', text: '已重置为默认配置' });
-    } catch (e) {
+    } catch {
       setMessage({ type: 'error', text: '重置失败' });
     } finally {
       setIsSaving(false);
@@ -120,7 +118,7 @@ export function ScoringProfileConfig({ segmentId, onSaveSuccess }: Props) {
       } else {
         setMessage({ type: 'error', text: result.message });
       }
-    } catch (e) {
+    } catch {
       setMessage({ type: 'error', text: '应用模板失败' });
     } finally {
       setIsSaving(false);
@@ -148,7 +146,7 @@ export function ScoringProfileConfig({ segmentId, onSaveSuccess }: Props) {
       } else {
         setMessage({ type: 'error', text: result.message || '添加失败' });
       }
-    } catch (e) {
+    } catch {
       setMessage({ type: 'error', text: '添加失败' });
     } finally {
       setIsSaving(false);
@@ -166,7 +164,7 @@ export function ScoringProfileConfig({ segmentId, onSaveSuccess }: Props) {
         positiveSignals: prev.positiveSignals.filter(s => s.id !== signalId),
       }));
       setMessage({ type: 'success', text: '信号已删除' });
-    } catch (e) {
+    } catch {
       setMessage({ type: 'error', text: '删除失败' });
     } finally {
       setIsSaving(false);
@@ -194,7 +192,7 @@ export function ScoringProfileConfig({ segmentId, onSaveSuccess }: Props) {
       } else {
         setMessage({ type: 'error', text: result.message || '添加失败' });
       }
-    } catch (e) {
+    } catch {
       setMessage({ type: 'error', text: '添加失败' });
     } finally {
       setIsSaving(false);
@@ -212,7 +210,7 @@ export function ScoringProfileConfig({ segmentId, onSaveSuccess }: Props) {
         negativeSignals: prev.negativeSignals.filter(s => s.id !== signalId),
       }));
       setMessage({ type: 'success', text: '排除规则已删除' });
-    } catch (e) {
+    } catch {
       setMessage({ type: 'error', text: '删除失败' });
     } finally {
       setIsSaving(false);
@@ -228,7 +226,7 @@ export function ScoringProfileConfig({ segmentId, onSaveSuccess }: Props) {
     try {
       await updateThresholds(newThresholds, segmentId);
       setMessage({ type: 'success', text: '阈值已更新' });
-    } catch (e) {
+    } catch {
       setMessage({ type: 'error', text: '更新失败' });
     } finally {
       setIsSaving(false);

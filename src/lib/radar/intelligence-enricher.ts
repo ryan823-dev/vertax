@@ -11,7 +11,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { chatCompletion } from '@/lib/ai-client';
-import type { DeepQualifyCandidate } from './deep-qualify';
+import type { Prisma } from '@prisma/client';
 
 // ==================== 类型定义 ====================
 
@@ -75,6 +75,27 @@ interface SearchResult {
   text?: string;
 }
 
+interface ExaSearchApiResult {
+  title?: string;
+  url?: string;
+  publishedDate?: string;
+  text?: string;
+}
+
+interface ExaSearchApiResponse {
+  results?: ExaSearchApiResult[];
+}
+
+interface TavilySearchApiResult {
+  title?: string;
+  url?: string;
+  content?: string;
+}
+
+interface TavilySearchApiResponse {
+  results?: TavilySearchApiResult[];
+}
+
 /**
  * 统一搜索封装：优先使用 Exa，若失败或无结果则尝试 Tavily
  */
@@ -123,8 +144,8 @@ async function exaSearch(
     });
 
     if (!response.ok) return [];
-    const data = await response.json();
-    return (data.results || []).map((r: any) => ({
+    const data = await response.json() as ExaSearchApiResponse;
+    return (data.results || []).map((r) => ({
       title: r.title,
       url: r.url,
       publishedDate: r.publishedDate,
@@ -158,8 +179,8 @@ async function tavilySearch(query: string, numResults: number = 5): Promise<Sear
     });
 
     if (!response.ok) return [];
-    const data = await response.json();
-    return (data.results || []).map((r: any) => ({
+    const data = await response.json() as TavilySearchApiResponse;
+    return (data.results || []).map((r) => ({
       title: r.title,
       url: r.url,
       text: r.content,
@@ -474,6 +495,11 @@ export async function enrichWithSignalScore(candidateId: string) {
       where: { id: candidateId },
       select: { email: true, phone: true }
     });
+
+    const aiRelevancePayload = {
+      ...enrichment.data,
+      signalScores: signals,
+    } as unknown as Prisma.InputJsonValue;
     
     await prisma.radarCandidate.update({
       where: { id: candidateId },
@@ -482,10 +508,7 @@ export async function enrichWithSignalScore(candidateId: string) {
         // 回填邮箱和电话（如果之前没有）
         ...(foundEmail && !candidate?.email && { email: foundEmail }),
         ...(foundPhone && !candidate?.phone && { phone: foundPhone }),
-        aiRelevance: {
-          ...(enrichment.data as any),
-          signalScores: signals,
-        } as any,
+        aiRelevance: aiRelevancePayload,
       },
     });
   }

@@ -6,9 +6,9 @@ import { ShellVersionTab } from "./shell-version-tab";
 import { ShellCommentsTab } from "./shell-comments-tab";
 import { ShellTasksTab } from "./shell-tasks-tab";
 import { ShellHistoryTab, convertActivityToHistory } from "./shell-history-tab";
-import { getVersionHistory, getVersionDetails } from "@/actions/approval";
+import { getVersionDetails } from "@/actions/approval";
 import { getCommentsByVersion, getTasksByVersion, getEntityActivities, type ActivityEntry } from "@/actions/collaboration";
-import { listVersions, getLatestVersion, revertToVersion } from "@/actions/versions";
+import { listVersions, revertToVersion } from "@/actions/versions";
 import type { EntityType, AnchorSpec, AnchorType, ArtifactStatusValue, CommentData, TaskData } from "@/types/artifact";
 
 type TabId = "versions" | "comments" | "tasks" | "history";
@@ -39,7 +39,7 @@ export function CollaborativeShell({
   entityType,
   entityId,
   versionId: initialVersionId,
-  anchorType,
+  anchorType: _anchorType,
   activeAnchor,
   onAnchorClick,
   onStatusChange,
@@ -98,7 +98,11 @@ export function CollaborativeShell({
 
         // Load activity history for this entity
         const activityList = await getEntityActivities(entityType, entityId);
-        setHistory(convertActivityToHistory(activityList as any));
+        const normalizedActivities = (activityList as ActivityEntry[]).map(({ user, ...activity }) => ({
+          ...activity,
+          user: user ?? undefined,
+        }));
+        setHistory(convertActivityToHistory(normalizedActivities));
       }
     } catch (err) {
       console.error("Failed to load collaboration data:", err);
@@ -154,8 +158,6 @@ export function CollaborativeShell({
       ? "text-slate-500 hover:bg-[#F7F3EA]"
       : "text-slate-400 hover:bg-white/10";
   };
-
-  const currentVersion = versions.find((v) => v.id === currentVersionId);
 
   const tabs: { id: TabId; label: string; icon: typeof GitBranch; count?: number }[] = [
     { id: "versions", label: "版本", icon: GitBranch, count: versions.length },

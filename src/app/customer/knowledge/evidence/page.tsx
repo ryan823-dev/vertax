@@ -7,7 +7,7 @@
  * 交互改进：搜索防抖、删除确认、分页器、错误提示
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
   Plus, Loader2, Search, RefreshCw, ShieldCheck, Sparkles,

@@ -33,7 +33,14 @@ export async function GET(req: NextRequest) {
   const results: Array<{ contentId: string; title: string; tenantId: string; success: boolean; pushed: boolean; notified: boolean; error?: string }> = [];
 
   for (const content of dueContents) {
-    const result = { contentId: content.id, title: content.title, tenantId: content.tenantId, success: false, pushed: false, notified: false };
+    const result: { contentId: string; title: string; tenantId: string; success: boolean; pushed: boolean; notified: boolean; error?: string } = {
+      contentId: content.id,
+      title: content.title,
+      tenantId: content.tenantId,
+      success: false,
+      pushed: false,
+      notified: false,
+    };
 
     try {
       await prisma.seoContent.update({

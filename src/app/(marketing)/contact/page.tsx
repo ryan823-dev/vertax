@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 import { Mail, MapPin, Phone, Send, CheckCircle2 } from 'lucide-react';
 
@@ -33,14 +34,14 @@ export default function ContactPage() {
       {/* Navigation */}
       <nav className="sticky top-0 z-50 border-b border-white/5 bg-[#0a0a14]/80 backdrop-blur-md">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2">
             <div className="w-7 h-7 bg-cyan-500 rounded-md flex items-center justify-center">
               <span className="text-black font-bold text-xs">V</span>
             </div>
             <span className="text-lg font-bold tracking-tight">VertaX</span>
-          </div>
+          </Link>
           <div className="flex items-center gap-4 text-sm">
-            <a href="/" className="text-gray-400 hover:text-white transition-colors">首页</a>
+            <Link href="/" className="text-gray-400 hover:text-white transition-colors">首页</Link>
             <a href="/features" className="text-gray-400 hover:text-white transition-colors">功能</a>
             <a href="/pricing" className="text-gray-400 hover:text-white transition-colors">合作方案</a>
             <a href="/about" className="text-gray-400 hover:text-white transition-colors">关于</a>
@@ -249,7 +250,7 @@ export default function ContactPage() {
             </div>
 
             {/* What to Expect */}
-            <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-6">
+            <div className="bg-[#1A1A1A] border border-white/[0.06] rounded-xl p-6">
               <h3 className="text-base font-bold mb-4">预约后您将获得</h3>
               <ul className="space-y-3">
                 <li className="flex items-start gap-2 text-sm text-gray-300">
@@ -278,10 +279,12 @@ export default function ContactPage() {
       <footer className="border-t border-white/5 py-10 px-6">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-cyan-500 rounded flex items-center justify-center">
-              <span className="text-black font-bold text-xs">V</span>
-            </div>
-            <span className="text-sm font-medium">VertaX</span>
+            <Link href="/" className="flex items-center gap-2">
+              <div className="w-6 h-6 bg-cyan-500 rounded flex items-center justify-center">
+                <span className="text-black font-bold text-xs">V</span>
+              </div>
+              <span className="text-sm font-medium">VertaX</span>
+            </Link>
             <span className="text-xs text-gray-600 ml-2">© {new Date().getFullYear()} VERTAX LIMITED</span>
           </div>
           <div className="flex items-center gap-6 text-xs text-gray-500">

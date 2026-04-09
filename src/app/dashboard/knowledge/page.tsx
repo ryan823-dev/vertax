@@ -261,7 +261,7 @@ function ProfileDisplay({ profile }: { profile: CompanyProfileData }) {
                 <div className="flex flex-wrap gap-1.5">
                   {profile.targetRegions.map((r, i) => (
                     <Badge key={i} variant="outline">
-                      {r}
+                      {typeof r === "string" ? r : r.region}
                     </Badge>
                   ))}
                 </div>

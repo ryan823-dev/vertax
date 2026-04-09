@@ -28,7 +28,6 @@ import {
   FileStack,
   BookOpen,
   Users2,
-  Package,
   SearchCheck,
   BrainCircuit,
   Send,
@@ -197,7 +196,7 @@ export const navConfig: NavItem[] = [
     healthSource: 'social.status',
     subItems: [
       { key: 'posts', label: '内容发布', href: '/customer/social', icon: Send, order: 1 },
-      { key: 'accounts', label: '账号管理', href: '/customer/social/accounts', icon: KeyRound, order: 2 },
+      { key: 'accounts', label: '发布配置', href: '/customer/social/accounts', icon: KeyRound, order: 2 },
     ],
   },
 

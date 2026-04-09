@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import Link from 'next/link';
 import { ArrowRight, CheckCircle2, XCircle, Building2, Factory, Zap, Shield, Globe, Users, TrendingUp, Target } from 'lucide-react';
 import { BreadcrumbSchema, breadcrumbPaths } from '@/components/seo/breadcrumb-schema';
 
@@ -100,14 +101,14 @@ export default function WhoIsVertaxForPage() {
         {/* Navigation */}
         <nav className="sticky top-0 z-50 border-b border-white/5 bg-[#0a0a14]/80 backdrop-blur-md">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2">
             <div className="w-7 h-7 bg-cyan-500 rounded-md flex items-center justify-center">
               <span className="text-black font-bold text-xs">V</span>
             </div>
             <span className="text-lg font-bold tracking-tight">VertaX</span>
-          </div>
+          </Link>
           <div className="flex items-center gap-4 text-sm">
-            <a href="/" className="text-gray-400 hover:text-white transition-colors">首页</a>
+            <Link href="/" className="text-gray-400 hover:text-white transition-colors">首页</Link>
             <a href="/features" className="text-gray-400 hover:text-white transition-colors">功能</a>
             <a href="/about" className="text-gray-400 hover:text-white transition-colors">关于</a>
             <a href="/contact" className="bg-cyan-500 hover:bg-cyan-400 text-black font-semibold px-4 py-1.5 rounded-lg transition-colors">
@@ -134,7 +135,7 @@ export default function WhoIsVertaxForPage() {
       </header>
 
       {/* Core Positioning */}
-      <section className="py-12 px-6 bg-white/[0.02]">
+      <section className="py-12 px-6 bg-[#111111]">
         <div className="max-w-3xl mx-auto">
           <div className="bg-cyan-500/5 border border-cyan-500/10 rounded-xl p-8">
             <h2 className="text-xl font-bold mb-4 text-cyan-400">核心定位</h2>
@@ -154,14 +155,14 @@ export default function WhoIsVertaxForPage() {
           <h2 className="text-2xl font-bold mb-8">典型行业</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {suitableIndustries.map(({ name, examples }) => (
-              <div key={name} className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5 hover:border-cyan-500/20 transition-colors">
+              <div key={name} className="bg-[#1A1A1A] border border-white/[0.06] rounded-xl p-5 hover:border-cyan-500/20 transition-colors">
                 <div className="flex items-center gap-2 mb-3">
                   <Factory className="w-5 h-5 text-cyan-400" />
                   <h3 className="font-semibold">{name}</h3>
                 </div>
                 <div className="flex flex-wrap gap-1">
                   {examples.map(ex => (
-                    <span key={ex} className="text-xs bg-white/[0.05] text-gray-400 px-2 py-0.5 rounded">
+                    <span key={ex} className="text-xs bg-[#222222] text-gray-400 px-2 py-0.5 rounded">
                       {ex}
                     </span>
                   ))}
@@ -173,7 +174,7 @@ export default function WhoIsVertaxForPage() {
       </section>
 
       {/* Suitable Conditions */}
-      <section className="py-16 px-6 bg-white/[0.02]">
+      <section className="py-16 px-6 bg-[#111111]">
         <div className="max-w-3xl mx-auto">
           <h2 className="text-2xl font-bold mb-8 flex items-center gap-2">
             <CheckCircle2 className="w-6 h-6 text-emerald-400" />
@@ -215,7 +216,7 @@ export default function WhoIsVertaxForPage() {
               </div>
             ))}
           </div>
-          <div className="mt-8 bg-white/[0.03] border border-white/[0.06] rounded-xl p-6">
+          <div className="mt-8 bg-[#1A1A1A] border border-white/[0.06] rounded-xl p-6">
             <p className="text-gray-400 text-sm leading-relaxed">
               <span className="text-gray-300 font-medium">诚实说明：</span> 我们不是什么客户都接。如果 VertaX 不适合你，我们会直接告诉你，而不是让你花钱买一个用不上的系统。
             </p>
@@ -224,13 +225,13 @@ export default function WhoIsVertaxForPage() {
       </section>
 
       {/* Decision Checklist */}
-      <section className="py-16 px-6 bg-white/[0.02]">
+      <section className="py-16 px-6 bg-[#111111]">
         <div className="max-w-3xl mx-auto">
           <h2 className="text-2xl font-bold mb-8">快速自检表</h2>
           <p className="text-gray-400 mb-6">回答以下问题，判断 VertaX 是否适合你的企业：</p>
           <div className="space-y-3">
             {decisionChecklist.map(({ question, weight }, index) => (
-              <div key={index} className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 flex items-center justify-between">
+              <div key={index} className="bg-[#1A1A1A] border border-white/[0.06] rounded-xl p-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-6 h-6 border border-white/20 rounded flex items-center justify-center text-xs text-gray-500">
                     {index + 1}
@@ -285,10 +286,12 @@ export default function WhoIsVertaxForPage() {
       <footer className="border-t border-white/5 py-10 px-6">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-cyan-500 rounded flex items-center justify-center">
-              <span className="text-black font-bold text-xs">V</span>
-            </div>
-            <span className="text-sm font-medium">VertaX</span>
+            <Link href="/" className="flex items-center gap-2">
+              <div className="w-6 h-6 bg-cyan-500 rounded flex items-center justify-center">
+                <span className="text-black font-bold text-xs">V</span>
+              </div>
+              <span className="text-sm font-medium">VertaX</span>
+            </Link>
             <span className="text-xs text-gray-600 ml-2">© {new Date().getFullYear()} VERTAX LIMITED</span>
           </div>
           <div className="flex items-center gap-6 text-xs text-gray-500">

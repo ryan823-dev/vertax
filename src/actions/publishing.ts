@@ -15,6 +15,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createPublisherAdapter, mapVertaxToPaintcell } from "@/lib/publishers";
 import type { PublisherAdapterConfig } from "@/lib/publishers";
+import { getWebsiteConfigStatus } from "@/lib/website-config-status";
 import type { PushRecordData, WebsiteConfigData } from "./publishing.types";
 import { requireDecider } from "@/lib/permissions";
 
@@ -39,12 +40,18 @@ export async function getWebsiteConfig(): Promise<WebsiteConfigData | null> {
 
   if (!config) return null;
 
+  const statusInfo = getWebsiteConfigStatus(config);
+
   return {
     id: config.id,
     siteName: config.siteName ?? null,
     url: config.url,
     siteType: config.siteType,
-    isActive: config.isActive,
+    isActive: statusInfo.normalizedIsActive,
+    isPublishReady: statusInfo.isPublishReady,
+    status: statusInfo.status,
+    statusLabel: statusInfo.statusLabel,
+    statusMessage: statusInfo.statusMessage,
     supabaseUrl: config.supabaseUrl,
     functionName: config.functionName,
     webhookUrl: config.webhookUrl ?? null,
@@ -87,6 +94,13 @@ export async function pushContentToWebsiteInternal(
   }
 
   // 3. 创建 Publisher Adapter
+  if (websiteConfig.siteType === "custom") {
+    return {
+      success: false,
+      error: "Website publishing is not configured yet for this tenant.",
+    };
+  }
+
   let adapter;
   try {
     adapter = createPublisherAdapter({

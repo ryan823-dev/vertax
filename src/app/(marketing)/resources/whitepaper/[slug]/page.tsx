@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowRight, Download, Share2, Mail, FileText, BookOpen, TrendingUp, BarChart3, Shield, CheckCircle2 } from 'lucide-react';
 import { BreadcrumbSchema } from '@/components/seo/breadcrumb-schema';
@@ -94,12 +95,12 @@ export default function WhitepaperPage({ params }: { params: { slug: string } })
         {/* Navigation */}
         <nav className="sticky top-0 z-50 border-b border-white/5 bg-[#0a0a14]/80 backdrop-blur-md">
           <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-            <a href="/" className="flex items-center gap-2">
+            <Link href="/" className="flex items-center gap-2">
               <div className="w-7 h-7 bg-cyan-500 rounded-md flex items-center justify-center">
                 <span className="text-black font-bold text-xs">V</span>
               </div>
               <span className="text-lg font-bold tracking-tight">VertaX</span>
-            </a>
+            </Link>
             <div className="flex items-center gap-4 text-sm">
               <a href="/features" className="text-gray-400 hover:text-white transition-colors">产品功能</a>
               <a href="/resources" className="text-gray-400 hover:text-white transition-colors">资源中心</a>
@@ -163,7 +164,7 @@ export default function WhitepaperPage({ params }: { params: { slug: string } })
         </header>
 
         {/* Key Findings */}
-        <section className="py-16 px-6 bg-white/[0.02]">
+        <section className="py-16 px-6 bg-[#111111]">
           <div className="max-w-4xl mx-auto">
             <h2 className="text-2xl font-bold mb-8">核心发现</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -193,7 +194,7 @@ export default function WhitepaperPage({ params }: { params: { slug: string } })
                   color: 'emerald'
                 },
               ].map(({ icon: Icon, title, description, color }) => (
-                <div key={title} className={`bg-white/[0.03] border border-white/[0.06] rounded-xl p-6 ${color === 'violet' ? 'hover:border-violet-500/20' : color === 'amber' ? 'hover:border-amber-500/20' : color === 'emerald' ? 'hover:border-emerald-500/20' : 'hover:border-cyan-500/20'} transition-colors`}>
+                <div key={title} className={`bg-[#1A1A1A] border border-white/[0.06] rounded-xl p-6 ${color === 'violet' ? 'hover:border-violet-500/20' : color === 'amber' ? 'hover:border-amber-500/20' : color === 'emerald' ? 'hover:border-emerald-500/20' : 'hover:border-cyan-500/20'} transition-colors`}>
                   <Icon className={`w-8 h-8 mb-4 ${color === 'violet' ? 'text-violet-400' : color === 'amber' ? 'text-amber-400' : color === 'emerald' ? 'text-emerald-400' : 'text-cyan-400'}`} />
                   <h3 className={`text-lg font-bold mb-2 ${color === 'violet' ? 'text-violet-400' : color === 'amber' ? 'text-amber-400' : color === 'emerald' ? 'text-emerald-400' : 'text-cyan-400'}`}>{title}</h3>
                   <p className="text-sm text-gray-400 leading-relaxed">{description}</p>
@@ -218,7 +219,7 @@ export default function WhitepaperPage({ params }: { params: { slug: string } })
                 { chapter: '2026-2028 趋势预测与情景分析', pages: 'P37-P42' },
                 { chapter: '策略建议与实施路线图', pages: 'P43-P48' },
               ].map((item, i) => (
-                <div key={i} className="flex items-center justify-between bg-white/[0.03] border border-white/[0.06] rounded-lg px-4 py-3">
+                <div key={i} className="flex items-center justify-between bg-[#1A1A1A] border border-white/[0.06] rounded-lg px-4 py-3">
                   <span className="text-sm font-medium">{item.chapter}</span>
                   <span className="text-xs text-gray-500">{item.pages}</span>
                 </div>
@@ -266,7 +267,7 @@ export default function WhitepaperPage({ params }: { params: { slug: string } })
                 <a
                   key={href}
                   href={href}
-                  className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 flex items-center justify-between hover:border-cyan-500/20 transition-colors"
+                  className="bg-[#1A1A1A] border border-white/[0.06] rounded-xl p-4 flex items-center justify-between hover:border-cyan-500/20 transition-colors"
                 >
                   <span className="font-medium">{title}</span>
                   <ArrowRight className="w-4 h-4 text-gray-500" />
@@ -280,10 +281,12 @@ export default function WhitepaperPage({ params }: { params: { slug: string } })
         <footer className="border-t border-white/5 py-8 px-6">
           <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-cyan-500 rounded flex items-center justify-center">
-                <span className="text-black font-bold text-xs">V</span>
-              </div>
-              <span className="text-sm font-medium">VertaX</span>
+              <Link href="/" className="flex items-center gap-2">
+                <div className="w-6 h-6 bg-cyan-500 rounded flex items-center justify-center">
+                  <span className="text-black font-bold text-xs">V</span>
+                </div>
+                <span className="text-sm font-medium">VertaX</span>
+              </Link>
               <span className="text-xs text-gray-600 ml-2">&copy; {new Date().getFullYear()} VERTAX LIMITED</span>
             </div>
             <div className="flex items-center gap-6 text-xs text-gray-500">

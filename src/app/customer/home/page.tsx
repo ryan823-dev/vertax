@@ -16,7 +16,6 @@ import {
   Zap,
   Target,
 } from 'lucide-react';
-import { useRoleContext } from '@/contexts/role-context';
 import {
   getDashboardStats,
   getPendingActions,
@@ -58,11 +57,10 @@ export default function CEOCockpitPage() {
   // Chat
   const [inputValue, setInputValue] = useState('');
   const [conversationId, setConversationId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<MessageData[]>([]);
+  const [, setMessages] = useState<MessageData[]>([]);
   const [isSending, setIsSending] = useState(false);
   
   // 从 RoleContext 读取角色与显示模式
-  const { isDecider } = useRoleContext();
 
   // ============================================
   // 数据加载
@@ -172,6 +170,30 @@ export default function CEOCockpitPage() {
                       {lastUpdated.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })} 更新
                     </span>
                   </div>
+
+                  {tenantInfo?.isPublishingSetupPending && (
+                    <div className="mb-5 rounded-xl border border-[rgba(245,158,11,0.24)] bg-[rgba(245,158,11,0.08)] p-4">
+                      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="rounded-full bg-[rgba(245,158,11,0.14)] px-2.5 py-1 text-[11px] font-semibold tracking-[0.18em] text-warning uppercase">
+                              待配置
+                            </span>
+                            <span className="text-dark text-sm font-semibold">发布配置未完成，已自动进入安全模式</span>
+                          </div>
+                          <p className="mt-2 text-xs leading-relaxed text-dark-muted">
+                            新租户需先授权至少 1 个发布账号，声量枢纽才会开放创建和发布入口，避免在未完成配置前误操作。
+                          </p>
+                        </div>
+                        <Link
+                          href="/customer/social/accounts"
+                          className="btn-gold-sm inline-flex items-center justify-center px-4 py-2 text-sm shrink-0"
+                        >
+                          完成发布配置
+                        </Link>
+                      </div>
+                    </div>
+                  )}
 
                   {isLoading ? (
                     <div className="flex items-center justify-center py-16">
@@ -399,7 +421,7 @@ export default function CEOCockpitPage() {
                 
                 {actions.length > 0 ? (
                   <div className="space-y-2">
-                    {actions.slice(0, 3).map((action, idx) => (
+                    {actions.slice(0, 3).map((action) => (
                       <Link 
                         key={action.id} 
                         href={action.actionLink}

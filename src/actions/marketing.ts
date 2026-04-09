@@ -90,6 +90,8 @@ export async function getContents(): Promise<ContentData[]> {
     status: content.status,
     publishedAt: content.publishedAt,
     scheduledAt: content.scheduledAt,
+    autoPublishAt: content.autoPublishAt,
+    generatedBy: content.generatedBy,
     categoryId: content.categoryId,
     categoryName: content.category.name,
     createdAt: content.createdAt,
@@ -102,7 +104,7 @@ export async function getContents(): Promise<ContentData[]> {
 export async function getMarketingStats(): Promise<MarketingStats> {
   const session = await auth();
   if (!session?.user?.id) {
-    return { totalContents: 0, published: 0, draft: 0, scheduled: 0 };
+    return { totalContents: 0, published: 0, draft: 0, scheduled: 0, awaitingPublish: 0 };
   }
 
   const user = await prisma.user.findUnique({
@@ -110,11 +112,11 @@ export async function getMarketingStats(): Promise<MarketingStats> {
     select: { tenantId: true },
   });
   if (!user) {
-    return { totalContents: 0, published: 0, draft: 0, scheduled: 0 };
+    return { totalContents: 0, published: 0, draft: 0, scheduled: 0, awaitingPublish: 0 };
   }
   const tenantId = user!.tenantId as string;
 
-  const [total, published, draft, scheduled] = await Promise.all([
+  const [total, published, draft, scheduled, awaitingPublish] = await Promise.all([
     prisma.seoContent.count({
       where: { tenantId: tenantId, deletedAt: null },
     }),
@@ -127,6 +129,9 @@ export async function getMarketingStats(): Promise<MarketingStats> {
     prisma.seoContent.count({
       where: { tenantId: tenantId, deletedAt: null, status: "scheduled" },
     }),
+    prisma.seoContent.count({
+      where: { tenantId: tenantId, deletedAt: null, status: "awaiting_publish" },
+    }),
   ]);
 
   return {
@@ -134,6 +139,7 @@ export async function getMarketingStats(): Promise<MarketingStats> {
     published,
     draft,
     scheduled,
+    awaitingPublish,
   };
 }
 

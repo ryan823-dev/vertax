@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import Link from 'next/link';
 import { ArrowRight, FileText, BookOpen, Download, ExternalLink } from 'lucide-react';
 import { BreadcrumbSchema, breadcrumbPaths } from '@/components/seo/breadcrumb-schema';
 
@@ -50,12 +51,12 @@ export default function ResourcesPage() {
         {/* Navigation */}
         <nav className="sticky top-0 z-50 border-b border-white/5 bg-[#0a0a14]/80 backdrop-blur-md">
           <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-            <a href="/" className="flex items-center gap-2">
+            <Link href="/" className="flex items-center gap-2">
               <div className="w-7 h-7 bg-cyan-500 rounded-md flex items-center justify-center">
                 <span className="text-black font-bold text-xs">V</span>
               </div>
               <span className="text-lg font-bold tracking-tight">VertaX</span>
-            </a>
+            </Link>
             <div className="flex items-center gap-4 text-sm">
               <a href="/features" className="text-gray-400 hover:text-white transition-colors">产品功能</a>
               <a href="/solutions" className="text-gray-400 hover:text-white transition-colors">解决方案</a>
@@ -121,7 +122,7 @@ export default function ResourcesPage() {
               {resources.filter(r => !r.featured).map((resource) => (
                 <article
                   key={resource.title}
-                  className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-6 hover:border-cyan-500/20 transition-colors"
+                  className="bg-[#1A1A1A] border border-white/[0.06] rounded-xl p-6 hover:border-cyan-500/20 transition-colors"
                 >
                   <div className="flex items-start gap-4">
                     <div className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center shrink-0">
@@ -150,7 +151,7 @@ export default function ResourcesPage() {
         </section>
 
         {/* CTA Section */}
-        <section className="py-16 px-6 bg-white/[0.02] border-t border-white/5">
+        <section className="py-16 px-6 bg-[#111111] border-t border-white/5">
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="text-2xl font-bold mb-4">需要定制化方案？</h2>
             <p className="text-gray-400 mb-8">
@@ -169,10 +170,12 @@ export default function ResourcesPage() {
         <footer className="border-t border-white/5 py-8 px-6">
           <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-cyan-500 rounded flex items-center justify-center">
-                <span className="text-black font-bold text-xs">V</span>
-              </div>
-              <span className="text-sm font-medium">VertaX</span>
+              <Link href="/" className="flex items-center gap-2">
+                <div className="w-6 h-6 bg-cyan-500 rounded flex items-center justify-center">
+                  <span className="text-black font-bold text-xs">V</span>
+                </div>
+                <span className="text-sm font-medium">VertaX</span>
+              </Link>
               <span className="text-xs text-gray-600 ml-2">&copy; {new Date().getFullYear()} VERTAX LIMITED</span>
             </div>
             <div className="flex items-center gap-6 text-xs text-gray-500">

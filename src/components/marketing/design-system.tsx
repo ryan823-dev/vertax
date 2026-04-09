@@ -1,8 +1,9 @@
 'use client';
 
+import Image from 'next/image';
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, X, CheckCircle2, Shield, Users, Zap, Globe, Menu } from 'lucide-react';
+import { X, CheckCircle2, Shield, Users, Globe, Menu } from 'lucide-react';
 import { colors, shadows, gradients } from '@/lib/design-tokens';
 
 // Re-export colors and tokens for convenience
@@ -160,11 +161,11 @@ export function MarketingFooter() {
           {/* QR Codes */}
           <div className="flex items-center gap-4">
             <div className="flex flex-col items-center gap-1">
-              <img src="/wechat-qr.jpg" alt="微信公众号" className="w-16 h-16 rounded-lg" />
+              <Image src="/wechat-qr.jpg" alt="微信公众号" width={64} height={64} className="w-16 h-16 rounded-lg" />
               <span className="text-[10px] text-gray-600">微信公众号</span>
             </div>
             <div className="flex flex-col items-center gap-1">
-              <img src="/contact-wechat.jpg" alt="业务联系人微信" className="w-16 h-16 rounded-lg" />
+              <Image src="/contact-wechat.jpg" alt="业务联系人微信" width={64} height={64} className="w-16 h-16 rounded-lg" />
               <span className="text-[10px] text-gray-600">业务联系</span>
             </div>
           </div>
@@ -203,11 +204,11 @@ export function MarketingFooter() {
             <span className="text-xs text-gray-500">contact@vertax.top</span>
             <div className="flex items-center gap-3">
               <div className="flex flex-col items-center gap-1">
-                <img src="/wechat-qr.jpg" alt="微信公众号" className="w-12 h-12 rounded" />
+                <Image src="/wechat-qr.jpg" alt="微信公众号" width={48} height={48} className="w-12 h-12 rounded" />
                 <span className="text-[10px] text-gray-600">公众号</span>
               </div>
               <div className="flex flex-col items-center gap-1">
-                <img src="/contact-wechat.jpg" alt="业务联系人微信" className="w-12 h-12 rounded" />
+                <Image src="/contact-wechat.jpg" alt="业务联系人微信" width={48} height={48} className="w-12 h-12 rounded" />
                 <span className="text-[10px] text-gray-600">业务联系</span>
               </div>
             </div>

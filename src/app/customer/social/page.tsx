@@ -5,8 +5,6 @@ import Link from 'next/link';
 import { 
   Globe, 
   Calendar, 
-  TrendingUp, 
-  Users,
   Loader2,
   RefreshCw,
   AlertCircle,
@@ -14,6 +12,7 @@ import {
   X,
   Send,
   Clock,
+  KeyRound,
   CheckCircle2,
   Edit2,
   Trash2,
@@ -115,12 +114,22 @@ export default function SocialPage() {
     loadData();
   }, [loadData]);
 
+  const activeAccounts = accounts.filter(account => account.isActive);
+  const hasConnectedAccounts = activeAccounts.length > 0;
+  const isPendingSetup = !hasConnectedAccounts && posts.length === 0;
+
+  useEffect(() => {
+    if (!hasConnectedAccounts && viewMode === 'create') {
+      setViewMode('list');
+    }
+  }, [hasConnectedAccounts, viewMode]);
+
   // 计算统计数据
   const stats = {
     totalPosts: posts.length,
     published: posts.filter(p => p.status === 'published').length,
     scheduled: posts.filter(p => p.status === 'scheduled').length,
-    accountCount: accounts.filter(a => a.isActive).length,
+    accountCount: activeAccounts.length,
     totalEngagement: posts.reduce((sum, post) => {
       return sum + post.versions.reduce((vSum, v) => {
         const metrics = v.metrics || {};
@@ -141,6 +150,14 @@ export default function SocialPage() {
     } finally {
       setLoadingLibrary(false);
     }
+  };
+
+  const handleStartCreate = () => {
+    if (!hasConnectedAccounts) {
+      setError('请先完成发布配置，再创建内容。');
+      return;
+    }
+    setViewMode('create');
   };
 
   const handleGenerate = async () => {
@@ -209,7 +226,7 @@ export default function SocialPage() {
       if (selectedPost?.id === postId) {
         setSelectedPost(null);
       }
-    } catch (err) {
+    } catch {
       setError('删除失败');
     }
   };
@@ -238,6 +255,142 @@ export default function SocialPage() {
     );
   }
 
+  if (isPendingSetup) {
+    return (
+      <div className="space-y-8">
+        <div
+          className="rounded-2xl p-6 relative overflow-hidden"
+          style={{
+            background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)',
+            boxShadow: '0 8px 32px -8px rgba(0,0,0,0.45)',
+          }}
+        >
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background: 'radial-gradient(ellipse 70% 60% at 50% -20%, rgba(212,175,55,0.14) 0%, transparent 65%)',
+            }}
+          />
+          <div className="relative flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-white">声量枢纽</h1>
+              <p className="text-sm text-slate-400 mt-1">新租户待配置：先完成发布配置，再进入内容创建与发布</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Link
+                href="/customer/social/accounts"
+                className="px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors"
+                style={{ background: '#D4AF37', color: '#0B1220', boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)' }}
+              >
+                <KeyRound size={16} />
+                完成发布配置
+              </Link>
+              <button
+                onClick={loadData}
+                className="p-2 text-slate-400 hover:text-[#D4AF37] transition-colors"
+              >
+                <RefreshCw size={18} />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
+            <AlertCircle className="text-red-500 shrink-0" size={20} />
+            <p className="text-sm text-red-700">{error}</p>
+            <button onClick={() => setError(null)} className="ml-auto text-red-400 hover:text-red-600">
+              <X size={16} />
+            </button>
+          </div>
+        )}
+
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-start gap-3">
+              <Globe size={20} className="text-amber-600 shrink-0 mt-0.5" />
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold tracking-[0.18em] text-amber-700 uppercase">
+                    待配置
+                  </span>
+                  <p className="text-sm font-semibold text-amber-900">发布入口已收紧，避免新租户误操作</p>
+                </div>
+                <p className="text-sm text-amber-800">
+                  当前还没有可用的发布账号，声量枢纽已自动切换到安全模式，先完成至少 1 个渠道授权，再开放创建与发布动作。
+                </p>
+                <p className="text-xs text-amber-700">
+                  完成配置后，你就可以继续多平台内容生成、定时发布和统一账号管理。
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/customer/social/accounts"
+              className="px-4 py-2 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-1.5 shrink-0"
+              style={{ background: '#D4AF37', color: '#0B1220', boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)' }}
+            >
+              去完成发布配置
+            </Link>
+          </div>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+          <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
+            <h2 className="text-lg font-bold text-[#0B1B2B]">先完成这 3 步</h2>
+            <div className="mt-5 space-y-4">
+              {[
+                {
+                  title: '进入发布配置',
+                  desc: '选择 X、Facebook、YouTube 等渠道，先完成至少 1 个账号授权。',
+                },
+                {
+                  title: '验证配置可用',
+                  desc: '测试连接成功后保存，确保后续发布不会因为凭证缺失而失败。',
+                },
+                {
+                  title: '返回声量枢纽开始发布',
+                  desc: '配置完成后，这里会自动开放内容创建、预览、立即发布和定时发布。',
+                },
+              ].map((step, index) => (
+                <div key={step.title} className="flex gap-3 rounded-xl border border-[#E8E0D0] bg-[#FFFCF7] p-4">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#0B1220] text-sm font-semibold text-[#D4AF37]">
+                    {index + 1}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-[#0B1B2B]">{step.title}</p>
+                    <p className="mt-1 text-xs leading-6 text-slate-500">{step.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-2xl p-6" style={{
+            background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)',
+            boxShadow: '0 8px 32px -8px rgba(0,0,0,0.45)',
+          }}>
+            <p className="text-xs font-semibold tracking-[0.18em] text-[#D4AF37] uppercase">配置后解锁</p>
+            <div className="mt-5 space-y-4">
+              {[
+                { icon: Sparkles, title: 'AI 多平台内容生成', desc: '按平台生成适配文案，减少重复编辑。' },
+                { icon: CalendarClock, title: '立即发布与定时发布', desc: '避免内容生成后找不到发布出口。' },
+                { icon: CheckCircle2, title: '统一发布状态追踪', desc: '集中查看已发布、排期中和失败内容。' },
+              ].map((item) => (
+                <div key={item.title} className="rounded-xl border border-white/10 bg-white/5 p-4">
+                  <div className="flex items-center gap-2">
+                    <item.icon size={16} className="text-[#D4AF37]" />
+                    <p className="text-sm font-semibold text-white">{item.title}</p>
+                  </div>
+                  <p className="mt-2 text-xs leading-6 text-slate-400">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       {/* Header - 指令台 深蓝舞台风格 */}
@@ -256,7 +409,7 @@ export default function SocialPage() {
           <div className="flex items-center gap-3">
             {viewMode === 'list' ? (
               <button 
-                onClick={() => setViewMode('create')}
+                onClick={handleStartCreate}
                 className="px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors"
                 style={{ background: '#D4AF37', color: '#0B1220', boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)' }}
               >
@@ -298,7 +451,7 @@ export default function SocialPage() {
       )}
 
       {/* Account Status */}
-      {accounts.length === 0 && (
+      {!hasConnectedAccounts && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-4">
           <Globe size={20} className="text-amber-600" />
           <div className="flex-1">
@@ -536,7 +689,7 @@ export default function SocialPage() {
                     )}
                     <button
                       onClick={() => handleSavePost(publishMode === 'now')}
-                      disabled={isPublishing || accounts.length === 0 || (publishMode === 'scheduled' && !scheduledAt)}
+                      disabled={isPublishing || !hasConnectedAccounts || (publishMode === 'scheduled' && !scheduledAt)}
                       className="w-full py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50"
                       style={{ background: '#D4AF37', color: '#0B1220', boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)' }}
                     >
@@ -580,7 +733,7 @@ export default function SocialPage() {
                 </div>
                 <p className="text-slate-400 mb-4">暂无社媒内容</p>
                 <button
-                  onClick={() => setViewMode('create')}
+                  onClick={handleStartCreate}
                   className="px-4 py-2 rounded-xl text-sm font-medium"
                   style={{ background: '#D4AF37', color: '#0B1220', boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)' }}
                 >
@@ -762,11 +915,11 @@ export default function SocialPage() {
       )}
 
       {/* Connected Accounts Summary */}
-      {accounts.length > 0 && (
+      {hasConnectedAccounts && (
         <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
           <h3 className="font-bold text-[#0B1B2B] mb-4">已授权账号</h3>
           <div className="flex flex-wrap gap-3">
-            {accounts.filter(a => a.isActive).map((account) => {
+            {activeAccounts.map((account) => {
               const info = getPlatformInfo(account.platform);
               return (
                 <div

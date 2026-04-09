@@ -7,7 +7,6 @@ import {
   FileText, 
   PenTool, 
   Search, 
-  TrendingUp,
   Loader2,
   RefreshCw,
   AlertCircle,
@@ -57,7 +56,7 @@ export default function MarketingPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [contents, setContents] = useState<ContentData[]>([]);
-  const [stats, setStats] = useState<MarketingStats>({ totalContents: 0, published: 0, draft: 0, scheduled: 0 });
+  const [stats, setStats] = useState<MarketingStats>({ totalContents: 0, published: 0, draft: 0, scheduled: 0, awaitingPublish: 0 });
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [selectedContent, setSelectedContent] = useState<ContentData | null>(null);
 
@@ -130,7 +129,7 @@ export default function MarketingPage() {
   };
 
   // 生成内容
-  const handleGenerateContent = async () => {
+  const _handleGenerateContent = async () => {
     if (!selectedKeyword) return;
     
     setIsGeneratingContent(true);
@@ -185,7 +184,7 @@ export default function MarketingPage() {
           setSelectedContent(updated);
         }
       }
-    } catch (err) {
+    } catch {
       setError('更新状态失败');
     }
   };
@@ -200,7 +199,7 @@ export default function MarketingPage() {
       if (selectedContent?.id === contentId) {
         setSelectedContent(null);
       }
-    } catch (err) {
+    } catch {
       setError('删除失败');
     }
   };

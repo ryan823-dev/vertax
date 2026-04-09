@@ -237,9 +237,9 @@ export default function SocialAccountsPage() {
           <div>
             <h1 className="text-2xl font-bold text-white flex items-center gap-3">
               <KeyRound size={24} className="text-[#D4AF37]" />
-              Account Management
+              发布配置
             </h1>
-            <p className="text-sm text-slate-400 mt-1">Configure social media API credentials</p>
+            <p className="text-sm text-slate-400 mt-1">先完成渠道授权，再返回声量枢纽创建并发布内容</p>
           </div>
           <div className="flex items-center gap-3">
             <Link
@@ -247,7 +247,7 @@ export default function SocialAccountsPage() {
               className="px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors text-slate-400 hover:text-[#D4AF37]"
             >
               <ArrowLeft size={16} />
-              Back
+              返回声量枢纽
             </Link>
             <button
               onClick={loadAccounts}
@@ -259,12 +259,34 @@ export default function SocialAccountsPage() {
         </div>
       </div>
 
+      {accounts.length === 0 && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+          <div className="flex items-start gap-3">
+            <AlertCircle size={20} className="text-amber-600 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold tracking-[0.18em] text-amber-700 uppercase">
+                  待配置
+                </span>
+                <p className="text-sm font-semibold text-amber-900">新租户已进入发布安全模式</p>
+              </div>
+              <p className="text-sm text-amber-800">
+                当前还没有可用的发布账号，声量枢纽会先收起创建与发布入口，避免误操作。
+              </p>
+              <p className="text-xs text-amber-700">
+                建议先完成至少 1 个渠道授权，再返回发布中心继续内容生成、排期和发布。
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Connected Accounts Summary */}
       {accounts.length > 0 && (
         <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-center gap-3">
           <CheckCircle2 size={20} className="text-emerald-500 shrink-0" />
           <p className="text-sm text-emerald-800">
-            {accounts.length} account(s) connected
+            已连接 {accounts.length} 个发布账号
           </p>
         </div>
       )}
@@ -341,10 +363,10 @@ export default function SocialAccountsPage() {
                   <div className="mt-2 p-3 bg-emerald-50/50 border border-emerald-100 rounded-xl">
                     <div className="flex items-center gap-2 mb-1">
                       <CheckCircle2 size={14} className="text-emerald-500" />
-                      <p className="text-xs font-medium text-emerald-800">Share URL Mode - No setup needed</p>
+                      <p className="text-xs font-medium text-emerald-800">分享模式，无需额外配置</p>
                     </div>
                     <p className="text-[11px] text-slate-500">
-                      When publishing, content will open in a LinkedIn share dialog for one-click posting. No API credentials required.
+                      发布时会直接打开 LinkedIn 分享窗，一键带出内容；可作为统一发布配置完成前的补充渠道。
                     </p>
                   </div>
                 )}
@@ -360,7 +382,7 @@ export default function SocialAccountsPage() {
                     }
                   >
                     <KeyRound size={14} />
-                    {connected ? 'Update Credentials' : 'Configure'}
+                    {connected ? '更新配置' : '开始配置'}
                   </button>
                 )}
 
@@ -372,7 +394,7 @@ export default function SocialAccountsPage() {
                     style={{ background: '#D4AF37', color: '#0B1220', boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)' }}
                   >
                     <ExternalLink size={14} />
-                    Connect with OAuth
+                    去授权
                   </a>
                 )}
 
@@ -384,7 +406,7 @@ export default function SocialAccountsPage() {
                     style={{ background: '#0B1220', color: '#D4AF37' }}
                   >
                     <RefreshCw size={14} />
-                    Reconnect
+                    重新授权
                   </a>
                 )}
 
@@ -528,21 +550,21 @@ export default function SocialAccountsPage() {
           background: 'radial-gradient(ellipse 70% 60% at 50% -20%, rgba(212,175,55,0.14) 0%, transparent 65%)',
         }} />
         <div className="relative">
-          <h3 className="font-bold text-white mb-3 flex items-center gap-2">
-            <Globe size={18} className="text-[#D4AF37]" />
-            Instructions
-          </h3>
-          <div className="space-y-2 text-xs text-slate-400">
-            <p>1. Create a developer account on the respective social media platform</p>
-            <p>2. Create an application and obtain API credentials</p>
-            <p>3. Enter the credentials above and click &quot;Test Connection&quot; to verify</p>
-            <p>4. After successful verification, click &quot;Save Credentials&quot; to complete the setup</p>
+            <h3 className="font-bold text-white mb-3 flex items-center gap-2">
+              <Globe size={18} className="text-[#D4AF37]" />
+              配置说明
+            </h3>
+            <div className="space-y-2 text-xs text-slate-400">
+              <p>1. 在目标平台创建开发者账号或应用</p>
+              <p>2. 获取 API 凭证或完成 OAuth 授权</p>
+              <p>3. 在上方填写配置并点击“测试连接”校验可用性</p>
+              <p>4. 验证成功后保存配置，再返回声量枢纽开始发布</p>
+            </div>
+            <p className="text-[10px] text-slate-500 mt-4">
+              说明：凭证仅用于已授权内容发布，并会安全存储。
+            </p>
           </div>
-          <p className="text-[10px] text-slate-500 mt-4">
-            Note: Credentials are securely stored and only used for authorized content publishing.
-          </p>
         </div>
-      </div>
     </div>
   );
 }

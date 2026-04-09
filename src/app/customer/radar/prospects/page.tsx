@@ -1133,7 +1133,7 @@ export default function RadarProspectsPage() {
                         <div className="pt-3 border-t border-white/5">
                           <p className="text-[10px] text-slate-400 font-medium uppercase tracking-tight mb-1.5">建议切入点:</p>
                           <p className="text-xs text-slate-300 leading-relaxed italic">
-                            "{(selectedCompany as any).approachAngle}"
+                            &ldquo;{(selectedCompany as any).approachAngle}&rdquo;
                           </p>
                         </div>
                       )}

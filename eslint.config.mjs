@@ -17,8 +17,17 @@ const eslintConfig = defineConfig([
     // Ignore script files that use CommonJS
     "scripts/**",
     ".vercel-tmp/**",
+    "playwright-report/**",
+    "test-results/**",
+    ".qoder/**",
     "export-candidates.cjs",
   ]),
+  {
+    files: ["playwright.config.js", "tests/**/*.js"],
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",
+    },
+  },
   // Relax some rules for better developer experience
   {
     rules: {

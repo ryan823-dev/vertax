@@ -8,7 +8,7 @@ interface WhitepaperDownloadProps {
   downloadUrl: string;
 }
 
-export function WhitepaperDownload({ whitepaperTitle, downloadUrl }: WhitepaperDownloadProps) {
+export function WhitepaperDownload({ whitepaperTitle: _whitepaperTitle, downloadUrl }: WhitepaperDownloadProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -20,9 +20,9 @@ export function WhitepaperDownload({ whitepaperTitle, downloadUrl }: WhitepaperD
     setError('');
 
     const formData = new FormData(e.currentTarget);
-    const email = formData.get('email') as string;
-    const name = formData.get('name') as string;
-    const company = formData.get('company') as string;
+    const _email = formData.get('email') as string;
+    const _name = formData.get('name') as string;
+    const _company = formData.get('company') as string;
 
     try {
       // TODO: 调用实际的后端 API 保存线索
@@ -37,7 +37,7 @@ export function WhitepaperDownload({ whitepaperTitle, downloadUrl }: WhitepaperD
 
       // 自动触发下载
       window.open(downloadUrl, '_blank');
-    } catch (err) {
+    } catch {
       setError('下载失败，请稍后重试');
     } finally {
       setLoading(false);
@@ -171,7 +171,7 @@ export function WhitepaperDownload({ whitepaperTitle, downloadUrl }: WhitepaperD
                 </form>
 
                 <p className="text-xs text-gray-500 text-center mt-4">
-                  点击"立即下载"即表示您同意我们的
+                  点击&ldquo;立即下载&rdquo;即表示您同意我们的
                   <a href="/privacy" className="text-cyan-400 hover:underline">隐私政策</a>
                 </p>
               </>

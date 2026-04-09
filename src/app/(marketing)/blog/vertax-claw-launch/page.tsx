@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import Link from 'next/link';
 import {
   ArrowRight,
   Calendar,
@@ -48,12 +49,12 @@ export default function VertaxClawLaunchPage() {
             <ArrowLeft className="w-4 h-4" />
             <span className="text-sm">返回博客</span>
           </a>
-          <div className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2">
             <div className="w-7 h-7 bg-cyan-500 rounded-md flex items-center justify-center">
               <span className="text-black font-bold text-xs">V</span>
             </div>
             <span className="text-lg font-bold tracking-tight">VertaX</span>
-          </div>
+          </Link>
           <a href="/contact" className="bg-cyan-500 hover:bg-cyan-400 text-black text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors">
             预约演示
           </a>
@@ -149,7 +150,7 @@ export default function VertaxClawLaunchPage() {
               <p>
                 它由复旦人工智能产业创新研究院孵化，将创始团队深耕海外市场的实战方法论、深刻的行业业务理解与顶尖的AI技术能力深度融合，打造出真正贴合企业出海全场景需求的智能增长系统。
               </p>
-              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-6 mt-6">
+              <div className="bg-[#1A1A1A] border border-white/[0.06] rounded-xl p-6 mt-6">
                 <p className="text-gray-300 font-medium mb-2">核心理念</p>
                 <p className="text-gray-400">
                   我们始终坚信，算力应当用在刀刃上，只为有远见、追求长期增长的外贸企业赋能。VertaX Claw的核心目标，是为企业部署一支永不疲倦、全年无休的AI增长团队，把重复繁琐的工作交给AI，让企业团队回归核心判断与决策，让出海增长更稳定、更高效、更具规模化潜力。
@@ -170,7 +171,7 @@ export default function VertaxClawLaunchPage() {
 
             <div className="space-y-6">
               {/* Feature 1 */}
-              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-6 hover:border-cyan-500/20 transition-colors">
+              <div className="bg-[#1A1A1A] border border-white/[0.06] rounded-xl p-6 hover:border-cyan-500/20 transition-colors">
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 bg-cyan-500/10 rounded-lg flex items-center justify-center shrink-0">
                     <Globe className="w-5 h-5 text-cyan-400" />
@@ -185,7 +186,7 @@ export default function VertaxClawLaunchPage() {
               </div>
 
               {/* Feature 2 */}
-              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-6 hover:border-cyan-500/20 transition-colors">
+              <div className="bg-[#1A1A1A] border border-white/[0.06] rounded-xl p-6 hover:border-cyan-500/20 transition-colors">
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 bg-cyan-500/10 rounded-lg flex items-center justify-center shrink-0">
                     <Database className="w-5 h-5 text-cyan-400" />
@@ -200,7 +201,7 @@ export default function VertaxClawLaunchPage() {
               </div>
 
               {/* Feature 3 */}
-              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-6 hover:border-cyan-500/20 transition-colors">
+              <div className="bg-[#1A1A1A] border border-white/[0.06] rounded-xl p-6 hover:border-cyan-500/20 transition-colors">
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 bg-cyan-500/10 rounded-lg flex items-center justify-center shrink-0">
                     <Zap className="w-5 h-5 text-cyan-400" />
@@ -215,7 +216,7 @@ export default function VertaxClawLaunchPage() {
               </div>
 
               {/* Feature 4 */}
-              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-6 hover:border-cyan-500/20 transition-colors">
+              <div className="bg-[#1A1A1A] border border-white/[0.06] rounded-xl p-6 hover:border-cyan-500/20 transition-colors">
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 bg-cyan-500/10 rounded-lg flex items-center justify-center shrink-0">
                     <Target className="w-5 h-5 text-cyan-400" />
@@ -230,7 +231,7 @@ export default function VertaxClawLaunchPage() {
               </div>
 
               {/* Feature 5 */}
-              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-6 hover:border-cyan-500/20 transition-colors">
+              <div className="bg-[#1A1A1A] border border-white/[0.06] rounded-xl p-6 hover:border-cyan-500/20 transition-colors">
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 bg-cyan-500/10 rounded-lg flex items-center justify-center shrink-0">
                     <MessageSquare className="w-5 h-5 text-cyan-400" />
@@ -264,7 +265,7 @@ export default function VertaxClawLaunchPage() {
 
             <div className="space-y-6">
               {/* Feature 1 */}
-              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-6 hover:border-cyan-500/20 transition-colors">
+              <div className="bg-[#1A1A1A] border border-white/[0.06] rounded-xl p-6 hover:border-cyan-500/20 transition-colors">
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 bg-violet-500/10 rounded-lg flex items-center justify-center shrink-0">
                     <Users className="w-5 h-5 text-violet-400" />
@@ -279,7 +280,7 @@ export default function VertaxClawLaunchPage() {
               </div>
 
               {/* Feature 2 */}
-              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-6 hover:border-cyan-500/20 transition-colors">
+              <div className="bg-[#1A1A1A] border border-white/[0.06] rounded-xl p-6 hover:border-cyan-500/20 transition-colors">
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 bg-violet-500/10 rounded-lg flex items-center justify-center shrink-0">
                     <Database className="w-5 h-5 text-violet-400" />
@@ -294,7 +295,7 @@ export default function VertaxClawLaunchPage() {
               </div>
 
               {/* Feature 3 */}
-              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-6 hover:border-cyan-500/20 transition-colors">
+              <div className="bg-[#1A1A1A] border border-white/[0.06] rounded-xl p-6 hover:border-cyan-500/20 transition-colors">
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 bg-violet-500/10 rounded-lg flex items-center justify-center shrink-0">
                     <Target className="w-5 h-5 text-violet-400" />
@@ -309,7 +310,7 @@ export default function VertaxClawLaunchPage() {
               </div>
 
               {/* Feature 4 */}
-              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-6 hover:border-cyan-500/20 transition-colors">
+              <div className="bg-[#1A1A1A] border border-white/[0.06] rounded-xl p-6 hover:border-cyan-500/20 transition-colors">
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 bg-violet-500/10 rounded-lg flex items-center justify-center shrink-0">
                     <Shield className="w-5 h-5 text-violet-400" />
@@ -324,7 +325,7 @@ export default function VertaxClawLaunchPage() {
               </div>
 
               {/* Feature 5 */}
-              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-6 hover:border-cyan-500/20 transition-colors">
+              <div className="bg-[#1A1A1A] border border-white/[0.06] rounded-xl p-6 hover:border-cyan-500/20 transition-colors">
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 bg-violet-500/10 rounded-lg flex items-center justify-center shrink-0">
                     <Zap className="w-5 h-5 text-violet-400" />
@@ -357,7 +358,7 @@ export default function VertaxClawLaunchPage() {
             </p>
 
             <div className="space-y-6">
-              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-6">
+              <div className="bg-[#1A1A1A] border border-white/[0.06] rounded-xl p-6">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-8 h-8 bg-red-500/10 rounded-lg flex items-center justify-center">
                     <TrendingUp className="w-4 h-4 text-red-400" />
@@ -365,11 +366,11 @@ export default function VertaxClawLaunchPage() {
                   <h3 className="text-lg font-semibold">1. 流量成本居高不下，低效投入难以为继</h3>
                 </div>
                 <p className="text-gray-400 text-sm leading-relaxed">
-                  不管是付费投放、自然流量优化，还是人工客户开发，无效投入都在不断吞噬企业利润，过去靠"多堆人、多干活"弥补效率的方式，如今已经完全行不通，企业必须靠系统化能力提升效率。
+                  不管是付费投放、自然流量优化，还是人工客户开发，无效投入都在不断吞噬企业利润，过去靠&ldquo;多堆人、多干活&rdquo;弥补效率的方式，如今已经完全行不通，企业必须靠系统化能力提升效率。
                 </p>
               </div>
 
-              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-6">
+              <div className="bg-[#1A1A1A] border border-white/[0.06] rounded-xl p-6">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-8 h-8 bg-amber-500/10 rounded-lg flex items-center justify-center">
                     <Globe className="w-4 h-4 text-amber-400" />
@@ -381,7 +382,7 @@ export default function VertaxClawLaunchPage() {
                 </p>
               </div>
 
-              <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-6">
+              <div className="bg-[#1A1A1A] border border-white/[0.06] rounded-xl p-6">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-8 h-8 bg-cyan-500/10 rounded-lg flex items-center justify-center">
                     <Brain className="w-4 h-4 text-cyan-400" />
@@ -434,7 +435,7 @@ export default function VertaxClawLaunchPage() {
               五、AI驱动全球业绩，开启增长新未来
             </h2>
             <p className="text-gray-400 leading-relaxed mb-8">
-              VertaX Claw的核心价值，从来不是"概念上的智能"，而是落地到业务一线，实实在在帮企业创造增长结果：
+              VertaX Claw的核心价值，从来不是&ldquo;概念上的智能&rdquo;，而是落地到业务一线，实实在在帮企业创造增长结果：
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -453,7 +454,7 @@ export default function VertaxClawLaunchPage() {
               ))}
             </div>
 
-            <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-6 mt-8">
+            <div className="bg-[#1A1A1A] border border-white/[0.06] rounded-xl p-6 mt-8">
               <p className="text-gray-300 leading-relaxed">
                 把重复繁琐的工作交给AI，把核心决策与价值创造留给团队，这不仅是一款AI产品的发布，更是整个外贸出海行业<span className="text-cyan-400 font-medium">增长方式的升级革命</span>。
               </p>
@@ -486,7 +487,7 @@ export default function VertaxClawLaunchPage() {
 
           {/* Original Article Link */}
           <section className="mb-16">
-            <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-6 flex items-center justify-between">
+            <div className="bg-[#1A1A1A] border border-white/[0.06] rounded-xl p-6 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <ExternalLink className="w-5 h-5 text-gray-400" />
                 <span className="text-gray-400 text-sm">本文首发于微信公众号</span>
@@ -506,7 +507,7 @@ export default function VertaxClawLaunchPage() {
       </article>
 
       {/* CTA Section */}
-      <section className="py-20 px-6 bg-white/[0.02] border-t border-white/5">
+      <section className="py-20 px-6 bg-[#111111] border-t border-white/5">
         <div className="max-w-3xl mx-auto text-center">
           <h2 className="text-2xl md:text-3xl font-bold mb-4">
             想要你的企业搭建专属<span className="text-cyan-400">AI增长团队</span>？
@@ -540,10 +541,12 @@ export default function VertaxClawLaunchPage() {
       <footer className="border-t border-white/5 py-10 px-6">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-cyan-500 rounded flex items-center justify-center">
-              <span className="text-black font-bold text-xs">V</span>
-            </div>
-            <span className="text-sm font-medium">VertaX</span>
+            <Link href="/" className="flex items-center gap-2">
+              <div className="w-6 h-6 bg-cyan-500 rounded flex items-center justify-center">
+                <span className="text-black font-bold text-xs">V</span>
+              </div>
+              <span className="text-sm font-medium">VertaX</span>
+            </Link>
             <span className="text-xs text-gray-600 ml-2">© {new Date().getFullYear()} VERTAX LIMITED</span>
           </div>
           <div className="flex items-center gap-6 text-xs text-gray-500">

@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import Link from 'next/link';
 import { ArrowRight, Brain, Target, TrendingUp, Globe, MessageSquare, Building2, Layers, Database, Search, Send, BarChart3, Users, FileText, Zap, Shield, CheckCircle2 } from 'lucide-react';
 import { BreadcrumbSchema, breadcrumbPaths } from '@/components/seo/breadcrumb-schema';
 
@@ -130,14 +131,14 @@ export default function ModulesPage() {
         {/* Navigation */}
         <nav className="sticky top-0 z-50 border-b border-white/5 bg-[#0a0a14]/80 backdrop-blur-md">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2">
             <div className="w-7 h-7 bg-cyan-500 rounded-md flex items-center justify-center">
               <span className="text-black font-bold text-xs">V</span>
             </div>
             <span className="text-lg font-bold tracking-tight">VertaX</span>
-          </div>
+          </Link>
           <div className="flex items-center gap-4 text-sm">
-            <a href="/" className="text-gray-400 hover:text-white transition-colors">首页</a>
+            <Link href="/" className="text-gray-400 hover:text-white transition-colors">首页</Link>
             <a href="/features" className="text-white font-medium">功能</a>
             <a href="/about" className="text-gray-400 hover:text-white transition-colors">关于</a>
             <a href="/contact" className="bg-cyan-500 hover:bg-cyan-400 text-black font-semibold px-4 py-1.5 rounded-lg transition-colors">
@@ -164,7 +165,7 @@ export default function ModulesPage() {
       </header>
 
       {/* Module Overview */}
-      <section className="py-12 px-6 bg-white/[0.02]">
+      <section className="py-12 px-6 bg-[#111111]">
         <div className="max-w-5xl mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {modules.map((module) => {
@@ -173,7 +174,7 @@ export default function ModulesPage() {
                 <a
                   key={module.id}
                   href={`#${module.id}`}
-                  className={`bg-white/[0.03] border ${colors.border} rounded-xl p-4 text-center hover:bg-white/[0.05] transition-colors`}
+                  className={`bg-[#1A1A1A] border ${colors.border} rounded-xl p-4 text-center hover:bg-[#222222] transition-colors`}
                 >
                   <div className={`w-10 h-10 ${colors.bg} rounded-lg flex items-center justify-center mx-auto mb-3`}>
                     <module.icon className={`w-5 h-5 ${colors.text}`} />
@@ -195,7 +196,7 @@ export default function ModulesPage() {
             return (
               <article key={module.id} id={module.id} className="mb-16 last:mb-0">
                 {/* Module Header */}
-                <div className={`bg-white/[0.03] border ${colors.border} rounded-xl p-6 mb-6`}>
+                <div className={`bg-[#1A1A1A] border ${colors.border} rounded-xl p-6 mb-6`}>
                   <div className="flex items-center gap-4 mb-4">
                     <div className={`w-12 h-12 ${colors.bg} rounded-lg flex items-center justify-center`}>
                       <module.icon className={`w-6 h-6 ${colors.text}`} />
@@ -206,7 +207,7 @@ export default function ModulesPage() {
                     </div>
                   </div>
                   <p className="text-gray-400 mb-4">{module.description}</p>
-                  <div className={`bg-white/[0.03] rounded-lg p-4 border-l-2 ${colors.border.replace('border-', 'border-l-')}`}>
+                  <div className={`bg-[#1A1A1A] rounded-lg p-4 border-l-2 ${colors.border.replace('border-', 'border-l-')}`}>
                     <p className={`text-sm ${colors.text} font-medium`}>核心价值：{module.value}</p>
                   </div>
                 </div>
@@ -214,7 +215,7 @@ export default function ModulesPage() {
                 {/* Features Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                   {module.features.map((feature) => (
-                    <div key={feature.title} className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 flex items-start gap-3">
+                    <div key={feature.title} className="bg-[#1A1A1A] border border-white/[0.06] rounded-xl p-4 flex items-start gap-3">
                       <feature.icon className={`w-5 h-5 ${colors.text} shrink-0 mt-0.5`} />
                       <div>
                         <h4 className="text-sm font-semibold mb-1">{feature.title}</h4>
@@ -225,11 +226,11 @@ export default function ModulesPage() {
                 </div>
 
                 {/* Use Cases */}
-                <div className="bg-white/[0.02] border border-white/[0.05] rounded-xl p-4">
+                <div className="bg-[#111111] border border-white/[0.05] rounded-xl p-4">
                   <p className="text-xs text-gray-500 mb-3">典型应用场景：</p>
                   <div className="flex flex-wrap gap-2">
                     {module.useCases.map((uc) => (
-                      <span key={uc} className="text-xs bg-white/[0.05] text-gray-400 px-3 py-1 rounded-full">
+                      <span key={uc} className="text-xs bg-[#222222] text-gray-400 px-3 py-1 rounded-full">
                         {uc}
                       </span>
                     ))}
@@ -242,7 +243,7 @@ export default function ModulesPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-6 bg-white/[0.02] border-t border-white/5">
+      <section className="py-20 px-6 bg-[#111111] border-t border-white/5">
         <div className="max-w-3xl mx-auto text-center">
           <h2 className="text-2xl font-bold mb-4">
             想深入了解某个模块？
@@ -271,10 +272,12 @@ export default function ModulesPage() {
       <footer className="border-t border-white/5 py-10 px-6">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-cyan-500 rounded flex items-center justify-center">
-              <span className="text-black font-bold text-xs">V</span>
-            </div>
-            <span className="text-sm font-medium">VertaX</span>
+            <Link href="/" className="flex items-center gap-2">
+              <div className="w-6 h-6 bg-cyan-500 rounded flex items-center justify-center">
+                <span className="text-black font-bold text-xs">V</span>
+              </div>
+              <span className="text-sm font-medium">VertaX</span>
+            </Link>
             <span className="text-xs text-gray-600 ml-2">© {new Date().getFullYear()} VERTAX LIMITED</span>
           </div>
           <div className="flex items-center gap-6 text-xs text-gray-500">

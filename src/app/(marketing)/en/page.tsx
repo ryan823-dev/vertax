@@ -1,9 +1,9 @@
 import { Metadata } from 'next';
+import Link from 'next/link';
 import React from 'react';
 import {
   ArrowRight, Target, TrendingUp, Send,
-  Brain, Layers, Megaphone, Radar, Gauge,
-  Zap, Shield, BarChart3, CheckCircle2,
+  Brain, Megaphone, Radar,
   Globe,
 } from 'lucide-react';
 
@@ -81,16 +81,16 @@ export default function EnglishLandingPage() {
       {/* Nav */}
       <nav className="sticky top-0 z-50 border-b border-white/5 bg-[#0a0a14]/80 backdrop-blur-md">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <a href="/en" className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2">
             <div className="w-7 h-7 bg-cyan-500 rounded-md flex items-center justify-center">
               <span className="text-black font-bold text-xs">V</span>
             </div>
             <span className="text-lg font-bold tracking-tight">VertaX</span>
-          </a>
+          </Link>
           <div className="flex items-center gap-4 text-sm">
-            <a href="/" className="text-gray-400 hover:text-white transition-colors flex items-center gap-1">
+            <Link href="/" className="text-gray-400 hover:text-white transition-colors flex items-center gap-1">
               <Globe className="w-3.5 h-3.5" /> 中文
-            </a>
+            </Link>
             <a
               href="/contact"
               className="bg-cyan-500 hover:bg-cyan-400 text-black font-semibold px-4 py-1.5 rounded-lg transition-colors"
@@ -158,7 +158,7 @@ export default function EnglishLandingPage() {
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {capabilities.map((c, i) => (
-              <div key={i} className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-6">
+              <div key={i} className="bg-[#1A1A1A] border border-white/[0.06] rounded-xl p-6">
                 <c.icon className="w-6 h-6 text-cyan-400 mb-3" />
                 <h3 className="text-base font-bold mb-2">{c.title}</h3>
                 <p className="text-sm text-gray-400 leading-relaxed">{c.desc}</p>
@@ -173,7 +173,7 @@ export default function EnglishLandingPage() {
         <div className="max-w-4xl mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {stats.map((s, i) => (
-              <div key={i} className="text-center p-5 bg-white/[0.02] border border-white/[0.06] rounded-xl">
+              <div key={i} className="text-center p-5 bg-[#111111] border border-white/[0.06] rounded-xl">
                 <div className="text-3xl font-bold text-cyan-400 mb-1">{s.value}</div>
                 <p className="text-sm font-medium text-white mb-0.5">{s.label}</p>
                 <p className="text-xs text-gray-500">{s.desc}</p>
@@ -203,17 +203,19 @@ export default function EnglishLandingPage() {
       <footer className="border-t border-white/5 py-10 px-6">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-cyan-500 rounded flex items-center justify-center">
-              <span className="text-black font-bold text-xs">V</span>
-            </div>
-            <span className="text-sm font-medium">VertaX</span>
+            <Link href="/" className="flex items-center gap-2">
+              <div className="w-6 h-6 bg-cyan-500 rounded flex items-center justify-center">
+                <span className="text-black font-bold text-xs">V</span>
+              </div>
+              <span className="text-sm font-medium">VertaX</span>
+            </Link>
             <span className="text-xs text-gray-600 ml-2">&copy; {new Date().getFullYear()} VERTAX LIMITED</span>
           </div>
           <div className="flex items-center gap-6 text-xs text-gray-500">
             <span>contact@vertax.top</span>
-            <a href="/" className="hover:text-gray-300 transition-colors flex items-center gap-1">
+            <Link href="/" className="hover:text-gray-300 transition-colors flex items-center gap-1">
               <Globe className="w-3 h-3" /> 中文版
-            </a>
+            </Link>
           </div>
         </div>
       </footer>

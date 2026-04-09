@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import Link from 'next/link';
 import { ArrowRight, Calendar, Clock, TrendingUp, Zap, Brain, Target, Globe, BarChart3, Rocket } from 'lucide-react';
 
 export const metadata: Metadata = {
@@ -117,14 +118,14 @@ export default function BlogPage() {
       {/* Navigation */}
       <nav className="sticky top-0 z-50 border-b border-white/5 bg-[#0a0a14]/80 backdrop-blur-md">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2">
             <div className="w-7 h-7 bg-cyan-500 rounded-md flex items-center justify-center">
               <span className="text-black font-bold text-xs">V</span>
             </div>
             <span className="text-lg font-bold tracking-tight">VertaX</span>
-          </div>
+          </Link>
           <div className="flex items-center gap-4 text-sm">
-            <a href="/" className="text-gray-400 hover:text-white transition-colors">首页</a>
+            <Link href="/" className="text-gray-400 hover:text-white transition-colors">首页</Link>
             <a href="/features" className="text-gray-400 hover:text-white transition-colors">功能</a>
             <a href="/pricing" className="text-gray-400 hover:text-white transition-colors">合作方案</a>
             <a href="/about" className="text-gray-400 hover:text-white transition-colors">关于</a>
@@ -163,7 +164,7 @@ export default function BlogPage() {
             {featuredPosts.map((post) => (
               <article
                 key={post.title}
-                className="group bg-white/[0.03] border border-white/[0.06] rounded-2xl p-6 hover:border-cyan-500/20 transition-colors"
+                className="group bg-[#1A1A1A] border border-white/[0.06] rounded-2xl p-6 hover:border-cyan-500/20 transition-colors"
               >
                 <post.icon className="w-8 h-8 text-cyan-400 mb-4" />
                 <div className="flex items-center gap-2 text-xs text-cyan-500/70 font-medium mb-3">
@@ -189,13 +190,13 @@ export default function BlogPage() {
       </section>
 
       {/* Categories */}
-      <section className="py-12 px-6 bg-white/[0.02]">
+      <section className="py-12 px-6 bg-[#111111]">
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-wrap gap-3">
             {categories.map((category) => (
               <button
                 key={category.name}
-                className="px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-white/[0.03] border border-white/[0.06] hover:border-cyan-500/30 hover:text-cyan-400"
+                className="px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-[#1A1A1A] border border-white/[0.06] hover:border-cyan-500/30 hover:text-cyan-400"
               >
                 {category.name}
                 <span className="ml-2 text-xs text-gray-500">({category.count})</span>
@@ -213,7 +214,7 @@ export default function BlogPage() {
             {recentPosts.map((post, index) => (
               <article
                 key={post.title}
-                className="group flex flex-col md:flex-row gap-6 p-6 bg-white/[0.03] border border-white/[0.06] rounded-xl hover:border-cyan-500/20 transition-colors"
+                className="group flex flex-col md:flex-row gap-6 p-6 bg-[#1A1A1A] border border-white/[0.06] rounded-xl hover:border-cyan-500/20 transition-colors"
               >
                 <div className="flex-1">
                   <div className="flex items-center gap-3 text-xs text-gray-500 mb-2">
@@ -246,7 +247,7 @@ export default function BlogPage() {
       </section>
 
       {/* Newsletter Signup */}
-      <section className="py-24 px-6 bg-white/[0.02]">
+      <section className="py-24 px-6 bg-[#111111]">
         <div className="max-w-3xl mx-auto text-center">
           <div className="flex items-center justify-center gap-2 mb-6">
             <Globe className="w-6 h-6 text-cyan-400" />
@@ -300,10 +301,12 @@ export default function BlogPage() {
       <footer className="border-t border-white/5 py-10 px-6">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-cyan-500 rounded flex items-center justify-center">
-              <span className="text-black font-bold text-xs">V</span>
-            </div>
-            <span className="text-sm font-medium">VertaX</span>
+            <Link href="/" className="flex items-center gap-2">
+              <div className="w-6 h-6 bg-cyan-500 rounded flex items-center justify-center">
+                <span className="text-black font-bold text-xs">V</span>
+              </div>
+              <span className="text-sm font-medium">VertaX</span>
+            </Link>
             <span className="text-xs text-gray-600 ml-2">© {new Date().getFullYear()} VERTAX LIMITED</span>
           </div>
           <div className="flex items-center gap-6 text-xs text-gray-500">

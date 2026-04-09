@@ -121,7 +121,7 @@ ${companyProfile.scenarios.map((s, i) => `${i + 1}. ${s.industry} - ${s.scenario
 ${companyProfile.differentiators.map((d, i) => `${i + 1}. ${d.point}：${d.description}`).join('\n')}
 
 目标行业：${companyProfile.targetIndustries.join('、') || '未指定'}
-海外目标市场：${companyProfile.targetRegions.map(r => typeof r === 'string' ? r : r.region).join('、') || '未指定'}
+海外目标市场：${companyProfile.targetRegions.join('、') || '未指定'}
 
 客户痛点：
 ${companyProfile.painPoints.map((p, i) => `${i + 1}. ${p.pain} → ${p.howWeHelp}`).join('\n')}

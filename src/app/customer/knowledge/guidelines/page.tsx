@@ -12,8 +12,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
-  Plus, Loader2, Pencil, Trash2, BookOpen, Building2, AlertCircle, 
-  ThumbsUp, ThumbsDown, Sparkles, Mic, Palette, MessageSquare, X
+  Plus, Loader2, Trash2, BookOpen, Building2, AlertCircle, 
+  ThumbsUp, ThumbsDown, Sparkles, Mic, Palette, MessageSquare, X,
+  type LucideIcon,
 } from 'lucide-react';
 import {
   getGuidelines, createGuideline, updateGuideline, deleteGuideline,
@@ -23,7 +24,7 @@ import { EngineHeader } from '@/components/knowledge/engine-header';
 import type { GuidelineData, GuidelineCategoryValue, CreateGuidelineInput } from '@/types/knowledge';
 import type { PipelineStatus } from '@/lib/knowledge/pipeline';
 
-const CATEGORY_TABS: Array<{ value: GuidelineCategoryValue; label: string; icon: any }> = [
+const CATEGORY_TABS: Array<{ value: GuidelineCategoryValue; label: string; icon: LucideIcon }> = [
   { value: 'tone', label: '语气风格', icon: Mic },
   { value: 'terminology', label: '术语规范', icon: BookOpen },
   { value: 'visual', label: '视觉规范', icon: Palette },

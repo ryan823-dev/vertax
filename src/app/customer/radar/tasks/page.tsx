@@ -302,7 +302,7 @@ export default function RadarTasksPage() {
                         </div>
                         <div className="text-xs text-slate-500">
                           数据源：{task.source.name} · 
-                          最后运行：{task.lastRunAt ? new Date(task.lastRunAt).toLocaleString('zh-CN') : '未运行'}
+                          最后运行：{task.completedAt ? new Date(task.completedAt).toLocaleString('zh-CN') : task.startedAt ? new Date(task.startedAt).toLocaleString('zh-CN') : '未运行'}
                         </div>
                       </div>
                     </div>

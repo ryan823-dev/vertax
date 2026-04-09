@@ -11,7 +11,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   Upload, Loader2, RefreshCw, Search as SearchIcon, 
-  FileText, AlertCircle, CheckCircle2, Clock, RotateCw,
+  FileText, AlertCircle, Clock, RotateCw,
   Grid3X3, List, Sparkles, Database, ChevronRight, Globe,
 } from 'lucide-react';
 import { getKnowledgeAssets, triggerAssetProcessing } from '@/actions/assets';

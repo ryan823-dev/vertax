@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { LayoutGrid, List, Upload } from "lucide-react";
 import { PageHeader } from "@/components/common/page-header";
 import { Button } from "@/components/ui/button";
@@ -52,6 +51,10 @@ import type {
 } from "@/types/assets";
 
 type ViewMode = "grid" | "list";
+
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error && error.message ? error.message : fallback;
+}
 
 export default function AssetsPage() {
   const [_isPending, startTransition] = useTransition();
@@ -173,7 +176,7 @@ export default function AssetsPage() {
         setDetailAsset(detail);
         setDetailOpen(true);
       }
-    } catch (error) {
+    } catch {
       toast.error("加载详情失败");
     }
   };
@@ -184,7 +187,7 @@ export default function AssetsPage() {
       await updateAsset(id, data);
       toast.success("保存成功");
       loadData();
-    } catch (error) {
+    } catch {
       toast.error("保存失败");
     }
   };
@@ -194,7 +197,7 @@ export default function AssetsPage() {
     try {
       const url = await getAssetDownloadUrl(id);
       window.open(url, "_blank");
-    } catch (error) {
+    } catch {
       toast.error("获取下载链接失败");
     }
   };
@@ -210,7 +213,7 @@ export default function AssetsPage() {
       setSelectedIds(new Set());
       setDetailOpen(false);
       loadData();
-    } catch (error) {
+    } catch {
       toast.error("删除失败");
     }
   };
@@ -226,7 +229,7 @@ export default function AssetsPage() {
       setSelectedIds(new Set());
       setMoveDialogOpen(false);
       loadData();
-    } catch (error) {
+    } catch {
       toast.error("移动失败");
     }
   };
@@ -255,8 +258,8 @@ export default function AssetsPage() {
         setSelectedFolderId(null);
       }
       loadData();
-    } catch (error: any) {
-      toast.error(error.message || "删除失败");
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, "删除失败"));
     }
   };
 
@@ -279,8 +282,8 @@ export default function AssetsPage() {
       }
       setFolderDialogOpen(false);
       loadData();
-    } catch (error: any) {
-      toast.error(error.message || "操作失败");
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, "操作失败"));
     }
   };
 

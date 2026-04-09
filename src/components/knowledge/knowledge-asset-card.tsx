@@ -51,7 +51,7 @@ export function KnowledgeAssetCard({ asset, onViewChunks, onProcessingUpdate }: 
       const result = await triggerAssetProcessing(asset.id);
       setCurrentStatus(result.processingStatus);
       onProcessingUpdate?.();
-    } catch (error) {
+    } catch {
       setCurrentStatus('failed');
     } finally {
       setIsProcessing(false);

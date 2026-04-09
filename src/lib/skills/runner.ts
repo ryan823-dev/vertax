@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { chatCompletion } from '@/lib/ai-client';
 import { prisma } from '@/lib/prisma';
+import { normalizeTargetRegions } from '@/lib/regions';
 import { logActivity, ACTIVITY_ACTIONS, EVENT_CATEGORIES } from '@/lib/utils/activity-logger';
 import { getSkill, getSkillNames } from './registry';
 import { loadEvidenceContext } from './evidence-loader';
@@ -159,7 +160,7 @@ async function loadCompanyProfile(tenantId: string): Promise<CompanyProfileConte
     scenarios: (profile.scenarios as Array<{ industry: string; scenario: string }>) || [],
     differentiators: (profile.differentiators as Array<{ point: string; description: string }>) || [],
     targetIndustries: (profile.targetIndustries as string[]) || [],
-    targetRegions: (profile.targetRegions as Array<{ region: string; countries: string[]; rationale: string }>) || [],
+    targetRegions: normalizeTargetRegions(profile.targetRegions),
     buyerPersonas: (profile.buyerPersonas as Array<{ role: string; title: string; concerns: string[] }>) || [],
     painPoints: (profile.painPoints as Array<{ pain: string; howWeHelp: string }>) || [],
     buyingTriggers: (profile.buyingTriggers as string[]) || [],

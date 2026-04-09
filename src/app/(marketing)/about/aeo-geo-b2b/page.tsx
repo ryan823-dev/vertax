@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import Link from 'next/link';
 import { ArrowRight, Search, Brain, Target, TrendingUp, Zap, Globe, MessageSquare, BookOpen } from 'lucide-react';
 import { BreadcrumbSchema, breadcrumbPaths } from '@/components/seo/breadcrumb-schema';
 
@@ -105,14 +106,14 @@ export default function AeoGeoB2bPage() {
         {/* Navigation */}
         <nav className="sticky top-0 z-50 border-b border-white/5 bg-[#0a0a14]/80 backdrop-blur-md">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2">
             <div className="w-7 h-7 bg-cyan-500 rounded-md flex items-center justify-center">
               <span className="text-black font-bold text-xs">V</span>
             </div>
             <span className="text-lg font-bold tracking-tight">VertaX</span>
-          </div>
+          </Link>
           <div className="flex items-center gap-4 text-sm">
-            <a href="/" className="text-gray-400 hover:text-white transition-colors">首页</a>
+            <Link href="/" className="text-gray-400 hover:text-white transition-colors">首页</Link>
             <a href="/features" className="text-gray-400 hover:text-white transition-colors">功能</a>
             <a href="/about" className="text-gray-400 hover:text-white transition-colors">关于</a>
             <a href="/contact" className="bg-cyan-500 hover:bg-cyan-400 text-black font-semibold px-4 py-1.5 rounded-lg transition-colors">
@@ -144,7 +145,7 @@ export default function AeoGeoB2bPage() {
           <h2 className="text-2xl font-bold mb-8">什么是 AEO 和 GEO？</h2>
           <div className="space-y-6">
             {concepts.map(({ acronym, fullName, chinese, description, examples }) => (
-              <div key={acronym} className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-6">
+              <div key={acronym} className="bg-[#1A1A1A] border border-white/[0.06] rounded-xl p-6">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-12 h-12 bg-cyan-500/10 rounded-lg flex items-center justify-center">
                     <span className="text-lg font-bold text-cyan-400">{acronym}</span>
@@ -157,7 +158,7 @@ export default function AeoGeoB2bPage() {
                 <p className="text-gray-400 text-sm leading-relaxed mb-4">{description}</p>
                 <div className="flex flex-wrap gap-2">
                   {examples.map(example => (
-                    <span key={example} className="text-xs bg-white/[0.05] text-gray-400 px-2 py-1 rounded">
+                    <span key={example} className="text-xs bg-[#222222] text-gray-400 px-2 py-1 rounded">
                       {example}
                     </span>
                   ))}
@@ -169,12 +170,12 @@ export default function AeoGeoB2bPage() {
       </section>
 
       {/* Why It Matters for B2B */}
-      <section className="py-16 px-6 bg-white/[0.02]">
+      <section className="py-16 px-6 bg-[#111111]">
         <div className="max-w-3xl mx-auto">
-          <h2 className="text-2xl font-bold mb-8">为什么 B2B 出海企业必须关注？</h2>
+          <h2 className="text-2xl font-bold text-white mb-8">为什么 B2B 出海企业必须关注？</h2>
           <div className="space-y-4">
             {whyItMatters.map(({ title, description, stat }) => (
-              <div key={title} className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5 flex items-start gap-4">
+              <div key={title} className="bg-[#1A1A1A] border border-white/[0.06] rounded-xl p-5 flex items-start gap-4">
                 <div className="w-16 h-16 bg-cyan-500/10 rounded-lg flex items-center justify-center shrink-0">
                   <span className="text-sm font-bold text-cyan-400">{stat}</span>
                 </div>
@@ -221,12 +222,12 @@ export default function AeoGeoB2bPage() {
       </section>
 
       {/* How to Do It */}
-      <section className="py-16 px-6 bg-white/[0.02]">
+      <section className="py-16 px-6 bg-[#111111]">
         <div className="max-w-3xl mx-auto">
-          <h2 className="text-2xl font-bold mb-8">如何做 AEO/GEO 优化？</h2>
+          <h2 className="text-2xl font-bold text-white mb-8">如何做 AEO/GEO 优化？</h2>
           <div className="space-y-6">
             {howToDo.map(({ step, title, items }) => (
-              <div key={step} className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-6">
+              <div key={step} className="bg-[#1A1A1A] border border-white/[0.06] rounded-xl p-6">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-8 h-8 bg-cyan-500 rounded-lg flex items-center justify-center text-sm font-bold text-black">
                     {step}
@@ -258,7 +259,7 @@ export default function AeoGeoB2bPage() {
               { icon: Globe, title: '多渠道分发', desc: '官网、公众号、视频号等统一品牌表述' },
               { icon: TrendingUp, title: 'SEO + GEO 双策略', desc: '同时适配传统搜索和 AI 搜索的推荐逻辑' },
             ].map(({ icon: Icon, title, desc }) => (
-              <div key={title} className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5 flex items-start gap-4 hover:border-cyan-500/20 transition-colors">
+              <div key={title} className="bg-[#1A1A1A] border border-white/[0.06] rounded-xl p-5 flex items-start gap-4 hover:border-cyan-500/20 transition-colors">
                 <div className="w-10 h-10 bg-cyan-500/10 rounded-lg flex items-center justify-center shrink-0">
                   <Icon className="w-5 h-5 text-cyan-400" />
                 </div>
@@ -315,10 +316,12 @@ export default function AeoGeoB2bPage() {
       <footer className="border-t border-white/5 py-10 px-6">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-cyan-500 rounded flex items-center justify-center">
-              <span className="text-black font-bold text-xs">V</span>
-            </div>
-            <span className="text-sm font-medium">VertaX</span>
+            <Link href="/" className="flex items-center gap-2">
+              <div className="w-6 h-6 bg-cyan-500 rounded flex items-center justify-center">
+                <span className="text-black font-bold text-xs">V</span>
+              </div>
+              <span className="text-sm font-medium">VertaX</span>
+            </Link>
             <span className="text-xs text-gray-600 ml-2">© {new Date().getFullYear()} VERTAX LIMITED</span>
           </div>
           <div className="flex items-center gap-6 text-xs text-gray-500">

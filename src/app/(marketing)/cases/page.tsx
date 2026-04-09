@@ -1,9 +1,8 @@
 import { Metadata } from 'next';
-import Link from 'next/link';
-import { ArrowRight, Building2, Target, TrendingUp, Zap, Globe, Brain, CheckCircle2, Users, BarChart3, MessageSquare } from 'lucide-react';
+import { ArrowRight, Building2, Target, Zap, Brain, CheckCircle2, Users, BarChart3 } from 'lucide-react';
 import { BreadcrumbSchema, breadcrumbPaths } from '@/components/seo/breadcrumb-schema';
 import { colors } from '@/lib/design-tokens';
-import { MarketingNav, MarketingFooter, SectionHeader, Card, GoldButton, OutlineButton, GoldBadge } from '@/components/marketing/design-system';
+import { MarketingNav, MarketingFooter, Card, GoldButton, OutlineButton, GoldBadge } from '@/components/marketing/design-system';
 
 export const metadata: Metadata = {
   title: 'VertaX 客户案例｜如何帮助企业打开全球市场',

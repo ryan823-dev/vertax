@@ -2,7 +2,6 @@
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { EVENT_CATEGORIES } from "@/lib/utils/activity-logger";
 
 // ===================== Types =====================
 

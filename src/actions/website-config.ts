@@ -7,6 +7,7 @@
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getWebsiteConfigStatus } from "@/lib/website-config-status";
 import type { WebsiteConfigFormData, WebsiteConfigDetail } from "./website-config.types";
 
 async function getTenantId(): Promise<string | null> {
@@ -38,11 +39,17 @@ function toDetail(config: {
   createdAt: Date;
   updatedAt: Date;
 }): WebsiteConfigDetail {
+  const statusInfo = getWebsiteConfigStatus(config);
+
   return {
     id: config.id,
     siteName: config.siteName,
     url: config.url,
     siteType: config.siteType,
+    status: statusInfo.status,
+    statusLabel: statusInfo.statusLabel,
+    statusMessage: statusInfo.statusMessage,
+    isPublishReady: statusInfo.isPublishReady,
     supabaseUrl: config.supabaseUrl,
     functionName: config.functionName,
     webhookUrl: config.webhookUrl,

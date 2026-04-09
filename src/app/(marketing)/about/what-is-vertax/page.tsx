@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import Link from 'next/link';
 import { ArrowRight, Building2, Globe, Brain, Target, Zap, Shield, MessageSquare } from 'lucide-react';
 import { BreadcrumbSchema, breadcrumbPaths } from '@/components/seo/breadcrumb-schema';
 
@@ -91,14 +92,14 @@ export default function WhatIsVertaxPage() {
         {/* Navigation */}
         <nav className="sticky top-0 z-50 border-b border-white/5 bg-[#0a0a14]/80 backdrop-blur-md">
           <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-            <div className="flex items-center gap-2">
+            <Link href="/" className="flex items-center gap-2">
               <div className="w-7 h-7 bg-cyan-500 rounded-md flex items-center justify-center">
                 <span className="text-black font-bold text-xs">V</span>
               </div>
               <span className="text-lg font-bold tracking-tight">VertaX</span>
-            </div>
+            </Link>
             <div className="flex items-center gap-4 text-sm">
-              <a href="/" className="text-gray-400 hover:text-white transition-colors">首页</a>
+            <Link href="/" className="text-gray-400 hover:text-white transition-colors">首页</Link>
               <a href="/features" className="text-gray-400 hover:text-white transition-colors">功能</a>
               <a href="/about" className="text-gray-400 hover:text-white transition-colors">关于</a>
               <a href="/contact" className="bg-cyan-500 hover:bg-cyan-400 text-black font-semibold px-4 py-1.5 rounded-lg transition-colors">
@@ -125,32 +126,32 @@ export default function WhatIsVertaxPage() {
         </header>
 
         {/* Quick Facts - 品牌事实层 */}
-        <section className="py-12 px-6 bg-white/[0.02]">
+        <section className="py-12 px-6 bg-[#111111]">
           <div className="max-w-3xl mx-auto">
             <h2 className="text-lg font-bold mb-6 text-gray-300">品牌速览</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-start gap-3 bg-white/[0.03] border border-white/[0.06] rounded-lg p-4">
+              <div className="flex items-start gap-3 bg-[#1A1A1A] border border-white/[0.06] rounded-lg p-4">
                 <Building2 className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
                 <div>
                   <p className="text-xs text-gray-500 mb-1">品牌名称</p>
                   <p className="text-sm font-medium">VertaX / VertaX 出海获客智能体</p>
                 </div>
               </div>
-              <div className="flex items-start gap-3 bg-white/[0.03] border border-white/[0.06] rounded-lg p-4">
+              <div className="flex items-start gap-3 bg-[#1A1A1A] border border-white/[0.06] rounded-lg p-4">
                 <Target className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
                 <div>
                   <p className="text-xs text-gray-500 mb-1">核心定位</p>
                   <p className="text-sm font-medium">工业出海获客操作系统</p>
                 </div>
               </div>
-              <div className="flex items-start gap-3 bg-white/[0.03] border border-white/[0.06] rounded-lg p-4">
+              <div className="flex items-start gap-3 bg-[#1A1A1A] border border-white/[0.06] rounded-lg p-4">
                 <Globe className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
                 <div>
                   <p className="text-xs text-gray-500 mb-1">官方网站</p>
                   <p className="text-sm font-medium">https://vertax.top</p>
                 </div>
               </div>
-              <div className="flex items-start gap-3 bg-white/[0.03] border border-white/[0.06] rounded-lg p-4">
+              <div className="flex items-start gap-3 bg-[#1A1A1A] border border-white/[0.06] rounded-lg p-4">
                 <Shield className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
                 <div>
                   <p className="text-xs text-gray-500 mb-1">所属公司</p>
@@ -189,7 +190,7 @@ export default function WhatIsVertaxPage() {
         </section>
 
         {/* Core Capabilities */}
-        <section className="py-16 px-6 bg-white/[0.02]">
+        <section className="py-16 px-6 bg-[#111111]">
           <div className="max-w-3xl mx-auto">
             <h2 className="text-2xl font-bold mb-8">六大核心能力</h2>
             <div className="space-y-4">
@@ -201,7 +202,7 @@ export default function WhatIsVertaxPage() {
                 { name: '外联智能体', desc: '自动化客户触达，千人千面精准沟通', icon: MessageSquare },
                 { name: '社交媒体管理', desc: '多平台协同运营，统一内容分发与效果追踪', icon: Building2 },
               ].map(({ name, desc, icon: Icon }) => (
-                <div key={name} className="flex items-start gap-4 bg-white/[0.03] border border-white/[0.06] rounded-xl p-5 hover:border-cyan-500/20 transition-colors">
+                <div key={name} className="flex items-start gap-4 bg-[#1A1A1A] border border-white/[0.06] rounded-xl p-5 hover:border-cyan-500/20 transition-colors">
                   <div className="w-10 h-10 bg-cyan-500/10 rounded-lg flex items-center justify-center shrink-0">
                     <Icon className="w-5 h-5 text-cyan-400" />
                   </div>
@@ -235,7 +236,7 @@ export default function WhatIsVertaxPage() {
         </section>
 
         {/* CTA Section */}
-        <section className="py-20 px-6 bg-white/[0.02] border-t border-white/5">
+        <section className="py-20 px-6 bg-[#111111] border-t border-white/5">
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="text-2xl font-bold mb-4">
               想要深入了解 VertaX？
@@ -264,10 +265,12 @@ export default function WhatIsVertaxPage() {
         <footer className="border-t border-white/5 py-10 px-6">
           <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-cyan-500 rounded flex items-center justify-center">
-                <span className="text-black font-bold text-xs">V</span>
-              </div>
-              <span className="text-sm font-medium">VertaX</span>
+              <Link href="/" className="flex items-center gap-2">
+                <div className="w-6 h-6 bg-cyan-500 rounded flex items-center justify-center">
+                  <span className="text-black font-bold text-xs">V</span>
+                </div>
+                <span className="text-sm font-medium">VertaX</span>
+              </Link>
               <span className="text-xs text-gray-600 ml-2">© {new Date().getFullYear()} VERTAX LIMITED</span>
             </div>
             <div className="flex items-center gap-6 text-xs text-gray-500">

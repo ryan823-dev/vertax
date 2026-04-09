@@ -133,7 +133,6 @@ export function WebImportDialog({ open, onClose, onComplete }: WebImportDialogPr
   const progress = status ? (status.processedPages / status.totalPages) * 100 : 0;
   const isComplete = status?.status === "completed";
   const isFailed = status?.status === "failed";
-  const isProcessing = status?.status === "processing" || status?.status === "pending";
 
   if (!open) return null;
 
