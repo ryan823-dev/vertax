@@ -1,12 +1,28 @@
-"use client";
-
 import { TowerSidebar } from "@/components/tower/tower-sidebar";
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { isPlatformAdmin } from "@/lib/permissions";
 
-export default function TowerLayout({
+export default async function TowerLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const session = await auth();
+
+  if (!session?.user) {
+    redirect("/login");
+  }
+
+  if (
+    !isPlatformAdmin({
+      permissions: (session.user.permissions as string[]) ?? [],
+      roleName: session.user.roleName ?? "",
+    })
+  ) {
+    redirect(session.user.tenantId ? "/customer/home" : "/login");
+  }
+
   return (
     <>
       <meta name="robots" content="noindex, nofollow" />

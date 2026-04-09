@@ -16,6 +16,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { BreadcrumbSchema, breadcrumbPaths } from '@/components/seo/breadcrumb-schema';
+import { OrganizationSchema } from '@/components/seo/organization-schema';
 import { colors } from '@/lib/design-tokens';
 import { MarketingNav, MarketingFooter, SectionHeader, Card, GoldButton, OutlineButton, GoldBadge } from '@/components/marketing/design-system';
 
@@ -103,9 +104,49 @@ const capabilities = [
 ];
 
 export default function FeaturesPage() {
+  // SoftwareApplication Schema for VertaX
+  const softwareSchema = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "VertaX",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Web",
+    "description": "VertaX 是 AI 驱动的出海获客智能体，帮助中大型 B2B 企业搭建 24 小时运营的海外增长系统。包含知识引擎、获客雷达、增长系统、决策驾驶舱、外联智能体、社交媒体管理六大核心模块。",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "CNY",
+      "description": "预约演示获取报价"
+    },
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "4.8",
+      "ratingCount": "50",
+      "bestRating": "5"
+    },
+    "featureList": [
+      "知识引擎 - 企业私有知识库沉淀",
+      "获客雷达 - AI 驱动的客户发现与背调",
+      "增长系统 - SEO/GEO 内容生产与分发",
+      "决策驾驶舱 - GTM 数据看板与简报",
+      "外联智能体 - 自动化客户触达",
+      "社交媒体管理 - 多平台协同运营"
+    ],
+    "provider": {
+      "@type": "Organization",
+      "name": "VERTAX LIMITED",
+      "url": "https://vertax.top"
+    }
+  };
+
   return (
     <>
       <BreadcrumbSchema items={breadcrumbPaths.features} />
+      <OrganizationSchema />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareSchema) }}
+      />
       <div className="min-h-screen" style={{ background: colors.bg.primary, fontFamily: '-apple-system, "PingFang SC", "Microsoft YaHei", sans-serif' }}>
         <MarketingNav />
 

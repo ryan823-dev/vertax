@@ -91,10 +91,38 @@ export async function createTenantWithAdmin(data: {
     return { success: false, error: "slugExists" };
   }
 
-  // Get COMPANY_ADMIN role
-  const role = await db.role.findUnique({
-    where: { name: ROLES.COMPANY_ADMIN },
+  const companyAdminRoleNames = [
+    ROLES.COMPANY_ADMIN,
+    "company_admin",
+    "企业管理员",
+    "tenant_admin",
+  ];
+
+  const roleCandidates = await db.role.findMany({
+    where: {
+      name: {
+        in: companyAdminRoleNames,
+      },
+    },
+    select: {
+      id: true,
+      name: true,
+    },
   });
+
+  const role = companyAdminRoleNames
+    .map((roleName) =>
+      roleCandidates.find((candidate) => candidate.name === roleName)
+    )
+    .find(
+      (
+        candidate
+      ): candidate is {
+        id: string;
+        name: string;
+      } => Boolean(candidate)
+    );
+
   if (!role) {
     return { success: false, error: "roleNotFound" };
   }

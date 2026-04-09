@@ -11,6 +11,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
+import { isPlatformAdmin } from '@/lib/permissions';
 import { revalidatePath } from 'next/cache';
 
 // ==================== 类型定义 ====================
@@ -34,6 +35,20 @@ export interface ApiKeyConfigData {
   notes?: string;
 }
 
+async function requirePlatformAdmin() {
+  const session = await auth();
+
+  if (
+    !session?.user ||
+    !isPlatformAdmin({
+      permissions: (session.user.permissions as string[]) ?? [],
+      roleName: session.user.roleName ?? '',
+    })
+  ) {
+    throw new Error('Unauthorized');
+  }
+}
+
 // ==================== 查询功能 ====================
 
 /**
@@ -49,10 +64,7 @@ export async function getApiKeyConfigs(): Promise<Array<{
   usageResetAt: Date | null;
   notes: string | null;
 }>> {
-  const session = await auth();
-  if (!session?.user || session.user.roleName !== 'SUPER_ADMIN') {
-    throw new Error('Unauthorized');
-  }
+  await requirePlatformAdmin();
 
   const configs = await prisma.apiKeyConfig.findMany({
     select: {
@@ -86,10 +98,7 @@ export async function getApiKeyConfig(service: ApiService): Promise<{
   usageResetAt: Date | null;
   notes: string | null;
 } | null> {
-  const session = await auth();
-  if (!session?.user || session.user.roleName !== 'SUPER_ADMIN') {
-    throw new Error('Unauthorized');
-  }
+  await requirePlatformAdmin();
 
   const config = await prisma.apiKeyConfig.findUnique({
     where: { service },
@@ -117,10 +126,7 @@ export async function getApiKeyConfig(service: ApiService): Promise<{
  * 创建或更新API密钥配置
  */
 export async function upsertApiKeyConfig(data: ApiKeyConfigData): Promise<{ success: boolean; message: string }> {
-  const session = await auth();
-  if (!session?.user || session.user.roleName !== 'SUPER_ADMIN') {
-    throw new Error('Unauthorized');
-  }
+  await requirePlatformAdmin();
 
   try {
     await prisma.apiKeyConfig.upsert({
@@ -154,10 +160,7 @@ export async function upsertApiKeyConfig(data: ApiKeyConfigData): Promise<{ succ
  * 启用/禁用API
  */
 export async function toggleApiKey(service: ApiService, isEnabled: boolean): Promise<{ success: boolean; error?: string }> {
-  const session = await auth();
-  if (!session?.user || session.user.roleName !== 'SUPER_ADMIN') {
-    throw new Error('Unauthorized');
-  }
+  await requirePlatformAdmin();
 
   try {
     await prisma.apiKeyConfig.update({
@@ -178,10 +181,7 @@ export async function toggleApiKey(service: ApiService, isEnabled: boolean): Pro
  * 重置使用量
  */
 export async function resetApiUsage(service: ApiService): Promise<{ success: boolean; error?: string }> {
-  const session = await auth();
-  if (!session?.user || session.user.roleName !== 'SUPER_ADMIN') {
-    throw new Error('Unauthorized');
-  }
+  await requirePlatformAdmin();
 
   try {
     const now = new Date();
@@ -206,10 +206,7 @@ export async function resetApiUsage(service: ApiService): Promise<{ success: boo
  * 批量重置所有使用量
  */
 export async function resetAllApiUsage(): Promise<{ success: boolean; error?: string }> {
-  const session = await auth();
-  if (!session?.user || session.user.roleName !== 'SUPER_ADMIN') {
-    throw new Error('Unauthorized');
-  }
+  await requirePlatformAdmin();
 
   try {
     const now = new Date();
@@ -248,10 +245,7 @@ export async function getApiUsageStats(days: number = 30): Promise<{
   }>;
   totalCost: number;
 }> {
-  const session = await auth();
-  if (!session?.user || session.user.roleName !== 'SUPER_ADMIN') {
-    throw new Error('Unauthorized');
-  }
+  await requirePlatformAdmin();
 
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - days);
@@ -319,10 +313,7 @@ export async function getRecentApiLogs(limit: number = 100): Promise<Array<{
   createdAt: Date;
   metadata: Record<string, unknown> | null;
 }>> {
-  const session = await auth();
-  if (!session?.user || session.user.roleName !== 'SUPER_ADMIN') {
-    throw new Error('Unauthorized');
-  }
+  await requirePlatformAdmin();
 
   const logs = await prisma.apiCallLog.findMany({
     take: limit,

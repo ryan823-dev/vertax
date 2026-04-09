@@ -20,7 +20,7 @@
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",
     "@hookform/resolvers": "^5.2.2",
-    "@prisma/adapter-pg": "^7.3.0",
+    "@prisma/adapter-pg": "^5.16.2",
     "@prisma/client": "5.16.2",
     "@tiptap/pm": "^3.19.0",
     "@tiptap/react": "^3.19.0",

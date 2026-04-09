@@ -14,6 +14,7 @@ import {
   Eye,
   Filter,
   Sparkles,
+  Download,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -22,6 +23,8 @@ import {
   deleteContentPiece,
   type ContentPieceData,
 } from "@/actions/contents";
+import { exportContentsToCSV } from "@/actions/content-export";
+import { downloadCSV } from "@/lib/utils/download";
 import { getBriefs, type BriefListItem } from "@/actions/briefs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -114,6 +117,20 @@ export default function ContentsPage() {
     window.location.href = `/customer/marketing/contents/new?briefId=${selectedBriefId}`;
   };
 
+  const handleExport = async () => {
+    try {
+      const res = await exportContentsToCSV();
+      if (res.success && res.csvContent) {
+        downloadCSV(res.csvContent, res.filename);
+        toast.success("导出成功");
+      } else {
+        toast.error(res.error || "导出失败");
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "导出失败");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#F7F3E8]">
       {/* Header - 指令台 深蓝舞台风格 */}
@@ -139,6 +156,16 @@ export default function ContentsPage() {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleExport}
+                style={{ borderColor: 'rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.7)' }}
+                className="hover:bg-white/10"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                导出 CSV
+              </Button>
               <Button
                 size="sm"
                 onClick={() => setShowNewDialog(true)}

@@ -1,6 +1,7 @@
 import NextAuth from "next-auth";
 import { NextResponse } from "next/server";
 import { authConfig } from "@/lib/auth.config";
+import { isPlatformAdmin } from "@/lib/permissions";
 import { resolveTenant } from "@/lib/tenant-resolver";
 
 const { auth } = NextAuth(authConfig);
@@ -9,7 +10,7 @@ const publicPaths = ["/login", "/register", "/api/auth", "/api/inquiry"];
 
 const BASE_DOMAIN = process.env.NEXT_PUBLIC_BASE_DOMAIN || "vertax.top";
 
-export default auth((req) => {
+const proxy = auth((req) => {
   const { pathname } = req.nextUrl;
   // Get hostname from nextUrl for Vercel compatibility
   const hostname = req.nextUrl.hostname;
@@ -63,6 +64,18 @@ export default auth((req) => {
     return NextResponse.redirect(loginUrl);
   }
 
+  if (
+    req.auth &&
+    pathname.startsWith("/tower") &&
+    !isPlatformAdmin({
+      permissions: (req.auth.user?.permissions as string[]) ?? [],
+      roleName: (req.auth.user?.roleName as string) ?? "",
+    })
+  ) {
+    const fallbackPath = req.auth.user?.tenantId ? "/customer/home" : "/login";
+    return NextResponse.redirect(createRedirectUrl(fallbackPath));
+  }
+
   // If authenticated and on login/register, redirect to dashboard
   if (req.auth && (pathname === "/login" || pathname === "/register")) {
     const targetPath = isCustomerView ? "/customer/home" : "/tower";
@@ -71,6 +84,9 @@ export default auth((req) => {
 
   return NextResponse.next();
 });
+
+export { proxy };
+export default proxy;
 
 export const config = {
   matcher: ["/((?!_next|api/|.*\\..*).*)"],

@@ -1,6 +1,9 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowRight, Target, Brain, Globe, Shield, Users } from 'lucide-react';
+import { ArrowRight, Target, Brain, Globe, Shield, Users, BookOpen, Rocket, Server, Clock, HelpCircle, TrendingUp, Users as UsersIcon } from 'lucide-react';
+import { MarketingNav, MarketingFooter } from '@/components/marketing/design-system';
+import { BreadcrumbSchema } from '@/components/seo/breadcrumb-schema';
+import { SemanticTripleList } from '@/components/seo/semantic-content';
 
 export const metadata: Metadata = {
   title: '关于我们 - VertaX GTM Intelligence OS',
@@ -12,6 +15,46 @@ export const metadata: Metadata = {
     type: 'website',
   },
 };
+
+// 关于页面子页面导航
+const aboutSubpages = [
+  {
+    title: 'VertaX 是什么',
+    description: '了解 VertaX 的核心定位、六大模块和价值主张',
+    href: '/about/what-is-vertax',
+    icon: BookOpen,
+  },
+  {
+    title: '适合哪些企业',
+    description: '判断您的企业是否适合使用 VertaX',
+    href: '/about/who-is-vertax-for',
+    icon: UsersIcon,
+  },
+  {
+    title: '从0启动海外市场',
+    description: '没有外贸经验如何系统化启动出海',
+    href: '/about/start-overseas-from-zero',
+    icon: Rocket,
+  },
+  {
+    title: '私有化部署方案',
+    description: '适合有合规要求的企业本地部署',
+    href: '/about/private-deployment',
+    icon: Server,
+  },
+  {
+    title: '实施周期与指南',
+    description: '了解系统部署流程和效果预期',
+    href: '/about/implementation-guide',
+    icon: Clock,
+  },
+  {
+    title: 'B2B 海外营销',
+    description: 'B2B 企业出海营销策略与方法',
+    href: '/about/b2b-overseas-marketing',
+    icon: TrendingUp,
+  },
+];
 
 const values = [
   {
@@ -49,32 +92,29 @@ const story = [
   },
 ];
 
+// 语义三元组 - 便于 AI 理解页面核心信息
+const aboutTriples = [
+  { subject: "VertaX", verb: "是", object: "AI 驱动的出海获客智能体" },
+  { subject: "VertaX", verb: "帮助", object: "中大型 B2B 出海企业建立全球增长体系" },
+  { subject: "VertaX", verb: "包含", object: "六大核心模块：知识引擎、获客雷达、增长系统、决策驾驶舱、外联智能体、社交媒体管理" },
+  { subject: "VertaX", verb: "所属公司", object: "VERTAX LIMITED" },
+  { subject: "VertaX", verb: "官方网站", object: "https://vertax.top" },
+];
+
 export default function AboutPage() {
   return (
     <div className="min-h-screen bg-[#0a0a14] text-gray-100">
+      <BreadcrumbSchema items={[
+        { name: '首页', url: 'https://vertax.top' },
+        { name: '关于', url: 'https://vertax.top/about' }
+      ]} />
+      <SemanticTripleList triples={aboutTriples} />
+
       {/* Navigation */}
-      <nav className="sticky top-0 z-50 border-b border-white/5 bg-[#0a0a14]/80 backdrop-blur-md">
-        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-cyan-500 rounded-md flex items-center justify-center">
-              <span className="text-black font-bold text-xs">V</span>
-            </div>
-            <span className="text-lg font-bold tracking-tight">VertaX</span>
-          </Link>
-          <div className="flex items-center gap-4 text-sm">
-            <Link href="/" className="text-gray-400 hover:text-white transition-colors">首页</Link>
-            <a href="/features" className="text-gray-400 hover:text-white transition-colors">功能</a>
-            <a href="/pricing" className="text-gray-400 hover:text-white transition-colors">合作方案</a>
-            <a href="/about" className="text-white font-medium">关于</a>
-            <a href="/contact" className="bg-cyan-500 hover:bg-cyan-400 text-black font-semibold px-4 py-1.5 rounded-lg transition-colors">
-              预约演示
-            </a>
-          </div>
-        </div>
-      </nav>
+      <MarketingNav />
 
       {/* Hero Section */}
-      <section className="pt-20 pb-24 px-6">
+      <section className="pt-20 pb-16 px-6">
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6">
             让出海获客从<span className="text-cyan-400">靠人</span>变成<span className="text-cyan-400">靠系统</span>
@@ -82,6 +122,32 @@ export default function AboutPage() {
           <p className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto">
             VertaX 是 AI 驱动的企业出海增长引擎，致力于帮助 B2B 工业企业通过智能客户画像、全球渠道发现、自动化外联实现海外业务增长。
           </p>
+        </div>
+      </section>
+
+      {/* Subpage Navigation */}
+      <section className="pb-16 px-6 border-b border-white/5">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="text-lg font-semibold mb-6 text-center text-gray-300">深入了解 VertaX</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {aboutSubpages.map(({ title, description, href, icon: Icon }) => (
+              <Link
+                key={href}
+                href={href}
+                className="group bg-[#1A1A1A] border border-white/[0.06] hover:border-cyan-500/30 rounded-xl p-5 transition-all hover:bg-[#1A1A1A]/80"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 bg-cyan-500/10 rounded-lg flex items-center justify-center shrink-0 group-hover:bg-cyan-500/20 transition-colors">
+                    <Icon className="w-5 h-5 text-cyan-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold mb-1 group-hover:text-cyan-400 transition-colors">{title}</h3>
+                    <p className="text-sm text-gray-500">{description}</p>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -211,23 +277,7 @@ export default function AboutPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-white/5 py-10 px-6">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-cyan-500 rounded flex items-center justify-center">
-                <span className="text-black font-bold text-xs">V</span>
-              </div>
-              <span className="text-sm font-medium">VertaX</span>
-            </Link>
-            <span className="text-xs text-gray-600 ml-2">© {new Date().getFullYear()} VERTAX LIMITED</span>
-          </div>
-          <div className="flex items-center gap-6 text-xs text-gray-500">
-            <span>contact@vertax.top</span>
-            <a href="https://tower.vertax.top" className="hover:text-gray-300 transition-colors">管理后台</a>
-          </div>
-        </div>
-      </footer>
+      <MarketingFooter />
     </div>
   );
 }

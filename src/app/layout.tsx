@@ -92,6 +92,14 @@ export const metadata: Metadata = {
     icon: '/favicon.ico',
     apple: '/apple-touch-icon.png',
   },
+  
+  // 站长平台验证
+  verification: {
+    // 搜狗站长验证
+    other: {
+      'sogou_site_verification': 'wCwbGndJdL',
+    },
+  },
 };
 
 export default function RootLayout({

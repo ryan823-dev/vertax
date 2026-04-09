@@ -24,6 +24,8 @@ import {
   Check,
   BarChart3,
   Code2,
+  Clock,
+  GitCompare,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -39,9 +41,9 @@ import {
 import { getBriefById, type BriefDetail } from "@/actions/briefs";
 import { getEvidences } from "@/actions/evidence";
 import { getGuidelines } from "@/actions/guidelines";
-import { getLatestVersion, createVersion } from "@/actions/versions";
+import { getLatestVersion, createVersion, listVersions } from "@/actions/versions";
 import type { EvidenceData, GuidelineData } from "@/types/knowledge";
-import type { AnchorSpec, ArtifactStatusValue } from "@/types/artifact";
+import type { AnchorSpec, ArtifactStatusValue, ArtifactVersionData } from "@/types/artifact";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -59,9 +61,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { DateTimePicker } from "@/components/ui/date-time-picker";
 import { toast } from "sonner";
 import { CollaborativeShell } from "@/components/collaboration";
 import { ContentCandidatePanel } from "@/components/radar/content-candidate-panel";
+import { VersionDiffView } from "@/components/collaboration/version-diff-view";
 
 export default function ContentEditorPage() {
   const params = useParams();
@@ -96,6 +100,7 @@ export default function ContentEditorPage() {
     keywords: [] as string[],
     outline: null as ContentOutline | null,
     evidenceRefs: [] as string[],
+    scheduledAt: null as Date | null,
   });
 
   // UI state
@@ -122,6 +127,10 @@ export default function ContentEditorPage() {
     matched: boolean;
     matches: string[];
   }>>([]);
+
+  // Version history & diff
+  const [versions, setVersions] = useState<ArtifactVersionData[]>([]);
+  const [showDiffDialog, setShowDiffDialog] = useState(false);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -162,6 +171,7 @@ export default function ContentEditorPage() {
             keywords: contentData.keywords,
             outline: contentData.outline,
             evidenceRefs: contentData.evidenceRefs,
+            scheduledAt: contentData.scheduledAt ? new Date(contentData.scheduledAt) : null,
           });
           if (contentData.briefId) {
             const briefData = await getBriefById(contentData.briefId);
@@ -176,16 +186,21 @@ export default function ContentEditorPage() {
               const status = latestVersion.status as ArtifactStatusValue;
               setIsReadOnly(status === 'approved' || status === 'archived');
             }
+
+            // Load all versions for diff view
+            const allVersions = await listVersions('SeoContent', contentId);
+            setVersions(allVersions);
           } catch {
             // 如果没有版本，创建初始版本
             const newVersion = await createVersion(
-              'ContentPiece',
+              'SeoContent',
               contentId,
               contentData as unknown as Record<string, unknown>,
               { changeNote: '初始版本' }
             );
             setCurrentVersionId(newVersion.id);
             setIsReadOnly(false);
+            setVersions([newVersion]);
           }
         }
       }
@@ -258,6 +273,7 @@ export default function ContentEditorPage() {
           keywords: form.keywords,
           outline: form.outline || undefined,
           evidenceRefs: form.evidenceRefs,
+          scheduledAt: form.scheduledAt,
         });
         toast.success("内容已创建");
         router.push(`/customer/marketing/contents/${created.id}`);
@@ -273,6 +289,7 @@ export default function ContentEditorPage() {
           keywords: form.keywords,
           outline: form.outline || undefined,
           evidenceRefs: form.evidenceRefs,
+          scheduledAt: form.scheduledAt,
         });
         toast.success("已保存");
       }
@@ -414,6 +431,16 @@ export default function ContentEditorPage() {
                   <span className="text-xs text-[#D4AF37]">已批准 · 只读</span>
                 </div>
               )}
+              {!isNew && versions.length > 1 && (
+                <Button
+                  variant="outline"
+                  onClick={() => setShowDiffDialog(true)}
+                  className="border-[#E8E0D0] text-[#0B1B2B] hover:bg-[#F0EBD8]"
+                >
+                  <GitCompare className="w-4 h-4 mr-2" />
+                  版本对比
+                </Button>
+              )}
               <Button
                 onClick={handleSave}
                 disabled={isSaving || isReadOnly}
@@ -467,6 +494,25 @@ export default function ContentEditorPage() {
                 onChange={(e) => setForm({ ...form, slug: e.target.value })}
                 className="flex-1 max-w-xs bg-[#FFFCF7] border-[#E8E0D0] text-[#0B1B2B] text-sm"
               />
+            </div>
+            {/* Scheduled Publish */}
+            <div className="flex items-center gap-4 pt-2">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-slate-400" />
+                <Label className="text-sm text-slate-500">定时发布</Label>
+              </div>
+              <DateTimePicker
+                value={form.scheduledAt}
+                onChange={(date) => setForm({ ...form, scheduledAt: date })}
+                placeholder="选择发布时间"
+                minDate={new Date()}
+                className="w-64 bg-[#FFFCF7] border-[#E8E0D0] text-[#0B1B2B] text-sm"
+              />
+              {form.scheduledAt && (
+                <span className="text-xs text-slate-500">
+                  将在 {form.scheduledAt.toLocaleString("zh-CN")} 自动发布
+                </span>
+              )}
             </div>
           </div>
 
@@ -996,6 +1042,13 @@ export default function ContentEditorPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Version Diff Dialog */}
+      <VersionDiffView
+        versions={versions}
+        open={showDiffDialog}
+        onOpenChange={setShowDiffDialog}
+      />
     </div>
   );
 }

@@ -24,6 +24,7 @@ import {
   Plus,
   Library,
   CalendarClock,
+  Download,
 } from 'lucide-react';
 import {
   getSocialPosts,
@@ -33,6 +34,8 @@ import {
   deleteSocialPost,
   publishSocialPost,
 } from '@/actions/social';
+import { exportSocialPostsToCSV } from '@/actions/content-export';
+import { downloadCSV } from '@/lib/utils/download';
 import { getContentPieces } from '@/actions/contents';
 
 type ViewMode = 'list' | 'create';
@@ -231,6 +234,20 @@ export default function SocialPage() {
     }
   };
 
+  // 导出 CSV
+  const handleExport = async () => {
+    try {
+      const res = await exportSocialPostsToCSV();
+      if (res.success && res.csvContent) {
+        downloadCSV(res.csvContent, res.filename);
+      } else {
+        setError(res.error || '导出失败');
+      }
+    } catch {
+      setError('导出出错');
+    }
+  };
+
   // 获取状态标签
   const getStatusInfo = (status: string) => {
     const map: Record<string, { label: string; color: string }> = {
@@ -407,6 +424,16 @@ export default function SocialPage() {
             <p className="text-sm text-slate-400 mt-1">社交媒体管理与品牌传播</p>
           </div>
           <div className="flex items-center gap-3">
+            {viewMode === 'list' && (
+              <button 
+                onClick={handleExport}
+                className="px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors border"
+                style={{ borderColor: 'rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.7)' }}
+              >
+                <Download size={16} />
+                导出 CSV
+              </button>
+            )}
             {viewMode === 'list' ? (
               <button 
                 onClick={handleStartCreate}

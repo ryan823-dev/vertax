@@ -1,6 +1,7 @@
 'use server';
 
 import { auth } from '@/lib/auth';
+import { isPlatformAdmin } from '@/lib/permissions';
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 
@@ -23,7 +24,12 @@ export async function updateTenantEmailConfig(
     }
 
     // 检查是否是超级管理员（通过roleName判断）
-    if (session.user.roleName !== 'SUPER_ADMIN') {
+    if (
+      !isPlatformAdmin({
+        permissions: (session.user.permissions as string[]) ?? [],
+        roleName: session.user.roleName ?? '',
+      })
+    ) {
       return { success: false, error: 'Forbidden' };
     }
 
@@ -81,7 +87,12 @@ export async function getTenantEmailConfig(tenantId: string): Promise<{
     }
 
     // 检查是否是超级管理员
-    if (session.user.roleName !== 'SUPER_ADMIN') {
+    if (
+      !isPlatformAdmin({
+        permissions: (session.user.permissions as string[]) ?? [],
+        roleName: session.user.roleName ?? '',
+      })
+    ) {
       return { success: false, error: 'Forbidden' };
     }
 

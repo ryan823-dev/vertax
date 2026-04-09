@@ -28,6 +28,9 @@ export type ContentPieceData = {
   briefTitle?: string;
   outline: ContentOutline | null;
   evidenceRefs: string[];
+  // Scheduled publishing
+  scheduledAt: Date | null;
+  publishedAt: Date | null;
   // Relations
   categoryId: string;
   categoryName?: string;
@@ -60,10 +63,12 @@ export type CreateContentInput = {
   keywords?: string[];
   outline?: ContentOutline;
   evidenceRefs?: string[];
+  scheduledAt?: Date | null;
 };
 
 export type UpdateContentInput = Partial<CreateContentInput> & {
   status?: string;
+  scheduledAt?: Date | null;
 };
 
 // ==================== Helpers ====================
@@ -168,6 +173,8 @@ export async function getContentPieceById(id: string): Promise<ContentPieceData 
     briefTitle: c.brief?.title || undefined,
     outline: c.outline as ContentOutline | null,
     evidenceRefs: c.evidenceRefs,
+    scheduledAt: c.scheduledAt,
+    publishedAt: c.publishedAt,
     schemaJson: c.schemaJson as object | null,
     geoVersion: ((c.aiMetadata as Record<string, unknown>)?.geoVersion as string | null) || null,
     seoFramework: ((c.aiMetadata as Record<string, unknown>)?.seoFramework as string | null) || null,
@@ -200,6 +207,7 @@ export async function createContentPiece(input: CreateContentInput): Promise<Con
       keywords: input.keywords || [],
       outline: input.outline ? (input.outline as Prisma.InputJsonValue) : undefined,
       evidenceRefs: input.evidenceRefs || [],
+      scheduledAt: input.scheduledAt || null,
       status: "draft",
     },
   });
@@ -247,6 +255,8 @@ export async function createContentPiece(input: CreateContentInput): Promise<Con
     briefTitle: briefData?.title || undefined,
     outline: content.outline as ContentOutline | null,
     evidenceRefs: content.evidenceRefs,
+    scheduledAt: content.scheduledAt,
+    publishedAt: content.publishedAt,
     categoryId: content.categoryId,
     categoryName: categoryData?.name || undefined,
     authorName: authorData?.name || undefined,
@@ -278,6 +288,7 @@ export async function updateContentPiece(id: string, input: UpdateContentInput):
   if (input.categoryId !== undefined) data.categoryId = input.categoryId;
   if (input.briefId !== undefined) data.briefId = input.briefId || null;
   if (input.status !== undefined) data.status = input.status;
+  if (input.scheduledAt !== undefined) data.scheduledAt = input.scheduledAt || null;
   if (input.status === "published") data.autoPublishAt = null; // Clear grace period when manually publishing
 
   const updated = await prisma.seoContent.update({

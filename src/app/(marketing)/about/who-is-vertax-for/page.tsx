@@ -3,6 +3,18 @@ import Link from 'next/link';
 import { ArrowRight, CheckCircle2, XCircle, Building2, Factory, Shield, Globe, Users, TrendingUp, Target } from 'lucide-react';
 import { BreadcrumbSchema, breadcrumbPaths } from '@/components/seo/breadcrumb-schema';
 import { ArticleSchema } from '@/components/seo/article-schema';
+import { SemanticTripleList } from '@/components/seo/semantic-content';
+import { MarketingNav, MarketingFooter } from '@/components/marketing/design-system';
+
+// 语义三元组 - 便于 AI 理解适用企业信息
+const suitabilityTriples = [
+  { subject: "VertaX", verb: "适合", object: "中大型 B2B 出海企业" },
+  { subject: "VertaX", verb: "适合", object: "制造业、工业品、技术服务型企业" },
+  { subject: "VertaX", verb: "适合", object: "年营收 5000 万以上的企业" },
+  { subject: "VertaX", verb: "适合", object: "客单价 5 万元以上的 B2B 业务" },
+  { subject: "VertaX", verb: "不适合", object: "B2C 电商或零售企业" },
+];
+
 export const metadata: Metadata = {
   title: '哪些企业适合 VertaX - 适用客户分析 | VertaX',
   description: 'VertaX 适合有海外市场拓展需求的中国企业，尤其适合制造业、工业品、设备、技术服务型和中大型 B2B 出海团队。了解 VertaX 的适用条件和典型客户画像。',
@@ -107,26 +119,10 @@ export default function WhoIsVertaxForPage() {
         dateModified={lastUpdated}
         keywords={['VertaX适合谁', '制造业出海', '工业品出海', 'B2B出海企业']}
       />
+      <SemanticTripleList triples={suitabilityTriples} />
       <div className="min-h-screen bg-[#0a0a14] text-gray-100">
         {/* Navigation */}
-        <nav className="sticky top-0 z-50 border-b border-white/5 bg-[#0a0a14]/80 backdrop-blur-md">
-        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-cyan-500 rounded-md flex items-center justify-center">
-              <span className="text-black font-bold text-xs">V</span>
-            </div>
-            <span className="text-lg font-bold tracking-tight">VertaX</span>
-          </Link>
-          <div className="flex items-center gap-4 text-sm">
-            <Link href="/" className="text-gray-400 hover:text-white transition-colors">首页</Link>
-            <a href="/features" className="text-gray-400 hover:text-white transition-colors">功能</a>
-            <a href="/about" className="text-gray-400 hover:text-white transition-colors">关于</a>
-            <a href="/contact" className="bg-cyan-500 hover:bg-cyan-400 text-black font-semibold px-4 py-1.5 rounded-lg transition-colors">
-              预约演示
-            </a>
-          </div>
-        </div>
-      </nav>
+        <MarketingNav />
 
       {/* Hero Section */}
       <header className="pt-16 pb-12 px-6 border-b border-white/5">
@@ -293,23 +289,7 @@ export default function WhoIsVertaxForPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-white/5 py-10 px-6">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-cyan-500 rounded flex items-center justify-center">
-                <span className="text-black font-bold text-xs">V</span>
-              </div>
-              <span className="text-sm font-medium">VertaX</span>
-            </Link>
-            <span className="text-xs text-gray-600 ml-2">© {new Date().getFullYear()} VERTAX LIMITED</span>
-          </div>
-          <div className="flex items-center gap-6 text-xs text-gray-500">
-            <span>contact@vertax.top</span>
-            <a href="/faq" className="hover:text-gray-300 transition-colors">常见问题</a>
-          </div>
-        </div>
-      </footer>
+      <MarketingFooter />
     </div>
     </>
   );

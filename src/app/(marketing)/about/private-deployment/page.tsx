@@ -3,6 +3,16 @@ import Link from 'next/link';
 import { ArrowRight, Shield, Database, Settings, CheckCircle2, Building2, HardDrive } from 'lucide-react';
 import { BreadcrumbSchema } from '@/components/seo/breadcrumb-schema';
 import { ArticleSchema } from '@/components/seo/article-schema';
+import { SemanticTripleList } from '@/components/seo/semantic-content';
+import { MarketingNav, MarketingFooter } from '@/components/marketing/design-system';
+
+// 语义三元组 - 私有化部署
+const deploymentTriples = [
+  { subject: "VertaX", verb: "提供", object: "私有化部署方案" },
+  { subject: "私有化部署", verb: "确保", object: "客户数据完全自主可控" },
+  { subject: "私有化部署", verb: "适合", object: "有合规要求的中大型企业" },
+  { subject: "私有化部署周期", verb: "通常为", object: "2-4 周" },
+];
 
 export const metadata: Metadata = {
   title: '私有化部署AI获客系统 - 本地部署方案 | VertaX',
@@ -155,26 +165,10 @@ export default function PrivateDeploymentPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
       />
+      <SemanticTripleList triples={deploymentTriples} />
       <div className="min-h-screen bg-[#0a0a14] text-gray-100">
         {/* Navigation */}
-        <nav className="sticky top-0 z-50 border-b border-white/5 bg-[#0a0a14]/80 backdrop-blur-md">
-          <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="w-7 h-7 bg-cyan-500 rounded-md flex items-center justify-center">
-                <span className="text-black font-bold text-xs">V</span>
-              </div>
-              <span className="text-lg font-bold tracking-tight">VertaX</span>
-            </Link>
-            <div className="flex items-center gap-4 text-sm">
-              <Link href="/" className="text-gray-400 hover:text-white transition-colors">首页</Link>
-              <a href="/features" className="text-gray-400 hover:text-white transition-colors">功能</a>
-              <a href="/about" className="text-gray-400 hover:text-white transition-colors">关于</a>
-              <a href="/contact" className="bg-cyan-500 hover:bg-cyan-400 text-black font-semibold px-4 py-1.5 rounded-lg transition-colors">
-                预约演示
-              </a>
-            </div>
-          </div>
-        </nav>
+        <MarketingNav />
 
         {/* Hero Section */}
         <header className="pt-16 pb-12 px-6 border-b border-white/5">
@@ -346,23 +340,7 @@ export default function PrivateDeploymentPage() {
         </section>
 
         {/* Footer */}
-        <footer className="border-t border-white/5 py-10 px-6">
-          <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-2">
-              <Link href="/" className="flex items-center gap-2">
-                <div className="w-6 h-6 bg-cyan-500 rounded flex items-center justify-center">
-                  <span className="text-black font-bold text-xs">V</span>
-                </div>
-                <span className="text-sm font-medium">VertaX</span>
-              </Link>
-              <span className="text-xs text-gray-600 ml-2">© {new Date().getFullYear()} VERTAX LIMITED</span>
-            </div>
-            <div className="flex items-center gap-6 text-xs text-gray-500">
-              <span>contact@vertax.top</span>
-              <a href="/faq" className="hover:text-gray-300 transition-colors">常见问题</a>
-            </div>
-          </div>
-        </footer>
+        <MarketingFooter />
       </div>
     </>
   );

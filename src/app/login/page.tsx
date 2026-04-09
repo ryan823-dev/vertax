@@ -5,6 +5,7 @@ import { signIn, useSession } from "next-auth/react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { isPlatformAdminRoleName } from "@/lib/permissions";
 import {
   Card,
   CardContent,
@@ -63,6 +64,7 @@ export default function LoginPage() {
 
   const isExternalRedirect = redirectUrl && isValidVertaxRedirect(redirectUrl);
   const targetTenant = redirectUrl ? getTenantSlugFromUrl(redirectUrl) : null;
+  const isPlatformAdmin = isPlatformAdminRoleName(session?.user?.roleName);
 
   const handleCrossDomainRedirect = useCallback(async () => {
     if (!redirectUrl || !isExternalRedirect) return;
@@ -85,10 +87,17 @@ export default function LoginPage() {
   }, [redirectUrl, isExternalRedirect]);
 
   useEffect(() => {
-    if (status === "authenticated" && session?.user && isExternalRedirect) {
-      handleCrossDomainRedirect();
+    if (status !== "authenticated" || !session?.user) {
+      return;
     }
-  }, [status, session, isExternalRedirect, handleCrossDomainRedirect]);
+
+    if (isExternalRedirect) {
+      handleCrossDomainRedirect();
+      return;
+    }
+
+    window.location.href = isPlatformAdmin ? "/tower" : "/customer/home";
+  }, [status, session, isExternalRedirect, handleCrossDomainRedirect, isPlatformAdmin]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -110,9 +119,7 @@ export default function LoginPage() {
       if (isExternalRedirect) {
         await handleCrossDomainRedirect();
       } else {
-        // Detect tower subdomain to route to admin dashboard
-        const isTower = window.location.hostname.startsWith('tower.');
-        window.location.href = isTower ? '/tower' : '/customer/home';
+        window.location.href = isPlatformAdmin ? "/tower" : "/customer/home";
       }
     }
   }

@@ -1,10 +1,52 @@
 import { ROLES, APP_ROLES, DECIDER_ONLY_ACTIONS, type AppRole } from "./constants";
 import type { Session } from "next-auth";
 
+const PLATFORM_ADMIN_ROLE_KEYS = new Set([
+  "platform_admin",
+  "super_admin",
+  "admin",
+]);
+
+const COMPANY_ADMIN_ROLE_KEYS = new Set([
+  "company_admin",
+  "tenant_admin",
+  "企业管理员",
+]);
+
+function getRoleKey(roleName: string | undefined | null): string {
+  return roleName?.trim().toLowerCase() ?? "";
+}
+
 export type UserPermissions = {
   permissions: string[];
   roleName: string;
 };
+
+export function normalizeRoleName(roleName: string | undefined | null): string {
+  const roleKey = getRoleKey(roleName);
+
+  if (!roleKey) return "";
+  if (PLATFORM_ADMIN_ROLE_KEYS.has(roleKey)) return ROLES.PLATFORM_ADMIN;
+  if (COMPANY_ADMIN_ROLE_KEYS.has(roleKey)) return ROLES.COMPANY_ADMIN;
+
+  return roleName?.trim() ?? "";
+}
+
+export function isPlatformAdminRoleName(
+  roleName: string | undefined | null
+): boolean {
+  return normalizeRoleName(roleName) === ROLES.PLATFORM_ADMIN;
+}
+
+export function isCompanyAdminRoleName(
+  roleName: string | undefined | null
+): boolean {
+  const normalizedRoleName = normalizeRoleName(roleName);
+  return (
+    normalizedRoleName === ROLES.COMPANY_ADMIN ||
+    normalizedRoleName === ROLES.PLATFORM_ADMIN
+  );
+}
 
 /**
  * Check if a user has a specific permission.
@@ -31,15 +73,12 @@ export function checkPermission(
 
 export function isPlatformAdmin(user: UserPermissions | null | undefined): boolean {
   if (!user) return false;
-  return user.roleName === ROLES.PLATFORM_ADMIN;
+  return isPlatformAdminRoleName(user.roleName);
 }
 
 export function isCompanyAdmin(user: UserPermissions | null | undefined): boolean {
   if (!user) return false;
-  return (
-    user.roleName === ROLES.COMPANY_ADMIN ||
-    user.roleName === ROLES.PLATFORM_ADMIN
-  );
+  return isCompanyAdminRoleName(user.roleName);
 }
 
 // ==================== RBAC 应用角色扩展 ====================
@@ -48,8 +87,13 @@ export function isCompanyAdmin(user: UserPermissions | null | undefined): boolea
  * 将数据库 roleName 映射为应用角色
  */
 export function mapRoleToAppRole(roleName: string | undefined | null): AppRole {
-  if (!roleName) return APP_ROLES.OPERATOR;
-  if (roleName === ROLES.PLATFORM_ADMIN || roleName === ROLES.COMPANY_ADMIN) {
+  const normalizedRoleName = normalizeRoleName(roleName);
+
+  if (!normalizedRoleName) return APP_ROLES.OPERATOR;
+  if (
+    normalizedRoleName === ROLES.PLATFORM_ADMIN ||
+    normalizedRoleName === ROLES.COMPANY_ADMIN
+  ) {
     return APP_ROLES.DECIDER;
   }
   return APP_ROLES.OPERATOR;
