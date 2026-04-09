@@ -8,6 +8,7 @@
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 
 // ==================== 类型 ====================
 
@@ -25,6 +26,13 @@ export type RadarContentLinkData = {
   leadGenerated: boolean;
   createdAt: Date;
 };
+
+type RadarContentLinkWithRelations = Prisma.RadarContentLinkGetPayload<{
+  include: {
+    candidate: { select: { displayName: true } };
+    content: { select: { title: true; slug: true } };
+  };
+}>;
 
 // ==================== 绑定内容到候选 ====================
 
@@ -61,8 +69,7 @@ export async function linkContentToCandidate(input: {
   if (!content) return { success: false, error: "内容不存在" };
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const link = await (prisma.radarContentLink as any).upsert({
+    const link = await prisma.radarContentLink.upsert({
       where: {
         candidateId_contentId: {
           candidateId: input.candidateId,
@@ -75,12 +82,16 @@ export async function linkContentToCandidate(input: {
         contentId: input.contentId,
         linkType: input.linkType ?? "MANUAL",
         matchScore: input.matchScore ?? null,
-        matchDetails: input.matchDetails ?? null,
+        matchDetails: input.matchDetails
+          ? (input.matchDetails as Prisma.InputJsonValue)
+          : undefined,
       },
       update: {
         linkType: input.linkType ?? "MANUAL",
         matchScore: input.matchScore ?? null,
-        matchDetails: input.matchDetails ?? null,
+        matchDetails: input.matchDetails
+          ? (input.matchDetails as Prisma.InputJsonValue)
+          : undefined,
         updatedAt: new Date(),
       },
       select: { id: true },
@@ -109,8 +120,7 @@ export async function unlinkContentFromCandidate(
   const tenantId = user.tenantId as string;
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (prisma.radarContentLink as any).deleteMany({
+    await prisma.radarContentLink.deleteMany({
       where: { candidateId, contentId, tenantId },
     });
     return { success: true };
@@ -133,8 +143,7 @@ export async function getLinkedContents(candidateId: string): Promise<RadarConte
   if (!user) return [];
   const tenantId = user.tenantId as string;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const links: any[] = await (prisma.radarContentLink as any).findMany({
+  const links: RadarContentLinkWithRelations[] = await prisma.radarContentLink.findMany({
     where: { candidateId, tenantId },
     include: {
       candidate: { select: { displayName: true } },
@@ -143,7 +152,7 @@ export async function getLinkedContents(candidateId: string): Promise<RadarConte
     orderBy: { createdAt: "desc" },
   });
 
-  return links.map((l: any) => ({
+  return links.map((l) => ({
     id: l.id,
     candidateId: l.candidateId,
     candidateName: l.candidate.displayName,
@@ -172,8 +181,7 @@ export async function getLinkedCandidates(contentId: string): Promise<RadarConte
   if (!user) return [];
   const tenantId = user.tenantId as string;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const links: any[] = await (prisma.radarContentLink as any).findMany({
+  const links: RadarContentLinkWithRelations[] = await prisma.radarContentLink.findMany({
     where: { contentId, tenantId },
     include: {
       candidate: { select: { displayName: true } },
@@ -182,7 +190,7 @@ export async function getLinkedCandidates(contentId: string): Promise<RadarConte
     orderBy: { createdAt: "desc" },
   });
 
-  return links.map((l: any) => ({
+  return links.map((l) => ({
     id: l.id,
     candidateId: l.candidateId,
     candidateName: l.candidate.displayName,

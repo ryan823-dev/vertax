@@ -118,8 +118,6 @@ export async function runIncrementalScan(
       : undefined;
     
     // 计算是否还有更多组合
-    const totalCombinations = Math.max(allKeywords.length, 1) * Math.max(profile.targetCountries.length, 1);
-    const hasMoreCombinations = queryIndex < totalCombinations - 1;
 
     const baseQuery: RadarSearchQuery = {
       keywords: currentKeyword ? [currentKeyword] : undefined,

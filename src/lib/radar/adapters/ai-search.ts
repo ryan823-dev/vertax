@@ -50,7 +50,7 @@ interface WebSearchResult {
   link: string;
 }
 
-interface SearchAPIResponse {
+interface _SearchAPIResponse {
   organic_results?: WebSearchResult[];
   web?: { results?: WebSearchResult[] };
 }

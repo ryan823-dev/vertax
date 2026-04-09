@@ -100,5 +100,15 @@ export const breadcrumbPaths = {
   ],
   en: [
     { name: "Home", url: "https://vertax.top/en" }
+  ],
+  whatIsOverseasAcquisitionAgent: [
+    { name: "首页", url: "https://vertax.top" },
+    { name: "关于", url: "https://vertax.top/about" },
+    { name: "出海获客智能体", url: "https://vertax.top/about/what-is-overseas-acquisition-agent" }
+  ],
+  vertaxVsTraditionalTools: [
+    { name: "首页", url: "https://vertax.top" },
+    { name: "关于", url: "https://vertax.top/about" },
+    { name: "VertaX vs 传统工具", url: "https://vertax.top/about/vertax-vs-traditional-tools" }
   ]
 };

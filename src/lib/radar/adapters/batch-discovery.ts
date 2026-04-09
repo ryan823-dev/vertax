@@ -15,7 +15,7 @@ import {
   ensureAdaptersInitialized,
   listAdapterRegistrations,
 } from './registry';
-import { expandMultiLanguageKeywords, expandCompanyTypePatterns, generateSearchQueries } from './multi-search';
+import { expandMultiLanguageKeywords, expandCompanyTypePatterns } from './multi-search';
 
 // ==================== 批量发现结果 ====================
 
@@ -90,7 +90,6 @@ export class BatchDiscoveryAdapter implements RadarAdapter {
     const searchPromises = Array.from(this.sourceAdapters.entries()).map(
       async ([sourceCode, adapter]) => {
         try {
-          const sourceStart = Date.now();
           const result = await adapter.search({
             ...query,
             maxResults: (this.config as Record<string, unknown>).maxQueriesPerSource as number || 50,
@@ -161,7 +160,7 @@ export class BatchDiscoveryAdapter implements RadarAdapter {
 
       // 1. 多语言扩展
       const multiLang = expandMultiLanguageKeywords(baseKeyword);
-      for (const [lang, translated] of Object.entries(multiLang)) {
+      for (const [_lang, translated] of Object.entries(multiLang)) {
         for (const keyword of translated.slice(0, 2)) {
           queries.push({
             ...baseQuery,

@@ -149,7 +149,7 @@ function buildCompanyContext(profile: CompanyProfileContext): string {
   return sections.join('\n');
 }
 
-function buildCandidatesList(candidates: DeepQualifyCandidate[]): string {
+function _buildCandidatesList(candidates: DeepQualifyCandidate[]): string {
   return candidates.map((c, i) => {
     const parts = [`${i + 1}. [ID: ${c.id}] ${c.displayName}`];
     if (c.website) parts.push(`   网站: ${c.website}`);
@@ -425,7 +425,7 @@ ${candidatesList}
         let signalBoost = 0;
 
         if (c.signalScores && finalTier !== 'excluded') {
-          const { fundingSignal, newsSignal, contactSignal, overallScore } = c.signalScores;
+          const { fundingSignal, newsSignal, overallScore } = c.signalScores;
 
           // 高融资信号可提升 Tier
           if (fundingSignal > 60 && finalTier === 'B') {

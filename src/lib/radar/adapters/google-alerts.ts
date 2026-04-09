@@ -306,7 +306,7 @@ export class GoogleAlertsAdapter implements RadarAdapter {
 /**
  * 生成 Google Alerts RSS URL
  */
-export function generateAlertFeedUrl(keyword: string, country: string = 'US'): string {
+export function generateAlertFeedUrl(keyword: string, _country: string = 'US'): string {
   const encodedKeyword = encodeURIComponent(keyword);
   // 注意：这只是格式，实际 URL 需要用户的 Google Alerts 订阅 ID
   return `https://www.google.com/alerts/feeds/${encodedKeyword}`;

@@ -8,7 +8,7 @@ import {
   type RadarSearchQuery,
   type NormalizedCandidate,
 } from './adapters';
-import type { RadarTask, RadarSource, RadarCandidate } from '@prisma/client';
+import type { RadarTask, RadarSource } from '@prisma/client';
 
 // ==================== 类型定义 ====================
 

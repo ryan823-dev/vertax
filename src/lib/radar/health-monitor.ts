@@ -303,10 +303,12 @@ export async function generateHealthReport(): Promise<RadarHealthReport> {
 
 // ==================== 导出 ====================
 
-export default {
+const radarHealthMonitor = {
   checkAdapterHealth,
   logRadarError,
   getRecentErrors,
   checkCandidateFreshness,
   generateHealthReport,
 };
+
+export default radarHealthMonitor;

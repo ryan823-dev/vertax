@@ -4,7 +4,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { CronExpressionParser } from 'cron-parser';
 
 export async function POST(req: NextRequest) {
   const secret = req.nextUrl.searchParams.get('secret');

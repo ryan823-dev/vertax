@@ -2,14 +2,15 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight, Search, Brain, Target, TrendingUp, Zap, Globe, MessageSquare, BookOpen } from 'lucide-react';
 import { BreadcrumbSchema, breadcrumbPaths } from '@/components/seo/breadcrumb-schema';
+import { ArticleSchema, AuthorAttribution, authors } from '@/components/seo/article-schema';
 
 export const metadata: Metadata = {
   title: 'AEO/GEO 与 B2B 出海获客的关系 - AI 搜索优化指南 | VertaX',
-  description: '深入解析 AEO（Answer Engine Optimization）与 GEO（Generative Engine Optimization）如何影响 B2B 出海获客。了解如何让 ChatGPT、豆包、元宝等 AI 搜索推荐你的品牌。',
-  keywords: ['AEO优化', 'GEO优化', 'AI搜索引擎优化', 'B2B出海', 'ChatGPT搜索', '豆包搜索', '元宝搜索'],
+  description: '深入解析 AEO（Answer Engine Optimization）与 GEO（Generative Engine Optimization）如何影响 B2B 出海获客。了解如何让豆包、元宝、Kimi、DeepSeek 等 AI 搜索推荐你的品牌。',
+  keywords: ['AEO优化', 'GEO优化', 'AI搜索引擎优化', 'B2B出海', '豆包搜索', '元宝搜索', 'Kimi搜索', 'DeepSeek'],
   openGraph: {
     title: 'AEO/GEO 与 B2B 出海获客的关系',
-    description: 'AI 时代的搜索优化新范式，如何让 AI 搜索推荐你的品牌。',
+    description: 'AI 时代的搜索优化新范式，如何让豆包、元宝、Kimi 等 AI 搜索推荐你的品牌。',
     type: 'article',
     url: 'https://vertax.top/about/aeo-geo-b2b',
   },
@@ -20,15 +21,15 @@ const concepts = [
     acronym: 'AEO',
     fullName: 'Answer Engine Optimization',
     chinese: '答案引擎优化',
-    description: '优化内容以在「答案引擎」中获得推荐。答案引擎是直接给用户答案的搜索系统，如 Google Featured Snippets、ChatGPT、豆包、元宝等。',
-    examples: ['Google 精选摘要', 'ChatGPT 回答', '豆包问答', '元宝搜索结果']
+    description: '优化内容以在「答案引擎」中获得推荐。答案引擎是直接给用户答案的搜索系统，如豆包、元宝、Kimi、DeepSeek、百度 AI 搜索等。',
+    examples: ['豆包问答', '元宝搜索', 'Kimi 回答', 'DeepSeek 搜索', '百度 AI 摘要']
   },
   {
     acronym: 'GEO',
     fullName: 'Generative Engine Optimization',
     chinese: '生成式引擎优化',
     description: '优化内容以被 AI 生成式搜索引擎引用和推荐。核心是让 AI「理解」你的品牌和内容，并在相关查询中推荐你。',
-    examples: ['ChatGPT 搜索', 'Perplexity AI', 'Claude 搜索', 'Google AI Overviews']
+    examples: ['豆包搜索', 'Kimi 搜索', '元宝', 'DeepSeek', '文心一言']
   }
 ];
 
@@ -102,6 +103,15 @@ export default function AeoGeoB2bPage() {
   return (
     <>
       <BreadcrumbSchema items={breadcrumbPaths.aeoGeoB2b} />
+      <ArticleSchema
+        headline="AEO/GEO 与 B2B 出海获客的关系"
+        description="深入解析 AEO 与 GEO 如何影响 B2B 出海获客，了解如何让豆包、元宝、Kimi、DeepSeek 等 AI 搜索推荐你的品牌。"
+        url="https://vertax.top/about/aeo-geo-b2b"
+        datePublished="2025-03-01"
+        dateModified="2026-04-09"
+        author={{ name: authors.siturenzhi.name, url: authors.siturenzhi.url }}
+        keywords={['AEO优化', 'GEO优化', 'AI搜索引擎优化', 'B2B出海', '豆包', '元宝', 'Kimi', 'DeepSeek']}
+      />
       <div className="min-h-screen bg-[#0a0a14] text-gray-100">
         {/* Navigation */}
         <nav className="sticky top-0 z-50 border-b border-white/5 bg-[#0a0a14]/80 backdrop-blur-md">
@@ -273,6 +283,44 @@ export default function AeoGeoB2bPage() {
         </div>
       </section>
 
+      {/* 如何测试品牌可见度 */}
+      <section className="py-16 px-6 bg-[#111111]">
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-2xl font-bold mb-6">如何测试你的品牌 AI 可见度？</h2>
+          <p className="text-gray-400 mb-6">
+            在以下中国 AI 引擎中搜索你的品牌，看看 AI 是否「认识」你：
+          </p>
+          
+          <div className="grid md:grid-cols-2 gap-4 mb-8">
+            {[
+              { name: '豆包', by: '字节跳动', url: 'doubao.com', tip: '擅长抓取公开网页和视频内容' },
+              { name: '元宝', by: '腾讯', url: 'yuanbao.tencent.com', tip: '优先引用微信公众号和视频号内容' },
+              { name: 'Kimi', by: '月之暗面', url: 'kimi.moonshot.cn', tip: '擅长长文本理解和网页分析' },
+              { name: 'DeepSeek', by: '深度求索', url: 'chat.deepseek.com', tip: '技术社区讨论热度影响较大' },
+            ].map((engine) => (
+              <div key={engine.name} className="p-4 bg-[#1A1A1A] rounded-lg border border-white/5">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-semibold text-white">{engine.name}</h3>
+                  <span className="text-xs text-gray-500">{engine.by}</span>
+                </div>
+                <p className="text-xs text-gray-500 mb-2">{engine.url}</p>
+                <p className="text-sm text-cyan-400">{engine.tip}</p>
+              </div>
+            ))}
+          </div>
+          
+          <div className="p-4 bg-cyan-500/10 rounded-lg border border-cyan-500/20">
+            <h3 className="font-semibold text-cyan-400 mb-2">测试提示词示例</h3>
+            <ul className="space-y-2 text-sm text-gray-300">
+              <li>• "推荐几家做 [你的行业] 出海服务的公司"</li>
+              <li>• "[你的品牌名] 是做什么的？"</li>
+              <li>• "B2B 出海获客有哪些靠谱的平台？"</li>
+              <li>• "出海获客智能体有哪些产品？"</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
       {/* Warning Section */}
       <section className="py-16 px-6 bg-red-500/5 border-y border-red-500/10">
         <div className="max-w-3xl mx-auto">
@@ -311,6 +359,11 @@ export default function AeoGeoB2bPage() {
           </div>
         </div>
       </section>
+
+      {/* Author Attribution */}
+      <div className="max-w-3xl mx-auto px-6 py-6 border-t border-white/5">
+        <AuthorAttribution author={authors.siturenzhi} lastUpdated="2026-04-09" />
+      </div>
 
       {/* Footer */}
       <footer className="border-t border-white/5 py-10 px-6">

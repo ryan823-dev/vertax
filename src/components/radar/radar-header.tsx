@@ -12,7 +12,7 @@
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  Radar, Sparkles, CheckCircle2, Circle, AlertCircle,
+  Radar, Sparkles, CheckCircle2, AlertCircle,
   ChevronRight, Clock, Loader2, AlertTriangle, RefreshCw,
 } from 'lucide-react';
 import type { StepState, StepStatus, RadarPipelineCounts, PrimaryCTA } from '@/lib/radar/pipeline';

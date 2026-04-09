@@ -19,6 +19,47 @@ interface EnrichmentOptions {
   targetRoles?: string[];
 }
 
+interface DecisionMakerResult {
+  name: string;
+  title: string;
+  email?: string;
+  linkedIn?: string;
+  source?: string;
+}
+
+interface ExaDecisionMakerSearchResult {
+  title?: string;
+  url?: string;
+  text?: string;
+}
+
+interface ExaDecisionMakerSearchResponse {
+  results?: ExaDecisionMakerSearchResult[];
+}
+
+function normalizeDecisionMakers(value: unknown): DecisionMakerResult[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .map((item) => {
+      if (!item || typeof item !== "object") return null;
+
+      const record = item as Record<string, unknown>;
+      if (typeof record.name !== "string" || typeof record.title !== "string") {
+        return null;
+      }
+
+      return {
+        name: record.name,
+        title: record.title,
+        email: typeof record.email === "string" ? record.email : undefined,
+        linkedIn: typeof record.linkedIn === "string" ? record.linkedIn : undefined,
+        source: typeof record.source === "string" ? record.source : undefined,
+      };
+    })
+    .filter((item): item is DecisionMakerResult => item !== null);
+}
+
 /**
  * 丰富化单个公司
  */
@@ -105,7 +146,11 @@ export async function enrichProspectCompany(
 /**
  * 猎寻决策人
  */
-async function huntDecisionMakers(companyName: string, website: string | null, roles: string[]) {
+async function huntDecisionMakers(
+  companyName: string,
+  _website: string | null,
+  roles: string[]
+): Promise<DecisionMakerResult[]> {
   const EXA_API_URL = "https://api.exa.ai/search";
   const apiKey = process.env.EXA_API_KEY;
   if (!apiKey) return [];
@@ -114,7 +159,7 @@ async function huntDecisionMakers(companyName: string, website: string | null, r
   const queries = roles.map(role => `"${companyName}" ${role} LinkedIn profile`);
   
   // 执行搜索
-  const searchPromises = queries.map(q => 
+  const searchPromises: Array<Promise<ExaDecisionMakerSearchResponse>> = queries.map((q) =>
     fetch(EXA_API_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-api-key": apiKey },
@@ -125,12 +170,12 @@ async function huntDecisionMakers(companyName: string, website: string | null, r
         useAutoprompt: true,
         contents: { text: { maxCharacters: 1000 } }
       })
-    }).then(res => res.json())
+    }).then((res) => res.json() as Promise<ExaDecisionMakerSearchResponse>)
   );
 
   const results = await Promise.allSettled(searchPromises);
-  const allResults: any[] = [];
-  results.forEach(r => {
+  const allResults: ExaDecisionMakerSearchResult[] = [];
+  results.forEach((r) => {
     if (r.status === "fulfilled") {
       allResults.push(...(r.value.results || []));
     }
@@ -152,9 +197,8 @@ async function huntDecisionMakers(companyName: string, website: string | null, r
     if (jsonStr.startsWith("```")) {
       jsonStr = jsonStr.replace(/^```(?:json)?\s*/, "").replace(/\s*```$/, "");
     }
-    const people = JSON.parse(jsonStr);
-    return Array.isArray(people) ? people : [];
-  } catch (e) {
+    return normalizeDecisionMakers(JSON.parse(jsonStr));
+  } catch {
     return [];
   }
 }

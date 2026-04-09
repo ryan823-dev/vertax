@@ -17,8 +17,6 @@ import {
   Sparkles,
   LinkIcon,
   Unlink,
-  ExternalLink,
-  CheckCircle2,
   AlertCircle,
   Search,
 } from 'lucide-react';
@@ -42,7 +40,7 @@ interface RadarContentMatchPanelProps {
 
 export function RadarContentMatchPanel({
   candidateId,
-  candidateName,
+  candidateName: _candidateName,
 }: RadarContentMatchPanelProps) {
   const [links, setLinks] = useState<RadarContentLinkData[]>([]);
   const [suggestions, setSuggestions] = useState<ContentMatchResult[]>([]);

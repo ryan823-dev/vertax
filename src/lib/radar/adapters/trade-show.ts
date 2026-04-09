@@ -26,7 +26,7 @@ interface Exhibitor {
   phone?: string;
 }
 
-interface TradeShow {
+interface _TradeShow {
   name: string;
   venue?: string;
   dates?: string;

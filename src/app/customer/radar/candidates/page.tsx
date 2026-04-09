@@ -18,7 +18,6 @@ import {
   Building2, 
   FileText, 
   Loader2,
-  RefreshCw,
   AlertCircle,
   X,
   CheckCircle2,
@@ -31,10 +30,8 @@ import {
   Filter,
   ChevronRight,
   Download,
-  Star,
   Sparkles,
   Clock,
-  AlertTriangle,
   ArrowRight,
   Zap,
   Send,
@@ -76,6 +73,91 @@ import { RadarContentMatchPanel } from '@/components/radar/radar-content-match-p
 
 type CandidateWithSource = RadarCandidate & { source: RadarSource };
 
+interface SignalScores {
+  fundingSignal?: number;
+  newsSignal?: number;
+  timingSignal?: number;
+  contactSignal?: number;
+  overallScore?: number;
+}
+
+interface CandidateIntelligence {
+  funding?: {
+    latestRound?: string;
+    latestRoundDate?: string;
+    totalRaised?: string;
+    valuation?: string;
+    leadInvestors?: string[];
+  };
+  contacts?: {
+    decisionMakers?: Array<{
+      name: string;
+      title: string;
+      email?: string;
+      emailConfidence?: number;
+    }>;
+  };
+  news?: {
+    recentHeadlines?: string[];
+    sentiment?: 'positive' | 'neutral' | 'negative';
+  };
+}
+
+interface CandidateRadarData {
+  intelligence?: CandidateIntelligence;
+  signalScores?: SignalScores;
+}
+
+interface ResearchData {
+  overview?: {
+    businessType?: string;
+    scale?: string;
+    marketPosition?: string;
+    geographicFocus?: string;
+  };
+  industry?: {
+    primaryIndustry?: string;
+    industryTrends?: string[];
+  };
+  painPoints?: {
+    operational?: string[];
+  };
+  decisionMakers?: {
+    primary?: {
+      role?: string;
+      concerns?: string[];
+    };
+  };
+  outreachStrategy?: {
+    valueProposition?: string;
+    talkingPoints?: string[];
+  };
+  risks?: {
+    level?: string;
+  };
+  confidence?: number;
+}
+
+interface EmailSequenceItem {
+  order?: number | string;
+  name?: string;
+  sendDelay?: string;
+  subject?: string;
+  previewText?: string;
+  body?: string;
+  cta?: {
+    text?: string;
+  };
+  psychologicalTrigger?: string;
+}
+
+interface EmailSequenceData {
+  goal?: string;
+  estimatedDuration?: string;
+  totalEmails?: number;
+  emails?: EmailSequenceItem[];
+}
+
 // 状态快捷筛选
 const STATUS_FILTERS: Array<{
   value: CandidateStatus | '';
@@ -106,19 +188,19 @@ export default function RadarCandidatesPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   
   // 发送邮件状态
-  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [_isSendingEmail, setIsSendingEmail] = useState(false);
   const [manualEmail, setManualEmail] = useState('');
-  const [emailSent, setEmailSent] = useState(false);
-  const [emailError, setEmailError] = useState<string | null>(null);
+  const [_emailSent, setEmailSent] = useState(false);
+  const [_emailError, setEmailError] = useState<string | null>(null);
 
   // 背调状态
   const [isResearching, setIsResearching] = useState(false);
-  const [researchData, setResearchData] = useState<any>(null);
+  const [researchData, setResearchData] = useState<ResearchData | null>(null);
   const [researchError, setResearchError] = useState<string | null>(null);
 
   // 邮件序列状态
   const [isGeneratingSequence, setIsGeneratingSequence] = useState(false);
-  const [emailSequence, setEmailSequence] = useState<any>(null);
+  const [emailSequence, setEmailSequence] = useState<EmailSequenceData | null>(null);
   const [sequenceError, setSequenceError] = useState<string | null>(null);
   const [expandedEmailIndex, setExpandedEmailIndex] = useState<number | null>(null);
 
@@ -256,7 +338,7 @@ export default function RadarCandidatesPage() {
   };
 
   // 发送Outreach邮件
-  const handleSendEmail = async (candidate: CandidateWithSource) => {
+  const _handleSendEmail = async (candidate: CandidateWithSource) => {
     const targetEmail = manualEmail || candidate.email;
     if (!targetEmail) {
       setEmailError('请输入邮箱地址');
@@ -348,7 +430,7 @@ export default function RadarCandidatesPage() {
     setEnrichDone(false);
     setLinkedInDraft(null);
     setLinkedInCopied(false);
-  }, [selectedCandidate?.id]);
+  }, [selectedCandidate]);
 
   // 生成 AI 草稿（P2）
   const handleGenerateDraft = async (candidate: CandidateWithSource) => {
@@ -1017,41 +1099,12 @@ export default function RadarCandidatesPage() {
 
                 {/* 情报面板：融资 + 决策者邮箱 + 信号评分 */}
                 {(() => {
-                  const raw = selectedCandidate.rawData as {
-                    intelligence?: {
-                      funding?: {
-                        totalRaised?: string;
-                        latestRound?: string;
-                        latestRoundDate?: string;
-                        valuation?: string;
-                        leadInvestors?: string[];
-                        recentNews?: string;
-                      };
-                      news?: {
-                        recentHeadlines?: string[];
-                        sentiment?: string;
-                        keyThemes?: string[];
-                      };
-                      contacts?: {
-                        decisionMakers?: Array<{
-                          name: string;
-                          title: string;
-                          linkedIn?: string;
-                          email?: string;
-                          emailConfidence?: number;
-                        }>;
-                      };
-                    };
-                    signalScores?: {
-                      fundingSignal?: number;
-                      newsSignal?: number;
-                      contactSignal?: number;
-                      overallScore?: number;
-                    };
-                  } | null;
+                  const raw = selectedCandidate.rawData as CandidateRadarData | null;
 
                   const intel = raw?.intelligence;
-                  const signals = raw?.signalScores || (selectedCandidate.aiRelevance as any)?.signalScores;
+                  const signals =
+                    raw?.signalScores ||
+                    (selectedCandidate.aiRelevance as CandidateRadarData | null)?.signalScores;
                   if (!intel && !signals) return null;
 
                   return (
@@ -1343,7 +1396,7 @@ export default function RadarCandidatesPage() {
                         </div>
 
                         {/* 邮件列表 */}
-                        {emailSequence.emails?.map((email: any, idx: number) => (
+                        {emailSequence.emails?.map((email: EmailSequenceItem, idx: number) => (
                           <div key={idx} className="bg-[#FFFCF7] rounded-xl border border-[#E8E0D0] overflow-hidden">
                             <button
                               onClick={() => setExpandedEmailIndex(expandedEmailIndex === idx ? null : idx)}

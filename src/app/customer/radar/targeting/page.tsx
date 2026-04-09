@@ -21,7 +21,6 @@ import {
   Clock,
   History,
   ArrowLeft,
-  Ban,
   CheckCircle2,
   Radar,
   Map,

@@ -90,7 +90,7 @@ export default function RadarPage() {
           message: data.error || '解析失败，请重试' 
         });
       }
-    } catch (err) {
+    } catch {
       setRequestResult({ 
         success: false, 
         message: '网络错误，请重试' 

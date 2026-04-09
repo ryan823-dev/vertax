@@ -70,7 +70,7 @@ export default function RadarTasksPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [statusFilter, setStatusFilter] = useState<RadarTaskStatus | ''>('');
   const [channelFilter, setChannelFilter] = useState<ChannelType | ''>('');
-  const [runningTaskIds, setRunningTaskIds] = useState<Set<string>>(new Set());
+  const [_runningTaskIds, setRunningTaskIds] = useState<Set<string>>(new Set());
 
   // 加载数据
   const loadData = useCallback(async () => {
@@ -279,7 +279,6 @@ export default function RadarTasksPage() {
           <div className="grid gap-4">
             {filteredTasks.map(task => {
               const statusConf = STATUS_CONFIG[task.status];
-              const StatusIcon = statusConf.icon;
               const channelConf = CHANNEL_CONFIG[task.source.channelType as ChannelType];
               const ChannelIcon = channelConf?.icon || Search;
               

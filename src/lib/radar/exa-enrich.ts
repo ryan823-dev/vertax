@@ -8,7 +8,6 @@
  */
 
 const EXA_API_URL = "https://api.exa.ai/search";
-const EXA_CONTENTS_URL = "https://api.exa.ai/contents";
 
 interface ExaSearchResult {
   id: string;

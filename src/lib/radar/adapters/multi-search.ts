@@ -11,7 +11,6 @@ import type {
   AdapterConfig,
 } from './types';
 import { BraveSearchAdapter } from './brave-search';
-import { AISearchAdapter } from './ai-search';
 import { ExaAdapter } from './exa';
 import { TavilyAdapter } from './tavily';
 import { GooglePlacesAdapter } from './google-places';
@@ -388,7 +387,7 @@ export function generateSearchQueries(params: {
 
   // 多语言查询
   if (params.languages && params.languages.length > 0) {
-    for (const lang of params.languages) {
+    for (const _lang of params.languages) {
       for (const keyword of params.keywords.slice(0, 3)) {
         queries.push({
           keywords: [keyword],

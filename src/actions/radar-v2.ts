@@ -8,8 +8,6 @@ import { prisma } from '@/lib/prisma';
 import { requireDecider } from '@/lib/permissions';
 import {
   validateRadarQuery,
-  validateCandidateCreate,
-  validateProfileCreate,
   ValidationError,
 } from '@/lib/validation';
 import type {
@@ -38,6 +36,7 @@ import {
   getAdapter,
 } from '@/lib/radar/adapters/registry';
 import type { RadarSearchQuery } from '@/lib/radar/adapters/types';
+import { enrichProspectCompany } from '@/lib/radar/enrich-pipeline';
 
 // ==================== 缁鐎风€电厧鍤?====================
 
@@ -101,6 +100,19 @@ function normalizeDomainForDedup(website: string | null | undefined): string | n
   } catch {
     return null;
   }
+}
+
+function extractStringReasons(value: unknown): string[] | null {
+  if (!value || typeof value !== 'object') return null;
+
+  const reasons = (value as Record<string, unknown>).reasons;
+  if (!Array.isArray(reasons)) return null;
+
+  const stringReasons = reasons.filter(
+    (reason): reason is string => typeof reason === 'string'
+  );
+
+  return stringReasons.length > 0 ? stringReasons : null;
 }
 
 // ==================== 閺佺増宓佸┃鎰吀閻?====================
@@ -631,6 +643,10 @@ export async function importCandidateToCompanyV2(
   }
 
   // 閸掓稑缂?ProspectCompany
+  const matchReasons =
+    extractStringReasons(candidate.aiRelevance) ??
+    extractStringReasons(candidate.matchExplain);
+
   const company = await prisma.prospectCompany.create({
     data: {
       tenantId: session.user.tenantId,
@@ -645,7 +661,9 @@ export async function importCandidateToCompanyV2(
       companySize: candidate.companySize,
       description: candidate.description,
       tier: candidate.qualifyTier,
-      matchReasons: (candidate.aiRelevance as any)?.reasons || (candidate.matchExplain as any)?.reasons || null,
+      matchReasons: matchReasons
+        ? (matchReasons as Prisma.InputJsonValue)
+        : undefined,
       approachAngle: candidate.aiSummary || null,
       sourceType: candidate.source.channelType.toLowerCase(),
       sourceCandidateId: candidateId,
@@ -1754,7 +1772,6 @@ export async function cleanupExpiredV2(): Promise<number> {
   return cleanupExpiredCandidates();
 }
 
-import { enrichProspectCompany } from '@/lib/radar/enrich-pipeline';
 
 /**
  * 手动触发线索丰富化
@@ -1766,5 +1783,5 @@ export async function enrichProspectCompanyAction(companyId: string) {
     where: { id: companyId, tenantId: session.user.tenantId }
   });
   if (!company) throw new Error('Company not found');
-  return await enrichProspectCompany(company as any);
+  return await enrichProspectCompany(company.id);
 }

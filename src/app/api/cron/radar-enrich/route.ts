@@ -62,7 +62,10 @@ export async function GET(req: NextRequest) {
       try {
         // 1. 尝试原始适配器的 getDetails (比如从 Google Places 拿电话/详情)
         try {
-          const adapter = getAdapter(candidate.source.code, candidate.source.adapterConfig as any);
+          const adapter = getAdapter(
+            candidate.source.code,
+            candidate.source.adapterConfig as Record<string, unknown>
+          );
           if (adapter.getDetails) {
             const details = await adapter.getDetails(candidate.externalId);
             if (details) {
@@ -79,7 +82,7 @@ export async function GET(req: NextRequest) {
               stats.adapterEnriched++;
             }
           }
-        } catch (err) {
+        } catch {
           console.warn(`[RadarEnrich] Adapter getDetails failed for ${candidate.id}, continuing to intelligence enrich...`);
         }
 

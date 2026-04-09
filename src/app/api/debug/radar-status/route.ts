@@ -23,7 +23,6 @@ export async function GET(req: NextRequest) {
       candidatesByTier,
       recentCandidates,
       excludedCandidates,
-      qualifiedCandidates,
     ] = await Promise.all([
       // 数据源总数
       prisma.radarSource.count(),
@@ -74,23 +73,6 @@ export async function GET(req: NextRequest) {
         },
       }),
       // 合格的候选详情（用于分析数据质量）
-      prisma.radarCandidate.findMany({
-        where: { status: 'QUALIFIED' },
-        take: 20,
-        orderBy: { enrichedAt: 'desc' },
-        select: {
-          id: true,
-          displayName: true,
-          industry: true,
-          country: true,
-          website: true,
-          phone: true,
-          description: true,
-          qualifyReason: true,
-          matchScore: true,
-          enrichedAt: true,
-        },
-      }),
     ]);
 
     // 获取数据源列表

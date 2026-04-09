@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import type { SkillDefinition, PromptContext } from '../types';
-import { SKILL_NAMES } from '../registry';
 
 const inputSchema = z.object({
   companyName: z.string().describe('公司名称'),
