@@ -1,24 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { isPlatformAdminRoleName } from "@/lib/permissions";
+import { prisma } from "@/lib/prisma";
 
-// ==================== GET: 获取所有 API Key 配置 ====================
+async function getPlatformAdminUser(userId?: string) {
+  if (!userId) return null;
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { role: true },
+  });
+
+  if (!user || !isPlatformAdminRoleName(user.role.name)) {
+    return null;
+  }
+
+  return user;
+}
 
 export async function GET() {
   try {
     const session = await auth();
-
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // 检查是否是管理员
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      include: { role: true },
-    });
-
-    if (!user || !["platform_admin", "admin"].includes(user.role.name)) {
+    const user = await getPlatformAdminUser(session.user.id);
+    if (!user) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -26,11 +34,10 @@ export async function GET() {
       orderBy: [{ category: "asc" }, { service: "asc" }],
     });
 
-    // 隐藏实际的 key 值，只返回是否存在
     const safeConfigs = configs.map((config) => ({
       ...config,
-      apiKey: config.apiKey ? "••••••••••••" : null,
-      apiSecret: config.apiSecret ? "••••••••••••" : null,
+      apiKey: config.apiKey ? "************" : null,
+      apiSecret: config.apiSecret ? "************" : null,
     }));
 
     return NextResponse.json({ configs: safeConfigs });
@@ -43,23 +50,15 @@ export async function GET() {
   }
 }
 
-// ==================== POST: 创建或更新 API Key 配置 ====================
-
 export async function POST(request: NextRequest) {
   try {
     const session = await auth();
-
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // 检查是否是管理员
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      include: { role: true },
-    });
-
-    if (!user || !["platform_admin", "admin"].includes(user.role.name)) {
+    const user = await getPlatformAdminUser(session.user.id);
+    if (!user) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -67,22 +66,33 @@ export async function POST(request: NextRequest) {
     const { service, apiKey, apiSecret, monthlyLimit, notes } = body;
 
     if (!service) {
-      return NextResponse.json({ error: "Service is required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Service is required" },
+        { status: 400 }
+      );
     }
 
-    // 检查服务是否有效
     const validServices = [
-      "dashscope", "openrouter", "gemini",
-      "brave_search", "tavily", "exa", "serper",
-      "google_places", "hunter", "pdl", "apollo", "skrapp",
-      "sam_gov", "ungm",
+      "dashscope",
+      "openrouter",
+      "gemini",
+      "brave_search",
+      "tavily",
+      "exa",
+      "serper",
+      "google_places",
+      "hunter",
+      "pdl",
+      "apollo",
+      "skrapp",
+      "sam_gov",
+      "ungm",
     ];
 
     if (!validServices.includes(service)) {
       return NextResponse.json({ error: "Invalid service" }, { status: 400 });
     }
 
-    // 服务分类映射
     const serviceCategories: Record<string, string> = {
       dashscope: "AI Provider",
       openrouter: "AI Provider",
@@ -102,7 +112,6 @@ export async function POST(request: NextRequest) {
 
     const category = serviceCategories[service] || "其他";
 
-    // 创建或更新配置
     const config = await prisma.apiKeyConfig.upsert({
       where: { service },
       create: {
@@ -132,23 +141,15 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// ==================== PATCH: 更新启用状态 ====================
-
 export async function PATCH(request: NextRequest) {
   try {
     const session = await auth();
-
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // 检查是否是管理员
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      include: { role: true },
-    });
-
-    if (!user || !["platform_admin", "admin"].includes(user.role.name)) {
+    const user = await getPlatformAdminUser(session.user.id);
+    if (!user) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -156,7 +157,10 @@ export async function PATCH(request: NextRequest) {
     const { service, isEnabled } = body;
 
     if (!service) {
-      return NextResponse.json({ error: "Service is required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Service is required" },
+        { status: 400 }
+      );
     }
 
     const config = await prisma.apiKeyConfig.update({
@@ -174,23 +178,15 @@ export async function PATCH(request: NextRequest) {
   }
 }
 
-// ==================== DELETE: 删除 API Key 配置 ====================
-
 export async function DELETE(request: NextRequest) {
   try {
     const session = await auth();
-
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // 检查是否是管理员
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      include: { role: true },
-    });
-
-    if (!user || !["platform_admin", "admin"].includes(user.role.name)) {
+    const user = await getPlatformAdminUser(session.user.id);
+    if (!user) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -198,7 +194,10 @@ export async function DELETE(request: NextRequest) {
     const service = searchParams.get("service");
 
     if (!service) {
-      return NextResponse.json({ error: "Service is required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Service is required" },
+        { status: 400 }
+      );
     }
 
     await prisma.apiKeyConfig.delete({

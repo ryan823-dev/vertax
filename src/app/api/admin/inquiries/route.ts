@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { isPlatformAdminRoleName } from "@/lib/permissions";
 
 async function checkAdmin() {
   const session = await auth();
@@ -11,7 +12,7 @@ async function checkAdmin() {
     include: { role: true },
   });
 
-  return user && ["platform_admin", "admin"].includes(user.role.name);
+  return Boolean(user && isPlatformAdminRoleName(user.role.name));
 }
 
 export async function GET() {

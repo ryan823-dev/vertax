@@ -97,7 +97,7 @@ export const metadata: Metadata = {
   verification: {
     // 搜狗站长验证
     other: {
-      'sogou_site_verification': 'wCwbGndJdL',
+      'sogou_site_verification': 'dPkaPwgrp1',
     },
   },
 };
