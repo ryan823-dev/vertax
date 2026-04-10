@@ -1,15 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { hash } from "bcryptjs";
 import { auth } from "@/lib/auth";
-import { isPlatformAdminRoleName } from "@/lib/permissions";
+import {
+  COMPANY_ADMIN_ROLE_CANDIDATES,
+  isPlatformAdminRoleName,
+} from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-
-const COMPANY_ADMIN_ROLE_CANDIDATES = [
-  "COMPANY_ADMIN",
-  "company_admin",
-  "tenant_admin",
-  "企业管理员",
-] as const;
 
 interface CreateTenantRequest {
   name: string;

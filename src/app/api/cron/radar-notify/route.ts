@@ -5,6 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { COMPANY_ADMIN_ROLE_CANDIDATES } from '@/lib/permissions';
 import { prisma } from '@/lib/prisma';
 import { sendNewCandidatesNotification } from '@/lib/email/resend-client';
 
@@ -53,7 +54,9 @@ export async function GET(req: NextRequest) {
         users: {
           where: {
             role: {
-              name: 'COMPANY_ADMIN',
+              name: {
+                in: [...COMPANY_ADMIN_ROLE_CANDIDATES],
+              },
             },
           },
           select: {

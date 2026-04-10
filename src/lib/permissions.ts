@@ -1,21 +1,31 @@
 import { ROLES, APP_ROLES, DECIDER_ONLY_ACTIONS, type AppRole } from "./constants";
 import type { Session } from "next-auth";
 
-const PLATFORM_ADMIN_ROLE_KEYS = new Set([
-  "platform_admin",
-  "super_admin",
-  "admin",
-]);
-
-const COMPANY_ADMIN_ROLE_KEYS = new Set([
-  "company_admin",
-  "tenant_admin",
-  "企业管理员",
-]);
-
 function getRoleKey(roleName: string | undefined | null): string {
   return roleName?.trim().toLowerCase() ?? "";
 }
+
+export const PLATFORM_ADMIN_ROLE_CANDIDATES = [
+  ROLES.PLATFORM_ADMIN,
+  "platform_admin",
+  "super_admin",
+  "admin",
+] as const;
+
+export const COMPANY_ADMIN_ROLE_CANDIDATES = [
+  ROLES.COMPANY_ADMIN,
+  "company_admin",
+  "tenant_admin",
+  "企业管理员",
+] as const;
+
+const PLATFORM_ADMIN_ROLE_KEYS = new Set(
+  PLATFORM_ADMIN_ROLE_CANDIDATES.map((roleName) => getRoleKey(roleName))
+);
+
+const COMPANY_ADMIN_ROLE_KEYS = new Set(
+  COMPANY_ADMIN_ROLE_CANDIDATES.map((roleName) => getRoleKey(roleName))
+);
 
 export type UserPermissions = {
   permissions: string[];

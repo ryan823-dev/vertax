@@ -2,8 +2,7 @@
 
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { isPlatformAdmin } from "@/lib/permissions";
-import { ROLES } from "@/lib/constants";
+import { COMPANY_ADMIN_ROLE_CANDIDATES, isPlatformAdmin } from "@/lib/permissions";
 import { hash } from "bcryptjs";
 import { revalidatePath } from "next/cache";
 
@@ -91,17 +90,10 @@ export async function createTenantWithAdmin(data: {
     return { success: false, error: "slugExists" };
   }
 
-  const companyAdminRoleNames = [
-    ROLES.COMPANY_ADMIN,
-    "company_admin",
-    "企业管理员",
-    "tenant_admin",
-  ];
-
   const roleCandidates = await db.role.findMany({
     where: {
       name: {
-        in: companyAdminRoleNames,
+        in: [...COMPANY_ADMIN_ROLE_CANDIDATES],
       },
     },
     select: {
@@ -110,7 +102,7 @@ export async function createTenantWithAdmin(data: {
     },
   });
 
-  const role = companyAdminRoleNames
+  const role = COMPANY_ADMIN_ROLE_CANDIDATES
     .map((roleName) =>
       roleCandidates.find((candidate) => candidate.name === roleName)
     )

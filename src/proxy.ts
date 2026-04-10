@@ -7,11 +7,52 @@ import { resolveTenant } from "@/lib/tenant-resolver";
 const { auth } = NextAuth(authConfig);
 
 const publicPaths = ["/login", "/register", "/api/auth", "/api/inquiry"];
+const CRON_ROUTES = ["/api/cron/", "/api/radar/sync"];
 
 const BASE_DOMAIN = process.env.NEXT_PUBLIC_BASE_DOMAIN || "vertax.top";
 
+function shouldBlockApiRequest(pathname: string, requestUrl: URL) {
+  if (process.env.NODE_ENV !== "production") {
+    return null;
+  }
+
+  if (pathname.startsWith("/api/debug/")) {
+    return NextResponse.json(
+      {
+        error: "Debug routes disabled in production",
+        message: "Set DEBUG_ROUTES_ENABLED=true to enable",
+        environment: process.env.NODE_ENV,
+      },
+      { status: 403 }
+    );
+  }
+
+  const isCronRoute = CRON_ROUTES.some((route) => pathname.startsWith(route));
+  if (isCronRoute) {
+    const secret = requestUrl.searchParams.get("secret");
+    if (secret !== process.env.CRON_SECRET) {
+      return NextResponse.json(
+        { error: "Unauthorized: Invalid cron secret" },
+        { status: 401 }
+      );
+    }
+  }
+
+  return null;
+}
+
 const proxy = auth((req) => {
   const { pathname } = req.nextUrl;
+
+  if (pathname.startsWith("/api/")) {
+    const blockedResponse = shouldBlockApiRequest(pathname, req.nextUrl);
+    if (blockedResponse) {
+      return blockedResponse;
+    }
+
+    return NextResponse.next();
+  }
+
   // Get hostname from nextUrl for Vercel compatibility
   const hostname = req.nextUrl.hostname;
   
@@ -89,5 +130,10 @@ export { proxy };
 export default proxy;
 
 export const config = {
-  matcher: ["/((?!_next|api/|.*\\..*).*)"],
+  matcher: [
+    "/((?!_next|api/|.*\\..*).*)",
+    "/api/debug/:path*",
+    "/api/cron/:path*",
+    "/api/radar/sync",
+  ],
 };
