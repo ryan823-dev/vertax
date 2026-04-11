@@ -40,24 +40,26 @@ interface ExaDecisionMakerSearchResponse {
 function normalizeDecisionMakers(value: unknown): DecisionMakerResult[] {
   if (!Array.isArray(value)) return [];
 
-  return value
-    .map((item) => {
-      if (!item || typeof item !== "object") return null;
+  const normalized: DecisionMakerResult[] = [];
 
-      const record = item as Record<string, unknown>;
-      if (typeof record.name !== "string" || typeof record.title !== "string") {
-        return null;
-      }
+  for (const item of value) {
+    if (!item || typeof item !== "object") continue;
 
-      return {
-        name: record.name,
-        title: record.title,
-        email: typeof record.email === "string" ? record.email : undefined,
-        linkedIn: typeof record.linkedIn === "string" ? record.linkedIn : undefined,
-        source: typeof record.source === "string" ? record.source : undefined,
-      };
-    })
-    .filter((item): item is DecisionMakerResult => item !== null);
+    const record = item as Record<string, unknown>;
+    if (typeof record.name !== "string" || typeof record.title !== "string") {
+      continue;
+    }
+
+    normalized.push({
+      name: record.name,
+      title: record.title,
+      email: typeof record.email === "string" ? record.email : undefined,
+      linkedIn: typeof record.linkedIn === "string" ? record.linkedIn : undefined,
+      source: typeof record.source === "string" ? record.source : undefined,
+    });
+  }
+
+  return normalized;
 }
 
 /**

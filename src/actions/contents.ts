@@ -137,6 +137,8 @@ export async function getContentPieces(filters?: {
     briefTitle: c.brief?.title || undefined,
     outline: c.outline as ContentOutline | null,
     evidenceRefs: c.evidenceRefs,
+    scheduledAt: c.scheduledAt,
+    publishedAt: c.publishedAt,
     categoryId: c.categoryId,
     categoryName: c.category?.name || undefined,
     authorName: c.author?.name || undefined,

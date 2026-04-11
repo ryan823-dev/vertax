@@ -1,23 +1,63 @@
 /**
  * Article Schema 组件
- * 用于博客和内容页面，帮助 AI 引擎理解文章结构
+ * 用于博客和内容页面，帮助搜索引擎和 AI 理解文章结构。
  * 文档：https://schema.org/Article
  */
 
-interface ArticleSchemaProps {
+type JsonLdValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonLdObject
+  | JsonLdValue[];
+
+interface JsonLdObject {
+  [key: string]: JsonLdValue | undefined;
+}
+
+export interface ArticleSchemaAuthor {
+  name: string;
+  url?: string;
+  description?: string;
+}
+
+export interface ArticleSchemaProps {
   headline: string;
   description: string;
   url: string;
   datePublished?: string;
   dateModified?: string;
-  author?: {
-    name: string;
-    url?: string;
-  };
+  author?: ArticleSchemaAuthor;
   image?: string;
   articleBody?: string;
   keywords?: string[];
 }
+
+export interface AuthorProfile extends ArticleSchemaAuthor {
+  description: string;
+}
+
+export const authors: Record<
+  "siturenzhi" | "vertaxTeam" | "growthExpert",
+  AuthorProfile
+> = {
+  siturenzhi: {
+    name: "司徒任之",
+    url: "https://vertax.top/about",
+    description: "跨境增长研究者，长期关注 B2B 企业全球化增长、内容获客与市场验证。",
+  },
+  vertaxTeam: {
+    name: "VertaX 团队",
+    url: "https://vertax.top/about",
+    description: "VertaX 团队专注于 B2B 出海增长、SEO/AEO/GEO 内容策略与线索转化。",
+  },
+  growthExpert: {
+    name: "增长研究组",
+    url: "https://vertax.top/about",
+    description: "围绕 SEO、AEO、GEO 与海外获客场景，沉淀可执行的方法与案例。",
+  },
+};
 
 export function ArticleSchema({
   headline,
@@ -25,54 +65,55 @@ export function ArticleSchema({
   url,
   datePublished,
   dateModified,
-  author = { name: "VertaX 团队", url: "https://vertax.top/about" },
+  author = authors.vertaxTeam,
   image = "https://vertax.top/logo.svg",
   articleBody,
-  keywords
+  keywords,
 }: ArticleSchemaProps) {
-  const schema = {
+  const schema: JsonLdObject = {
     "@context": "https://schema.org",
     "@type": "Article",
-    "headline": headline,
-    "description": description,
-    "url": url,
-    "mainEntityOfPage": {
+    headline,
+    description,
+    url,
+    mainEntityOfPage: {
       "@type": "WebPage",
-      "@id": url
+      "@id": url,
     },
-    "datePublished": datePublished || dateModified || new Date().toISOString().split('T')[0],
-    "dateModified": dateModified || datePublished || new Date().toISOString().split('T')[0],
-    "author": {
+    datePublished:
+      datePublished || dateModified || new Date().toISOString().split("T")[0],
+    dateModified:
+      dateModified || datePublished || new Date().toISOString().split("T")[0],
+    author: {
       "@type": "Organization",
-      "name": author.name,
-      "url": author.url || "https://vertax.top"
+      name: author.name,
+      url: author.url || "https://vertax.top",
     },
-    "publisher": {
+    publisher: {
       "@type": "Organization",
-      "name": "VertaX",
-      "url": "https://vertax.top",
-      "logo": {
+      name: "VertaX",
+      url: "https://vertax.top",
+      logo: {
         "@type": "ImageObject",
-        "url": "https://vertax.top/logo.svg"
-      }
+        url: "https://vertax.top/logo.svg",
+      },
     },
-    "image": image,
-    "articleBody": articleBody,
-    "keywords": keywords?.join(", "),
-    "inLanguage": "zh-CN",
-    "isPartOf": {
+    image,
+    articleBody,
+    keywords: keywords?.join(", "),
+    inLanguage: "zh-CN",
+    isPartOf: {
       "@type": "WebSite",
-      "name": "VertaX",
-      "url": "https://vertax.top"
-    }
+      name: "VertaX",
+      url: "https://vertax.top",
+    },
   };
 
-  // 移除 undefined 字段
-  Object.keys(schema).forEach(key => {
+  for (const key of Object.keys(schema)) {
     if (schema[key] === undefined) {
       delete schema[key];
     }
-  });
+  }
 
   return (
     <script
@@ -82,55 +123,29 @@ export function ArticleSchema({
   );
 }
 
-/**
- * 预定义作者信息
- * 用于 AEO 作者署名
- */
-export const authors = {
-  siturenzhi: {
-    name: "司徒任之",
-    url: "https://vertax.top/about",
-    description: "跨境出海增长专家，专注 B2B 企业全球化增长策略与实践。"
-  },
-  vertaxTeam: {
-    name: "VertaX 团队",
-    url: "https://vertax.top/about",
-    description: "VertaX 是面向中国企业出海的智能获客平台团队，专注于 B2B 出海增长方法论与实践。"
-  },
-  growthExpert: {
-    name: "增长研究组",
-    url: "https://vertax.top/about",
-    description: "VertaX 增长研究组，聚焦海外获客策略、SEO/AEO/GEO 最佳实践。"
-  }
-};
-
-/**
- * 作者署名组件
- * 用于页面底部，增强 E-E-A-T 信号
- */
-export function AuthorAttribution({ 
+export function AuthorAttribution({
   author = authors.vertaxTeam,
-  lastUpdated 
-}: { 
-  author?: typeof authors.vertaxTeam;
+  lastUpdated,
+}: {
+  author?: AuthorProfile;
   lastUpdated?: string;
 }) {
-  const displayDate = lastUpdated || new Date().toISOString().split('T')[0];
-  
+  const displayDate = lastUpdated || new Date().toISOString().split("T")[0];
+
   return (
-    <div className="flex items-center gap-3 py-4 border-t border-white/5 mt-8">
-      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center text-white text-sm font-bold">
+    <div className="mt-8 flex items-center gap-3 border-t border-white/5 py-4">
+      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-cyan-500 text-sm font-bold text-white">
         V
       </div>
       <div className="text-sm">
         <div className="text-gray-300">
           <span className="font-medium">{author.name}</span>
-          <span className="text-gray-500 mx-2">·</span>
+          <span className="mx-2 text-gray-500">|</span>
           <time dateTime={displayDate} className="text-gray-500">
             更新于 {displayDate}
           </time>
         </div>
-        <p className="text-gray-500 text-xs mt-0.5">{author.description}</p>
+        <p className="mt-0.5 text-xs text-gray-500">{author.description}</p>
       </div>
     </div>
   );

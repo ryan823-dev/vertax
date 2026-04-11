@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { researchCompany, generateResearchSummary } from '@/lib/research/company-research';
 
@@ -58,7 +59,7 @@ export async function GET(request: NextRequest) {
           ...(typeof candidate.rawData === 'object' && candidate.rawData !== null ? candidate.rawData : {}),
           companyResearch: JSON.parse(JSON.stringify(result.data)),
           researchAt: new Date().toISOString(),
-        } as Record<string, unknown>,
+        } as Prisma.InputJsonValue,
       },
     });
 

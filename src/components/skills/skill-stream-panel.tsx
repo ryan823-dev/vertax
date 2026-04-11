@@ -21,12 +21,13 @@ import { getAvailableSkills } from '@/actions/skills';
 import { SKILL_NAMES } from '@/lib/skills/registry';
 import { SkillStreamTrigger } from './skill-stream-trigger';
 import type { SkillEngine } from '@/lib/skills/types';
+import type { EntityType } from '@/types/artifact';
 
 // ==================== Types ====================
 
 interface SkillStreamPanelProps {
   engine: SkillEngine;
-  entityType: string;
+  entityType: EntityType;
   entityId: string;
   input?: Record<string, unknown>;
   evidenceIds?: string[];

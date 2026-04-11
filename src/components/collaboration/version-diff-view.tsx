@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, type ReactNode } from "react";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import {
   FileText,
   ArrowRight,
   GitCompare,
-  X,
   Plus,
   Minus,
   Edit3,
@@ -29,7 +28,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
 
 interface VersionDiffViewProps {
   versions: ArtifactVersionData[];
@@ -214,7 +212,7 @@ export function VersionDiffView({ versions, open, onOpenChange }: VersionDiffVie
     return sections;
   }, [leftVersion, rightVersion]);
 
-  const renderValue = (value: unknown, field: string) => {
+  const renderValue = (value: unknown, field: string): ReactNode => {
     if (value === null || value === undefined || value === "") {
       return <span className="text-slate-400 italic">空</span>;
     }
@@ -242,11 +240,7 @@ export function VersionDiffView({ versions, open, onOpenChange }: VersionDiffVie
   const renderDiff = (section: DiffSection) => {
     if (section.diff && section.diff.length > 0) {
       // Show line-by-line diff for content
-      const changedLines = section.diff.filter(
-        l => l.type === "add" || l.type === "remove"
-      );
       const contextLines = 2;
-      const result: DiffLine[] = [];
 
       // Find changed line indices
       const changedIndices = new Set<number>();
@@ -296,9 +290,14 @@ export function VersionDiffView({ versions, open, onOpenChange }: VersionDiffVie
     }
 
     // Simple value comparison
-    const { oldHighlighted, newHighlighted } = typeof section.oldValue === "string" && typeof section.newValue === "string"
-      ? highlightInlineDiff(section.oldValue, section.newValue)
-      : { oldHighlighted: section.oldValue, newHighlighted: section.newValue };
+    const oldDisplay =
+      typeof section.oldValue === "string" && typeof section.newValue === "string"
+        ? highlightInlineDiff(section.oldValue, section.newValue).oldHighlighted
+        : renderValue(section.oldValue, section.field);
+    const newDisplay =
+      typeof section.oldValue === "string" && typeof section.newValue === "string"
+        ? highlightInlineDiff(section.oldValue, section.newValue).newHighlighted
+        : renderValue(section.newValue, section.field);
 
     return (
       <div className="space-y-2">
@@ -307,9 +306,7 @@ export function VersionDiffView({ versions, open, onOpenChange }: VersionDiffVie
           <div className="flex-1">
             <span className="text-xs text-red-600 font-medium">旧版本</span>
             <div className="mt-1 text-sm text-red-900">
-              {typeof section.oldValue === "string"
-                ? oldHighlighted
-                : renderValue(section.oldValue, section.field)}
+              {oldDisplay}
             </div>
           </div>
         </div>
@@ -318,9 +315,7 @@ export function VersionDiffView({ versions, open, onOpenChange }: VersionDiffVie
           <div className="flex-1">
             <span className="text-xs text-green-600 font-medium">新版本</span>
             <div className="mt-1 text-sm text-green-900">
-              {typeof section.newValue === "string"
-                ? newHighlighted
-                : renderValue(section.newValue, section.field)}
+              {newDisplay}
             </div>
           </div>
         </div>

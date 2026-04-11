@@ -8,7 +8,7 @@
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import type { Prisma } from "@prisma/client";
+import type { ContentLinkType, Prisma } from "@prisma/client";
 
 // ==================== 类型 ====================
 
@@ -19,7 +19,7 @@ export type RadarContentLinkData = {
   contentId: string;
   contentTitle: string;
   contentSlug: string;
-  linkType: string;
+  linkType: ContentLinkType;
   matchScore: number | null;
   outreachStatus: string | null;
   clickCount: number;
@@ -39,7 +39,7 @@ type RadarContentLinkWithRelations = Prisma.RadarContentLinkGetPayload<{
 export async function linkContentToCandidate(input: {
   candidateId: string;
   contentId: string;
-  linkType?: string;
+  linkType?: ContentLinkType;
   matchScore?: number;
   matchDetails?: Record<string, unknown>;
 }): Promise<{ success: boolean; error?: string; id?: string }> {

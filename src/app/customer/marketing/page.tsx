@@ -831,7 +831,7 @@ export default function MarketingPage() {
                 <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
                   <SkillStreamPanel
                     engine="marketing"
-                    entityType="Content"
+                    entityType="ContentPiece"
                     entityId={selectedContent.id}
                     input={{ title: selectedContent.title, keywords: selectedContent.keywords }}
                     onSkillComplete={(skillName, versionId) => {
