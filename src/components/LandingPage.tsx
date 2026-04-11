@@ -431,7 +431,7 @@ export default function LandingPage() {
             }}
           >
             <p className="text-lg font-medium" style={{ color: colors.brand.primary }}>
-              这些挑战不是靠多招人就能解决的，需要一套系统化的增长机制。
+              这些挑战不是靠招人就能解决的，需要专业的判断、指导和系统化的机制。
             </p>
           </div>
         </div>
