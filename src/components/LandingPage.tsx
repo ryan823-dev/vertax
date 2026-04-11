@@ -336,32 +336,90 @@ export default function LandingPage() {
               行业痛点
             </span>
             <h2 className="text-2xl sm:text-3xl font-bold" style={{ color: colors.text.primary }}>
-              出海企业面临的五大挑战
+              出海企业面临的八大挑战
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-10">
-            {[
-              { icon: Database, title: '知识散落', desc: '产品资料、行业知识分散在个人手中，无法形成组织能力。' },
-              { icon: MessageCircle, title: '表达碎片', desc: '品牌声音不统一，销售与市场各说各话，无法形成合力。' },
-              { icon: Search, title: '获客迷茫', desc: 'SEO、社交、展会做了很多，但没有清晰的增长路径。' },
-              { icon: Users, title: '线索混乱', desc: '客户信息残缺，无法判断质量，团队跟进效率低下。' },
-              { icon: BarChart, title: '结果模糊', desc: '做了很多工作，但不知道哪些有效，无法持续优化。' },
-              { icon: AlertTriangle, title: '人员依赖', desc: '过度依赖个人经验，人员变动后能力归零，风险极高。' }
-            ].map(({ icon: Icon, title, desc }) => (
-              <div
-                key={title}
-                className="rounded-xl p-5"
-                style={{
-                  background: colors.bg.primary,
-                  border: `1px solid ${colors.border.light}`,
-                }}
-              >
-                <Icon className="w-6 h-6 mb-3" style={{ color: colors.data.neutral }} />
-                <h3 className="font-bold mb-1.5" style={{ color: colors.text.primary }}>{title}</h3>
-                <p className="text-sm leading-relaxed" style={{ color: colors.text.secondary }}>{desc}</p>
-              </div>
-            ))}
+          {/* 第一部分：内部准备不足 */}
+          <div className="mb-10">
+            <div className="text-center mb-6">
+              <h3 className="text-lg font-bold" style={{ color: colors.text.primary }}>
+                第一部分：内部准备不足
+              </h3>
+              <p className="text-sm mt-1" style={{ color: colors.text.muted }}>
+                企业还没真正具备出海起步能力
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
+              {[
+                { icon: AlertTriangle, num: '1', title: '路径不清', desc: '不知道该做 B2B 还是 B2C，不清楚先做哪个市场、哪个渠道、哪种出海模式，缺乏明确方向。' },
+                { icon: Database, num: '2', title: '资料不全', desc: '企业介绍、产品资料、案例内容、技术说明等准备不足，无法支撑海外市场启动。' },
+                { icon: MessageCircle, num: '3', title: '表达不专业', desc: '缺少面向海外客户的专业表达，企业价值、产品优势、服务能力说不清，难以建立第一轮信任。' },
+                { icon: Shield, num: '4', title: '配套缺失', desc: '在认证、资质、进出口、关务、海外仓、海外收款等环节上缺少经验和资源，出海落地困难。' }
+              ].map(({ icon: Icon, num, title, desc }) => (
+                <div
+                  key={title}
+                  className="rounded-xl p-5 flex gap-4"
+                  style={{
+                    background: colors.bg.primary,
+                    border: `1px solid ${colors.border.light}`,
+                  }}
+                >
+                  <div className="flex-shrink-0">
+                    <Icon className="w-6 h-6" style={{ color: colors.data.neutral }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="text-xs font-bold px-2 py-0.5 rounded" style={{ background: colors.border.medium, color: colors.brand.primary }}>{num}</span>
+                      <h3 className="font-bold" style={{ color: colors.text.primary }}>{title}</h3>
+                    </div>
+                    <p className="text-sm leading-relaxed" style={{ color: colors.text.secondary }}>{desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 第二部分：外部启动困难 */}
+          <div className="mb-10">
+            <div className="text-center mb-6">
+              <h3 className="text-lg font-bold" style={{ color: colors.text.primary }}>
+                第二部分：外部启动困难
+              </h3>
+              <p className="text-sm mt-1" style={{ color: colors.text.muted }}>
+                市场还没有真正跑起来
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {[
+                { icon: Search, num: '5', title: '获客无从下手', desc: '不知道该从 SEO、广告、社媒、展会、平台还是主动开发切入，渠道选择混乱，启动效率低。' },
+                { icon: BarChart, num: '6', title: '投入门槛高', desc: '建团队、跑展会、买平台、做推广都需要持续投入，前期成本高，试错压力大。' },
+                { icon: Target, num: '7', title: '冷启动困难', desc: '没有稳定渠道，没有品牌基础，也缺乏海外客户触达能力，第一批客户难启动。' },
+                { icon: Users, num: '8', title: '人员依赖', desc: '过度依赖业务员个人能力和经验，一旦换人，客户沟通、资源积累和推进能力都容易中断。' }
+              ].map(({ icon: Icon, num, title, desc }) => (
+                <div
+                  key={title}
+                  className="rounded-xl p-5 flex gap-4"
+                  style={{
+                    background: colors.bg.primary,
+                    border: `1px solid ${colors.border.light}`,
+                  }}
+                >
+                  <div className="flex-shrink-0">
+                    <Icon className="w-6 h-6" style={{ color: colors.data.neutral }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="text-xs font-bold px-2 py-0.5 rounded" style={{ background: colors.border.medium, color: colors.brand.primary }}>{num}</span>
+                      <h3 className="font-bold" style={{ color: colors.text.primary }}>{title}</h3>
+                    </div>
+                    <p className="text-sm leading-relaxed" style={{ color: colors.text.secondary }}>{desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Solution Highlight */}
