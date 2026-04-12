@@ -208,10 +208,14 @@ export default function TargetingSpecPage() {
       });
       clearTimeout(timeoutId);
       
-      const result = await res.json() as { success?: boolean; error?: string };
+      const result = await res.json() as { success?: boolean; error?: string; targetingSpecVersionId?: string; channelMapVersionId?: string };
       if (result.success) {
-        toast.success('已更新 TargetingSpec + ChannelMap');
-        loadData();
+        toast.success('同步成功', { 
+          description: '已从知识引擎生成 TargetingSpec 和 ChannelMap',
+          duration: 4000,
+        });
+        // 自动刷新数据
+        await loadData();
       } else {
         toast.error('同步失败', { description: result.error });
       }
@@ -439,6 +443,30 @@ export default function TargetingSpecPage() {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            {/* 从知识引擎同步按钮 - 始终可见 */}
+            <button
+              onClick={handleRegenerate}
+              disabled={isSyncing}
+              className={`flex items-center gap-2 px-4 py-2 text-sm rounded-xl transition-colors disabled:opacity-50 ${
+                isSyncing
+                  ? 'bg-emerald-100 text-emerald-600'
+                  : 'bg-[#0B1B2B] text-emerald-400 hover:bg-[#10263B]'
+              }`}
+              title="从知识引擎同步最新买家画像"
+            >
+              {isSyncing ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  同步中...
+                </>
+              ) : (
+                <>
+                  <Sparkles size={16} />
+                  从知识引擎同步
+                </>
+              )}
+            </button>
+            
             {(targetingSpec || channelMap) && !isEditing && (
               <>
                 <button
@@ -551,16 +579,35 @@ export default function TargetingSpecPage() {
           <div className="bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3] p-12 text-center">
             <Target size={48} className="text-slate-300 mx-auto mb-4" />
             <h3 className="text-lg font-bold text-[#0B1B2B] mb-2">尚未生成目标客户画像</h3>
-            <p className="text-sm text-slate-500 mb-6">
-              请先在知识引擎完善企业认知，然后点击「同步到获客雷达」自动生成
+            <p className="text-sm text-slate-500 mb-6 max-w-md mx-auto">
+              从知识引擎同步买家画像,AI 将自动生成可执行的筛选规则和渠道策略
             </p>
-            <Link
-              href="/customer/knowledge/company"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-[#0B1B2B] text-emerald-400 rounded-xl text-sm font-medium hover:bg-[#10263B] transition-colors"
-            >
-              前往知识引擎
-              <ChevronRight size={16} />
-            </Link>
+            <div className="flex items-center justify-center gap-3">
+              <button
+                onClick={handleRegenerate}
+                disabled={isSyncing}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#0B1B2B] text-emerald-400 rounded-xl text-sm font-medium hover:bg-[#10263B] transition-colors disabled:opacity-50"
+              >
+                {isSyncing ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    同步中...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={16} />
+                    从知识引擎同步
+                  </>
+                )}
+              </button>
+              <Link
+                href="/customer/knowledge/profiles"
+                className="inline-flex items-center gap-2 px-4 py-2.5 border border-[#E7E0D3] text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors"
+              >
+                查看买家画像
+                <ChevronRight size={16} />
+              </Link>
+            </div>
           </div>
         ) : (
           <>
