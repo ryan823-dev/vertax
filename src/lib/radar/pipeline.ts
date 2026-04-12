@@ -374,7 +374,7 @@ function calculateSteps(
   let step2Status: StepStatus;
   let step2Blocker: string | undefined;
   
-  if (profilesResult.activeCount >= 1 && profilesResult.hasSourcesConfigured) {
+  if (profilesResult.activeCount >= 1) {
     step2Status = 'DONE';
   } else if (step1Status === 'BLOCKED') {
     step2Status = 'BLOCKED';

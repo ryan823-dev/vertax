@@ -150,11 +150,12 @@ export const navConfig: NavItem[] = [
     group: 'core',
     healthSource: 'radar.status',
     subItems: [
-      { key: 'candidates', label: '线索池', href: '/customer/radar/candidates', icon: Users, order: 1 },
-      { key: 'tasks', label: '扫描任务', href: '/customer/radar/tasks', icon: Zap, order: 2 },
-      { key: 'profiles', label: '扫描计划', href: '/customer/radar/profiles', icon: CalendarClock, order: 3 },
-      { key: 'channels', label: '渠道地图', href: '/customer/radar/channels', icon: Map, order: 4 },
-      { key: 'targeting', label: '画像规则', href: '/customer/radar/targeting', icon: Target, order: 5 },
+      { key: 'targeting', label: '画像规则', href: '/customer/radar/targeting', icon: Target, order: 1 },
+      { key: 'channels', label: '数据源', href: '/customer/radar/channels', icon: Map, order: 2 },
+      { key: 'tasks', label: '扫描任务', href: '/customer/radar/tasks', icon: Zap, order: 3 },
+      { key: 'candidates', label: '候选池', href: '/customer/radar/candidates', icon: Users, order: 4 },
+      { key: 'prospects', label: '线索库', href: '/customer/radar/prospects', icon: Building2, order: 5 },
+      { key: 'opportunities', label: '机会追踪', href: '/customer/radar/opportunities', icon: ClipboardCheck, order: 6 },
     ],
   },
 

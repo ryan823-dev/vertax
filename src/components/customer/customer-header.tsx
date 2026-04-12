@@ -1,7 +1,8 @@
 "use client";
 
-import React from 'react';
-import { Shield } from 'lucide-react';
+import React, { useState } from 'react';
+import { Shield, LogOut } from 'lucide-react';
+import { signOut } from 'next-auth/react';
 import { NotificationBell } from './notification-bell';
 
 interface CustomerHeaderProps {
@@ -13,6 +14,12 @@ export function CustomerHeader({
   tenantName = '客户企业', 
   tenantSlug = 'tenant',
 }: CustomerHeaderProps) {
+  const [isSigningOut, setIsSigningOut] = useState(false);
+
+  const handleSignOut = async () => {
+    setIsSigningOut(true);
+    await signOut({ callbackUrl: '/login' });
+  };
   return (
     <header
       className="h-14 px-5 flex items-center justify-between shrink-0 z-20"
@@ -59,7 +66,7 @@ export function CustomerHeader({
         </div>
       </div>
 
-      {/* 右侧：通知 + 身份胶囊 */}
+      {/* 右侧：通知 + 身份胶囊 + 登出 */}
       <div className="flex items-center gap-2.5">
         <NotificationBell />
 
@@ -82,6 +89,18 @@ export function CustomerHeader({
             <span className="text-[11px] font-bold" style={{ color: '#D4AF37' }}>决策者</span>
           </div>
         </div>
+
+        {/* 登出按钮 */}
+        <button
+          onClick={handleSignOut}
+          disabled={isSigningOut}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all hover:bg-[rgba(255,255,255,0.08)] disabled:opacity-50"
+          style={{ color: 'rgba(255,255,255,0.6)', border: '1px solid rgba(255,255,255,0.1)' }}
+          title="退出登录"
+        >
+          <LogOut size={14} />
+          <span className="hidden sm:inline text-xs font-medium">退出</span>
+        </button>
       </div>
     </header>
   );

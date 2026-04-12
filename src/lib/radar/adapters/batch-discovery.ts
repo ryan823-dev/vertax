@@ -28,6 +28,8 @@ export interface BatchDiscoveryResult {
   queriesExecuted: number;
 }
 
+const EXCLUDED_SOURCE_CODES = new Set(['batch_discovery', 'hunter', 'pdl']);
+
 // ==================== 批量发现适配器 ====================
 
 export class BatchDiscoveryAdapter implements RadarAdapter {
@@ -61,7 +63,18 @@ export class BatchDiscoveryAdapter implements RadarAdapter {
     // 获取要使用的适配器列表
     const registrations = listAdapterRegistrations();
     const targetSources = config.sources || registrations
-      .filter(r => r.channelType === 'DIRECTORY' || r.channelType === 'TENDER')
+      .filter(
+        (r) =>
+          !EXCLUDED_SOURCE_CODES.has(r.code) &&
+          [
+            'DIRECTORY',
+            'TENDER',
+            'MAPS',
+            'TRADESHOW',
+            'HIRING',
+            'ECOSYSTEM',
+          ].includes(r.channelType)
+      )
       .map(r => r.code);
 
     // 初始化适配器

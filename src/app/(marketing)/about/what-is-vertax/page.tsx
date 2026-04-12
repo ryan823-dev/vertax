@@ -1,5 +1,4 @@
 import { Metadata } from 'next';
-import Link from 'next/link';
 import { ArrowRight, Building2, Globe, Brain, Target, Zap, Shield, MessageSquare } from 'lucide-react';
 import { BreadcrumbSchema, breadcrumbPaths } from '@/components/seo/breadcrumb-schema';
 import { ArticleSchema } from '@/components/seo/article-schema';

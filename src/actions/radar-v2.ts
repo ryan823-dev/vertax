@@ -249,13 +249,58 @@ export async function initializeSystemSourcesV2() {
   return created;
 }
 
+const AUTO_DISCOVERY_SOURCE_CODES = ['batch_discovery', 'multi_search'] as const;
+
+async function getOrCreateAutoDiscoverySource(): Promise<RadarSource> {
+  ensureAdaptersInitialized();
+
+  for (const code of AUTO_DISCOVERY_SOURCE_CODES) {
+    const existing = await prisma.radarSource.findUnique({
+      where: { code },
+    });
+
+    if (existing) {
+      return existing;
+    }
+
+    const registration = getAdapterRegistration(code);
+    if (!registration) {
+      continue;
+    }
+
+    return prisma.radarSource.create({
+      data: {
+        tenantId: null,
+        channelType: registration.channelType,
+        name: registration.name,
+        code: registration.code,
+        description: registration.description,
+        websiteUrl: registration.websiteUrl,
+        countries: registration.countries || [],
+        regions: registration.regions || [],
+        adapterType: registration.adapterType,
+        adapterConfig: registration.defaultConfig as Prisma.InputJsonValue,
+        isOfficial: registration.isOfficial,
+        termsUrl: registration.termsUrl,
+        storagePolicy: registration.storagePolicy,
+        ttlDays: registration.ttlDays,
+        attributionRequired: registration.attributionRequired,
+        rateLimit: registration.features.rateLimit as Prisma.InputJsonValue,
+        isEnabled: true,
+      },
+    });
+  }
+
+  throw new Error('No automatic discovery engine is available');
+}
+
 // ==================== 閸欐垹骞囨禒璇插缁狅紕鎮?====================
 
 /**
  * 閸掓稑缂撻崣鎴犲箛娴犺濮?
  */
 export async function createDiscoveryTaskV2(input: {
-  sourceId: string;
+  sourceId?: string;
   name?: string;
   queryConfig: RadarSearchQuery;
   targetingRef?: {
@@ -266,19 +311,35 @@ export async function createDiscoveryTaskV2(input: {
 }): Promise<RadarTask> {
   // 妤犲矁鐦夋潏鎾冲弳
   if (!input.sourceId) {
-    throw new ValidationError('sourceId is required');
+    input.sourceId = (await getOrCreateAutoDiscoverySource()).id;
   }
 
   // 妤犲矁鐦夐弻銉嚄闁板秶鐤?
   const validatedQuery = validateRadarQuery(input.queryConfig);
+  if (
+    !validatedQuery.keywords?.length &&
+    !validatedQuery.countries?.length &&
+    !validatedQuery.regions?.length &&
+    !validatedQuery.categories?.length &&
+    !validatedQuery.targetIndustries?.length &&
+    !validatedQuery.companyTypes?.length
+  ) {
+    throw new ValidationError('At least one targeting condition is required');
+  }
 
   const session = await auth();
   if (!session?.user?.tenantId || !session.user.id) throw new Error('Unauthorized');
 
+  if (!input.sourceId) {
+    input.sourceId = (await getOrCreateAutoDiscoverySource()).id;
+  }
+
+  const sourceId = input.sourceId;
+
   return createRadarTask({
     tenantId: session.user.tenantId,
-    sourceId: input.sourceId,
-    name: input.name,
+    sourceId,
+    name: input.name || '按目标客户画像自动采集线索',
     queryConfig: validatedQuery,
     targetingRef: input.targetingRef,
     triggeredBy: session.user.id,

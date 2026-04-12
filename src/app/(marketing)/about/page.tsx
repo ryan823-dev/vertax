@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowRight, Target, Brain, Globe, Shield, Users, BookOpen, Rocket, Server, Clock, HelpCircle, TrendingUp, Users as UsersIcon } from 'lucide-react';
+import { ArrowRight, Target, Brain, Globe, Shield, Users, BookOpen, Rocket, Server, Clock, TrendingUp, Users as UsersIcon } from 'lucide-react';
 import { MarketingNav, MarketingFooter } from '@/components/marketing/design-system';
 import { BreadcrumbSchema } from '@/components/seo/breadcrumb-schema';
 import { SemanticTripleList } from '@/components/seo/semantic-content';

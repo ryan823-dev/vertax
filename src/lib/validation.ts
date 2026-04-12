@@ -86,6 +86,8 @@ export const radarQuerySchema = z.object({
   countries: countriesSchema.optional(),
   regions: z.array(z.string()).optional(),
   categories: z.array(z.string()).optional(),
+  targetIndustries: z.array(z.string().min(1)).optional(),
+  companyTypes: z.array(z.string().min(1)).optional(),
   cursor: z.object({
     queryIndex: z.number().optional(),
     nextPage: z.number().optional(),

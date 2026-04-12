@@ -370,13 +370,67 @@ export class ExaAdapter implements RadarAdapter {
     }
   }
 
+  /**
+   * 从 URL 提取公司域名
+   * 例如: https://www.acme-corp.com/about -> Acme Corp
+   */
+  private extractCompanyNameFromUrl(url: string): string {
+    try {
+      const urlObj = new URL(url);
+      const hostname = urlObj.hostname.replace(/^www\./, '');
+      // 去掉 TLD，取主域名
+      const parts = hostname.split('.');
+      if (parts.length >= 2) {
+        // 取倒数第二部分作为公司名（处理 .co.uk 等）
+        const domainPart = parts[parts.length - 2] || parts[0];
+        // 转换为可读格式: acme-corp -> Acme Corp
+        return domainPart
+          .replace(/[-_]/g, ' ')
+          .replace(/\b\w/g, c => c.toUpperCase());
+      }
+      return hostname;
+    } catch {
+      return url;
+    }
+  }
+
+  /**
+   * 判断是否是研究论文/博客文章（非公司信息）
+   */
+  private isNonCompanyContent(result: ExaSearchResult): boolean {
+    const paperKeywords = ['paper', 'research', 'study', 'journal', 'doi.org', 'arxiv', 'pubmed', 'ncbi'];
+    const blogKeywords = ['blog', 'medium', 'substack', 'wordpress', 'article', 'news'];
+    
+    const text = (result.title + ' ' + (result.url || '')).toLowerCase();
+    return paperKeywords.some(kw => text.includes(kw)) || blogKeywords.some(kw => text.includes(kw));
+  }
+
   private normalizeResult(result: ExaSearchResult): NormalizedCandidate {
+    const isNonCompany = this.isNonCompanyContent(result);
+    
+    // 从 URL 提取公司名，而不是使用网页标题
+    const companyName = this.extractCompanyNameFromUrl(result.url);
+    
+    // 尝试从标题提取行业信息
+    let industry: string | undefined;
+    const titleLower = result.title.toLowerCase();
+    if (titleLower.includes('paint') || titleLower.includes('coating') || titleLower.includes('spray')) {
+      industry = 'Coating & Painting';
+    } else if (titleLower.includes('robot') || titleLower.includes('automation')) {
+      industry = 'Robotics & Automation';
+    } else if (titleLower.includes('manufactur')) {
+      industry = 'Manufacturing';
+    }
+
     return {
       externalId: result.id || `exa-${Buffer.from(result.url).toString('base64').slice(0, 20)}`,
       sourceUrl: result.url,
-      displayName: result.title,
-      candidateType: 'OPPORTUNITY',
+      displayName: isNonCompany ? companyName : result.title, // 非公司内容使用域名，公司内容使用标题
+      candidateType: isNonCompany ? 'OPPORTUNITY' : 'COMPANY',
 
+      // 公司字段
+      website: result.url,
+      industry,
       description: result.summary || result.text?.slice(0, 500) || result.highlights?.join('\n') || '',
 
       publishedAt: result.publishedDate ? new Date(result.publishedDate) : undefined,
@@ -384,8 +438,9 @@ export class ExaAdapter implements RadarAdapter {
       matchExplain: {
         channel: 'exa',
         reasons: [
-          result.author ? `作者: ${result.author}` : '',
+          result.author ? `来源: ${result.author}` : '',
           result.score ? `相关度: ${(result.score * 100).toFixed(0)}%` : '',
+          industry ? `行业: ${industry}` : '',
         ].filter(Boolean),
       },
       matchScore: result.score || 0.7,

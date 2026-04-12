@@ -1,7 +1,6 @@
 /* eslint-disable react/no-unescaped-entities */
 
 import { Metadata } from 'next';
-import Link from 'next/link';
 import { ArrowRight, Brain, Target, TrendingUp, Globe, BookOpen } from 'lucide-react';
 import { BreadcrumbSchema, breadcrumbPaths } from '@/components/seo/breadcrumb-schema';
 import { ArticleSchema } from '@/components/seo/article-schema';

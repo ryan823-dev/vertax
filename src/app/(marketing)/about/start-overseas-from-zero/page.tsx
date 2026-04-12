@@ -1,5 +1,4 @@
 import { Metadata } from 'next';
-import Link from 'next/link';
 import { ArrowRight, Map, Target, Users, FileText, Mail, Globe, CheckCircle2, XCircle, Rocket, Building2, AlertTriangle } from 'lucide-react';
 import { BreadcrumbSchema } from '@/components/seo/breadcrumb-schema';
 import { ArticleSchema } from '@/components/seo/article-schema';

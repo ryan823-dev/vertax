@@ -1,324 +1,312 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import Link from 'next/link';
-import { 
-  Loader2,
-  RefreshCw,
-  AlertCircle,
-  X,
-  Play,
-  Square,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  Plus,
-  ChevronRight,
-  Search,
-  MapPin,
-  FileText,
-  Building2,
-  Filter,
-  ArrowLeft,
-  Zap,
-  Globe2,
-} from 'lucide-react';
+import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import {
-  getDiscoveryTasksV2,
-  getRadarSourcesV2,
-  createDiscoveryTaskV2,
-  runDiscoveryTaskV2,
+  AlertCircle,
+  ArrowLeft,
+  CheckCircle2,
+  ChevronRight,
+  Clock,
+  Filter,
+  Loader2,
+  Play,
+  Plus,
+  RefreshCw,
+  Search,
+  Square,
+  X,
+  XCircle,
+} from "lucide-react";
+import {
   cancelDiscoveryTaskV2,
-  initializeSystemSourcesV2,
-} from '@/actions/radar-v2';
-import { getLatestTargetingSpec } from '@/actions/sync';
-import type { RadarTask, RadarSource } from '@prisma/client';
-import type { RadarTaskStatus, ChannelType } from '@prisma/client';
-import { toast } from 'sonner';
-
-// ==================== 类型 ====================
+  createDiscoveryTaskV2,
+  getDiscoveryTasksV2,
+  runDiscoveryTaskV2,
+} from "@/actions/radar-v2";
+import { getLatestTargetingSpec } from "@/actions/sync";
+import type { RadarTask, RadarSource, RadarTaskStatus } from "@prisma/client";
+import type { RadarSearchQuery } from "@/lib/radar/adapters/types";
+import { toast } from "sonner";
 
 type TaskWithSource = RadarTask & { source: RadarSource };
 
-// ==================== 常量 ====================
-
-const STATUS_CONFIG: Record<RadarTaskStatus, { label: string; color: string; icon: typeof Clock }> = {
-  PENDING: { label: '待执行', color: 'text-slate-500 bg-slate-100', icon: Clock },
-  RUNNING: { label: '执行中', color: 'text-blue-600 bg-blue-100', icon: Loader2 },
-  COMPLETED: { label: '已完成', color: 'text-emerald-600 bg-emerald-100', icon: CheckCircle2 },
-  FAILED: { label: '失败', color: 'text-red-600 bg-red-100', icon: XCircle },
-  CANCELLED: { label: '已取消', color: 'text-amber-600 bg-amber-100', icon: Square },
+type TargetingSpecPayload = {
+  segmentation?: {
+    firmographic?: {
+      industries?: string[];
+      countries?: string[];
+    };
+    technographic?: {
+      keywords?: string[];
+    };
+  };
 };
 
-const CHANNEL_CONFIG: Record<ChannelType, { label: string; icon: typeof Search; color: string }> = {
-  TENDER: { label: '招标', icon: FileText, color: 'text-amber-600' },
-  MAPS: { label: '地图', icon: MapPin, color: 'text-blue-600' },
-  DIRECTORY: { label: '目录', icon: Building2, color: 'text-emerald-600' },
-  TRADESHOW: { label: '展会', icon: Globe2, color: 'text-purple-600' },
-  HIRING: { label: '招聘', icon: Search, color: 'text-rose-600' },
-  ECOSYSTEM: { label: '生态', icon: Globe2, color: 'text-teal-600' },
-  CUSTOM: { label: '自定义', icon: Zap, color: 'text-slate-600' },
+type TargetingSpecRecord = {
+  id: string;
+  content: Record<string, unknown>;
 };
 
-// ==================== 页面组件 ====================
+const AUTO_COLLECTION_SOURCE_CODES = new Set(["batch_discovery", "multi_search"]);
+
+const STATUS_CONFIG: Record<
+  RadarTaskStatus,
+  { label: string; color: string; icon: typeof Clock }
+> = {
+  PENDING: { label: "待执行", color: "text-slate-500 bg-slate-100", icon: Clock },
+  RUNNING: { label: "执行中", color: "text-blue-600 bg-blue-100", icon: Loader2 },
+  COMPLETED: { label: "已完成", color: "text-emerald-600 bg-emerald-100", icon: CheckCircle2 },
+  FAILED: { label: "失败", color: "text-red-600 bg-red-100", icon: XCircle },
+  CANCELLED: { label: "已取消", color: "text-amber-600 bg-amber-100", icon: Square },
+};
+
+function buildQueryConfigFromTargetingSpec(
+  payload: TargetingSpecPayload | null
+): RadarSearchQuery {
+  const keywords = payload?.segmentation?.technographic?.keywords?.filter(Boolean) ?? [];
+  const countries = payload?.segmentation?.firmographic?.countries?.filter(Boolean) ?? [];
+  const targetIndustries =
+    payload?.segmentation?.firmographic?.industries?.filter(Boolean) ?? [];
+
+  return {
+    keywords: keywords.length > 0 ? keywords : undefined,
+    countries: countries.length > 0 ? countries : undefined,
+    targetIndustries: targetIndustries.length > 0 ? targetIndustries : undefined,
+  };
+}
+
+function hasQueryScope(query: RadarSearchQuery): boolean {
+  return Boolean(
+    query.keywords?.length ||
+      query.countries?.length ||
+      query.regions?.length ||
+      query.categories?.length ||
+      query.targetIndustries?.length ||
+      query.companyTypes?.length
+  );
+}
+
+function summarizeQuery(query: RadarSearchQuery): string {
+  const parts: string[] = [];
+
+  if (query.keywords?.length) {
+    parts.push(`关键词：${query.keywords.slice(0, 3).join("、")}`);
+  }
+  if (query.countries?.length) {
+    parts.push(`国家：${query.countries.slice(0, 4).join("、")}`);
+  }
+  if (query.targetIndustries?.length) {
+    parts.push(`行业：${query.targetIndustries.slice(0, 3).join("、")}`);
+  }
+
+  return parts.join(" · ") || "按目标客户画像自动收集线索";
+}
+
+function formatTaskTimestamp(task: TaskWithSource): string {
+  const value = task.completedAt ?? task.startedAt ?? task.createdAt;
+  return new Date(value).toLocaleString("zh-CN");
+}
+
+function getTaskModeLabel(task: TaskWithSource): string {
+  return AUTO_COLLECTION_SOURCE_CODES.has(task.source.code)
+    ? "系统自动收集与补全"
+    : "线索收集任务";
+}
 
 export default function RadarTasksPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tasks, setTasks] = useState<TaskWithSource[]>([]);
-  const [sources, setSources] = useState<RadarSource[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<RadarTaskStatus | ''>('');
-  const [channelFilter, setChannelFilter] = useState<ChannelType | ''>('');
-  const [_runningTaskIds, setRunningTaskIds] = useState<Set<string>>(new Set());
+  const [statusFilter, setStatusFilter] = useState<RadarTaskStatus | "">("");
 
-  // 加载数据
   const loadData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
+
     try {
-      const [tasksData, sourcesData] = await Promise.all([
-        getDiscoveryTasksV2({
-          status: statusFilter || undefined,
-        }),
-        getRadarSourcesV2(channelFilter || undefined),
-      ]);
+      const tasksData = await getDiscoveryTasksV2({
+        status: statusFilter || undefined,
+      });
       setTasks(tasksData);
-      setSources(sourcesData);
     } catch (err) {
-      setError(err instanceof Error ? err.message : '加载数据失败');
+      setError(err instanceof Error ? err.message : "加载任务失败");
     } finally {
       setIsLoading(false);
     }
-  }, [statusFilter, channelFilter]);
+  }, [statusFilter]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
-  // 初始化系统数据源
-  const handleInitSources = async () => {
-    try {
-      const created = await initializeSystemSourcesV2();
-      if (created.length > 0) {
-        toast.success(`已创建 ${created.length} 个数据源`);
-        loadData();
-      } else {
-        toast.info('数据源已是最新');
-      }
-    } catch (err) {
-      toast.error('初始化失败', { description: err instanceof Error ? err.message : '未知错误' });
-    }
-  };
-
-  // 运行任务
   const handleRunTask = async (taskId: string) => {
-    setRunningTaskIds(prev => new Set(prev).add(taskId));
     try {
       const result = await runDiscoveryTaskV2(taskId);
       if (result.success) {
-        toast.success('任务完成', {
-          description: `发现 ${result.stats.created} 个新候选，${result.stats.duplicates} 个重复`,
+        toast.success("任务已完成", {
+          description: `新增 ${result.stats.created} 条线索，去重 ${result.stats.duplicates} 条`,
         });
       }
-      loadData();
+      await loadData();
     } catch (err) {
-      toast.error('执行失败', { description: err instanceof Error ? err.message : '未知错误' });
-    } finally {
-      setRunningTaskIds(prev => {
-        const next = new Set(prev);
-        next.delete(taskId);
-        return next;
+      toast.error("执行失败", {
+        description: err instanceof Error ? err.message : "未知错误",
       });
     }
   };
 
-  // 取消任务
   const handleCancelTask = async (taskId: string) => {
     try {
       await cancelDiscoveryTaskV2(taskId);
-      toast.info('任务已取消');
-      loadData();
+      toast.info("任务已取消");
+      await loadData();
     } catch (err) {
-      toast.error('取消失败', { description: err instanceof Error ? err.message : '未知错误' });
+      toast.error("取消失败", {
+        description: err instanceof Error ? err.message : "未知错误",
+      });
     }
   };
 
-  // 过滤后的任务
-  const filteredTasks = tasks.filter(t => {
-    if (channelFilter && t.source.channelType !== channelFilter) return false;
-    return true;
-  });
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0B1B2B] to-[#10263B]">
-      {/* Header */}
       <div className="border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-6 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link 
-                href="/customer/radar"
-                className="p-2 text-slate-400 hover:text-[#D4AF37] transition-colors rounded-lg hover:bg-white/5"
-              >
-                <ArrowLeft size={20} />
-              </Link>
-              <div>
-                <h1 className="text-2xl font-bold text-white">发现任务</h1>
-                <p className="text-sm text-slate-400 mt-1">
-                  管理和执行获客雷达的数据发现任务
-                </p>
-              </div>
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6">
+          <div className="flex items-center gap-4">
+            <Link
+              href="/customer/radar"
+              className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-white/5 hover:text-[#D4AF37]"
+            >
+              <ArrowLeft size={20} />
+            </Link>
+            <div>
+              <h1 className="text-2xl font-bold text-white">线索收集任务</h1>
+              <p className="mt-1 text-sm text-slate-400">
+                按目标客户画像自动收集、补全并验证客户线索，不暴露底层数据源。
+              </p>
             </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={handleInitSources}
-                className="px-3 py-2 text-slate-400 hover:text-[#D4AF37] transition-colors rounded-lg hover:bg-white/5 text-sm"
-              >
-                初始化数据源
-              </button>
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-[#D4AF37] text-[#0B1220] rounded-xl text-sm font-medium hover:bg-[#C5A030] transition-colors"
-              >
-                <Plus size={16} />
-                新建任务
-              </button>
-              <button 
-                onClick={loadData}
-                className="p-2 text-slate-400 hover:text-[#D4AF37] transition-colors"
-                title="刷新"
-              >
-                <RefreshCw size={18} />
-              </button>
-            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="flex items-center gap-2 rounded-xl bg-[#D4AF37] px-4 py-2 text-sm font-medium text-[#0B1220] transition-colors hover:bg-[#C5A030]"
+            >
+              <Plus size={16} />
+              新建线索收集
+            </button>
+            <button
+              onClick={loadData}
+              className="p-2 text-slate-400 transition-colors hover:text-[#D4AF37]"
+              title="刷新"
+            >
+              <RefreshCw size={18} />
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Error Alert */}
       {error && (
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
-            <AlertCircle className="text-red-500 shrink-0" size={20} />
+        <div className="mx-auto max-w-7xl px-6 py-4">
+          <div className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 p-4">
+            <AlertCircle className="shrink-0 text-red-500" size={20} />
             <p className="text-sm text-red-700">{error}</p>
-            <button onClick={() => setError(null)} className="ml-auto text-red-400 hover:text-red-600">
+            <button
+              onClick={() => setError(null)}
+              className="ml-auto text-red-400 hover:text-red-600"
+            >
               <X size={16} />
             </button>
           </div>
         </div>
       )}
 
-      {/* Filters */}
-      <div className="max-w-7xl mx-auto px-6 py-4">
+      <div className="mx-auto max-w-7xl px-6 py-4">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <Filter size={14} className="text-slate-400" />
-            <span className="text-xs text-slate-500">筛选:</span>
+            <span className="text-xs text-slate-500">筛选</span>
           </div>
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as RadarTaskStatus | '')}
-            className="px-3 py-1.5 text-xs border border-[#E8E0D0] rounded-lg bg-[#FFFCF7] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/30"
+            onChange={(e) => setStatusFilter(e.target.value as RadarTaskStatus | "")}
+            className="rounded-lg border border-[#E8E0D0] bg-[#FFFCF7] px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/30"
           >
             <option value="">全部状态</option>
             {Object.entries(STATUS_CONFIG).map(([key, val]) => (
-              <option key={key} value={key}>{val.label}</option>
+              <option key={key} value={key}>
+                {val.label}
+              </option>
             ))}
           </select>
-          <select
-            value={channelFilter}
-            onChange={(e) => setChannelFilter(e.target.value as ChannelType | '')}
-            className="px-3 py-1.5 text-xs border border-[#E8E0D0] rounded-lg bg-[#FFFCF7] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/30"
-          >
-            <option value="">全部渠道</option>
-            {Object.entries(CHANNEL_CONFIG).map(([key, val]) => (
-              <option key={key} value={key}>{val.label}</option>
-            ))}
-          </select>
-          <span className="text-xs text-slate-400 ml-auto">
-            共 {filteredTasks.length} 个任务
-          </span>
+          <span className="ml-auto text-xs text-slate-400">共 {tasks.length} 个任务</span>
         </div>
       </div>
 
-      {/* Data Sources Overview */}
-      {sources.length > 0 && (
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-5">
-            <h3 className="text-sm font-bold text-[#0B1B2B] mb-3">可用数据源</h3>
-            <div className="flex flex-wrap gap-2">
-              {sources.map(source => {
-                const channelConf = CHANNEL_CONFIG[source.channelType as ChannelType];
-                const ChannelIcon = channelConf?.icon || Search;
-                return (
-                  <div 
-                    key={source.id}
-                    className="flex items-center gap-2 px-3 py-2 bg-[#FFFCF7] rounded-lg border border-[#E8E0D0]"
-                  >
-                    <ChannelIcon size={14} className={channelConf?.color || 'text-slate-500'} />
-                    <span className="text-xs font-medium text-[#0B1B2B]">{source.name}</span>
-                    {source.isOfficial && (
-                      <span className="px-1.5 py-0.5 text-[9px] bg-emerald-100 text-emerald-600 rounded">官方</span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Task List */}
-      <div className="max-w-7xl mx-auto px-6 py-4">
+      <div className="mx-auto max-w-7xl px-6 py-4">
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 size={32} className="text-[#D4AF37] animate-spin" />
+            <Loader2 size={32} className="animate-spin text-[#D4AF37]" />
           </div>
-        ) : filteredTasks.length > 0 ? (
+        ) : tasks.length > 0 ? (
           <div className="grid gap-4">
-            {filteredTasks.map(task => {
+            {tasks.map((task) => {
               const statusConf = STATUS_CONFIG[task.status];
-              const channelConf = CHANNEL_CONFIG[task.source.channelType as ChannelType];
-              const ChannelIcon = channelConf?.icon || Search;
-              
+              const StatusIcon = statusConf.icon;
+              const taskQuery = (task.queryConfig || {}) as RadarSearchQuery;
+
               return (
-                <div 
+                <div
                   key={task.id}
-                  className="bg-[#FFFCF7] rounded-2xl border border-[#E8E0D0] p-5 hover:shadow-lg transition-shadow"
+                  className="rounded-2xl border border-[#E8E0D0] bg-[#FFFCF7] p-5 transition-shadow hover:shadow-lg"
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-4 flex-1">
-                      <div className="w-12 h-12 rounded-xl bg-[#F0EBD8] flex items-center justify-center">
-                        <ChannelIcon size={20} className={channelConf?.color || 'text-slate-500'} />
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex min-w-0 flex-1 items-center gap-4">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#F0EBD8]">
+                        <Search size={20} className="text-[#D4AF37]" />
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-bold text-[#0B1B2B] truncate">{task.name}</h3>
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusConf.color}`}>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="mb-1 flex items-center gap-2">
+                          <h3 className="truncate font-bold text-[#0B1B2B]">{task.name}</h3>
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusConf.color}`}
+                          >
                             {statusConf.label}
                           </span>
                         </div>
-                        <div className="text-xs text-slate-500">
-                          数据源：{task.source.name} · 
-                          最后运行：{task.completedAt ? new Date(task.completedAt).toLocaleString('zh-CN') : task.startedAt ? new Date(task.startedAt).toLocaleString('zh-CN') : '未运行'}
+
+                        <div className="flex items-center gap-2 text-xs text-slate-500">
+                          <StatusIcon
+                            size={12}
+                            className={task.status === "RUNNING" ? "animate-spin" : ""}
+                          />
+                          <span>{getTaskModeLabel(task)}</span>
                         </div>
+
+                        <p className="mt-2 text-xs text-slate-500">
+                          {summarizeQuery(taskQuery)}
+                        </p>
+                        <p className="mt-1 text-xs text-slate-400">
+                          最近时间：{formatTaskTimestamp(task)}
+                        </p>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
-                      {task.status === 'PENDING' || task.status === 'FAILED' ? (
+                      {task.status === "PENDING" || task.status === "FAILED" ? (
                         <button
                           onClick={() => handleRunTask(task.id)}
-                          className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                          className="rounded-lg p-2 text-emerald-600 transition-colors hover:bg-emerald-50"
                           title="运行"
                         >
                           <Play size={18} />
                         </button>
-                      ) : task.status === 'RUNNING' ? (
+                      ) : task.status === "RUNNING" ? (
                         <button
                           onClick={() => handleCancelTask(task.id)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          className="rounded-lg p-2 text-red-600 transition-colors hover:bg-red-50"
                           title="取消"
                         >
                           <Square size={18} />
@@ -326,15 +314,16 @@ export default function RadarTasksPage() {
                       ) : (
                         <button
                           onClick={() => handleRunTask(task.id)}
-                          className="p-2 text-slate-400 hover:text-[#D4AF37] hover:bg-[#F7F3E8] rounded-lg transition-colors"
+                          className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-[#F7F3E8] hover:text-[#D4AF37]"
                           title="重新运行"
                         >
                           <RefreshCw size={18} />
                         </button>
                       )}
+
                       <button
                         onClick={() => {}}
-                        className="p-2 text-slate-400 hover:text-[#D4AF37] hover:bg-[#F7F3E8] rounded-lg transition-colors"
+                        className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-[#F7F3E8] hover:text-[#D4AF37]"
                         title="详情"
                       >
                         <ChevronRight size={18} />
@@ -346,27 +335,25 @@ export default function RadarTasksPage() {
             })}
           </div>
         ) : (
-          <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-12 text-center">
-            <Search size={48} className="text-slate-300 mx-auto mb-4" />
-            <h3 className="text-lg font-bold text-[#0B1B2B] mb-2">暂无发现任务</h3>
-            <p className="text-sm text-slate-500 mb-6">
-              创建第一个发现任务，开始从全球渠道获取潜在客户
+          <div className="rounded-2xl border border-[#E8E0D0] bg-[#F7F3E8] p-12 text-center">
+            <Search size={48} className="mx-auto mb-4 text-slate-300" />
+            <h3 className="mb-2 text-lg font-bold text-[#0B1B2B]">暂无线索收集任务</h3>
+            <p className="mb-6 text-sm text-slate-500">
+              基于目标客户画像创建收集任务后，系统会自动完成线索发现、信息补全和结果汇总。
             </p>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="flex items-center gap-2 px-6 py-3 bg-[#D4AF37] text-[#0B1220] rounded-xl font-medium hover:bg-[#C5A030] transition-colors mx-auto"
+              className="mx-auto flex items-center gap-2 rounded-xl bg-[#D4AF37] px-6 py-3 font-medium text-[#0B1220] transition-colors hover:bg-[#C5A030]"
             >
               <Plus size={18} />
-              创建任务
+              创建线索收集任务
             </button>
           </div>
         )}
       </div>
 
-      {/* Create Task Modal */}
       {showCreateModal && (
         <CreateTaskModal
-          sources={sources}
           onClose={() => setShowCreateModal(false)}
           onCreated={() => {
             setShowCreateModal(false);
@@ -378,253 +365,176 @@ export default function RadarTasksPage() {
   );
 }
 
-// ==================== 创建任务弹窗 ====================
-
 function CreateTaskModal({
-  sources,
   onClose,
   onCreated,
 }: {
-  sources: RadarSource[];
   onClose: () => void;
   onCreated: () => void;
 }) {
-  const [selectedSourceId, setSelectedSourceId] = useState('');
-  const [keywords, setKeywords] = useState('');
-  const [countries, setCountries] = useState('');
-  const [industries, setIndustries] = useState('');
   const [isCreating, setIsCreating] = useState(false);
-  const [useTargetingSpec, setUseTargetingSpec] = useState(true); // 默认使用 TargetingSpec
-  const [targetingSpec, setTargetingSpec] = useState<{
-    id: string;
-    content: Record<string, unknown>;
-  } | null>(null);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [targetingSpec, setTargetingSpec] = useState<TargetingSpecRecord | null>(null);
 
-  // 加载 TargetingSpec
   useEffect(() => {
-    getLatestTargetingSpec().then(spec => {
-      if (spec) {
-        setTargetingSpec({ id: spec.id, content: spec.content });
-        // 自动从 TargetingSpec 填充表单
-        const specContent = spec.content.targetingSpec as {
-          segmentation?: {
-            firmographic?: { industries?: string[]; countries?: string[] };
-            technographic?: { keywords?: string[] };
-          };
-        };
-        if (specContent?.segmentation?.technographic?.keywords) {
-          setKeywords(specContent.segmentation.technographic.keywords.join(', '));
+    let cancelled = false;
+
+    async function loadTargetingSpec() {
+      setIsLoadingProfile(true);
+      try {
+        const spec = await getLatestTargetingSpec();
+        if (!cancelled && spec) {
+          setTargetingSpec({ id: spec.id, content: spec.content });
         }
-        if (specContent?.segmentation?.firmographic?.countries) {
-          setCountries(specContent.segmentation.firmographic.countries.join(', '));
-        }
-        if (specContent?.segmentation?.firmographic?.industries) {
-          setIndustries(specContent.segmentation.firmographic.industries.join(', '));
+      } finally {
+        if (!cancelled) {
+          setIsLoadingProfile(false);
         }
       }
-    });
+    }
+
+    loadTargetingSpec();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
+  const targetingPayload = ((targetingSpec?.content.targetingSpec ?? null) as
+    | TargetingSpecPayload
+    | null);
+  const queryConfig = buildQueryConfigFromTargetingSpec(targetingPayload);
+  const canCreate = Boolean(targetingSpec) && hasQueryScope(queryConfig);
+
   const handleCreate = async () => {
-    if (!selectedSourceId) {
-      toast.error('请选择数据源');
+    if (!targetingSpec) {
+      toast.error("请先完成目标客户画像");
       return;
     }
-    
+
+    if (!hasQueryScope(queryConfig)) {
+      toast.error("当前画像缺少可执行的采集范围");
+      return;
+    }
+
     setIsCreating(true);
     try {
-      const queryConfig: Record<string, unknown> = {};
-      
-      if (useTargetingSpec && targetingSpec) {
-        // 从 TargetingSpec 提取查询参数
-        const spec = targetingSpec.content.targetingSpec as {
-          segmentation?: {
-            firmographic?: { industries?: string[]; countries?: string[] };
-            technographic?: { keywords?: string[] };
-          };
-        };
-        queryConfig.keywords = spec?.segmentation?.technographic?.keywords || [];
-        queryConfig.countries = spec?.segmentation?.firmographic?.countries || [];
-        queryConfig.targetIndustries = spec?.segmentation?.firmographic?.industries || [];
-      } else {
-        // 使用手动输入
-        if (keywords.trim()) {
-          queryConfig.keywords = keywords.split(',').map(k => k.trim()).filter(Boolean);
-        }
-        if (countries.trim()) {
-          queryConfig.countries = countries.split(',').map(c => c.trim().toUpperCase()).filter(Boolean);
-        }
-        if (industries.trim()) {
-          queryConfig.targetIndustries = industries.split(',').map(i => i.trim()).filter(Boolean);
-        }
-      }
-      
       await createDiscoveryTaskV2({
-        sourceId: selectedSourceId,
+        name: "按目标客户画像自动采集线索",
         queryConfig,
-        targetingRef: useTargetingSpec && targetingSpec ? {
+        targetingRef: {
           specVersionId: targetingSpec.id,
-        } : undefined,
+        },
       });
-      
-      toast.success('任务已创建');
+
+      toast.success("线索收集任务已创建", {
+        description: "系统将自动完成发现、补全和验证，完成后直接展示结果。",
+      });
       onCreated();
     } catch (err) {
-      toast.error('创建失败', { description: err instanceof Error ? err.message : '未知错误' });
+      toast.error("创建失败", {
+        description: err instanceof Error ? err.message : "未知错误",
+      });
     } finally {
       setIsCreating(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-[#FFFCF7] rounded-2xl w-full max-w-lg mx-4 overflow-hidden">
-        <div className="px-6 py-4 bg-[#F0EBD8] border-b border-[#E8E0D0]">
-          <h3 className="text-lg font-bold text-[#0B1B2B]">新建发现任务</h3>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="mx-4 w-full max-w-lg overflow-hidden rounded-2xl bg-[#FFFCF7]">
+        <div className="border-b border-[#E8E0D0] bg-[#F0EBD8] px-6 py-4">
+          <h3 className="text-lg font-bold text-[#0B1B2B]">新建线索收集任务</h3>
+          <p className="mt-1 text-sm text-slate-500">
+            系统会依据目标客户画像自动选择内部发现与补全能力，你只需要确认收集范围。
+          </p>
         </div>
-        
-        <div className="p-6 space-y-4">
-          {/* Source Selection */}
-          <div>
-            <label className="block text-sm font-medium text-[#0B1B2B] mb-2">
-              数据源 <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={selectedSourceId}
-              onChange={(e) => setSelectedSourceId(e.target.value)}
-              className="w-full px-4 py-2 border border-[#E8E0D0] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/30"
-            >
-              <option value="">选择数据源...</option>
-              {sources.map(source => (
-                <option key={source.id} value={source.id}>
-                  {source.name} ({CHANNEL_CONFIG[source.channelType as ChannelType]?.label || source.channelType})
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          {/* TargetingSpec Info */}
-          {targetingSpec ? (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-[#D4AF37]/10 rounded-xl">
-                <div className="flex items-center gap-3">
-                  <input
-                    type="checkbox"
-                    id="useTargetingSpec"
-                    checked={useTargetingSpec}
-                    onChange={(e) => setUseTargetingSpec(e.target.checked)}
-                    className="w-4 h-4 text-[#D4AF37] rounded"
-                  />
-                  <label htmlFor="useTargetingSpec" className="text-sm font-medium text-[#0B1B2B]">
-                    使用知识引擎画像
-                  </label>
+
+        <div className="space-y-4 p-6">
+          {isLoadingProfile ? (
+            <div className="flex items-center justify-center rounded-xl border border-[#E8E0D0] bg-[#F7F3E8] px-4 py-8">
+              <Loader2 size={20} className="animate-spin text-[#D4AF37]" />
+            </div>
+          ) : targetingSpec ? (
+            <>
+              <div className="rounded-xl border border-[#E8E0D0] bg-[#F7F3E8] p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium text-[#0B1B2B]">目标客户画像已就绪</p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      创建后将自动执行线索发现、信息补全和关键人验证。
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-emerald-100 px-2 py-1 text-[11px] font-medium text-emerald-700">
+                    自动采集
+                  </span>
                 </div>
-                <span className="text-xs text-slate-500">
-                  {useTargetingSpec ? '✅ 已启用' : '⚠️ 使用手动输入'}
-                </span>
               </div>
-              
-              {useTargetingSpec && (
-                <div className="p-3 bg-[#F7F3E8] rounded-xl border border-[#E8E0D0]">
-                  <div className="text-xs font-medium text-[#0B1B2B] mb-2">画像参数预览：</div>
-                  <div className="space-y-2 text-xs">
-                    {keywords && (
-                      <div className="flex gap-2">
-                        <span className="text-slate-400 shrink-0">关键词：</span>
-                        <span className="text-[#0B1B2B]">{keywords}</span>
-                      </div>
-                    )}
-                    {countries && (
-                      <div className="flex gap-2">
-                        <span className="text-slate-400 shrink-0">目标国家：</span>
-                        <span className="text-[#0B1B2B]">{countries}</span>
-                      </div>
-                    )}
-                    {industries && (
-                      <div className="flex gap-2">
-                        <span className="text-slate-400 shrink-0">目标行业：</span>
-                        <span className="text-[#0B1B2B]">{industries}</span>
-                      </div>
-                    )}
+
+              <div className="rounded-xl border border-[#E8E0D0] bg-white p-4">
+                <p className="mb-3 text-sm font-medium text-[#0B1B2B]">本次收集范围</p>
+                <div className="space-y-2 text-xs">
+                  {queryConfig.keywords?.length ? (
+                    <div className="flex gap-2">
+                      <span className="shrink-0 text-slate-400">关键词：</span>
+                      <span className="text-[#0B1B2B]">{queryConfig.keywords.join("、")}</span>
+                    </div>
+                  ) : null}
+                  {queryConfig.countries?.length ? (
+                    <div className="flex gap-2">
+                      <span className="shrink-0 text-slate-400">国家：</span>
+                      <span className="text-[#0B1B2B]">{queryConfig.countries.join("、")}</span>
+                    </div>
+                  ) : null}
+                  {queryConfig.targetIndustries?.length ? (
+                    <div className="flex gap-2">
+                      <span className="shrink-0 text-slate-400">行业：</span>
+                      <span className="text-[#0B1B2B]">
+                        {queryConfig.targetIndustries.join("、")}
+                      </span>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+
+              {!canCreate && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle size={16} className="mt-0.5 shrink-0 text-amber-600" />
+                    <div className="text-xs text-amber-700">
+                      当前画像还缺少可执行的关键词、国家或行业信息，请先补全目标客户画像。
+                    </div>
                   </div>
                 </div>
               )}
-            </div>
+            </>
           ) : (
-            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
               <div className="flex items-start gap-2">
-                <AlertCircle size={16} className="text-amber-600 shrink-0 mt-0.5" />
+                <AlertCircle size={16} className="mt-0.5 shrink-0 text-amber-600" />
                 <div className="text-xs text-amber-700">
-                  <p className="font-medium mb-1">未找到知识引擎画像</p>
-                  <p>请先在知识引擎中完成目标客户画像分析，然后返回此处创建任务。</p>
+                  <p className="mb-1 font-medium">未找到目标客户画像</p>
+                  <p>请先在知识引擎中完成目标客户画像分析，再返回此处创建线索收集任务。</p>
                 </div>
               </div>
             </div>
           )}
-          
-          {/* Manual Override */}
-          {(!useTargetingSpec || !targetingSpec) && (
-            <>
-              <div>
-                <label className="block text-sm font-medium text-[#0B1B2B] mb-2">
-                  搜索关键词 <span className="text-xs text-slate-400">(逗号分隔)</span>
-                </label>
-                <input
-                  type="text"
-                  value={keywords}
-                  onChange={(e) => setKeywords(e.target.value)}
-                  placeholder="例如：industrial robot, automation, CNC"
-                  className="w-full px-4 py-2 border border-[#E8E0D0] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/30"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-[#0B1B2B] mb-2">
-                  目标国家 <span className="text-xs text-slate-400">(ISO 代码，逗号分隔)</span>
-                </label>
-                <input
-                  type="text"
-                  value={countries}
-                  onChange={(e) => setCountries(e.target.value)}
-                  placeholder="例如：US, DE, JP"
-                  className="w-full px-4 py-2 border border-[#E8E0D0] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/30"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-[#0B1B2B] mb-2">
-                  目标行业 <span className="text-xs text-slate-400">(逗号分隔)</span>
-                </label>
-                <input
-                  type="text"
-                  value={industries}
-                  onChange={(e) => setIndustries(e.target.value)}
-                  placeholder="例如：汽车制造，电子，机械"
-                  className="w-full px-4 py-2 border border-[#E8E0D0] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/30"
-                />
-              </div>
-            </>
-          )}
         </div>
-        
-        <div className="px-6 py-4 border-t border-[#E8E0D0] flex justify-end gap-3">
+
+        <div className="flex justify-end gap-3 border-t border-[#E8E0D0] px-6 py-4">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-slate-500 hover:text-slate-700 rounded-xl transition-colors"
+            className="rounded-xl px-4 py-2 text-slate-500 transition-colors hover:text-slate-700"
           >
             取消
           </button>
           <button
             onClick={handleCreate}
-            disabled={isCreating || !selectedSourceId}
-            className="flex items-center gap-2 px-4 py-2 bg-[#0B1220] text-[#D4AF37] rounded-xl text-sm font-medium hover:bg-[#152030] transition-colors disabled:opacity-50"
+            disabled={isCreating || isLoadingProfile || !canCreate}
+            className="flex items-center gap-2 rounded-xl bg-[#0B1220] px-4 py-2 text-sm font-medium text-[#D4AF37] transition-colors hover:bg-[#152030] disabled:opacity-50"
           >
-            {isCreating ? (
-              <Loader2 size={16} className="animate-spin" />
-            ) : (
-              <Plus size={16} />
-            )}
-            创建任务
+            {isCreating ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
+            开始收集
           </button>
         </div>
       </div>

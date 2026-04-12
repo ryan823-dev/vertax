@@ -1019,6 +1019,7 @@ export default function RadarProspectsPage() {
               {companies.map((company) => {
                 const statusInfo = getStatusLabel(company.status);
                 const isSelected = selectedCompany?.id === company.id;
+                const matchReasons = company.matchReasons || [];
                 
                 return (
                   <div 
@@ -1034,34 +1035,55 @@ export default function RadarProspectsPage() {
                       setShowContactForm(false);
                       setOutreachHistory([]);
                     }}
-                    className={`p-3 border rounded-xl cursor-pointer transition-all ${
+                    className={`p-4 border rounded-xl cursor-pointer transition-all ${
                       isSelected 
                         ? 'border-[#D4AF37] bg-[#D4AF37]/5' 
                         : 'border-[#E8E0D0] hover:border-[#D4AF37]/50 bg-[#FFFCF7]'
                     }`}
                   >
-                    <div className="flex items-center gap-2 mb-1">
-                      <Building2 size={14} className="text-[#D4AF37]" />
+                    {/* 第一行: 公司名 + 状态 */}
+                    <div className="flex items-center gap-2 mb-2">
+                      <Building2 size={14} className="text-[#D4AF37] shrink-0" />
                       <h4 className="font-medium text-[#0B1B2B] text-sm truncate flex-1">
                         {company.name}
                       </h4>
-                    </div>
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded ${statusInfo.color}`}>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded shrink-0 ${statusInfo.color}`}>
                         {statusInfo.label}
                       </span>
-                      {company.tier && (
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${getTierStyle(company.tier)}`}>
-                          {company.tier} 级
-                        </span>
+                    </div>
+
+                    {/* 第二行: 网站 + 国家 + 行业 */}
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2 text-[11px]">
+                      {company.website && (
+                        <div className="flex items-center gap-1 text-slate-500">
+                          <Globe size={11} className="text-slate-400" />
+                          <span className="truncate max-w-[120px]">{company.website.replace(/^https?:\/\//, '').replace(/\/.*$/, '')}</span>
+                        </div>
                       )}
                       {company.country && (
-                        <span className="text-[10px] text-slate-400">{company.country}</span>
+                        <span className="text-slate-500">{company.country}</span>
+                      )}
+                      {company.industry && (
+                        <span className="px-1.5 py-0.5 bg-[#D4AF37]/10 text-[#D4AF37] rounded text-[10px] font-medium">
+                          {company.industry}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* 第三行: 匹配理由 + 联系人 */}
+                    <div className="flex items-center justify-between gap-2">
+                      {matchReasons.length > 0 ? (
+                        <div className="flex items-center gap-1 flex-1 min-w-0">
+                          <Sparkles size={10} className="text-[#D4AF37] shrink-0" />
+                          <span className="text-[10px] text-slate-500 truncate">{matchReasons[0]}</span>
+                        </div>
+                      ) : (
+                        <div className="flex-1" />
                       )}
                       {(company._count?.contacts ?? 0) > 0 && (
-                        <span className="text-[10px] text-slate-400 flex items-center gap-0.5 ml-auto">
+                        <span className="text-[10px] text-slate-400 flex items-center gap-1 shrink-0">
                           <Users size={10} />
-                          {company._count!.contacts}
+                          {company._count!.contacts} 联系人
                         </span>
                       )}
                     </div>
@@ -1217,42 +1239,57 @@ export default function RadarProspectsPage() {
                     </div>
                   )}
 
-                  {/* Info Grid */}
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    {selectedCompany.industry && (
-                      <div className="flex items-center gap-2 text-slate-600">
-                        <Target size={14} className="text-slate-400" />
-                        <span>行业: {selectedCompany.industry}</span>
-                      </div>
-                    )}
-                    {selectedCompany.country && (
-                      <div className="flex items-center gap-2 text-slate-600">
-                        <Globe size={14} className="text-slate-400" />
-                        <span>国家: {selectedCompany.country}</span>
-                      </div>
-                    )}
-                    {selectedCompany.phone && (
-                      <div className="flex items-center gap-2 text-slate-600">
-                        <Phone size={14} className="text-slate-400" />
-                        <span>{selectedCompany.phone}</span>
-                      </div>
-                    )}
-                    {selectedCompany.email && (
-                      <a href={`mailto:${selectedCompany.email}`} className="flex items-center gap-2 text-slate-600 hover:text-[#D4AF37]">
-                        <Mail size={14} className="text-slate-400" />
-                        <span className="truncate">{selectedCompany.email}</span>
-                      </a>
-                    )}
+                  {/* Info Grid - 核心字段卡片 */}
+                  <div className="space-y-3 mb-4">
+                    {/* 网站 */}
                     {selectedCompany.website && (
-                      <a 
-                        href={selectedCompany.website.startsWith('http') ? selectedCompany.website : `https://${selectedCompany.website}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 text-slate-600 hover:text-[#D4AF37] col-span-2"
-                      >
-                        <ExternalLink size={14} className="text-slate-400" />
-                        <span className="truncate">{selectedCompany.website}</span>
-                      </a>
+                      <div className="flex items-start gap-3 p-3 bg-white rounded-lg border border-[#E8E0D0]">
+                        <Globe size={16} className="text-[#D4AF37] mt-0.5 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[10px] text-slate-400 mb-0.5">公司网站</p>
+                          <a 
+                            href={selectedCompany.website.startsWith('http') ? selectedCompany.website : `https://${selectedCompany.website}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-[#0B1B2B] hover:text-[#D4AF37] break-all"
+                          >
+                            {selectedCompany.website}
+                          </a>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 国家 + 行业 */}
+                    <div className="grid grid-cols-2 gap-3">
+                      {selectedCompany.country && (
+                        <div className="flex items-start gap-3 p-3 bg-white rounded-lg border border-[#E8E0D0]">
+                          <Globe size={16} className="text-[#D4AF37] mt-0.5 shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[10px] text-slate-400 mb-0.5">所在国家</p>
+                            <p className="text-sm text-[#0B1B2B] font-medium">{selectedCompany.country}</p>
+                          </div>
+                        </div>
+                      )}
+                      {selectedCompany.industry && (
+                        <div className="flex items-start gap-3 p-3 bg-white rounded-lg border border-[#E8E0D0]">
+                          <Target size={16} className="text-[#D4AF37] mt-0.5 shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[10px] text-slate-400 mb-0.5">所属行业</p>
+                            <p className="text-sm text-[#0B1B2B] font-medium">{selectedCompany.industry}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 联系人数量 */}
+                    {(selectedCompany._count?.contacts ?? 0) > 0 && (
+                      <div className="flex items-start gap-3 p-3 bg-white rounded-lg border border-[#E8E0D0]">
+                        <Users size={16} className="text-[#D4AF37] mt-0.5 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[10px] text-slate-400 mb-0.5">联系人</p>
+                          <p className="text-sm text-[#0B1B2B] font-medium">{selectedCompany._count!.contacts} 人</p>
+                        </div>
+                      </div>
                     )}
                   </div>
 
