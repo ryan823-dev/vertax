@@ -44,6 +44,7 @@ import {
   getCandidatesV2,
   qualifyCandidateV2,
   qualifyCandidatesBatchV2,
+  importCandidatesBatchV2,
   importCandidateToCompanyV2,
   importCandidateToOpportunityV2,
   getRadarStatsV2,
@@ -229,6 +230,7 @@ export default function RadarCandidatesPage() {
   // 手动丰富化状态（P3）
   const [isEnriching, setIsEnriching] = useState(false);
   const [isBatchEnriching, setIsBatchEnriching] = useState(false);
+  const [isBatchImporting, setIsBatchImporting] = useState(false);
   const [enrichDone, setEnrichDone] = useState(false);
 
   // Task #125: 排除反馈学习
@@ -375,6 +377,36 @@ export default function RadarCandidatesPage() {
   };
 
   // 导入
+  const handleBatchImport = async () => {
+    const companyIds = candidates
+      .filter(
+        (candidate) =>
+          selectedIds.has(candidate.id) &&
+          candidate.candidateType === 'COMPANY' &&
+          candidate.status !== 'IMPORTED'
+      )
+      .map((candidate) => candidate.id);
+
+    if (companyIds.length === 0) {
+      setError('请先选择至少一个公司候选再导入线索库');
+      return;
+    }
+
+    setIsBatchImporting(true);
+    try {
+      const result = await importCandidatesBatchV2(companyIds, 'company');
+      setSelectedIds(new Set());
+      await loadData(true);
+      toast.success('批量导入线索库完成', {
+        description: `成功导入 ${result.imported} / ${companyIds.length} 个公司候选`,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '批量导入线索库失败');
+    } finally {
+      setIsBatchImporting(false);
+    }
+  };
+
   const handleImport = async (candidate: CandidateWithSource) => {
     try {
       if (candidate.candidateType === 'OPPORTUNITY') {
@@ -818,6 +850,13 @@ export default function RadarCandidatesPage() {
               已选择 {selectedIds.size} 项
             </span>
             <div className="flex-1" />
+            <button
+              onClick={handleBatchImport}
+              disabled={isBatchImporting}
+              className="px-3 py-1.5 bg-[#D4AF37]/20 text-[#D4AF37] rounded-lg text-xs font-medium hover:bg-[#D4AF37]/30 transition-colors disabled:opacity-50"
+            >
+              {isBatchImporting ? '导入中...' : '批量导入线索库'}
+            </button>
             <button
               onClick={handleBatchEnrich}
               disabled={isBatchEnriching}
