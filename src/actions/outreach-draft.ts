@@ -31,7 +31,8 @@ export interface OutreachDraft {
   body: string;
   toEmail: string;
   toName: string;
-  candidateId: string;
+  candidateId?: string; // v2.0: 改为可选
+  prospectCompanyId?: string; // v2.0: 新增线索公司支持
 }
 
 export interface DraftGenerateResult {
@@ -170,12 +171,25 @@ export async function sendOutreachDraft(draft: OutreachDraft): Promise<DraftSend
 
   const tenantId = session.user.tenantId;
 
-  // 验证候选归属
-  const candidate = await prisma.radarCandidate.findUnique({
-    where: { id: draft.candidateId, tenantId },
-    select: { id: true },
-  });
-  if (!candidate) return { success: false, error: '候选不存在或无权访问' };
+  // v2.0: 支持候选或线索公司
+  if (!draft.candidateId && !draft.prospectCompanyId) {
+    return { success: false, error: '需要提供 candidateId 或 prospectCompanyId' };
+  }
+
+  // 验证归属
+  if (draft.candidateId) {
+    const candidate = await prisma.radarCandidate.findUnique({
+      where: { id: draft.candidateId, tenantId },
+      select: { id: true },
+    });
+    if (!candidate) return { success: false, error: '候选不存在或无权访问' };
+  } else if (draft.prospectCompanyId) {
+    const prospect = await prisma.prospectCompany.findUnique({
+      where: { id: draft.prospectCompanyId, tenantId },
+      select: { id: true },
+    });
+    if (!prospect) return { success: false, error: '线索公司不存在或无权访问' };
+  }
 
   // 发送邮件
   const sendResult = await sendEmail({
@@ -193,7 +207,7 @@ export async function sendOutreachDraft(draft: OutreachDraft): Promise<DraftSend
   await prisma.outreachRecord.create({
     data: {
       tenantId,
-      candidateId: draft.candidateId,
+      candidateId: draft.candidateId || null,
       toEmail: draft.toEmail,
       toName: draft.toName,
       subject: draft.subject,
@@ -201,8 +215,17 @@ export async function sendOutreachDraft(draft: OutreachDraft): Promise<DraftSend
       messageId: sendResult.messageId,
       status: 'sent',
       sentAt: new Date(),
+      ...(draft.prospectCompanyId ? { metadata: { prospectCompanyId: draft.prospectCompanyId } } : {}),
     },
   });
+
+  // v2.0: 如果是线索公司，更新状态
+  if (draft.prospectCompanyId) {
+    await prisma.prospectCompany.update({
+      where: { id: draft.prospectCompanyId },
+      data: { status: 'contacted', lastContactedAt: new Date() },
+    });
+  }
 
   return { success: true, messageId: sendResult.messageId };
 }
@@ -244,7 +267,8 @@ export async function enrichCandidateNow(candidateId: string): Promise<{
 
 export interface LinkedInDraft {
   message: string;      // DM 正文，≤300 字符
-  candidateId: string;
+  candidateId?: string; // 候选ID（v2.0改为可选）
+  prospectCompanyId?: string; // v2.0: 线索公司ID
   linkedInUrl: string;  // 目标决策者 LinkedIn 主页
   toName: string;
 }
@@ -257,52 +281,107 @@ export interface LinkedInDraftResult {
 
 /**
  * 生成 LinkedIn DM 草稿
+ * v2.0: 扩展支持 ProspectCompany（线索库）
  * 语气比邮件更轻松，≤300 字符，无主题行
  */
 export async function generateLinkedInDraft(
-  candidateId: string,
-  linkedInUrl: string,
+  candidateId?: string,
+  prospectCompanyId?: string,
+  linkedInUrl?: string,
 ): Promise<LinkedInDraftResult> {
   const session = await auth();
   if (!session?.user?.tenantId) return { success: false, error: 'Unauthorized' };
 
   const tenantId = session.user.tenantId;
 
-  const candidate = await prisma.radarCandidate.findUnique({
-    where: { id: candidateId, tenantId },
-  });
-  if (!candidate) return { success: false, error: '候选不存在' };
+  // 确保至少有一个ID
+  if (!candidateId && !prospectCompanyId) {
+    return { success: false, error: '需要提供 candidateId 或 prospectCompanyId' };
+  }
 
+  // 加载我方公司背景
   const companyProfile = await prisma.companyProfile.findUnique({
     where: { tenantId },
     select: { companyName: true, coreProducts: true, differentiators: true },
   });
 
-  const rel = candidate.aiRelevance as {
-    tier?: string;
-    matchReasons?: string[];
-    approachAngle?: string;
-  } | null;
+  let targetName: string;
+  let targetIndustry: string | null;
+  let matchReasons: string[] | null;
+  let approachAngle: string | null;
+  let dmName: string | null;
+  let dmTitle: string | null;
+  let targetId: string;
+  let entityType: 'candidate' | 'prospect';
 
-  const raw = candidate.rawData as {
-    intelligence?: {
-      contacts?: {
-        decisionMakers?: Array<{ name: string; title: string; linkedIn?: string }>;
+  if (prospectCompanyId) {
+    // v2.0: 从 ProspectCompany 加载
+    entityType = 'prospect';
+    targetId = prospectCompanyId;
+    
+    const prospect = await prisma.prospectCompany.findUnique({
+      where: { id: prospectCompanyId, tenantId },
+      include: {
+        contacts: {
+          where: { linkedInUrl: { not: null } },
+          take: 5,
+        },
+      },
+    });
+    if (!prospect) return { success: false, error: '线索公司不存在' };
+
+    targetName = prospect.name;
+    targetIndustry = prospect.industry;
+    matchReasons = prospect.matchReasons as string[] | null;
+    approachAngle = prospect.approachAngle;
+
+    // 从 ProspectContact 找匹配的联系人
+    const matchedContact = prospect.contacts.find(c => c.linkedInUrl === linkedInUrl);
+    const fallbackContact = prospect.contacts[0];
+    dmName = matchedContact?.name || fallbackContact?.name || null;
+    dmTitle = matchedContact?.role || fallbackContact?.role || null;
+  } else {
+    // 原逻辑: 从 RadarCandidate 加载
+    entityType = 'candidate';
+    targetId = candidateId!;
+    
+    const candidate = await prisma.radarCandidate.findUnique({
+      where: { id: candidateId, tenantId },
+    });
+    if (!candidate) return { success: false, error: '候选不存在' };
+
+    targetName = candidate.displayName;
+    targetIndustry = candidate.industry;
+    
+    const rel = candidate.aiRelevance as {
+      tier?: string;
+      matchReasons?: string[];
+      approachAngle?: string;
+    } | null;
+    matchReasons = rel?.matchReasons || null;
+    approachAngle = rel?.approachAngle || null;
+
+    const raw = candidate.rawData as {
+      intelligence?: {
+        contacts?: {
+          decisionMakers?: Array<{ name: string; title: string; linkedIn?: string }>;
+        };
       };
-    };
-  } | null;
-
-  // 优先找 linkedInUrl 匹配的决策者，否则用第一个
-  const dm = raw?.intelligence?.contacts?.decisionMakers?.find(
-    p => p.linkedIn === linkedInUrl
-  ) || raw?.intelligence?.contacts?.decisionMakers?.[0];
+    } | null;
+    
+    const dm = raw?.intelligence?.contacts?.decisionMakers?.find(
+      p => p.linkedIn === linkedInUrl
+    ) || raw?.intelligence?.contacts?.decisionMakers?.[0];
+    dmName = dm?.name || null;
+    dmTitle = dm?.title || null;
+  }
 
   const ourCompany = companyProfile?.companyName || 'our company';
   const ourProducts = (companyProfile?.coreProducts as Array<{ name: string }> | null)
     ?.slice(0, 1).map(p => p.name).join('') || 'our products';
   const advantage = (companyProfile?.differentiators as Array<{ point: string }> | null)
     ?.[0]?.point || '';
-  const firstName = dm?.name?.split(' ')[0] || 'there';
+  const firstName = dmName?.split(' ')[0] || 'there';
 
   const prompt = `You are a B2B sales expert. Write a LinkedIn DM for cold outreach. It must be:
 - Under 300 characters (hard limit)
@@ -311,8 +390,9 @@ export async function generateLinkedInDraft(
 - End with a soft question (not "let's hop on a call")
 
 Sender: ${ourCompany}, sells ${ourProducts}${advantage ? `. Key edge: ${advantage}` : ''}
-Recipient: ${firstName}, ${dm?.title || 'decision maker'} at ${candidate.displayName} (${candidate.industry || 'B2B'})
-${rel?.approachAngle ? `Approach angle: ${rel.approachAngle}` : ''}
+Recipient: ${firstName}, ${dmTitle || 'decision maker'} at ${targetName} (${targetIndustry || 'B2B'})
+${approachAngle ? `Approach angle: ${approachAngle}` : ''}
+${matchReasons?.length ? `Match reasons: ${matchReasons.slice(0, 2).join('; ')}` : ''}
 
 Output ONLY the message text, nothing else. No subject, no greeting label, start directly with "Hi ${firstName}".`;
 
@@ -332,9 +412,10 @@ Output ONLY the message text, nothing else. No subject, no greeting label, start
       success: true,
       draft: {
         message,
-        candidateId,
-        linkedInUrl,
-        toName: dm?.name || candidate.displayName,
+        candidateId: entityType === 'candidate' ? targetId : undefined,
+        prospectCompanyId: entityType === 'prospect' ? targetId : undefined,
+        linkedInUrl: linkedInUrl || '',
+        toName: dmName || targetName,
       },
     };
   } catch (err) {
@@ -347,37 +428,69 @@ Output ONLY the message text, nothing else. No subject, no greeting label, start
 
 /**
  * 记录 LinkedIn DM 已复制（用户手动发送后算作已外联）
+ * v2.0: 扩展支持 ProspectCompany（线索库）
  */
 export async function recordLinkedInCopy(
-  candidateId: string,
-  linkedInUrl: string,
-  messageText: string,
+  candidateId?: string,
+  prospectCompanyId?: string,
+  linkedInUrl?: string,
+  messageText?: string,
 ): Promise<{ success: boolean; error?: string }> {
   const session = await auth();
   if (!session?.user?.tenantId) return { success: false, error: 'Unauthorized' };
 
   const tenantId = session.user.tenantId;
 
-  const candidate = await prisma.radarCandidate.findUnique({
-    where: { id: candidateId, tenantId },
-    select: { id: true, profileId: true },
-  });
-  if (!candidate) return { success: false, error: '候选不存在' };
+  // 确保至少有一个ID
+  if (!candidateId && !prospectCompanyId) {
+    return { success: false, error: '需要提供 candidateId 或 prospectCompanyId' };
+  }
+
+  let profileId: string | null = null;
+  let toName: string | null = null;
+
+  if (prospectCompanyId) {
+    // v2.0: 从 ProspectCompany 加载
+    const prospect = await prisma.prospectCompany.findUnique({
+      where: { id: prospectCompanyId, tenantId },
+      select: { id: true, name: true },
+    });
+    if (!prospect) return { success: false, error: '线索公司不存在' };
+    toName = prospect.name;
+  } else if (candidateId) {
+    // 原逻辑: 从 RadarCandidate 加载
+    const candidate = await prisma.radarCandidate.findUnique({
+      where: { id: candidateId, tenantId },
+      select: { id: true, profileId: true, displayName: true },
+    });
+    if (!candidate) return { success: false, error: '候选不存在' };
+    profileId = candidate.profileId;
+    toName = candidate.displayName;
+  }
 
   await prisma.outreachRecord.create({
     data: {
       tenantId,
-      candidateId,
-      profileId: candidate.profileId,
+      candidateId: candidateId || null,
+      profileId,
       channel: 'linkedin',
-      toEmail: linkedInUrl,   // LinkedIn 场景复用 toEmail 存 profileUrl
-      toName: null,
+      toEmail: linkedInUrl || '',   // LinkedIn 场景复用 toEmail 存 profileUrl
+      toName,
       subject: 'LinkedIn DM',
-      bodyText: messageText,
+      bodyText: messageText || '',
       status: 'draft_copied',
       sentAt: new Date(),     // 复制即视为外联时间
+      ...(prospectCompanyId ? { metadata: { prospectCompanyId } } : {}),
     },
   });
+
+  // v2.0: 如果是线索公司，更新状态为 contacted
+  if (prospectCompanyId) {
+    await prisma.prospectCompany.update({
+      where: { id: prospectCompanyId },
+      data: { status: 'contacted', lastContactedAt: new Date() },
+    });
+  }
 
   return { success: true };
 }

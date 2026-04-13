@@ -38,10 +38,11 @@ import { RadarHeader, StatCard, SecretaryPanel, RadarEmptyGuide } from '@/compon
 
 // 子模块快捷入口
 const radarModules = [
-  { label: '发现任务', href: '/customer/radar/tasks', icon: Search, description: '创建和管理发现任务', badge: null },
+  { label: '目标客户画像', href: '/customer/radar/targeting', icon: Target, description: '确认系统按什么画像找客户', badge: null },
+  { label: '自动搜索', href: '/customer/radar/search', icon: Search, description: '一键启动并观察系统执行状态', badge: null },
   { label: '候选池', href: '/customer/radar/candidates', icon: Users, description: '审核和分层候选', badge: 'pendingReviewCount' },
-  { label: '线索库', href: '/customer/radar/prospects', icon: Building2, description: '管理已导入线索', badge: null },
-  { label: '机会追踪', href: '/customer/radar/opportunities', icon: Target, description: '招标机会管理', badge: null },
+  { label: '线索库', href: '/customer/radar/prospects', icon: Building2, description: '沉淀已确认值得跟进的线索', badge: null },
+  { label: '采购机会', href: '/customer/radar/opportunities', icon: Radar, description: '单独管理采购与招投标商机', badge: null },
 ];
 
 export default function RadarPage() {
@@ -76,7 +77,7 @@ export default function RadarPage() {
       if (data.success) {
         setRequestResult({ 
           success: true, 
-          message: `已创建扫描计划"${data.profile.name}"，正在搜索中...` 
+          message: `已创建自动搜索任务"${data.profile.name}"，正在执行中...` 
         });
         setUserRequest('');
         // 刷新状态
@@ -147,7 +148,7 @@ export default function RadarPage() {
             <Radar size={22} className="text-[#D4AF37]" />
             <h1 className="text-xl font-bold text-white">获客雷达</h1>
           </div>
-          <p className="text-sm text-slate-400 ml-9">AI驱动的全球潜在客户智能发现系统</p>
+          <p className="text-sm text-slate-400 ml-9">基于目标客户画像自动发现、补全并沉淀线索</p>
           {error && (
             <div className="mt-4 flex items-center gap-2 px-4 py-2.5 bg-amber-500/10 border border-amber-500/20 rounded-xl">
               <AlertTriangle size={14} className="text-amber-400 shrink-0" />
@@ -159,7 +160,7 @@ export default function RadarPage() {
 
         <div className="px-6 pb-8 space-y-6">
           {/* 快速入口卡片组 */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
             {radarModules.map((mod) => (
               <Link
                 key={mod.label}
@@ -186,13 +187,13 @@ export default function RadarPage() {
               <Sparkles size={16} className="text-[#D4AF37]" />
               <h3 className="font-bold text-[#D4AF37]">五步启动获客雷达</h3>
             </div>
-            <div className="grid grid-cols-5 gap-3">
+            <div className="grid gap-3 md:grid-cols-5">
               {[
-                { step: 1, label: '画像与规则', href: '/customer/knowledge/profiles', icon: Target },
-                { step: 2, label: '数据源渠道', href: '/customer/radar/channels', icon: Radar },
-                { step: 3, label: '启动扫描', href: '/customer/radar/tasks', icon: Zap },
-                { step: 4, label: '候选分层', href: '/customer/radar/candidates', icon: Users },
-                { step: 5, label: '导入外联', href: '/customer/radar/prospects', icon: Building2 },
+                { step: 1, label: '目标客户画像', href: '/customer/radar/targeting', icon: Target },
+                { step: 2, label: '自动搜索', href: '/customer/radar/search', icon: Search },
+                { step: 3, label: '候选池', href: '/customer/radar/candidates', icon: Users },
+                { step: 4, label: '线索库', href: '/customer/radar/prospects', icon: Building2 },
+                { step: 5, label: '采购机会', href: '/customer/radar/opportunities', icon: Radar },
               ].map((s) => (
                 <Link key={s.step} href={s.href}
                   className="group flex flex-col items-center gap-2 p-3 rounded-xl text-center transition-all hover:bg-[rgba(212,175,55,0.08)]">
@@ -269,7 +270,7 @@ export default function RadarPage() {
                 className="w-full py-3 px-4 bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-xl text-left text-slate-400 hover:border-[#D4AF37]/50 transition-all flex items-center gap-2"
               >
                 <Sparkles size={16} className="text-[#D4AF37]" />
-                <span>描述你的目标客户，AI帮你自动搜索...</span>
+                <span>描述你的目标客户，AI 会按画像帮你发起自动搜索...</span>
               </button>
             ) : (
               <div className="space-y-3">
@@ -386,7 +387,7 @@ export default function RadarPage() {
             {/* Main Content Area (8 cols) */}
             <div className="col-span-8 space-y-6">
               {/* B) Daily Brief Stats */}
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <div className="animate-slide-up">
                   <StatCard
                     label="本周新增"
@@ -427,7 +428,7 @@ export default function RadarPage() {
               {/* Module Quick Access */}
               <div className="bg-[#FFFCF7] rounded-2xl border border-[#E8E0D0] p-5">
                 <h3 className="font-bold text-[#0B1B2B] mb-4">快捷入口</h3>
-                <div className="grid grid-cols-4 gap-4">
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
                   {radarModules.map((mod) => {
                     const badge = getModuleBadge(mod.badge);
                     return (
@@ -502,11 +503,11 @@ export default function RadarPage() {
                   ))}
                 </div>
                 <div className="mt-2 flex items-center justify-between text-[10px] text-slate-500">
-                  <span>画像规则</span>
-                  <span>数据源</span>
-                  <span>扫描运行</span>
-                  <span>候选分层</span>
-                  <span>导入外联</span>
+                  <span>目标客户画像</span>
+                  <span>自动搜索</span>
+                  <span>候选池</span>
+                  <span>线索库</span>
+                  <span>采购机会</span>
                 </div>
               </div>
 
@@ -522,16 +523,16 @@ export default function RadarPage() {
                     </div>
                     <div className="flex items-center gap-4 text-xs text-slate-500">
                       <span>
-                        已配置 {counts.profilesActiveCount} 个搜索配置
+                        已配置 {counts.profilesActiveCount} 个自动执行策略
                       </span>
                       <span>
                         可用 {counts.sourcesConfiguredCount} 个数据源
                       </span>
                       <Link 
-                        href="/customer/radar/tasks" 
+                        href="/customer/radar/search" 
                         className="text-[#D4AF37] hover:underline"
                       >
-                        查看详情
+                        查看自动搜索
                       </Link>
                     </div>
                   </div>

@@ -258,8 +258,8 @@ function NavItemRow({
   const sortedSubItems = getSortedSubItems(item);
   const hasSubItems = sortedSubItems.length > 0;
 
-  // 一级链接：有子菜单则跳转第一个子菜单，否则跳转自身
-  const linkHref = hasSubItems ? sortedSubItems[0].href : item.href;
+  // 一级链接始终跳转模块总览，二级菜单承担模块内分流
+  const linkHref = item.href;
 
   return (
     <div>

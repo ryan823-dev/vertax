@@ -174,8 +174,8 @@ export default function RadarOpportunitiesPage() {
         <div style={{background: 'radial-gradient(ellipse 70% 60% at 50% -20%, rgba(212,175,55,0.14) 0%, transparent 65%)'}} className="absolute inset-0 pointer-events-none" />
         <div className="relative flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-white">招标机会</h1>
-            <p className="text-sm text-slate-400 mt-1">跟踪和管理招标/采购机会</p>
+            <h1 className="text-2xl font-bold text-white">采购机会</h1>
+            <p className="text-sm text-slate-400 mt-1">单独跟踪和管理采购 / 招投标类商机</p>
           </div>
           <div className="flex items-center gap-3">
             <select
@@ -243,8 +243,8 @@ export default function RadarOpportunitiesPage() {
               <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.3)'}}>
                 <FileText size={28} className="text-[#D4AF37]" />
               </div>
-              <p className="text-slate-400">暂无招标机会</p>
-              <p className="text-xs text-slate-500 mt-2">从候选池导入招标机会</p>
+              <p className="text-slate-400">暂无采购机会</p>
+              <p className="text-xs text-slate-500 mt-2">从候选池中单独沉淀采购 / 招投标对象</p>
             </div>
           ) : (
             <div className="space-y-3 max-h-[600px] overflow-y-auto">

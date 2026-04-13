@@ -1,7 +1,7 @@
 /**
  * 获客雷达流水线状态计算
  * 
- * 五步流程：画像与规则 → 数据源与渠道 → 持续扫描运行 → 候选分层 → 导入线索与外联
+ * 五步流程：目标客户画像 → 自动搜索 → 候选池 → 线索库 → 采购机会
  * 统一封装所有口径与阈值，后续好改
  */
 
@@ -25,6 +25,9 @@ export interface RadarPipelineCounts {
   // Profiles & Sources
   profilesActiveCount: number;       // isActive = true 的搜索配置数
   sourcesConfiguredCount: number;    // 全部配置的数据源数量
+  candidateTotalCount: number;       // 候选总数
+  prospectCompanyCount: number;      // 线索库总数
+  opportunityCount: number;          // 采购机会总数
   
   // Candidates 7-day metrics
   candidatesNew7d: number;           // 过去7天新增候选
@@ -83,11 +86,11 @@ const STATS_WINDOW_DAYS = 7;
 
 /** 步骤定义 */
 const STEP_CONFIG = [
-  { key: 'targeting', label: '画像与规则', href: '/customer/knowledge/profiles' },
-  { key: 'sources', label: '数据源与渠道', href: '/customer/radar/channels' },
-  { key: 'scheduler', label: '持续扫描运行', href: '/customer/radar/tasks' },
-  { key: 'qualify', label: '候选分层', href: '/customer/radar/candidates' },
-  { key: 'import', label: '导入线索与外联', href: '/customer/radar/prospects' },
+  { key: 'targeting', label: '目标客户画像', href: '/customer/radar/targeting' },
+  { key: 'search', label: '自动搜索', href: '/customer/radar/search' },
+  { key: 'candidates', label: '候选池', href: '/customer/radar/candidates' },
+  { key: 'prospects', label: '线索库', href: '/customer/radar/prospects' },
+  { key: 'opportunities', label: '采购机会', href: '/customer/radar/opportunities' },
 ] as const;
 
 // ============================================
@@ -113,6 +116,8 @@ export async function getRadarPipelineStatus(tenantId: string): Promise<RadarPip
     personasCount,
     recentErrors,
     outreachPack7d,
+    prospectCompanyCount,
+    opportunityCount,
   ] = await Promise.all([
     // 搜索配置统计
     getProfilesStats(tenantId),
@@ -159,6 +164,12 @@ export async function getRadarPipelineStatus(tenantId: string): Promise<RadarPip
     prisma.outreachRecord.count({
       where: { tenantId, createdAt: { gte: sevenDaysAgo } },
     }),
+    prisma.prospectCompany.count({
+      where: { tenantId, deletedAt: null },
+    }),
+    prisma.opportunity.count({
+      where: { tenantId, deletedAt: null },
+    }),
   ]);
 
   // 计算 TargetingSpec 状态
@@ -190,6 +201,9 @@ export async function getRadarPipelineStatus(tenantId: string): Promise<RadarPip
   const counts: RadarPipelineCounts = {
     profilesActiveCount: profilesResult.activeCount,
     sourcesConfiguredCount: sourcesCount,
+    candidateTotalCount: candidatesStats.total,
+    prospectCompanyCount,
+    opportunityCount,
     candidatesNew7d: candidatesStats.new7d,
     candidatesQualifiedAB7d: candidatesStats.qualifiedAB7d,
     candidatesImported7d: candidatesStats.imported7d,
@@ -213,7 +227,7 @@ export async function getRadarPipelineStatus(tenantId: string): Promise<RadarPip
   const currentStep = getCurrentStep(steps);
 
   // 生成主 CTA
-  const primaryCTA = getPrimaryCTA(steps, currentStep, counts);
+  const primaryCTA = getPrimaryCTA(counts);
 
   return { steps, counts, currentStep, primaryCTA, errors: recentErrors };
 }
@@ -255,6 +269,7 @@ async function getActiveProfileIds(tenantId: string): Promise<string[]> {
 }
 
 interface CandidatesStats {
+  total: number;
   new7d: number;
   qualifiedAB7d: number;
   imported7d: number;
@@ -265,7 +280,12 @@ interface CandidatesStats {
 
 async function getCandidatesStats(tenantId: string, since: Date): Promise<CandidatesStats> {
   // 并行查询各类统计
-  const [new7d, qualifiedAB7d, imported7d, enriching, pendingReview, reviewing] = await Promise.all([
+  const [total, new7d, qualifiedAB7d, imported7d, enriching, pendingReview, reviewing] = await Promise.all([
+    prisma.radarCandidate.count({
+      where: {
+        tenantId,
+      },
+    }),
     // 7天内新增
     prisma.radarCandidate.count({
       where: {
@@ -313,7 +333,7 @@ async function getCandidatesStats(tenantId: string, since: Date): Promise<Candid
     }),
   ]);
 
-  return { new7d, qualifiedAB7d, imported7d, enriching, pendingReview, reviewing };
+  return { total, new7d, qualifiedAB7d, imported7d, enriching, pendingReview, reviewing };
 }
 
 async function getRecentErrors(tenantId: string): Promise<string[]> {
@@ -341,8 +361,11 @@ function calculateSteps(
   scanActive: boolean
 ): StepState[] {
   const steps: StepState[] = [];
+  const hasSearchStarted = Boolean(
+    counts.lastScanAt || profilesResult.activeCount > 0 || profilesResult.hasScheduled
+  );
 
-  // Step 1: 画像与规则 (TargetingSpec)
+  // Step 1: 目标客户画像
   // DONE: 有有效画像且30天内更新
   // IN_PROGRESS: 有画像但超30天
   // BLOCKED: 无画像
@@ -367,26 +390,23 @@ function calculateSteps(
     href: STEP_CONFIG[0].href,
   });
 
-  // Step 2: 数据源与渠道 (Profile × Source)
-  // DONE: 有激活的 Profile 且配置了 sourceIds >= 1
-  // IN_PROGRESS: 有 Profile 但没配置源
-  // BLOCKED: 无 Profile 或 Step1 未完成
+  // Step 2: 自动搜索
   let step2Status: StepStatus;
   let step2Blocker: string | undefined;
   
-  if (profilesResult.activeCount >= 1) {
-    step2Status = 'DONE';
-  } else if (step1Status === 'BLOCKED') {
+  if (step1Status === 'BLOCKED') {
     step2Status = 'BLOCKED';
-    step2Blocker = '请先完成画像配置';
-  } else if (profilesResult.activeCount === 0) {
+    step2Blocker = '请先同步目标客户画像';
+  } else if (scanActive) {
+    step2Status = 'DONE';
+  } else if (hasSearchStarted) {
     step2Status = 'IN_PROGRESS';
-    step2Blocker = '请创建并激活搜索配置';
-  } else if (!profilesResult.hasSourcesConfigured) {
-    step2Status = 'IN_PROGRESS';
-    step2Blocker = '请为搜索配置选择数据源';
+    step2Blocker = counts.lastScanAt
+      ? '最近 24 小时没有新的自动搜索执行'
+      : '系统已准备好，等待开始自动搜索';
   } else {
     step2Status = 'IN_PROGRESS';
+    step2Blocker = '系统尚未开始按画像自动找客户';
   }
   
   steps.push({
@@ -397,24 +417,21 @@ function calculateSteps(
     href: STEP_CONFIG[1].href,
   });
 
-  // Step 3: 持续扫描运行 (Scheduler)
-  // DONE: nextRunAt 有值 且 lastScanAt 在24小时内
-  // IN_PROGRESS: 已配置但未运行或运行超时
-  // BLOCKED: Step2 未完成
+  // Step 3: 候选池
   let step3Status: StepStatus;
   let step3Blocker: string | undefined;
   
-  if (step2Status !== 'DONE') {
+  if (step2Status === 'BLOCKED') {
     step3Status = 'BLOCKED';
-    step3Blocker = '请先配置数据源与渠道';
-  } else if (profilesResult.hasScheduled && scanActive) {
-    step3Status = 'DONE';
-  } else if (profilesResult.hasScheduled && !scanActive) {
+    step3Blocker = '请先开始自动搜索';
+  } else if (counts.pendingReviewCount > 0) {
     step3Status = 'IN_PROGRESS';
-    step3Blocker = '扫描已超过24小时未运行';
+    step3Blocker = `有 ${counts.pendingReviewCount} 个候选待审核`;
+  } else if (counts.candidateTotalCount > 0 || counts.candidatesQualifiedAB7d > 0) {
+    step3Status = 'DONE';
   } else {
     step3Status = 'IN_PROGRESS';
-    step3Blocker = '请启用定时扫描';
+    step3Blocker = hasSearchStarted ? '系统正在等待新的候选结果' : '启动自动搜索后这里会沉淀候选';
   }
   
   steps.push({
@@ -425,24 +442,21 @@ function calculateSteps(
     href: STEP_CONFIG[2].href,
   });
 
-  // Step 4: 候选分层 (Qualify)
-  // DONE: 7天内有 QUALIFIED (tier A/B) >= 1
-  // IN_PROGRESS: 有候选但未分层
-  // BLOCKED: 无候选或 Step3 未完成
+  // Step 4: 线索库
   let step4Status: StepStatus;
   let step4Blocker: string | undefined;
   
   if (step3Status === 'BLOCKED') {
     step4Status = 'BLOCKED';
-    step4Blocker = '请先启动扫描任务';
-  } else if (counts.candidatesQualifiedAB7d >= 1) {
+    step4Blocker = '请先生成候选结果';
+  } else if (counts.prospectCompanyCount > 0 || counts.candidatesImported7d > 0) {
     step4Status = 'DONE';
-  } else if (counts.candidatesNew7d > 0 || counts.pendingReviewCount > 0) {
+  } else if (counts.candidatesQualifiedAB7d > 0) {
     step4Status = 'IN_PROGRESS';
-    step4Blocker = `有 ${counts.pendingReviewCount} 个候选待分层`;
+    step4Blocker = `有 ${counts.candidatesQualifiedAB7d} 个高价值候选可导入线索库`;
   } else {
     step4Status = 'IN_PROGRESS';
-    step4Blocker = '等待扫描发现新候选';
+    step4Blocker = '候选确认后会沉淀到线索库';
   }
   
   steps.push({
@@ -453,24 +467,20 @@ function calculateSteps(
     href: STEP_CONFIG[3].href,
   });
 
-  // Step 5: 导入线索与外联 (Import)
-  // DONE: 7天内 IMPORTED >= 1 OR 生成过 OutreachPack
-  // IN_PROGRESS: 有 QUALIFIED 但未导入
-  // BLOCKED: 无 QUALIFIED 或 Step4 未完成
+  // Step 5: 采购机会
   let step5Status: StepStatus;
   let step5Blocker: string | undefined;
   
-  if (step4Status === 'BLOCKED') {
+  if (step2Status === 'BLOCKED') {
     step5Status = 'BLOCKED';
-    step5Blocker = '请先完成候选分层';
-  } else if (counts.candidatesImported7d >= 1 || counts.outreachPackGenerated7d >= 1) {
+    step5Blocker = '请先开始自动搜索';
+  } else if (counts.opportunityCount > 0) {
     step5Status = 'DONE';
-  } else if (counts.candidatesQualifiedAB7d > 0) {
-    step5Status = 'IN_PROGRESS';
-    step5Blocker = `有 ${counts.candidatesQualifiedAB7d} 个高质量候选可导入`;
   } else {
     step5Status = 'IN_PROGRESS';
-    step5Blocker = '等待候选分层完成';
+    step5Blocker = hasSearchStarted
+      ? '机会对象会从候选结果中单独沉淀'
+      : '启动自动搜索后可逐步发现采购机会';
   }
   
   steps.push({
@@ -495,90 +505,58 @@ function getCurrentStep(steps: StepState[]): number {
   return steps.length;
 }
 
-function getPrimaryCTA(
-  steps: StepState[], 
-  currentStep: number, 
-  counts: RadarPipelineCounts
-): PrimaryCTA {
-  const step = steps[currentStep - 1];
-  
-  // 根据当前步骤生成 CTA
-  switch (step.key) {
-    case 'targeting':
-      if (step.status === 'BLOCKED') {
-        return {
-          label: '生成买家画像',
-          href: '/customer/knowledge/profiles',
-          disabled: false,
-        };
-      }
-      return {
-        label: '同步最新画像',
-        href: '/customer/knowledge/profiles',
-        disabled: false,
-      };
-      
-    case 'sources':
-      if (counts.profilesActiveCount === 0) {
-        return {
-          label: '创建搜索配置',
-          href: '/customer/radar/tasks',
-          disabled: step.status === 'BLOCKED',
-          disabledReason: step.blocker,
-        };
-      }
-      return {
-        label: '配置数据源',
-        href: '/customer/radar/channels',
-        disabled: step.status === 'BLOCKED',
-        disabledReason: step.blocker,
-      };
-      
-    case 'scheduler':
-      return {
-        label: '启动扫描',
-        href: '/customer/radar/tasks',
-        disabled: step.status === 'BLOCKED',
-        disabledReason: step.blocker,
-      };
-      
-    case 'qualify':
-      if (counts.pendingReviewCount > 0) {
-        return {
-          label: `分层候选 (${counts.pendingReviewCount})`,
-          href: '/customer/radar/candidates?status=NEW',
-          disabled: false,
-        };
-      }
-      return {
-        label: '查看候选池',
-        href: '/customer/radar/candidates',
-        disabled: step.status === 'BLOCKED',
-        disabledReason: step.blocker,
-      };
-      
-    case 'import':
-      if (counts.candidatesQualifiedAB7d > 0) {
-        return {
-          label: `导入线索 (${counts.candidatesQualifiedAB7d})`,
-          href: '/customer/radar/candidates?status=QUALIFIED&tier=A,B',
-          disabled: false,
-        };
-      }
-      return {
-        label: '查看线索库',
-        href: '/customer/radar/prospects',
-        disabled: step.status === 'BLOCKED',
-        disabledReason: step.blocker,
-      };
-      
-    default:
-      return {
-        label: '开始获客',
-        href: '/customer/radar',
-        disabled: false,
-      };
+function getPrimaryCTA(counts: RadarPipelineCounts): PrimaryCTA {
+  const hasSearchStarted = counts.profilesActiveCount > 0 || counts.lastScanAt !== null;
+  const readyToImport = Math.max(
+    counts.candidatesQualifiedAB7d - counts.candidatesImported7d,
+    0
+  );
+
+  if (!counts.targetingSpecExists) {
+    return {
+      label: '同步目标客户画像',
+      href: '/customer/radar/targeting',
+      disabled: false,
+    };
   }
+
+  if (!hasSearchStarted) {
+    return {
+      label: '开始自动搜索',
+      href: '/customer/radar/search',
+      disabled: false,
+    };
+  }
+
+  if (counts.pendingReviewCount > 0) {
+    return {
+      label: '去审核候选',
+      href: '/customer/radar/candidates?status=NEW',
+      disabled: false,
+    };
+  }
+
+  if (readyToImport > 0) {
+    return {
+      label: '导入线索库',
+      href: '/customer/radar/candidates?status=QUALIFIED&tier=A,B',
+      disabled: false,
+    };
+  }
+
+  if (counts.prospectCompanyCount > 0) {
+    return {
+      label: '查看线索库',
+      href: '/customer/radar/prospects',
+      disabled: false,
+    };
+  }
+
+  return {
+    label: '查看候选结果',
+    href: '/customer/radar/candidates',
+    disabled: false,
+  };
 }
 
 // ============================================

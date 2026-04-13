@@ -466,7 +466,12 @@ export async function getCandidatesV2(options?: {
     where.sourceId = options.sourceId;
   }
   if (options?.qualifyTier) {
-    where.qualifyTier = options.qualifyTier;
+    const tiers = options.qualifyTier
+      .split(',')
+      .map((tier) => tier.trim())
+      .filter(Boolean);
+
+    where.qualifyTier = tiers.length > 1 ? { in: tiers } : tiers[0];
   }
   if (options?.hasPhone) {
     where.phone = { not: null };
@@ -485,6 +490,11 @@ export async function getCandidatesV2(options?: {
       { displayName: { contains: options.search, mode: 'insensitive' } },
       { buyerName: { contains: options.search, mode: 'insensitive' } },
       { description: { contains: options.search, mode: 'insensitive' } },
+      { website: { contains: options.search, mode: 'insensitive' } },
+      { industry: { contains: options.search, mode: 'insensitive' } },
+      { country: { contains: options.search, mode: 'insensitive' } },
+      { buyerCountry: { contains: options.search, mode: 'insensitive' } },
+      { source: { name: { contains: options.search, mode: 'insensitive' } } },
     ];
   }
   
@@ -1062,6 +1072,7 @@ async function extractContactsFromCandidate(
     name?: string;
     title?: string;
     email?: string;
+    phone?: string; // v2.0: 添加电话字段
     linkedIn?: string;
     linkedin?: string;
     emailConfidence?: number;
@@ -1085,6 +1096,7 @@ async function extractContactsFromCandidate(
         name: dm.name,
         role: dm.title || null,
         email: dm.email || null,
+        phone: dm.phone || null, // v2.0: 提取电话字段
         linkedInUrl: dm.linkedIn || dm.linkedin || null,
         seniority: inferSeniority(dm.title),
         sourceCandidateId: candidateId,

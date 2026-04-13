@@ -438,7 +438,7 @@ export default function TargetingSpecPage() {
             <div>
               <h1 className="text-2xl font-bold text-[#0B1B2B]">目标客户画像</h1>
               <p className="text-sm text-slate-500 mt-1">
-                基于知识引擎自动生成的 ICP 分层与获客渠道规划
+                确认系统按什么画像找客户，并从知识引擎同步最新结果
               </p>
             </div>
           </div>
@@ -452,7 +452,7 @@ export default function TargetingSpecPage() {
                   ? 'bg-emerald-100 text-emerald-600'
                   : 'bg-[#0B1B2B] text-emerald-400 hover:bg-[#10263B]'
               }`}
-              title="从知识引擎同步最新买家画像"
+              title="从知识引擎同步最新目标客户画像"
             >
               {isSyncing ? (
                 <>
@@ -462,7 +462,7 @@ export default function TargetingSpecPage() {
               ) : (
                 <>
                   <Sparkles size={16} />
-                  从知识引擎同步
+                  同步最新画像
                 </>
               )}
             </button>
@@ -580,7 +580,7 @@ export default function TargetingSpecPage() {
             <Target size={48} className="text-slate-300 mx-auto mb-4" />
             <h3 className="text-lg font-bold text-[#0B1B2B] mb-2">尚未生成目标客户画像</h3>
             <p className="text-sm text-slate-500 mb-6 max-w-md mx-auto">
-              从知识引擎同步买家画像,AI 将自动生成可执行的筛选规则和渠道策略
+              从知识引擎同步目标客户画像，系统会自动生成可执行的客户特征摘要
             </p>
             <div className="flex items-center justify-center gap-3">
               <button
@@ -596,7 +596,7 @@ export default function TargetingSpecPage() {
                 ) : (
                   <>
                     <Sparkles size={16} />
-                    从知识引擎同步
+                    同步最新画像
                   </>
                 )}
               </button>
@@ -604,7 +604,7 @@ export default function TargetingSpecPage() {
                 href="/customer/knowledge/profiles"
                 className="inline-flex items-center gap-2 px-4 py-2.5 border border-[#E7E0D3] text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors"
               >
-                查看买家画像
+                  前往知识引擎
                 <ChevronRight size={16} />
               </Link>
             </div>
@@ -623,7 +623,7 @@ export default function TargetingSpecPage() {
               >
                 <span className="flex items-center gap-2">
                   <Target size={16} />
-                  TargetingSpec
+                  画像概览
                 </span>
               </button>
               <button
@@ -636,7 +636,7 @@ export default function TargetingSpecPage() {
               >
                 <span className="flex items-center gap-2">
                   <Map size={16} />
-                  ChannelMap
+                  系统推导
                 </span>
               </button>
             </div>
@@ -921,9 +921,9 @@ export default function TargetingSpecPage() {
                         />
                       ) : (
                         <>
-                          <h2 className="text-xl font-bold">获客渠道规划</h2>
+                          <h2 className="text-xl font-bold">系统推导参考</h2>
                           <p className="text-sm text-slate-400 mt-1">
-                            针对 {channels.personaName} · {channels.channels?.length || 0} 个渠道
+                            基于 {channels.personaName} 推导出的执行能力线索 · {channels.channels?.length || 0} 项
                           </p>
                         </>
                       )}

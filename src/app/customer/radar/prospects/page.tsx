@@ -65,10 +65,13 @@ import {
   getCompanyOutreachHistory,
   saveOutreachArtifacts,
   getSavedOutreachArtifacts,
+  generateLinkedInDraft,
+  recordLinkedInCopy,
   type OutreachRecordItem,
   type OutreachStats,
   type OutreachDraft,
   type CompanyOutreachRecord,
+  type LinkedInDraft,
 } from '@/actions/outreach-draft';
 import { suggestLinksForProspect } from '@/actions/radar-content-links';
 import { exportProspectsToCSV } from '@/actions/prospect-export';
@@ -216,6 +219,17 @@ export default function RadarProspectsPage() {
   const [showCallResultForm, setShowCallResultForm] = useState<string | null>(null);
   const [isEnriching, setIsEnriching] = useState(false);
   const [enrichResult, setEnrichResult] = useState<{ count?: number; error?: string } | null>(null);
+
+  // v2.0: LinkedIn DM 草稿（从候选池迁移）
+  const [linkedInDraft, setLinkedInDraft] = useState<LinkedInDraft | null>(null);
+  const [isGeneratingLinkedIn, setIsGeneratingLinkedIn] = useState(false);
+  const [linkedInCopied, setLinkedInCopied] = useState(false);
+  const [selectedLinkedInContact, setSelectedLinkedInContact] = useState<ProspectContactData | null>(null);
+
+  // v2.0: 邮件发送状态
+  const [isSendingEmail, setIsSendingEmail] = useState<string | null>(null);
+  const [emailSentId, setEmailSentId] = useState<string | null>(null);
+  const [selectedEmailContact, setSelectedEmailContact] = useState<ProspectContactData | null>(null);
 
   // Task #30: 营销内容建议
   const [suggestedContents, setSuggestedContents] = useState<SuggestedContent[]>([]);
@@ -1600,6 +1614,27 @@ export default function RadarProspectsPage() {
                             {outreachPack.outreachPack.emails.length} 封
                           </span>
                         </div>
+
+                        {/* v2.0: 联系人邮箱选择 */}
+                        {contacts.filter(c => c.email).length > 0 && (
+                          <div className="mb-3 flex flex-wrap gap-2">
+                            {contacts.filter(c => c.email).map(c => (
+                              <button
+                                key={c.id}
+                                onClick={() => setSelectedEmailContact(c)}
+                                className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                                  selectedEmailContact?.id === c.id
+                                    ? 'bg-[#D4AF37] text-white border-[#D4AF37]'
+                                    : 'bg-white text-[#D4AF37] border-[#D4AF37]/30 hover:border-[#D4AF37]'
+                                }`}
+                              >
+                                <Mail size={12} className="inline mr-1" />
+                                {c.name}: {c.email}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+
                         <div className="space-y-4">
                           {outreachPack.outreachPack.emails.map((email, idx) => (
                             <div key={idx} className="bg-[#FFFCF7] rounded-xl border border-[#E8E0D0] overflow-hidden">
@@ -1608,16 +1643,62 @@ export default function RadarProspectsPage() {
                                   <span className="text-xs text-slate-500">主题:</span>
                                   <span className="text-sm font-medium text-[#0B1B2B] ml-2">{email.subject}</span>
                                 </div>
-                                <button
-                                  onClick={() => handleCopy(`Subject: ${email.subject}\n\n${email.body}`, `email-${idx}`)}
-                                  className="p-1.5 text-slate-400 hover:text-[#D4AF37] transition-colors"
-                                >
-                                  {copiedId === `email-${idx}` ? (
-                                    <Check size={14} className="text-emerald-500" />
-                                  ) : (
-                                    <Copy size={14} />
+                                <div className="flex items-center gap-1">
+                                  {/* v2.0: 发送按钮 */}
+                                  {selectedEmailContact && (
+                                    <button
+                                      onClick={async () => {
+                                        if (!selectedCompany) return;
+                                        setIsSendingEmail(`email-${idx}`);
+                                        try {
+                                          const result = await sendOutreachDraft({
+                                            subject: email.subject,
+                                            body: email.body,
+                                            toEmail: selectedEmailContact.email || '',
+                                            toName: selectedEmailContact.name,
+                                            prospectCompanyId: selectedCompany.id,
+                                          });
+                                          if (result.success) {
+                                            setEmailSentId(`email-${idx}`);
+                                            setTimeout(() => setEmailSentId(null), 3000);
+                                            // 刷新历史
+                                            const hist = await getCompanyOutreachHistory(selectedCompany.id);
+                                            setOutreachHistory(hist.records);
+                                          } else {
+                                            setError(result.error || '发送失败');
+                                          }
+                                        } catch (err) {
+                                          setError(err instanceof Error ? err.message : '发送失败');
+                                        } finally {
+                                          setIsSendingEmail(null);
+                                        }
+                                      }}
+                                      disabled={isSendingEmail === `email-${idx}`}
+                                      className="p-1.5 text-emerald-500 hover:text-emerald-600 transition-colors disabled:opacity-50"
+                                      title="发送邮件"
+                                    >
+                                      {emailSentId === `email-${idx}` ? (
+                                        <Check size={14} className="text-emerald-600" />
+                                      ) : isSendingEmail === `email-${idx}` ? (
+                                        <Loader2 size={14} className="animate-spin" />
+                                      ) : (
+                                        <Send size={14} />
+                                      )}
+                                    </button>
                                   )}
-                                </button>
+                                  {/* 复制按钮 */}
+                                  <button
+                                    onClick={() => handleCopy(`Subject: ${email.subject}\n\n${email.body}`, `email-${idx}`)}
+                                    className="p-1.5 text-slate-400 hover:text-[#D4AF37] transition-colors"
+                                    title="复制内容"
+                                  >
+                                    {copiedId === `email-${idx}` && emailSentId !== `email-${idx}` ? (
+                                      <Check size={14} className="text-emerald-500" />
+                                    ) : (
+                                      <Copy size={14} />
+                                    )}
+                                  </button>
+                                </div>
                               </div>
                               <div className="p-4">
                                 <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
@@ -1632,6 +1713,13 @@ export default function RadarProspectsPage() {
                             </div>
                           ))}
                         </div>
+
+                        {/* 提示：无联系人邮箱 */}
+                        {contacts.filter(c => c.email).length === 0 && (
+                          <p className="text-xs text-slate-500 mt-3 text-center">
+                            请先在联系人Tab添加邮箱地址
+                          </p>
+                        )}
                       </div>
 
                       {/* WhatsApp Templates */}
@@ -1726,6 +1814,159 @@ export default function RadarProspectsPage() {
                           ))}
                         </div>
                       </div>
+
+                      {/* v2.0: LinkedIn DM - 从候选池迁移 */}
+                      {contacts.filter(c => c.linkedInUrl).length > 0 && (
+                        <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
+                          <div className="flex items-center gap-2 mb-4">
+                            <Linkedin size={18} className="text-[#0A66C2]" />
+                            <h4 className="font-bold text-[#0B1B2B]">LinkedIn DM</h4>
+                            <span className="text-xs text-slate-400 ml-auto">
+                              {contacts.filter(c => c.linkedInUrl).length} 位联系人
+                            </span>
+                          </div>
+
+                          {/* 联系人选择 */}
+                          <div className="mb-3 flex flex-wrap gap-2">
+                            {contacts.filter(c => c.linkedInUrl).map(c => (
+                              <button
+                                key={c.id}
+                                onClick={() => {
+                                  setSelectedLinkedInContact(c);
+                                  setLinkedInDraft(null);
+                                  setLinkedInCopied(false);
+                                }}
+                                className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                                  selectedLinkedInContact?.id === c.id
+                                    ? 'bg-[#0A66C2] text-white border-[#0A66C2]'
+                                    : 'bg-white text-[#0A66C2] border-[#0A66C2]/30 hover:border-[#0A66C2]'
+                                }`}
+                              >
+                                <Linkedin size={12} className="inline mr-1" />
+                                {c.name}
+                                {c.role && <span className="ml-1 opacity-70">({c.role})</span>}
+                              </button>
+                            ))}
+                          </div>
+
+                          {/* 草稿生成 */}
+                          {selectedLinkedInContact && (
+                            <div className="bg-white rounded-xl border border-[#E8E0D0] p-4">
+                              <div className="flex items-center justify-between mb-3">
+                                <div className="text-sm text-slate-600">
+                                  <span className="font-medium">{selectedLinkedInContact.name}</span>
+                                  <a
+                                    href={selectedLinkedInContact.linkedInUrl || ''}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-[#0A66C2] ml-2 hover:underline"
+                                  >
+                                    <ExternalLink size={12} className="inline" />
+                                  </a>
+                                </div>
+                                <button
+                                  onClick={async () => {
+                                    if (!selectedCompany) return;
+                                    setIsGeneratingLinkedIn(true);
+                                    setLinkedInDraft(null);
+                                    setLinkedInCopied(false);
+                                    try {
+                                      const result = await generateLinkedInDraft(
+                                        undefined,
+                                        selectedCompany.id,
+                                        selectedLinkedInContact.linkedInUrl || undefined,
+                                      );
+                                      if (result.success && result.draft) {
+                                        setLinkedInDraft(result.draft);
+                                      } else {
+                                        console.error('LinkedIn DM 生成失败:', result.error);
+                                      }
+                                    } catch (err) {
+                                      console.error('LinkedIn DM 生成异常:', err);
+                                    } finally {
+                                      setIsGeneratingLinkedIn(false);
+                                    }
+                                  }}
+                                  disabled={isGeneratingLinkedIn}
+                                  className="flex items-center gap-1.5 text-xs bg-[#0A66C2] text-white px-3 py-1.5 rounded-lg hover:bg-[#004182] transition-colors disabled:opacity-50"
+                                >
+                                  {isGeneratingLinkedIn ? (
+                                    <Loader2 size={12} className="animate-spin" />
+                                  ) : (
+                                    <Sparkles size={12} />
+                                  )}
+                                  生成草稿
+                                </button>
+                              </div>
+
+                              {/* 草稿内容 */}
+                              {linkedInDraft && (
+                                <div className="bg-[#F7F3E8] rounded-lg p-3 mb-3">
+                                  <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
+                                    {linkedInDraft.message}
+                                  </p>
+                                  <p className="text-xs text-slate-400 mt-2">
+                                    {linkedInDraft.message.length} / 300 字符
+                                  </p>
+                                </div>
+                              )}
+
+                              {/* 操作按钮 */}
+                              {linkedInDraft && (
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={async () => {
+                                      if (!selectedCompany || !linkedInDraft) return;
+                                      await navigator.clipboard.writeText(linkedInDraft.message);
+                                      setLinkedInCopied(true);
+                                      // 记录外联
+                                      await recordLinkedInCopy(
+                                        undefined,
+                                        selectedCompany.id,
+                                        linkedInDraft.linkedInUrl,
+                                        linkedInDraft.message,
+                                      );
+                                      // 刷新历史
+                                      const hist = await getCompanyOutreachHistory(selectedCompany.id);
+                                      setOutreachHistory(hist.records);
+                                      setTimeout(() => setLinkedInCopied(false), 2000);
+                                    }}
+                                    className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors ${
+                                      linkedInCopied
+                                        ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                                        : 'bg-white text-[#0A66C2] border border-[#0A66C2]/30 hover:border-[#0A66C2]'
+                                    }`}
+                                  >
+                                    {linkedInCopied ? (
+                                      <Check size={12} />
+                                    ) : (
+                                      <Copy size={12} />
+                                    )}
+                                    {linkedInCopied ? '已复制' : '复制并发送'}
+                                  </button>
+                                  <a
+                                    href={selectedLinkedInContact.linkedInUrl || ''}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-1.5 text-xs bg-[#0A66C2] text-white px-3 py-1.5 rounded-lg hover:bg-[#004182] transition-colors"
+                                  >
+                                    <ExternalLink size={12} />
+                                    打开 LinkedIn
+                                  </a>
+                                </div>
+                              )}
+
+                              {/* 加载状态 */}
+                              {isGeneratingLinkedIn && !linkedInDraft && (
+                                <div className="flex items-center justify-center py-4 text-sm text-slate-500">
+                                  <Loader2 size={16} className="animate-spin mr-2" />
+                                  AI 正在生成草稿...
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                       {/* Phone Outreach */}
                       {contacts.filter(c => c.phone).length > 0 && (

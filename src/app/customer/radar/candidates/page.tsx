@@ -16,16 +16,12 @@ import { useSearchParams } from 'next/navigation';
 import { 
   Search, 
   Building2, 
-  FileText, 
   Loader2,
   AlertCircle,
   X,
   CheckCircle2,
   ExternalLink,
-  Globe,
-  Phone,
   Mail,
-  Calendar,
   DollarSign,
   Filter,
   ChevronRight,
@@ -65,9 +61,10 @@ import {
 import { getRadarPipelineStatus } from '@/actions/radar-pipeline';
 import type { RadarPipelineStatus } from '@/lib/radar/pipeline';
 import type { RadarCandidate, RadarSource } from '@prisma/client';
-import type { CandidateType, CandidateStatus } from '@prisma/client';
+import type { CandidateStatus } from '@prisma/client';
 import { RadarHeader } from '@/components/radar/radar-header';
 import { RadarContentMatchPanel } from '@/components/radar/radar-content-match-panel';
+import { toast } from 'sonner';
 
 // ==================== 类型 ====================
 
@@ -162,15 +159,21 @@ interface EmailSequenceData {
 const STATUS_FILTERS: Array<{
   value: CandidateStatus | '';
   label: string;
-  count: keyof RadarStatsData | 'total' | null;
-  color?: string;
 }> = [
-  { value: '', label: '全部', count: 'total' },
-  { value: 'NEW', label: '待处理', count: 'newCandidates', color: 'blue' },
-  { value: 'QUALIFIED', label: '已合格', count: 'qualifiedCandidates', color: 'emerald' },
-  { value: 'IMPORTED', label: '已导入', count: 'importedCandidates', color: 'purple' },
-  { value: 'EXCLUDED', label: '已排除', count: null, color: 'red' },
+  { value: '', label: '全部公司候选' },
+  { value: 'NEW', label: '待审核' },
+  { value: 'QUALIFIED', label: '已分层' },
+  { value: 'IMPORTED', label: '已导入' },
+  { value: 'EXCLUDED', label: '已排除' },
 ];
+
+const TIER_FILTERS = [
+  { value: '', label: '全部层级' },
+  { value: 'A,B', label: 'A / B 高优先' },
+  { value: 'A', label: '仅 A 级' },
+  { value: 'B', label: '仅 B 级' },
+  { value: 'C', label: '仅 C 级' },
+] as const;
 
 // ==================== 页面组件 ====================
 
@@ -231,11 +234,9 @@ export default function RadarCandidatesPage() {
   
   // 筛选条件
   const [filters, setFilters] = useState({
-    candidateType: '' as CandidateType | '',
     status: (initialStatus || '') as CandidateStatus | '',
     qualifyTier: initialTier || '',
     search: '',
-    period: '', // 7d = 本周
   });
 
   // 加载数据
@@ -247,7 +248,7 @@ export default function RadarCandidatesPage() {
     try {
       const [result, statsData, pipeline] = await Promise.all([
         getCandidatesV2({
-          candidateType: filters.candidateType || undefined,
+          candidateType: 'COMPANY',
           status: filters.status || undefined,
           qualifyTier: filters.qualifyTier || undefined,
           search: filters.search || undefined,
@@ -271,6 +272,19 @@ export default function RadarCandidatesPage() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    setSelectedIds((prev) => {
+      const nextIds = candidates.filter((candidate) => prev.has(candidate.id)).map((candidate) => candidate.id);
+      const next = new Set(nextIds);
+      const unchanged = next.size === prev.size && nextIds.every((id) => prev.has(id));
+      return unchanged ? prev : next;
+    });
+
+    if (selectedCandidate && !candidates.some((candidate) => candidate.id === selectedCandidate.id)) {
+      setSelectedCandidate(null);
+    }
+  }, [candidates, selectedCandidate]);
 
   // 刷新处理
   const handleRefresh = () => loadData(true);
@@ -327,8 +341,22 @@ export default function RadarCandidatesPage() {
     try {
       if (candidate.candidateType === 'OPPORTUNITY') {
         await importCandidateToOpportunityV2(candidate.id);
+        toast.success('已导入采购机会', {
+          description: '可前往采购机会页面继续跟进',
+          action: {
+            label: '前往采购机会',
+            onClick: () => window.location.href = '/customer/radar/opportunities',
+          },
+        });
       } else {
         await importCandidateToCompanyV2(candidate.id);
+        toast.success('已导入线索库', {
+          description: '可在线索库继续跟进，生成外联邮件',
+          action: {
+            label: '前往线索库',
+            onClick: () => window.location.href = '/customer/radar/prospects',
+          },
+        });
       }
       loadData(true);
       setSelectedCandidate(null);
@@ -409,20 +437,39 @@ export default function RadarCandidatesPage() {
       const result = await response.json();
       if (result.success && result.data) {
         setResearchData(result.data);
+        return true; // 有背调结果
       }
+      return false; // 无背调结果
     } catch {
-      // 忽略错误
+      return false;
     }
   };
 
-  // 当选择候选时，加载背调结果 & 重置草稿
+  // v2.0: 当选择候选时，加载背调结果，如果没有则自动触发背调
   useEffect(() => {
     if (selectedCandidate) {
-      loadResearchData(selectedCandidate.id);
-      loadEmailSequence(selectedCandidate.id);
+      // 先加载已有的背调结果
+      loadResearchData(selectedCandidate.id).then((hasResult) => {
+        // 如果没有背调结果，自动触发背调（避免调用handleResearch导致依赖问题）
+        if (!hasResult) {
+          setIsResearching(true);
+          fetch('/api/research/company', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ candidateId: selectedCandidate.id }),
+          })
+            .then(res => res.json())
+            .then(result => {
+              if (result.success) {
+                setResearchData(result.data);
+              }
+            })
+            .catch(() => {})
+            .finally(() => setIsResearching(false));
+        }
+      });
     } else {
       setResearchData(null);
-      setEmailSequence(null);
     }
     setOutreachDraft(null);
     setDraftError(null);
@@ -582,20 +629,15 @@ export default function RadarCandidatesPage() {
   // 获取状态标签
   const getStatusLabel = (status: CandidateStatus) => {
     const map: Record<CandidateStatus, { label: string; color: string }> = {
-      NEW: { label: '待处理', color: 'bg-blue-50 text-blue-600' },
+      NEW: { label: '待审核', color: 'bg-blue-50 text-blue-600' },
       REVIEWING: { label: '审核中', color: 'bg-amber-50 text-amber-600' },
-      QUALIFIED: { label: '已合格', color: 'bg-emerald-50 text-emerald-600' },
+      QUALIFIED: { label: '已分层', color: 'bg-emerald-50 text-emerald-600' },
       IMPORTED: { label: '已导入', color: 'bg-purple-50 text-purple-600' },
       EXCLUDED: { label: '已排除', color: 'bg-red-50 text-red-600' },
       EXPIRED: { label: '已过期', color: 'bg-slate-50 text-slate-600' },
       ENRICHING: { label: '补全中', color: 'bg-cyan-50 text-cyan-600' },
     };
     return map[status] || { label: status, color: 'bg-slate-50 text-slate-600' };
-  };
-
-  // 获取类型图标
-  const getTypeIcon = (type: CandidateType) => {
-    return type === 'OPPORTUNITY' ? FileText : Building2;
   };
 
   if (isLoading) {
@@ -608,7 +650,7 @@ export default function RadarCandidatesPage() {
 
   const steps = pipelineStatus?.steps ?? [];
   const counts = pipelineStatus?.counts ?? {
-    profilesActiveCount: 0, sourcesConfiguredCount: 0,
+    profilesActiveCount: 0, sourcesConfiguredCount: 0, candidateTotalCount: 0, prospectCompanyCount: 0, opportunityCount: 0,
     candidatesNew7d: 0, candidatesQualifiedAB7d: 0, candidatesImported7d: 0, candidatesEnriching: 0,
     lastScanAt: null, lastErrorBrief: null,
     pendingReviewCount: 0, pendingApprovalsCount: 0, enrichPendingCount: 0,
@@ -621,8 +663,8 @@ export default function RadarCandidatesPage() {
 
   // 空态类型判断
   const emptyStateType = candidates.length === 0 
-    ? stats?.totalCandidates === 0 
-      ? 'no_task' 
+    ? total === 0
+      ? (stats?.opportunities ? 'opportunity_only' : 'no_task')
       : filters.status || filters.qualifyTier || filters.search 
         ? 'no_results' 
         : 'empty'
@@ -655,78 +697,79 @@ export default function RadarCandidatesPage() {
           </div>
         )}
 
-        {/* Status Filter Bar */}
-        <div className="flex items-center gap-2 bg-[#FFFCF7] rounded-xl border border-[#E8E0D0] p-2">
-          {STATUS_FILTERS.map((filter) => {
-            const count = filter.count === 'total' 
-              ? total 
-              : filter.count && stats 
-                ? stats[filter.count as keyof RadarStatsData] as number
-                : null;
-            const isActive = filters.status === filter.value;
-            
-            return (
-              <button
-                key={filter.value}
-                onClick={() => setFilters(prev => ({ ...prev, status: filter.value as CandidateStatus | '' }))}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  isActive 
-                    ? 'bg-[#0B1220] text-[#D4AF37]' 
-                    : 'hover:bg-slate-100 text-slate-600'
-                }`}
+        <div className="rounded-2xl border border-[#E8E0D0] bg-[#FFFCF7] p-4">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#9A7A1C]">候选池默认语义</div>
+              <h2 className="mt-2 text-lg font-bold text-[#0B1B2B]">当前只展示公司候选，先回答“为什么是它”</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-500">采购机会已迁到采购机会页统一管理，联系人不再作为一级列表对象，而是在候选详情中承接。</p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <div className="rounded-2xl border border-[#E8E0D0] bg-[#FCFAF4] px-4 py-3 text-sm">
+                <div className="text-xs text-slate-500">公司候选</div>
+                <div className="mt-1 font-semibold text-[#0B1B2B]">{total}</div>
+              </div>
+              <Link
+                href="/customer/radar/opportunities"
+                className="rounded-2xl border border-[#D4AF37]/35 bg-[#FFF8E8] px-4 py-3 text-sm transition-colors hover:bg-[#FFF2CE]"
               >
-                {filter.color && (
-                  <span className={`w-2 h-2 rounded-full bg-${filter.color}-400`} />
-                )}
-                {filter.label}
-                {count !== null && (
-                  <span className={`text-xs px-1.5 py-0.5 rounded ${
-                    isActive ? 'bg-[#D4AF37]/20' : 'bg-slate-100'
-                  }`}>
-                    {count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-          
+                <div className="text-xs text-slate-500">采购机会</div>
+                <div className="mt-1 flex items-center gap-2 font-semibold text-[#0B1B2B]">
+                  {stats?.opportunities ?? 0} 条机会
+                  <ArrowRight size={14} className="text-[#9A7A1C]" />
+                </div>
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* Status Filter Bar */}
+        <div className="flex flex-col gap-3 rounded-xl border border-[#E8E0D0] bg-[#FFFCF7] p-3 lg:flex-row lg:items-center">
+          <div className="flex flex-wrap gap-2">
+            {STATUS_FILTERS.map((filter) => {
+              const isActive = filters.status === filter.value;
+
+              return (
+                <button
+                  key={filter.value}
+                  onClick={() => setFilters(prev => ({ ...prev, status: filter.value as CandidateStatus | '' }))}
+                  className={`rounded-lg px-4 py-2 text-sm font-medium transition-all ${
+                    isActive
+                      ? 'bg-[#0B1220] text-[#D4AF37]'
+                      : 'bg-[#F7F3E8] text-slate-600 hover:bg-[#F0EBD8]'
+                  }`}
+                >
+                  {filter.label}
+                </button>
+              );
+            })}
+          </div>
+
           <div className="flex-1" />
-          
-          {/* Quick Filters */}
-          <button
-            onClick={() => setFilters(prev => ({ ...prev, period: prev.period === '7d' ? '' : '7d' }))}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-              filters.period === '7d'
-                ? 'bg-amber-100 text-amber-700'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-            }`}
-          >
-            <Zap size={12} />
-            本周
-          </button>
-          
-          {/* Type Filter */}
-          <select
-            value={filters.candidateType}
-            onChange={(e) => setFilters(prev => ({ ...prev, candidateType: e.target.value as CandidateType | '' }))}
-            className="px-3 py-1.5 bg-slate-100 border-0 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
-          >
-            <option value="">所有类型</option>
-            <option value="COMPANY">公司</option>
-            <option value="OPPORTUNITY">机会</option>
-            <option value="CONTACT">联系人</option>
-          </select>
-          
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-            <input
-              type="text"
-              value={filters.search}
-              onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-              placeholder="搜索..."
-              className="w-40 pl-9 pr-3 py-1.5 bg-slate-100 border-0 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
-            />
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <select
+              value={filters.qualifyTier}
+              onChange={(e) => setFilters(prev => ({ ...prev, qualifyTier: e.target.value }))}
+              className="rounded-lg border border-[#E8E0D0] bg-[#FCFAF4] px-3 py-2 text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/30"
+            >
+              {TIER_FILTERS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+              <input
+                type="text"
+                value={filters.search}
+                onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+                placeholder="搜索公司名、网站、行业或来源"
+                className="w-full min-w-[240px] rounded-lg border border-[#E8E0D0] bg-[#FCFAF4] py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/30"
+              />
+            </div>
           </div>
         </div>
 
@@ -775,17 +818,27 @@ export default function RadarCandidatesPage() {
           {/* Candidates List */}
           <div className="col-span-7 bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] overflow-hidden">
             {/* List Header */}
-            <div className="flex items-center gap-3 px-4 py-3 border-b border-[#E8E0D0] bg-[#F0EBD8]">
-              <input
-                type="checkbox"
-                checked={selectedIds.size === candidates.length && candidates.length > 0}
-                onChange={toggleSelectAll}
-                className="w-4 h-4 rounded border-slate-300 text-[#D4AF37] focus:ring-[#D4AF37]"
-              />
-              <span className="text-sm font-medium text-[#0B1B2B]">候选列表</span>
-              <span className="text-xs text-slate-400">
-                {candidates.length} / {total}
-              </span>
+            <div className="border-b border-[#E8E0D0] bg-[#F0EBD8] px-4 py-3">
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={selectedIds.size === candidates.length && candidates.length > 0}
+                  onChange={toggleSelectAll}
+                  className="w-4 h-4 rounded border-slate-300 text-[#D4AF37] focus:ring-[#D4AF37]"
+                />
+                <span className="text-sm font-medium text-[#0B1B2B]">公司候选列表</span>
+                <span className="text-xs text-slate-400">
+                  {candidates.length} / {total}
+                </span>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-slate-500">
+                <span className="rounded-full bg-white px-2.5 py-1">公司名 / 网站</span>
+                <span className="rounded-full bg-white px-2.5 py-1">国家 / 地区</span>
+                <span className="rounded-full bg-white px-2.5 py-1">行业</span>
+                <span className="rounded-full bg-white px-2.5 py-1">联系人覆盖</span>
+                <span className="rounded-full bg-white px-2.5 py-1">匹配理由</span>
+                <span className="rounded-full bg-white px-2.5 py-1">ICP 分数 / Tier / 状态</span>
+              </div>
             </div>
             
             {/* Empty States */}
@@ -798,14 +851,33 @@ export default function RadarCandidatesPage() {
                     </div>
                     <h3 className="text-lg font-bold text-[#0B1B2B] mb-2">暂无候选数据</h3>
                     <p className="text-sm text-slate-500 mb-4">
-                      还没有发现任何候选，请先创建发现任务
+                      还没有发现任何候选，请先开始自动搜索
                     </p>
                     <Link 
-                      href="/customer/radar/tasks"
+                      href="/customer/radar/search"
                       className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium hover:opacity-90 transition-colors"
                       style={{background: '#D4AF37', color: '#0B1220', boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)'}}
                     >
-                      前往发现任务
+                      前往自动搜索
+                      <ArrowRight size={14} />
+                    </Link>
+                  </>
+                )}
+                {emptyStateType === 'opportunity_only' && (
+                  <>
+                    <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.3)'}}>
+                      <Filter size={28} className="text-[#D4AF37]" />
+                    </div>
+                    <h3 className="text-lg font-bold text-[#0B1B2B] mb-2">当前没有公司候选</h3>
+                    <p className="text-sm text-slate-500 mb-4">
+                      系统目前沉淀的是采购机会对象，已经和公司候选分开呈现。
+                    </p>
+                    <Link
+                      href="/customer/radar/opportunities"
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium hover:opacity-90 transition-colors"
+                      style={{background: '#D4AF37', color: '#0B1220', boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)'}}
+                    >
+                      查看采购机会
                       <ArrowRight size={14} />
                     </Link>
                   </>
@@ -820,7 +892,7 @@ export default function RadarCandidatesPage() {
                       当前筛选条件下没有候选，请尝试调整筛选条件
                     </p>
                     <button 
-                      onClick={() => setFilters({ candidateType: '', status: '', qualifyTier: '', search: '', period: '' })}
+                      onClick={() => setFilters({ status: '', qualifyTier: '', search: '' })}
                       className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-200 transition-colors"
                     >
                       清除筛选
@@ -835,9 +907,11 @@ export default function RadarCandidatesPage() {
               <div className="divide-y divide-[#E8E0D0] max-h-[calc(100vh-320px)] overflow-y-auto">
                 {candidates.map((candidate) => {
                   const statusInfo = getStatusLabel(candidate.status);
-                  const TypeIcon = getTypeIcon(candidate.candidateType);
                   const isSelected = selectedCandidate?.id === candidate.id;
                   const isChecked = selectedIds.has(candidate.id);
+                  const website = getCandidateWebsite(candidate);
+                  const matchReasons = getCandidateReasons(candidate);
+                  const contactCoverage = getContactCoverage(candidate);
                   
                   return (
                     <div 
@@ -856,84 +930,79 @@ export default function RadarCandidatesPage() {
                         setSequenceError(null);
                         setExpandedEmailIndex(null);
                       }}
-                      className={`flex items-center gap-3 p-4 cursor-pointer transition-all ${
+                      className={`cursor-pointer p-4 transition-all ${
                         isSelected 
-                          ? 'bg-[#D4AF37]/5' 
+                          ? 'bg-[#FFF7E5]' 
                           : 'hover:bg-[#F0EBD8]'
                       }`}
                     >
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={(e) => {
-                          e.stopPropagation();
-                          toggleSelect(candidate.id);
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                        className="w-4 h-4 rounded border-slate-300 text-[#D4AF37] focus:ring-[#D4AF37]"
-                      />
-                      
-                      <div className="w-10 h-10 bg-[#F0EBD8] rounded-xl flex items-center justify-center shrink-0" style={{background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.3)'}}>
-                        <TypeIcon size={18} className="text-[#D4AF37]" />
-                      </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-medium text-[#0B1B2B] truncate">
-                            {candidate.displayName}
-                          </h4>
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded ${statusInfo.color}`}>
-                            {statusInfo.label}
-                          </span>
-                          {candidate.qualifyTier && (
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
-                              candidate.qualifyTier === 'A' ? 'bg-emerald-100 text-emerald-700' :
-                              candidate.qualifyTier === 'B' ? 'bg-amber-100 text-amber-700' :
-                              'bg-slate-100 text-slate-600'
-                            }`}>
-                              {candidate.qualifyTier}
-                            </span>
-                          )}
+                      <div className="flex items-start gap-3">
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            toggleSelect(candidate.id);
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="mt-1 w-4 h-4 rounded border-slate-300 text-[#D4AF37] focus:ring-[#D4AF37]"
+                        />
+
+                        <div className="mt-0.5 flex h-11 w-11 items-center justify-center rounded-xl bg-[#F0EBD8] shrink-0" style={{background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.3)'}}>
+                          <Building2 size={18} className="text-[#D4AF37]" />
                         </div>
-                        <div className="flex items-center gap-3 text-[11px] text-slate-500">
-                          <span className="flex items-center gap-1">
-                            <Globe size={10} />
-                            {candidate.source.name}
-                          </span>
-                          {(candidate.buyerCountry || candidate.country) && (
-                            <span>{candidate.buyerCountry || candidate.country}</span>
-                          )}
-                          {candidate.deadline && (
-                            <span className="flex items-center gap-1 text-amber-600">
-                              <Calendar size={10} />
-                              {new Date(candidate.deadline).toLocaleDateString('zh-CN')}
+
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h4 className="text-sm font-semibold text-[#0B1B2B] truncate">
+                              {candidate.displayName}
+                            </h4>
+                            {candidate.qualifyTier && (
+                              <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                                candidate.qualifyTier === 'A' ? 'bg-emerald-100 text-emerald-700' :
+                                candidate.qualifyTier === 'B' ? 'bg-amber-100 text-amber-700' :
+                                'bg-slate-100 text-slate-600'
+                              }`}>
+                                Tier {candidate.qualifyTier}
+                              </span>
+                            )}
+                            <span className={`rounded-full px-2 py-0.5 text-[10px] ${statusInfo.color}`}>
+                              {statusInfo.label}
                             </span>
-                          )}
-                          {candidate.estimatedValue && (
-                            <span className="flex items-center gap-1">
-                              <DollarSign size={10} />
-                              {candidate.estimatedValue.toLocaleString()}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      
-                      {candidate.matchScore && (
-                        <div className="text-right shrink-0">
-                          <div className={`text-lg font-bold ${
-                            candidate.matchScore >= 80 ? 'text-emerald-600' :
-                            candidate.matchScore >= 60 ? 'text-amber-600' :
-                            'text-slate-400'
-                          }`}>
-                            {candidate.matchScore}
                           </div>
-                          <div className="text-[10px] text-slate-400">匹配分</div>
+
+                          <div className="mt-2 flex flex-wrap gap-2 text-[11px]">
+                            <CandidateMetaPill label={website.label} href={website.href} />
+                            <CandidateMetaPill label={getCandidateLocation(candidate)} />
+                            <CandidateMetaPill label={getCandidateIndustry(candidate)} />
+                            <CandidateMetaPill label={contactCoverage.label} tone={contactCoverage.tone} />
+                            <CandidateMetaPill label={`来源：${candidate.source.name}`} />
+                          </div>
+
+                          <div className="mt-3 rounded-2xl border border-[#E8E0D0] bg-[#FFFCF7] p-3">
+                            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#9A7A1C]">
+                              为什么是它
+                            </div>
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {matchReasons.slice(0, 2).map((reason) => (
+                                <ReasonPill key={reason} reason={reason} />
+                              ))}
+                            </div>
+                          </div>
                         </div>
-                      )}
-                      
-                      <ChevronRight size={16} className={`shrink-0 transition-colors ${
-                        isSelected ? 'text-[#D4AF37]' : 'text-slate-300'
-                      }`} />
+
+                        <div className="flex shrink-0 flex-col items-end gap-2">
+                          <div className="rounded-2xl border border-[#E8E0D0] bg-[#FFFCF7] px-3 py-2 text-right">
+                            <div className="text-[10px] text-slate-400">ICP 分数</div>
+                            <div className={`text-lg font-bold ${getMatchScoreColor(candidate.matchScore)}`}>
+                              {formatMatchScore(candidate.matchScore)}
+                            </div>
+                          </div>
+                          <ChevronRight size={16} className={`transition-colors ${
+                            isSelected ? 'text-[#D4AF37]' : 'text-slate-300'
+                          }`} />
+                        </div>
+                      </div>
                     </div>
                   );
                 })}
@@ -949,16 +1018,20 @@ export default function RadarCandidatesPage() {
                 <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-5">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-12 h-12 bg-gradient-to-br from-[#D4AF37] to-[#D4AF37]/80 rounded-xl flex items-center justify-center">
-                      {selectedCandidate.candidateType === 'OPPORTUNITY' ? (
-                        <FileText size={24} className="text-[#0B1B2B]" />
-                      ) : (
-                        <Building2 size={24} className="text-[#0B1B2B]" />
-                      )}
+                      <Building2 size={24} className="text-[#0B1B2B]" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-bold text-[#0B1B2B] truncate">{selectedCandidate.displayName}</h3>
-                      <div className="flex items-center gap-2 mt-1">
+                      <div className="mt-1 flex flex-wrap items-center gap-2">
                         <span className="text-xs text-slate-500">{selectedCandidate.source.name}</span>
+                        {selectedCandidate.qualifyTier ? (
+                          <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold text-[#0B1B2B]">
+                            Tier {selectedCandidate.qualifyTier}
+                          </span>
+                        ) : null}
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] ${getStatusLabel(selectedCandidate.status).color}`}>
+                          {getStatusLabel(selectedCandidate.status).label}
+                        </span>
                         {selectedCandidate.sourceUrl && (
                           <a 
                             href={selectedCandidate.sourceUrl} 
@@ -974,79 +1047,43 @@ export default function RadarCandidatesPage() {
                     </div>
                   </div>
 
-                  {/* Match Score */}
-                  {selectedCandidate.matchScore !== null && (
-                    <div className="mb-4 p-3 bg-[#F0EBD8] rounded-xl">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs text-slate-500">ICP 匹配度</span>
-                        <span className={`text-xl font-bold ${
-                          (selectedCandidate.matchScore || 0) >= 80 ? 'text-emerald-600' :
-                          (selectedCandidate.matchScore || 0) >= 60 ? 'text-amber-600' :
-                          'text-slate-500'
-                        }`}>
-                          {selectedCandidate.matchScore}%
-                        </span>
-                      </div>
-                      {selectedCandidate.matchExplain && (
-                        <div className="text-xs text-slate-600">
-                          {(selectedCandidate.matchExplain as { reasons?: string[] })?.reasons?.slice(0, 3).map((reason, i) => (
-                            <div key={i} className="flex items-start gap-1.5 mt-1">
-                              <CheckCircle2 size={12} className="text-emerald-500 mt-0.5 shrink-0" />
-                              <span>{reason}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <DetailItem label="网站" value={getCandidateWebsite(selectedCandidate).label} href={getCandidateWebsite(selectedCandidate).href} />
+                    <DetailItem label="国家 / 地区" value={getCandidateLocation(selectedCandidate)} />
+                    <DetailItem label="行业" value={getCandidateIndustry(selectedCandidate)} />
+                    <DetailItem label="联系人覆盖" value={getContactCoverage(selectedCandidate).label} />
+                    <DetailItem label="ICP 分数" value={formatMatchScore(selectedCandidate.matchScore)} accent={getMatchScoreColor(selectedCandidate.matchScore)} />
+                    <DetailItem label="补全状态" value={getEnrichmentStatus(selectedCandidate)} />
+                  </div>
+                  {selectedCandidate.description ? (
+                    <div className="mt-4 rounded-2xl border border-[#E8E0D0] bg-[#FFFCF7] p-3 text-xs leading-6 text-slate-600">
+                      {selectedCandidate.description}
                     </div>
-                  )}
+                  ) : null}
+                </div>
 
-                  {/* Info Grid */}
-                  <div className="space-y-2 text-sm">
-                    {selectedCandidate.buyerName && (
-                      <div className="flex items-center gap-2 text-slate-600">
-                        <Building2 size={14} className="text-slate-400 shrink-0" />
-                        <span className="truncate">{selectedCandidate.buyerName}</span>
+                {/* Match Reasons */}
+                <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-5">
+                  <h4 className="flex items-center gap-2 text-sm font-bold text-[#0B1B2B] mb-3">
+                    <Target size={14} className="text-[#D4AF37]" />
+                    为什么命中画像
+                  </h4>
+                  <div className="space-y-2">
+                    {getCandidateReasons(selectedCandidate, 4).map((reason) => (
+                      <div key={reason} className="flex items-start gap-2 rounded-2xl border border-[#E8E0D0] bg-[#FFFCF7] px-3 py-2 text-xs text-slate-600">
+                        <CheckCircle2 size={12} className="mt-0.5 shrink-0 text-emerald-500" />
+                        <span>{reason}</span>
                       </div>
-                    )}
-                    {(selectedCandidate.buyerCountry || selectedCandidate.country) && (
-                      <div className="flex items-center gap-2 text-slate-600">
-                        <Globe size={14} className="text-slate-400 shrink-0" />
-                        <span>{selectedCandidate.buyerCountry || selectedCandidate.country}</span>
-                      </div>
-                    )}
-                    {selectedCandidate.email && (
-                      <a href={`mailto:${selectedCandidate.email}`} className="flex items-center gap-2 text-slate-600 hover:text-[#D4AF37]">
-                        <Mail size={14} className="text-slate-400 shrink-0" />
-                        <span className="truncate">{selectedCandidate.email}</span>
-                      </a>
-                    )}
-                    {selectedCandidate.phone && (
-                      <div className="flex items-center gap-2 text-slate-600">
-                        <Phone size={14} className="text-slate-400 shrink-0" />
-                        <span>{selectedCandidate.phone}</span>
-                      </div>
-                    )}
-                    {selectedCandidate.deadline && (
-                      <div className="flex items-center gap-2 text-amber-600">
-                        <Calendar size={14} className="shrink-0" />
-                        <span>截止: {new Date(selectedCandidate.deadline).toLocaleDateString('zh-CN')}</span>
-                      </div>
-                    )}
-                    {selectedCandidate.estimatedValue && (
-                      <div className="flex items-center gap-2 text-slate-600">
-                        <DollarSign size={14} className="text-slate-400 shrink-0" />
-                        <span>预估: {selectedCandidate.estimatedValue.toLocaleString()} {selectedCandidate.currency}</span>
-                      </div>
-                    )}
+                    ))}
                   </div>
                 </div>
 
-                {/* AI Summary */}
+                {/* Enrichment Summary */}
                 {selectedCandidate.aiSummary && !researchData && (
                   <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-5">
                     <h4 className="flex items-center gap-2 text-sm font-bold text-[#0B1B2B] mb-3">
                       <Sparkles size={14} className="text-[#D4AF37]" />
-                      AI 分析
+                      enrichment 结果摘要
                     </h4>
                     <p className="text-xs text-slate-600 leading-relaxed">
                       {selectedCandidate.aiSummary}
@@ -1062,12 +1099,12 @@ export default function RadarCandidatesPage() {
                     approachAngle?: string;
                     signalScores?: { overallScore?: number };
                   } | null;
-                  if (!rel?.matchReasons?.length) return null;
+                  if (!rel?.matchReasons?.length && !rel?.approachAngle) return null;
                   return (
                     <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-5">
                       <h4 className="flex items-center gap-2 text-sm font-bold text-[#0B1B2B] mb-3">
-                        <Target size={14} className="text-[#D4AF37]" />
-                        AI 评估依据
+                        <MessageSquare size={14} className="text-[#D4AF37]" />
+                        推荐接触角度
                         {rel.tier && (
                           <span className={`ml-auto text-xs font-semibold px-2 py-0.5 rounded-full ${
                             rel.tier === 'A' ? 'bg-emerald-100 text-emerald-700' :
@@ -1076,15 +1113,7 @@ export default function RadarCandidatesPage() {
                           }`}>Tier {rel.tier}</span>
                         )}
                       </h4>
-                      <div className="space-y-2 mb-3">
-                        {rel.matchReasons.map((reason, i) => (
-                          <div key={i} className="flex items-start gap-1.5 text-xs text-slate-600">
-                            <CheckCircle2 size={12} className="text-emerald-500 mt-0.5 shrink-0" />
-                            <span>{reason}</span>
-                          </div>
-                        ))}
-                      </div>
-                      {rel.approachAngle && (
+                      {rel.approachAngle ? (
                         <div className="bg-[#F0EBD8] rounded-xl p-3">
                           <div className="flex items-center gap-1.5 text-xs font-medium text-[#0B1B2B] mb-1">
                             <Zap size={11} className="text-[#D4AF37]" />
@@ -1092,6 +1121,8 @@ export default function RadarCandidatesPage() {
                           </div>
                           <p className="text-xs text-slate-600 leading-relaxed">{rel.approachAngle}</p>
                         </div>
+                      ) : (
+                        <div className="text-xs text-slate-500">系统会结合匹配理由、联系人覆盖与近期信号，生成后续触达角度。</div>
                       )}
                     </div>
                   );
@@ -1340,17 +1371,12 @@ export default function RadarCandidatesPage() {
                       </button>
                     </div>
                   ) : (
+                    // v2.0: 背调改为自动触发，不再显示手动按钮
                     <div className="text-center py-6">
-                      <p className="text-xs text-slate-500 mb-3">
-                        AI将深度分析目标公司的行业、痛点、决策链
+                      <Loader2 size={20} className="text-[#D4AF37] animate-spin mx-auto mb-2" />
+                      <p className="text-xs text-slate-500">
+                        AI 正在自动背调中...
                       </p>
-                      <button
-                        onClick={() => handleResearch(selectedCandidate)}
-                        className="px-4 py-2 bg-[#D4AF37] text-[#0B1B2B] rounded-xl text-sm font-medium hover:bg-[#C5A030] transition-colors inline-flex items-center gap-2"
-                      >
-                        <SearchCheck size={14} />
-                        开始背调
-                      </button>
                       {researchError && (
                         <p className="text-xs text-red-500 mt-2">{researchError}</p>
                       )}
@@ -1358,124 +1384,14 @@ export default function RadarCandidatesPage() {
                   )}
                 </div>
 
-                {/* 内容联动面板 */}
-                <RadarContentMatchPanel
+                {/* v2.0: 内容联动面板暂隐藏，定位待明确 */}
+                {/* <RadarContentMatchPanel
                   candidateId={selectedCandidate.id}
                   candidateName={selectedCandidate.displayName}
-                />
+                /> */}
 
-                {/* 邮件序列模块 */}
-                {researchData && (
-                  <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-5">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="flex items-center gap-2 text-sm font-bold text-[#0B1B2B]">
-                        <Mail size={14} className="text-[#D4AF37]" />
-                        AI 邮件序列
-                      </h4>
-                      {emailSequence && (
-                        <span className="text-xs text-emerald-600 flex items-center gap-1">
-                          <CheckCircle2 size={12} />
-                          {emailSequence.totalEmails}封邮件
-                        </span>
-                      )}
-                    </div>
-
-                    {isGeneratingSequence ? (
-                      <div className="flex items-center justify-center py-8">
-                        <Loader2 size={24} className="text-[#D4AF37] animate-spin" />
-                        <span className="ml-2 text-sm text-slate-500">AI正在设计邮件序列...</span>
-                      </div>
-                    ) : emailSequence ? (
-                      <div className="space-y-3">
-                        {/* 序列概览 */}
-                        <div className="bg-[#FFFCF7] rounded-xl border border-[#E8E0D0] p-3">
-                          <div className="flex items-center justify-between text-xs mb-2">
-                            <span className="text-slate-500">目标：{emailSequence.goal}</span>
-                            <span className="text-slate-400">{emailSequence.estimatedDuration}</span>
-                          </div>
-                        </div>
-
-                        {/* 邮件列表 */}
-                        {emailSequence.emails?.map((email: EmailSequenceItem, idx: number) => (
-                          <div key={idx} className="bg-[#FFFCF7] rounded-xl border border-[#E8E0D0] overflow-hidden">
-                            <button
-                              onClick={() => setExpandedEmailIndex(expandedEmailIndex === idx ? null : idx)}
-                              className="w-full p-3 text-left flex items-center justify-between hover:bg-[#F7F3E8] transition-colors"
-                            >
-                              <div className="flex items-center gap-2">
-                                <span className="w-6 h-6 rounded-full bg-[#D4AF37]/20 text-[#D4AF37] text-xs flex items-center justify-center font-medium">
-                                  {email.order}
-                                </span>
-                                <div>
-                                  <div className="text-xs font-medium text-[#0B1B2B]">{email.name}</div>
-                                  <div className="text-[10px] text-slate-400">{email.sendDelay}</div>
-                                </div>
-                              </div>
-                              <ChevronRight
-                                size={14}
-                                className={`text-slate-400 transition-transform ${expandedEmailIndex === idx ? 'rotate-90' : ''}`}
-                              />
-                            </button>
-
-                            {expandedEmailIndex === idx && (
-                              <div className="px-3 pb-3 space-y-2 border-t border-[#E8E0D0]">
-                                {/* 主题和预览 */}
-                                <div className="pt-2">
-                                  <div className="text-xs font-medium text-[#0B1B2B] mb-1">{email.subject}</div>
-                                  <div className="text-[10px] text-slate-400 italic">{email.previewText}</div>
-                                </div>
-
-                                {/* 正文 */}
-                                <div className="text-xs text-slate-600 whitespace-pre-wrap bg-white rounded-lg p-2 border border-[#E8E0D0]">
-                                  {email.body}
-                                </div>
-
-                                {/* CTA */}
-                                <div className="flex items-center gap-2">
-                                  <span className="px-2 py-1 bg-[#D4AF37] text-[#0B1B2B] rounded text-[10px] font-medium">
-                                    {email.cta?.text}
-                                  </span>
-                                </div>
-
-                                {/* 心理学触发点 */}
-                                {email.psychologicalTrigger && (
-                                  <div className="text-[10px] text-purple-600 flex items-center gap-1">
-                                    <Zap size={10} />
-                                    {email.psychologicalTrigger}
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-
-                        {/* 重新生成按钮 */}
-                        <button
-                          onClick={() => handleGenerateSequence(selectedCandidate)}
-                          className="w-full py-2 text-xs text-slate-500 hover:text-[#D4AF37] transition-colors"
-                        >
-                          重新生成序列
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="text-center py-6">
-                        <p className="text-xs text-slate-500 mb-3">
-                          基于背调结果，AI将设计5轮跟进邮件
-                        </p>
-                        <button
-                          onClick={() => handleGenerateSequence(selectedCandidate)}
-                          className="px-4 py-2 bg-[#D4AF37] text-[#0B1B2B] rounded-xl text-sm font-medium hover:bg-[#C5A030] transition-colors inline-flex items-center gap-2"
-                        >
-                          <Mail size={14} />
-                          生成邮件序列
-                        </button>
-                        {sequenceError && (
-                          <p className="text-xs text-red-500 mt-2">{sequenceError}</p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
+                {/* v2.0: 邮件序列移至线索库 */}
+                {/* 邮件序列模块已隐藏 - 导入线索库后可继续跟进 */}
 
                 {/* Actions */}
                 <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-5">
@@ -1512,179 +1428,22 @@ export default function RadarCandidatesPage() {
                     </div>
                   )}
                   
-                  {/* Import Button */}
+                  {/* v2.0: Import Button - 明确引导用户导入后去线索库继续跟进 */}
                   {selectedCandidate.status === 'QUALIFIED' && selectedCandidate.qualifyTier && (
                     <button
                       onClick={() => handleImport(selectedCandidate)}
                       className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#0B1B2B] text-[#D4AF37] rounded-xl text-sm font-medium hover:bg-[#10263B] transition-colors"
                     >
                       <Download size={16} />
-                      导入到{selectedCandidate.candidateType === 'OPPORTUNITY' ? '机会池' : '线索库'}
+                      导入线索库并继续跟进
                     </button>
                   )}
 
-                  {/* 发送开发信（AI 草稿生成）*/}
-                  {(selectedCandidate.status === 'QUALIFIED' || selectedCandidate.status === 'NEW') &&
-                   selectedCandidate.qualifyTier && selectedCandidate.qualifyTier !== 'excluded' && (
-                    <div className="mt-3 pt-3 border-t border-[#E8E0D0]">
-                      <p className="text-xs text-slate-500 mb-2">发送开发信</p>
+                  {/* v2.0: 发送开发信移至线索库 */}
+                  {/* 发送开发信模块已隐藏 - 导入线索库后可继续跟进 */}
 
-                      {/* 手动输入邮箱（候选无邮箱时）*/}
-                      {!selectedCandidate.email && !outreachDraft && (
-                        <input
-                          type="email"
-                          value={manualEmail}
-                          onChange={(e) => setManualEmail(e.target.value)}
-                          placeholder="输入邮箱地址"
-                          className="w-full px-3 py-2 mb-2 border border-[#E8E0D0] rounded-lg text-sm focus:outline-none focus:border-[#D4AF37]"
-                        />
-                      )}
-
-                      {draftSent ? (
-                        <div className="flex items-center gap-2 py-2.5 px-4 bg-emerald-50 text-emerald-600 rounded-xl text-sm">
-                          <CheckCircle2 size={16} />
-                          邮件已发送！
-                        </div>
-                      ) : outreachDraft ? (
-                        /* 草稿预览 + 编辑 + 发送 */
-                        <div className="space-y-2">
-                          <div className="bg-[#FFFCF7] rounded-xl border border-[#E8E0D0] p-3">
-                            <div className="text-[10px] text-slate-400 mb-1">收件人</div>
-                            <div className="text-xs text-slate-700 font-medium truncate">{outreachDraft.toEmail}</div>
-                            <div className="text-[10px] text-slate-400 mt-2 mb-1">主题</div>
-                            <input
-                              value={outreachDraft.subject}
-                              onChange={(e) => setOutreachDraft({ ...outreachDraft, subject: e.target.value })}
-                              className="w-full text-xs text-[#0B1B2B] bg-transparent border-0 focus:outline-none font-medium"
-                            />
-                            <div className="text-[10px] text-slate-400 mt-2 mb-1">正文</div>
-                            <textarea
-                              value={outreachDraft.body}
-                              onChange={(e) => setOutreachDraft({ ...outreachDraft, body: e.target.value })}
-                              rows={8}
-                              className="w-full text-[11px] text-slate-600 bg-transparent border-0 resize-none focus:outline-none leading-relaxed"
-                            />
-                          </div>
-                          <div className="flex gap-2 w-full">
-                            <button
-                              onClick={() => setOutreachDraft(null)}
-                              className="flex-1 min-w-0 py-2 text-xs text-slate-500 border border-[#E8E0D0] rounded-xl hover:bg-[#F7F3E8] transition-colors truncate"
-                            >
-                              重新生成
-                            </button>
-                            <button
-                              onClick={handleSendDraft}
-                              disabled={isSendingDraft}
-                              className="flex-1 min-w-0 flex items-center justify-center gap-1.5 py-2 bg-[#D4AF37] text-[#0B1B2B] rounded-xl text-xs font-medium hover:bg-[#C5A030] transition-colors disabled:opacity-50"
-                            >
-                              {isSendingDraft ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
-                              {isSendingDraft ? '发送中...' : '确认发送'}
-                            </button>
-                          </div>
-                          {draftError && <p className="text-[11px] text-red-500">{draftError}</p>}
-                        </div>
-                      ) : (
-                        /* 生成草稿按钮 */
-                        <button
-                          onClick={() => handleGenerateDraft(selectedCandidate)}
-                          disabled={isGeneratingDraft || (!selectedCandidate.email && !manualEmail)}
-                          className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#D4AF37] text-[#0B1B2B] rounded-xl text-sm font-medium hover:bg-[#C5A030] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {isGeneratingDraft ? (
-                            <><Loader2 size={16} className="animate-spin" />AI 生成草稿中...</>
-                          ) : (
-                            <><Sparkles size={16} />AI 生成开发信草稿</>
-                          )}
-                        </button>
-                      )}
-                      {draftError && !outreachDraft && <p className="text-xs text-red-500 mt-2">{draftError}</p>}
-                    </div>
-                  )}
-
-                  {/* LinkedIn DM（P6）— 有决策者 linkedIn 时显示 */}
-                  {(() => {
-                    const intel = (selectedCandidate.rawData as {
-                      intelligence?: {
-                        contacts?: {
-                          decisionMakers?: Array<{ name: string; title: string; linkedIn?: string }>;
-                        };
-                      };
-                    } | null)?.intelligence;
-                    const linkedInProfiles = intel?.contacts?.decisionMakers?.filter(p => p.linkedIn) ?? [];
-                    if (linkedInProfiles.length === 0) return null;
-                    const targetPerson = linkedInProfiles[0];
-                    const linkedInUrl = targetPerson.linkedIn!;
-                    return (
-                      <div className="mt-3 pt-3 border-t border-[#E8E0D0]">
-                        <div className="text-[11px] font-medium text-[#0B1B2B] mb-2 flex items-center gap-1.5">
-                          <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-[#0A66C2]" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-                          </svg>
-                          LinkedIn DM — {targetPerson.name}
-                          <a
-                            href={linkedInUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="ml-auto text-[10px] text-[#0A66C2] hover:underline"
-                          >
-                            查看主页 →
-                          </a>
-                        </div>
-
-                        {linkedInDraft?.candidateId === selectedCandidate.id ? (
-                          <div className="space-y-2">
-                            <textarea
-                              value={linkedInDraft.message}
-                              onChange={e => setLinkedInDraft({ ...linkedInDraft, message: e.target.value })}
-                              rows={4}
-                              maxLength={300}
-                              className="w-full px-3 py-2 border border-[#E8E0D0] rounded-xl text-[11px] leading-relaxed resize-none focus:outline-none focus:border-[#0A66C2] bg-white"
-                            />
-                            <div className="flex items-center justify-between text-[10px] text-slate-400">
-                              <span>{linkedInDraft.message.length}/300 字符</span>
-                              <button
-                                onClick={() => setLinkedInDraft(null)}
-                                className="hover:text-slate-600"
-                              >
-                                重新生成
-                              </button>
-                            </div>
-                            <button
-                              onClick={handleCopyLinkedIn}
-                              className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                                linkedInCopied
-                                  ? 'bg-emerald-500 text-white'
-                                  : 'bg-[#0A66C2] text-white hover:bg-[#004182]'
-                              }`}
-                            >
-                              {linkedInCopied ? (
-                                <><CheckCircle2 size={15} />已复制！去 LinkedIn 粘贴发送</>
-                              ) : (
-                                <><Copy size={15} />一键复制 DM</>
-                              )}
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => handleGenerateLinkedIn(selectedCandidate, linkedInUrl)}
-                            disabled={isGeneratingLinkedIn}
-                            className="w-full flex items-center justify-center gap-2 py-2.5 border-2 border-[#0A66C2] text-[#0A66C2] rounded-xl text-sm font-medium hover:bg-[#0A66C2]/5 transition-colors disabled:opacity-50"
-                          >
-                            {isGeneratingLinkedIn ? (
-                              <><Loader2 size={15} className="animate-spin" />AI 生成 DM 中...</>
-                            ) : (
-                              <>
-                                <svg viewBox="0 0 24 24" className="w-4 h-4 fill-[#0A66C2]" xmlns="http://www.w3.org/2000/svg">
-                                  <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-                                </svg>
-                                AI 生成 LinkedIn DM
-                              </>
-                            )}
-                          </button>
-                        )}
-                      </div>
-                    );
-                  })()}
+                  {/* v2.0: LinkedIn DM移至线索库 */}
+                  {/* LinkedIn DM模块已隐藏 - 导入线索库后可继续跟进 */}
 
                   {/* 立即丰富化（P3）*/}
                   {selectedCandidate.status !== 'IMPORTED' && (
@@ -1801,4 +1560,217 @@ export default function RadarCandidatesPage() {
       )}
     </div>
   );
+}
+
+function CandidateMetaPill({
+  label,
+  href,
+  tone = 'default',
+}: {
+  label: string;
+  href?: string;
+  tone?: 'default' | 'success' | 'warning';
+}) {
+  const toneClass =
+    tone === 'success'
+      ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+      : tone === 'warning'
+        ? 'border-amber-200 bg-amber-50 text-amber-700'
+        : 'border-[#E8E0D0] bg-white text-slate-600';
+
+  const content = <span className="truncate">{label}</span>;
+
+  if (href) {
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`inline-flex max-w-full items-center gap-1 rounded-full border px-2.5 py-1 transition-colors hover:border-[#D4AF37]/35 hover:text-[#9A7A1C] ${toneClass}`}
+        onClick={(event) => event.stopPropagation()}
+      >
+        {content}
+        <ExternalLink size={11} className="shrink-0" />
+      </a>
+    );
+  }
+
+  return (
+    <span className={`inline-flex max-w-full items-center rounded-full border px-2.5 py-1 ${toneClass}`}>
+      {content}
+    </span>
+  );
+}
+
+function ReasonPill({ reason }: { reason: string }) {
+  return (
+    <span className="inline-flex items-center rounded-full border border-[#E8E0D0] bg-white px-2.5 py-1 text-[11px] leading-5 text-slate-600">
+      {reason}
+    </span>
+  );
+}
+
+function DetailItem({
+  label,
+  value,
+  href,
+  accent,
+}: {
+  label: string;
+  value: string;
+  href?: string;
+  accent?: string;
+}) {
+  const content = href ? (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`inline-flex items-center gap-1 truncate font-medium hover:text-[#9A7A1C] ${accent || 'text-[#0B1B2B]'}`}
+    >
+      <span className="truncate">{value}</span>
+      <ExternalLink size={12} className="shrink-0" />
+    </a>
+  ) : (
+    <span className={`truncate font-medium ${accent || 'text-[#0B1B2B]'}`}>{value}</span>
+  );
+
+  return (
+    <div className="rounded-2xl border border-[#E8E0D0] bg-[#FFFCF7] px-3 py-3">
+      <div className="text-[11px] uppercase tracking-[0.16em] text-slate-400">{label}</div>
+      <div className="mt-2 text-sm">{content}</div>
+    </div>
+  );
+}
+
+function getCandidateWebsite(candidate: CandidateWithSource) {
+  const rawValue = candidate.website;
+  if (!rawValue) {
+    return { label: '网站待补全', href: undefined };
+  }
+
+  const href = rawValue.startsWith('http') ? rawValue : `https://${rawValue}`;
+
+  try {
+    const hostname = new URL(href).hostname.replace(/^www\./, '');
+    return { label: hostname, href };
+  } catch {
+    return { label: rawValue, href };
+  }
+}
+
+function getCandidateLocation(candidate: CandidateWithSource) {
+  return candidate.buyerCountry || candidate.country || '地区待补全';
+}
+
+function getCandidateIndustry(candidate: CandidateWithSource) {
+  return candidate.industry || '行业待补全';
+}
+
+function getCandidateReasons(candidate: CandidateWithSource, limit = 3) {
+  const reasons = uniqueStrings([
+    ...extractReasonList(candidate.matchExplain),
+    ...extractReasonList(candidate.aiRelevance),
+  ]);
+
+  if (reasons.length) {
+    return reasons.slice(0, limit);
+  }
+
+  return buildFallbackReasons(candidate).slice(0, limit);
+}
+
+function extractReasonList(value: unknown) {
+  if (!value || typeof value !== 'object') return [];
+
+  const record = value as Record<string, unknown>;
+  const directReasons = Array.isArray(record.reasons) ? record.reasons : [];
+  const matchReasons = Array.isArray(record.matchReasons) ? record.matchReasons : [];
+
+  return [...directReasons, ...matchReasons].filter(
+    (reason): reason is string => typeof reason === 'string' && Boolean(reason.trim())
+  );
+}
+
+function buildFallbackReasons(candidate: CandidateWithSource) {
+  const reasons: string[] = [];
+
+  if (candidate.industry) {
+    reasons.push(`命中目标行业：${candidate.industry}`);
+  }
+
+  const location = getCandidateLocation(candidate);
+  if (location !== '地区待补全') {
+    reasons.push(`位于目标市场：${location}`);
+  }
+
+  if (candidate.companySize) {
+    reasons.push(`公司规模符合画像：${candidate.companySize}`);
+  }
+
+  reasons.push(`来自有效来源：${candidate.source.name}`);
+
+  return uniqueStrings(reasons);
+}
+
+function getContactCoverage(candidate: CandidateWithSource) {
+  const rawData = candidate.rawData as CandidateRadarData | null;
+  const decisionMakers = rawData?.intelligence?.contacts?.decisionMakers ?? [];
+
+  if (decisionMakers.length > 0) {
+    return {
+      label: `已识别 ${decisionMakers.length} 位联系人`,
+      tone: 'success' as const,
+    };
+  }
+
+  if (candidate.email || candidate.phone) {
+    return {
+      label: '已有基础联系方式',
+      tone: 'success' as const,
+    };
+  }
+
+  if (candidate.status === 'ENRICHING') {
+    return {
+      label: '联系人识别中',
+      tone: 'warning' as const,
+    };
+  }
+
+  return {
+    label: '待识别联系人',
+    tone: 'default' as const,
+  };
+}
+
+function getEnrichmentStatus(candidate: CandidateWithSource) {
+  if (candidate.status === 'ENRICHING') {
+    return '补全中';
+  }
+
+  if (candidate.enrichedAt) {
+    return `已补全 · ${new Date(candidate.enrichedAt).toLocaleDateString('zh-CN')}`;
+  }
+
+  if (candidate.aiSummary || candidate.matchScore !== null) {
+    return '已完成基础评估';
+  }
+
+  return '待补全';
+}
+
+function formatMatchScore(score: number | null | undefined) {
+  return score === null || score === undefined ? '待评分' : `${Math.round(score)}%`;
+}
+
+function getMatchScoreColor(score: number | null | undefined) {
+  if (score === null || score === undefined) return 'text-slate-400';
+  if (score >= 80) return 'text-emerald-600';
+  if (score >= 60) return 'text-amber-600';
+  return 'text-slate-500';
+}
+
+function uniqueStrings(values: string[]) {
+  return [...new Set(values.map((value) => value.trim()).filter(Boolean))];
 }
