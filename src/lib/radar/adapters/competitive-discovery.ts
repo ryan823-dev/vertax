@@ -7,6 +7,7 @@
 
 import { RadarAdapter, RadarSearchResult, RadarSearchQuery, NormalizedCandidate, AdapterConfig, HealthStatus } from './types';
 import { chatCompletion } from '@/lib/ai-client';
+import { resolveApiKey } from '@/lib/services/api-key-resolver';
 
 // ==================== Adapter 实现 ====================
 
@@ -125,7 +126,7 @@ export class CompetitiveDiscoveryAdapter implements RadarAdapter {
 
     try {
       // 检查 Exa API
-      const apiKey = process.env.EXA_API_KEY;
+      const apiKey = await resolveApiKey('exa');
       if (!apiKey) {
         return {
           healthy: false,
@@ -157,7 +158,7 @@ export class CompetitiveDiscoveryAdapter implements RadarAdapter {
    * 查找竞品的客户公司
    */
   private async findCompetitorCustomers(competitor: string, countries?: string[]): Promise<NormalizedCandidate[]> {
-    const apiKey = process.env.EXA_API_KEY;
+    const apiKey = await resolveApiKey('exa');
     if (!apiKey) {
       console.log('[CompetitiveDiscovery] No EXA_API_KEY');
       return [];
@@ -318,7 +319,7 @@ export class CompetitiveDiscoveryAdapter implements RadarAdapter {
    * 补充公司详细信息
    */
   private async enrichCompanyDetails(companyName: string, competitorName: string) {
-    const apiKey = process.env.EXA_API_KEY;
+    const apiKey = await resolveApiKey('exa');
     if (!apiKey) return null;
 
     try {
@@ -343,7 +344,7 @@ export class CompetitiveDiscoveryAdapter implements RadarAdapter {
    * Exa 搜索
    */
   private async exaSearch(query: string, numResults: number): Promise<Array<{ title?: string; text?: string; url?: string }>> {
-    const apiKey = process.env.EXA_API_KEY;
+    const apiKey = await resolveApiKey('exa');
     if (!apiKey) return [];
 
     const response = await fetch('https://api.exa.ai/search', {

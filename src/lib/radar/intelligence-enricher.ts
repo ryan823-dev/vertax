@@ -15,6 +15,7 @@ import type { Prisma } from '@prisma/client';
 import { PeopleDataLabsAdapter } from './adapters/pdl';
 import { enrichCandidateWithExa } from './exa-enrich';
 import { safeFetch } from '@/lib/ssrf';
+import { resolveApiKey } from '@/lib/services/api-key-resolver';
 
 // ==================== 类型定义 ====================
 
@@ -142,7 +143,7 @@ async function unifiedSearch(
   let results = await exaSearch(query, type, numResults);
   
   // 2. 如果 Exa 没结果且有 Tavily Key，尝试 Tavily
-  if (results.length === 0 && process.env.TAVILY_API_KEY) {
+  if (results.length === 0 && (await resolveApiKey('tavily'))) {
     console.log(`[RadarEnrich] Exa returned no results for "${query}", trying Tavily...`);
     results = await tavilySearch(query, numResults);
   }
@@ -159,7 +160,7 @@ async function exaSearch(
   numResults: number = 10
 ): Promise<SearchResult[]> {
   try {
-    const apiKey = process.env.EXA_API_KEY;
+    const apiKey = await resolveApiKey('exa');
     if (!apiKey) return [];
 
     const response = await fetch('https://api.exa.ai/search', {
@@ -196,7 +197,7 @@ async function exaSearch(
  */
 async function tavilySearch(query: string, numResults: number = 5): Promise<SearchResult[]> {
   try {
-    const apiKey = process.env.TAVILY_API_KEY;
+    const apiKey = await resolveApiKey('tavily');
     if (!apiKey) return [];
 
     const response = await fetch('https://api.tavily.com/search', {
@@ -704,7 +705,7 @@ export async function enrichCandidateIntelligence(
     | null = null;
 
   if (
-    process.env.EXA_API_KEY &&
+    (await resolveApiKey('exa')) &&
     (options?.includeContacts !== false ||
       !candidate.website ||
       !candidate.description ||

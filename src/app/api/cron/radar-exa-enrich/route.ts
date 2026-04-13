@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { enrichCandidateWithExa } from "@/lib/radar/exa-enrich";
+import { resolveApiKey } from "@/lib/services/api-key-resolver";
 
 export const runtime = "nodejs";
 export const maxDuration = 100;
@@ -23,7 +24,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (!process.env.EXA_API_KEY) {
+  if (!(await resolveApiKey("exa"))) {
     return NextResponse.json({ error: "EXA_API_KEY not configured" }, { status: 503 });
   }
 

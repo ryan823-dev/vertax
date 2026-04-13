@@ -80,6 +80,14 @@ const SERVICE_CONFIGS: ServiceConfig[] = [
     pricing: "$1.5/1000次",
   },
   {
+    service: "firecrawl",
+    name: "Firecrawl",
+    category: "网页抓取",
+    description: "LLM-ready web scraping and extraction",
+    docUrl: "https://www.firecrawl.dev/",
+    freeQuota: "按套餐计费",
+  },
+  {
     service: "serper",
     name: "Serper",
     category: "搜索 API",

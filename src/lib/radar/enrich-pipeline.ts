@@ -13,6 +13,7 @@
 import { db } from "@/lib/db";
 import { enrichCandidateWithExa } from "./exa-enrich";
 import { chatCompletion } from "@/lib/ai-client";
+import { resolveApiKey } from "@/lib/services/api-key-resolver";
 
 interface EnrichmentOptions {
   force?: boolean;
@@ -158,7 +159,7 @@ async function huntDecisionMakers(
   roles: string[]
 ): Promise<DecisionMakerResult[]> {
   const EXA_API_URL = "https://api.exa.ai/search";
-  const apiKey = process.env.EXA_API_KEY;
+  const apiKey = await resolveApiKey('exa');
   if (!apiKey) return [];
 
   // 构建搜索 Query

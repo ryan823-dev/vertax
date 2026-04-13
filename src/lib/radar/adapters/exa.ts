@@ -20,6 +20,7 @@ import type {
   AdapterFeatures,
   AdapterConfig,
 } from '@/lib/radar/adapters/types';
+import { resolveApiKey } from '@/lib/services/api-key-resolver';
 
 // 数据源类型标注
 export const EXA_SOURCE_TYPE = 'OFFICIAL_API' as const;
@@ -93,8 +94,13 @@ export class ExaAdapter implements RadarAdapter {
   private timeout: number;
 
   constructor(config: AdapterConfig) {
-    this.apiKey = config.apiKey || process.env.EXA_API_KEY || '';
+    this.apiKey = config.apiKey || '';
     this.timeout = config.timeout || 30000;
+  }
+
+  private async getApiKey(): Promise<string | null> {
+    if (this.apiKey) return this.apiKey;
+    return resolveApiKey('exa');
   }
 
   /**
@@ -103,7 +109,8 @@ export class ExaAdapter implements RadarAdapter {
   async search(query: RadarSearchQuery): Promise<RadarSearchResult> {
     const startTime = Date.now();
 
-    if (!this.apiKey) {
+    const apiKey = await this.getApiKey();
+    if (!apiKey) {
       throw new Error('Exa API key not configured');
     }
 
@@ -167,7 +174,7 @@ export class ExaAdapter implements RadarAdapter {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': this.apiKey,
+          'x-api-key': apiKey,
         },
         body: JSON.stringify(requestBody),
         signal: AbortSignal.timeout(this.timeout),
@@ -210,7 +217,8 @@ export class ExaAdapter implements RadarAdapter {
       excludeDomains?: string[];
     } = {}
   ): Promise<ExaSearchResult[]> {
-    if (!this.apiKey) {
+    const apiKey = await this.getApiKey();
+    if (!apiKey) {
       return [];
     }
 
@@ -219,7 +227,7 @@ export class ExaAdapter implements RadarAdapter {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': this.apiKey,
+          'x-api-key': apiKey,
         },
         body: JSON.stringify({
           query,
@@ -256,7 +264,8 @@ export class ExaAdapter implements RadarAdapter {
       startPublishedDate?: string;
     } = {}
   ): Promise<ExaSearchResult[]> {
-    if (!this.apiKey) {
+    const apiKey = await this.getApiKey();
+    if (!apiKey) {
       return [];
     }
 
@@ -265,7 +274,7 @@ export class ExaAdapter implements RadarAdapter {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': this.apiKey,
+          'x-api-key': apiKey,
         },
         body: JSON.stringify({
           query,
@@ -302,7 +311,8 @@ export class ExaAdapter implements RadarAdapter {
       excludeDomain?: string;
     } = {}
   ): Promise<ExaSearchResult[]> {
-    if (!this.apiKey) {
+    const apiKey = await this.getApiKey();
+    if (!apiKey) {
       return [];
     }
 
@@ -311,7 +321,7 @@ export class ExaAdapter implements RadarAdapter {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': this.apiKey,
+          'x-api-key': apiKey,
         },
         body: JSON.stringify({
           url,
@@ -340,7 +350,8 @@ export class ExaAdapter implements RadarAdapter {
    * 获取内容
    */
   async getContents(ids: string[]): Promise<ExaSearchResult[]> {
-    if (!this.apiKey) {
+    const apiKey = await this.getApiKey();
+    if (!apiKey) {
       return [];
     }
 
@@ -349,7 +360,7 @@ export class ExaAdapter implements RadarAdapter {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': this.apiKey,
+          'x-api-key': apiKey,
         },
         body: JSON.stringify({
           ids,
@@ -465,7 +476,8 @@ export class ExaAdapter implements RadarAdapter {
   async healthCheck(): Promise<HealthStatus> {
     const startTime = Date.now();
 
-    if (!this.apiKey) {
+    const apiKey = await this.getApiKey();
+    if (!apiKey) {
       return {
         healthy: false,
         latency: 0,
@@ -478,7 +490,7 @@ export class ExaAdapter implements RadarAdapter {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': this.apiKey,
+          'x-api-key': apiKey,
         },
         body: JSON.stringify({
           query: 'test',

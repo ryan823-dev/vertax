@@ -64,8 +64,14 @@ export class TavilyAdapter implements RadarAdapter {
   private timeout: number;
 
   constructor(config: AdapterConfig) {
-    this.apiKey = config.apiKey || process.env.TAVILY_API_KEY || '';
+    this.apiKey = config.apiKey || '';
     this.timeout = config.timeout || 30000;
+  }
+
+  private async getApiKey(): Promise<string | null> {
+    if (this.apiKey) return this.apiKey;
+    const { resolveApiKey } = await import('@/lib/services/api-key-resolver');
+    return resolveApiKey('tavily');
   }
 
   /**
@@ -74,7 +80,8 @@ export class TavilyAdapter implements RadarAdapter {
   async search(query: RadarSearchQuery): Promise<RadarSearchResult> {
     const startTime = Date.now();
 
-    if (!this.apiKey) {
+    const apiKey = await this.getApiKey();
+    if (!apiKey) {
       throw new Error('Tavily API key not configured');
     }
 
@@ -122,7 +129,7 @@ export class TavilyAdapter implements RadarAdapter {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`,
+          'Authorization': `Bearer ${apiKey}`,
         },
         body: JSON.stringify(requestBody),
         signal: AbortSignal.timeout(this.timeout),
@@ -166,7 +173,8 @@ export class TavilyAdapter implements RadarAdapter {
       includeImages?: boolean;
     } = {}
   ): Promise<TavilySearchResponse> {
-    if (!this.apiKey) {
+    const apiKey = await this.getApiKey();
+    if (!apiKey) {
       throw new Error('Tavily API key not configured');
     }
 
@@ -174,7 +182,7 @@ export class TavilyAdapter implements RadarAdapter {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey}`,
+        'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         query,
@@ -196,7 +204,8 @@ export class TavilyAdapter implements RadarAdapter {
    * 提取网页内容
    */
   async extract(urls: string[]): Promise<Array<{ url: string; raw_content: string }>> {
-    if (!this.apiKey) {
+    const apiKey = await this.getApiKey();
+    if (!apiKey) {
       throw new Error('Tavily API key not configured');
     }
 
@@ -204,7 +213,7 @@ export class TavilyAdapter implements RadarAdapter {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey}`,
+        'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         urls,
@@ -255,7 +264,8 @@ export class TavilyAdapter implements RadarAdapter {
   async healthCheck(): Promise<HealthStatus> {
     const startTime = Date.now();
 
-    if (!this.apiKey) {
+    const apiKey = await this.getApiKey();
+    if (!apiKey) {
       return {
         healthy: false,
         latency: 0,
@@ -269,7 +279,7 @@ export class TavilyAdapter implements RadarAdapter {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`,
+          'Authorization': `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
           query: 'test',

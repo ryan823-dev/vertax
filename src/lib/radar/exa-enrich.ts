@@ -7,6 +7,8 @@
  * 调用方：/api/cron/radar-enrich 第二阶段
  */
 
+import { resolveApiKey } from '@/lib/services/api-key-resolver';
+
 const EXA_API_URL = "https://api.exa.ai/search";
 
 interface ExaSearchResult {
@@ -34,7 +36,7 @@ interface EnrichResult {
 }
 
 async function exaSearch(query: string, numResults = 3): Promise<ExaSearchResult[]> {
-  const apiKey = process.env.EXA_API_KEY;
+  const apiKey = await resolveApiKey('exa');
   if (!apiKey) throw new Error("EXA_API_KEY not set");
 
   const res = await fetch(EXA_API_URL, {

@@ -14,6 +14,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAdapter, ensureAdaptersInitialized } from '@/lib/radar/adapters';
 import { enrichWithSignalScore } from '@/lib/radar/intelligence-enricher';
+import { resolveApiKey } from '@/lib/services/api-key-resolver';
 
 const MAX_RUN_SECONDS = 55; // Vercel Hobby max is 60s, leave buffer
 const MAX_BATCH_SIZE = 10;  // 深度丰富耗时较长，减小批次
@@ -88,7 +89,7 @@ export async function GET(req: NextRequest) {
 
         // 2. 深度情报丰富 (Exa + Tavily + Hunter.io)
         // 只有配置了 key 才会真正执行
-        if (process.env.EXA_API_KEY || process.env.TAVILY_API_KEY) {
+        if ((await resolveApiKey('exa')) || (await resolveApiKey('tavily'))) {
           const enrichResult = await enrichWithSignalScore(candidate.id);
           if (enrichResult.enrichment.success) {
             stats.intelligenceEnriched++;

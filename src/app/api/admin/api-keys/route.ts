@@ -79,6 +79,7 @@ export async function POST(request: NextRequest) {
       "brave_search",
       "tavily",
       "exa",
+      "firecrawl",
       "serper",
       "google_places",
       "hunter",
@@ -110,7 +111,7 @@ export async function POST(request: NextRequest) {
       ungm: "政府采购",
     };
 
-    const category = serviceCategories[service] || "其他";
+    const category = service === "firecrawl" ? "��ҳץȡ" : (serviceCategories[service] || "其他");
 
     const config = await prisma.apiKeyConfig.upsert({
       where: { service },

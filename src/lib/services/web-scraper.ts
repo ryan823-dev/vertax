@@ -16,6 +16,7 @@
  */
 
 import * as cheerio from 'cheerio';
+import { resolveApiKey } from '@/lib/services/api-key-resolver';
 
 // ==================== 类型定义 ====================
 
@@ -49,7 +50,7 @@ export interface CompanyInfo {
 export interface ScraperOptions {
   maxChars?: number;
   timeout?: number;
-  preferMethod?: 'jina' | 'scrape' | 'static';
+  preferMethod?: 'jina' | 'firecrawl' | 'scrape' | 'static';
 }
 
 // 域名路由策略
@@ -87,6 +88,14 @@ export async function fetchWebContent(
     }
   }
 
+  if (preferMethod === 'firecrawl') {
+    const firecrawlResult = await fetchWithFirecrawl(url, maxChars, timeout);
+    if (firecrawlResult.success) {
+      return firecrawlResult;
+    }
+    return firecrawlResult;
+  }
+
   if (preferMethod === 'jina') {
     return {
       success: false,
@@ -104,7 +113,13 @@ export async function fetchWebContent(
     return scrapeResult;
   }
 
-  // 3. 静态抓取兜底
+  // 3. Firecrawl 兜底
+  const firecrawlResult = await fetchWithFirecrawl(url, maxChars, timeout);
+  if (firecrawlResult.success) {
+    return firecrawlResult;
+  }
+
+  // 4. 静态抓取兜底
   const staticResult = await fetchWithStatic(url, maxChars, timeout);
   return staticResult;
 }
@@ -556,6 +571,81 @@ function extractIndustries(content: string): string[] {
 }
 
 // ==================== 导出 ====================
+
+/**
+ * Firecrawl API
+ */
+async function fetchWithFirecrawl(
+  url: string,
+  maxChars: number,
+  timeout: number
+): Promise<ScrapedContent> {
+  const result: ScrapedContent = {
+    success: false,
+    title: '',
+    content: '',
+    html: '',
+    source: 'firecrawl',
+  };
+
+  try {
+    const apiKey = await resolveApiKey('firecrawl');
+    if (!apiKey) {
+      return result;
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+    const response = await fetch('https://api.firecrawl.dev/v2/scrape', {
+      method: 'POST',
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        url,
+        formats: ['markdown', 'html'],
+        onlyMainContent: true,
+      }),
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      result.error = `Firecrawl error: ${response.status}`;
+      return result;
+    }
+
+    const payload = await response.json() as {
+      data?: {
+        markdown?: string;
+        html?: string;
+        metadata?: {
+          title?: string;
+        };
+      };
+    };
+
+    const markdown = payload.data?.markdown?.trim() || '';
+    const html = payload.data?.html || '';
+
+    if (!markdown && !html) {
+      result.error = 'Firecrawl returned empty content';
+      return result;
+    }
+
+    result.success = (markdown || html).length > 100;
+    result.title = payload.data?.metadata?.title?.trim() || '';
+    result.content = (markdown || html).slice(0, maxChars);
+    result.html = html || markdown;
+    return result;
+  } catch (error) {
+    result.error = error instanceof Error ? error.message : 'Unknown error';
+    return result;
+  }
+}
 
 const webScraperService = {
   fetchWebContent,
