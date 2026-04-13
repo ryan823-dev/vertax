@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { chatCompletion } from "@/lib/ai-client";
+import { normalizeTargetRegions } from "@/lib/regions";
 
 export const maxDuration = 60;
 
@@ -107,7 +108,11 @@ export async function POST() {
       updateData.targetIndustries = parsed.targetIndustries;
     }
     if (parsed.targetRegions && parsed.targetRegions.length > 0) {
-      updateData.targetRegions = parsed.targetRegions;
+      // v2.0: 强制排除中国境内区域 - 出海获客系统只服务海外市场
+      const filteredRegions = normalizeTargetRegions(parsed.targetRegions);
+      if (filteredRegions.length > 0) {
+        updateData.targetRegions = filteredRegions;
+      }
     }
 
     if (Object.keys(updateData).length > 0) {

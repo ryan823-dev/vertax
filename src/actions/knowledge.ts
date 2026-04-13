@@ -206,7 +206,8 @@ export async function analyzeAssets(
       scenarios: (analysis.scenarios as object) || [],
       differentiators: (analysis.differentiators as object) || [],
       targetIndustries: (analysis.targetIndustries as object) || [],
-      targetRegions: (analysis.targetRegions as object) || [],
+      // v2.0: 强制排除中国境内区域 - 出海获客系统只服务海外市场
+      targetRegions: normalizeTargetRegions(analysis.targetRegions) || [],
       buyerPersonas: (analysis.buyerPersonas as object) || [],
       painPoints: (analysis.painPoints as object) || [],
       buyingTriggers: (analysis.buyingTriggers as object) || [],
@@ -222,7 +223,8 @@ export async function analyzeAssets(
       scenarios: (analysis.scenarios as object) || [],
       differentiators: (analysis.differentiators as object) || [],
       targetIndustries: (analysis.targetIndustries as object) || [],
-      targetRegions: (analysis.targetRegions as object) || [],
+      // v2.0: 强制排除中国境内区域 - 出海获客系统只服务海外市场
+      targetRegions: normalizeTargetRegions(analysis.targetRegions) || [],
       buyerPersonas: (analysis.buyerPersonas as object) || [],
       painPoints: (analysis.painPoints as object) || [],
       buyingTriggers: (analysis.buyingTriggers as object) || [],
