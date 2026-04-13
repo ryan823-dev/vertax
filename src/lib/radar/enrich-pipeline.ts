@@ -23,6 +23,7 @@ interface DecisionMakerResult {
   name: string;
   title: string;
   email?: string;
+  phone?: string;
   linkedIn?: string;
   source?: string;
 }
@@ -54,6 +55,7 @@ function normalizeDecisionMakers(value: unknown): DecisionMakerResult[] {
       name: record.name,
       title: record.title,
       email: typeof record.email === "string" ? record.email : undefined,
+      phone: typeof record.phone === "string" ? record.phone : undefined,
       linkedIn: typeof record.linkedIn === "string" ? record.linkedIn : undefined,
       source: typeof record.source === "string" ? record.source : undefined,
     });
@@ -127,6 +129,8 @@ export async function enrichProspectCompany(
               name: p.name,
               role: p.title,
               email: p.email || null,
+              phone: p.phone || null,
+              linkedInUrl: p.linkedIn || null,
               notes: `AI 自动抓取 - ${p.source || 'Exa'}`
             }
           });
@@ -187,8 +191,8 @@ async function huntDecisionMakers(
 
   // 使用 AI 解析人名和职位
   const aiResponse = await chatCompletion([
-    { role: "system", content: "你是一个专业的 B2B 猎头。你的任务是从搜索结果摘要中识别公司的高管人名、具体职位和 LinkedIn。请输出 JSON 数组格式。" },
-    { role: "user", content: `目标公司: ${companyName}\n搜索结果: ${JSON.stringify(allResults)}\n\n请识别并提取联系人。格式: [{ "name": "...", "title": "...", "email": "...", "linkedIn": "..." }]` }
+    { role: "system", content: "你是一个专业的 B2B 猎头。你的任务是从搜索结果摘要中识别公司的高管人名、具体职位、邮箱、电话和 LinkedIn。请输出 JSON 数组格式。" },
+    { role: "user", content: `目标公司: ${companyName}\n搜索结果: ${JSON.stringify(allResults)}\n\n请识别并提取联系人。格式: [{ "name": "...", "title": "...", "email": "...", "phone": "...", "linkedIn": "..." }]` }
   ], {
     model: "qwen-plus",
     temperature: 0.1

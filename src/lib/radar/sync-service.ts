@@ -8,6 +8,7 @@ import {
   type RadarSearchQuery,
   type NormalizedCandidate,
 } from './adapters';
+import { enrichCandidateIntelligence } from './intelligence-enricher';
 import type { RadarTask, RadarSource } from '@prisma/client';
 
 // ==================== 类型定义 ====================
@@ -36,6 +37,9 @@ export interface TaskConfig {
   triggeredBy: string;
   name?: string;
 }
+
+const AUTO_CONTACT_ENRICH_CHANNELS = new Set(['MAPS']);
+const AUTO_CONTACT_ENRICH_CONCURRENCY = 4;
 
 // ==================== 创建任务 ====================
 
@@ -111,6 +115,7 @@ export async function runRadarTask(taskId: string): Promise<SyncResult> {
     errors: [] as string[],
     duration: 0,
   };
+  const autoEnrichQueue: string[] = [];
 
   try {
     const adapter = getAdapter(task.source.code, task.source.adapterConfig as Record<string, unknown>);
@@ -142,7 +147,10 @@ export async function runRadarTask(taskId: string): Promise<SyncResult> {
       // 处理每个候选
       for (const item of result.items) {
         try {
-          await processCandidate(task, item, stats);
+          const processed = await processCandidate(task, item, stats);
+          if (processed.autoEnrich && processed.createdCandidateId) {
+            autoEnrichQueue.push(processed.createdCandidateId);
+          }
         } catch (error) {
           const errMsg = error instanceof Error ? error.message : 'Unknown error';
           stats.errors.push(`Failed to process candidate: ${errMsg}`);
@@ -157,6 +165,10 @@ export async function runRadarTask(taskId: string): Promise<SyncResult> {
       
       // 防止无限循环
       if (page > 100) break;
+    }
+
+    if (autoEnrichQueue.length > 0) {
+      await autoEnrichDiscoveredCandidates(autoEnrichQueue, stats);
     }
 
     stats.duration = Date.now() - startTime;
@@ -246,7 +258,7 @@ async function processCandidate(
   task: RadarTask & { source: RadarSource },
   item: NormalizedCandidate,
   stats: { created: number; duplicates: number; errors: string[] }
-): Promise<void> {
+): Promise<{ createdCandidateId?: string; autoEnrich: boolean }> {
   // 1. 检查是否已存在（同源同ID）
   const existingByExternalId = await prisma.radarCandidate.findUnique({
     where: {
@@ -259,7 +271,7 @@ async function processCandidate(
 
   if (existingByExternalId) {
     stats.duplicates++;
-    return;
+    return { autoEnrich: false };
   }
 
   // 2. 跨源去重：基于网站域名
@@ -273,7 +285,7 @@ async function processCandidate(
     });
     if (existingByWebsite) {
       stats.duplicates++;
-      return;
+      return { autoEnrich: false };
     }
   }
 
@@ -289,7 +301,7 @@ async function processCandidate(
     });
     if (existingByName) {
       stats.duplicates++;
-      return;
+      return { autoEnrich: false };
     }
   }
 
@@ -299,7 +311,7 @@ async function processCandidate(
     : undefined;
 
   // 创建候选记录
-  await prisma.radarCandidate.create({
+  const createdCandidate = await prisma.radarCandidate.create({
     data: {
       tenantId: task.tenantId,
       sourceId: task.sourceId,
@@ -342,6 +354,59 @@ async function processCandidate(
   });
 
   stats.created++;
+  return {
+    createdCandidateId: createdCandidate.id,
+    autoEnrich:
+      createdCandidate.candidateType === 'COMPANY' &&
+      AUTO_CONTACT_ENRICH_CHANNELS.has(task.source.channelType),
+  };
+}
+
+async function autoEnrichDiscoveredCandidates(
+  candidateIds: string[],
+  stats: { created: number; duplicates: number; errors: string[] }
+) {
+  for (let index = 0; index < candidateIds.length; index += AUTO_CONTACT_ENRICH_CONCURRENCY) {
+    const batch = candidateIds.slice(index, index + AUTO_CONTACT_ENRICH_CONCURRENCY);
+
+    await Promise.allSettled(
+      batch.map(async (candidateId) => {
+        await prisma.radarCandidate.update({
+          where: { id: candidateId },
+          data: { status: 'ENRICHING' },
+        });
+
+        try {
+          const result = await enrichCandidateIntelligence(candidateId, {
+            includeFunding: false,
+            includeNews: false,
+            includeContacts: true,
+          });
+
+          if (!result.success && result.errors.length > 0) {
+            stats.errors.push(
+              `[Auto enrich] ${candidateId}: ${result.errors.join('; ')}`
+            );
+          }
+        } catch (error) {
+          const errMsg = error instanceof Error ? error.message : 'Unknown error';
+          stats.errors.push(`[Auto enrich] ${candidateId}: ${errMsg}`);
+        } finally {
+          const current = await prisma.radarCandidate.findUnique({
+            where: { id: candidateId },
+            select: { status: true },
+          });
+
+          if (current?.status === 'ENRICHING') {
+            await prisma.radarCandidate.update({
+              where: { id: candidateId },
+              data: { status: 'NEW' },
+            });
+          }
+        }
+      })
+    );
+  }
 }
 
 // ==================== 取消任务 ====================

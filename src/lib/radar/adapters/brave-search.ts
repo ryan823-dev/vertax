@@ -48,6 +48,24 @@ interface ParsedCompany {
   signals: string[];
 }
 
+function extractJsonPayload(content: string): string {
+  const trimmed = content.trim();
+  const withoutFences = trimmed
+    .replace(/^```json\s*/i, '')
+    .replace(/^```\s*/i, '')
+    .replace(/```$/i, '')
+    .trim();
+
+  const jsonStart = withoutFences.indexOf('{');
+  const jsonEnd = withoutFences.lastIndexOf('}');
+
+  if (jsonStart >= 0 && jsonEnd > jsonStart) {
+    return withoutFences.slice(jsonStart, jsonEnd + 1);
+  }
+
+  return withoutFences;
+}
+
 // ==================== Brave Search 适配器 ====================
 
 export class BraveSearchAdapter implements RadarAdapter {
@@ -256,7 +274,7 @@ ${JSON.stringify(results.slice(0, 20).map(r => ({
         }
       );
 
-      const parsed = JSON.parse(result.content);
+      const parsed = JSON.parse(extractJsonPayload(result.content));
       return (parsed.companies || []).filter((c: ParsedCompany) => c.confidence >= 0.5);
     } catch (error) {
       console.error('Failed to parse companies:', error);

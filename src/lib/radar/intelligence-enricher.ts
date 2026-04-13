@@ -12,6 +12,9 @@
 import { prisma } from '@/lib/prisma';
 import { chatCompletion } from '@/lib/ai-client';
 import type { Prisma } from '@prisma/client';
+import { PeopleDataLabsAdapter } from './adapters/pdl';
+import { enrichCandidateWithExa } from './exa-enrich';
+import { safeFetch } from '@/lib/ssrf';
 
 // ==================== 类型定义 ====================
 
@@ -44,6 +47,11 @@ export interface IntelligenceData {
       emailConfidence?: number;
       phone?: string; // 2026-04-07: 新增电话字段
     }>;
+    companyContacts?: {
+      emails?: string[];
+      phones?: string[];
+      linkedInUrls?: string[];
+    };
   };
 
   // 竞品关系
@@ -65,6 +73,15 @@ export interface BatchEnrichmentResult {
   totalEnriched: number;
   totalFailed: number;
 }
+
+type DecisionMakerContact = {
+  name: string;
+  title: string;
+  linkedIn?: string;
+  email?: string;
+  emailConfidence?: number;
+  phone?: string;
+};
 
 // ==================== 搜索工具封装 ====================
 
@@ -94,6 +111,23 @@ interface TavilySearchApiResult {
 
 interface TavilySearchApiResponse {
   results?: TavilySearchApiResult[];
+}
+
+interface WebsiteContactPoints {
+  emails: string[];
+  phones: string[];
+  linkedInUrls: string[];
+}
+
+interface GooglePlacesIdentityEnrichment {
+  placeId: string;
+  name?: string;
+  website?: string;
+  phone?: string;
+  address?: string;
+  description?: string;
+  googleMapsUrl?: string;
+  rawSnapshot: Record<string, unknown>;
 }
 
 /**
@@ -226,6 +260,268 @@ async function hunterFindEmail(domain: string, fullName: string): Promise<{ emai
   }
 }
 
+function normalizeCompanyDomain(domainOrUrl: string | undefined): string | null {
+  if (!domainOrUrl) return null;
+
+  try {
+    const url = new URL(domainOrUrl.startsWith('http') ? domainOrUrl : `https://${domainOrUrl}`);
+    return url.hostname.replace(/^www\./, '').toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+function extractGooglePlaceId(value: string | undefined | null): string | null {
+  if (!value) return null;
+
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  const directMatch = trimmed.match(/[?&]q=place_id:([^&]+)/i);
+  if (directMatch?.[1]) {
+    return decodeURIComponent(directMatch[1]);
+  }
+
+  const placeIdMatch = trimmed.match(/place_id:([^&]+)/i);
+  if (placeIdMatch?.[1]) {
+    return decodeURIComponent(placeIdMatch[1]);
+  }
+
+  // Google place_id 通常是较长的稳定 ID，保留为兜底解析。
+  if (/^[A-Za-z0-9_-]{20,}$/.test(trimmed)) {
+    return trimmed;
+  }
+
+  return null;
+}
+
+function resolveGooglePlaceId(candidate: {
+  externalId: string;
+  sourceUrl?: string | null;
+  rawData?: unknown;
+  source?: { code?: string | null } | null;
+}): string | null {
+  const rawData =
+    candidate.rawData && typeof candidate.rawData === 'object'
+      ? (candidate.rawData as Record<string, unknown>)
+      : undefined;
+
+  const possibleValues = [
+    candidate.externalId,
+    candidate.sourceUrl,
+    typeof rawData?.place_id === 'string' ? rawData.place_id : undefined,
+    typeof rawData?.placeId === 'string' ? rawData.placeId : undefined,
+    typeof rawData?.google_place_id === 'string' ? rawData.google_place_id : undefined,
+    typeof rawData?.googleMapsUrl === 'string' ? rawData.googleMapsUrl : undefined,
+    typeof rawData?.url === 'string' ? rawData.url : undefined,
+  ];
+
+  for (const value of possibleValues) {
+    const placeId = extractGooglePlaceId(value);
+    if (placeId) {
+      return placeId;
+    }
+  }
+
+  if (candidate.source?.code === 'google_places') {
+    return extractGooglePlaceId(candidate.externalId);
+  }
+
+  return null;
+}
+
+async function enrichFromGooglePlacesIdentity(candidate: {
+  externalId: string;
+  displayName: string;
+  sourceUrl?: string | null;
+  rawData?: unknown;
+  source?: { code?: string | null } | null;
+}): Promise<GooglePlacesIdentityEnrichment | null> {
+  const placeId = resolveGooglePlaceId(candidate);
+  if (!placeId) return null;
+
+  try {
+    const { GooglePlacesAdapter } = await import('./adapters/google-places');
+    const adapter = new GooglePlacesAdapter({} as never);
+    const details = await adapter.getDetails(placeId);
+
+    if (!details) return null;
+
+    const googleMapsUrl = typeof details.additionalInfo?.googleMapsUrl === 'string'
+      ? details.additionalInfo.googleMapsUrl
+      : undefined;
+
+    return {
+      placeId,
+      name: details.name,
+      website: details.website,
+      phone: details.phone,
+      address: details.address,
+      description: details.description,
+      googleMapsUrl,
+      rawSnapshot: {
+        googlePlaces: {
+          enrichedAt: new Date().toISOString(),
+          placeId,
+          name: details.name,
+          website: details.website,
+          phone: details.phone,
+          address: details.address,
+          description: details.description,
+          googleMapsUrl,
+        },
+      },
+    };
+  } catch (error) {
+    console.warn('[RadarIntelligence] Google Places identity lookup failed:', error);
+    return null;
+  }
+}
+
+function normalizeLinkedInUrl(value: unknown): string | null {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function uniqueNonEmpty(values: Array<string | null | undefined>) {
+  return Array.from(
+    new Set(
+      values
+        .filter((value): value is string => typeof value === 'string' && Boolean(value.trim()))
+        .map((value) => value.trim())
+    )
+  );
+}
+
+function mergeDecisionMakers(
+  base: DecisionMakerContact[],
+  incoming: DecisionMakerContact[]
+) {
+  const merged = [...base];
+
+  for (const candidate of incoming) {
+    const key = candidate.name.trim().toLowerCase();
+    if (!key) continue;
+
+    const existing = merged.find((item) => item.name.trim().toLowerCase() === key);
+    if (existing) {
+      existing.title = existing.title || candidate.title;
+      existing.email = existing.email || candidate.email;
+      existing.emailConfidence = existing.emailConfidence || candidate.emailConfidence;
+      existing.phone = existing.phone || candidate.phone;
+      existing.linkedIn = existing.linkedIn || candidate.linkedIn;
+      continue;
+    }
+
+    merged.push(candidate);
+  }
+
+  return merged;
+}
+
+async function searchContactsWithPDL(domain: string): Promise<DecisionMakerContact[]> {
+  if (!process.env.PDL_API_KEY) {
+    return [];
+  }
+
+  try {
+    const adapter = new PeopleDataLabsAdapter({});
+    const contacts = await adapter.searchByCompany(domain, {
+      seniority: ['owner', 'founder', 'c_suite', 'director', 'manager'],
+      limit: 10,
+    });
+
+    return contacts
+      .filter((contact) => contact.displayName && contact.contactRole)
+      .map((contact) => {
+        const rawLinkedIn =
+          contact.rawData &&
+          typeof contact.rawData === 'object' &&
+          typeof (contact.rawData as Record<string, unknown>).linkedin_url === 'string'
+            ? (contact.rawData as Record<string, string>).linkedin_url
+            : undefined;
+
+        return {
+          name: contact.displayName,
+          title: contact.contactRole || 'Unknown',
+          email: contact.email,
+          phone: contact.phone,
+          linkedIn: normalizeLinkedInUrl(rawLinkedIn) || undefined,
+          emailConfidence: contact.email ? 90 : undefined,
+        };
+      });
+  } catch (error) {
+    console.warn('[RadarIntelligence] PDL search failed:', error);
+    return [];
+  }
+}
+
+function extractEmails(text: string): string[] {
+  return uniqueNonEmpty(text.match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g) || []);
+}
+
+function extractPhones(text: string): string[] {
+  return uniqueNonEmpty(
+    text.match(/(?:\+?\d{1,3}[-.\s]?)?(?:\(?\d{2,4}\)?[-.\s]?)?\d{3,4}[-.\s]?\d{4}/g) || []
+  );
+}
+
+function extractLinkedInUrls(text: string): string[] {
+  return uniqueNonEmpty(
+    text.match(/https?:\/\/(?:[\w-]+\.)?linkedin\.com\/[^\s"'<>]+/gi) || []
+  );
+}
+
+async function scanWebsiteContactPoints(website: string): Promise<WebsiteContactPoints> {
+  let baseUrl: URL;
+
+  try {
+    baseUrl = new URL(website.startsWith('http') ? website : `https://${website}`);
+  } catch {
+    return { emails: [], phones: [], linkedInUrls: [] };
+  }
+
+  const targets = [
+    baseUrl.toString(),
+    new URL('/contact', baseUrl).toString(),
+    new URL('/contact-us', baseUrl).toString(),
+    new URL('/about', baseUrl).toString(),
+    new URL('/team', baseUrl).toString(),
+  ];
+
+  const pages = await Promise.allSettled(
+    targets.map(async (url) => {
+      const response = await safeFetch(url, {
+        headers: {
+          'User-Agent': 'VertaxRadarBot/1.0 (+https://vertax.com)',
+        },
+        signal: AbortSignal.timeout(12000),
+      });
+
+      if (!response.ok) {
+        return '';
+      }
+
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.includes('text/html')) {
+        return '';
+      }
+
+      const html = await response.text();
+      return html.slice(0, 120_000);
+    })
+  );
+
+  const texts = pages
+    .filter((page): page is PromiseFulfilledResult<string> => page.status === 'fulfilled')
+    .map((page) => page.value);
+
+  return {
+    emails: uniqueNonEmpty(texts.flatMap(extractEmails)),
+    phones: uniqueNonEmpty(texts.flatMap(extractPhones)),
+    linkedInUrls: uniqueNonEmpty(texts.flatMap(extractLinkedInUrls)),
+  };
+}
+
 // ==================== 业务逻辑函数 ====================
 
 /**
@@ -316,8 +612,15 @@ function extractPhone(text: string): string | null {
 async function searchContacts(companyName: string, domain?: string): Promise<IntelligenceData['contacts']> {
   const query = `"${companyName}" decision makers leadership "LinkedIn" contact information`;
   const searchResults = await unifiedSearch(query, 'auto', 10);
+  const normalizedDomain = normalizeCompanyDomain(domain);
+  let pdlContacts: DecisionMakerContact[] = [];
+  if (normalizedDomain) {
+    pdlContacts = await searchContactsWithPDL(normalizedDomain);
+  }
 
-  if (searchResults.length === 0) return undefined;
+  if (searchResults.length === 0) {
+    return pdlContacts.length > 0 ? { decisionMakers: pdlContacts } : undefined;
+  }
 
   const context = searchResults.map(r => `${r.title}\n${r.text?.slice(0, 500)}`).join('\n\n');
 
@@ -331,15 +634,19 @@ async function searchContacts(companyName: string, domain?: string): Promise<Int
     ], { model: 'qwen-plus', temperature: 0.1 });
 
     const parsed = JSON.parse(aiResponse.content.trim().replace(/```json|```/g, ''));
-    const makers = parsed.decisionMakers || [];
+    let makers = parsed.decisionMakers || [];
+
+    if (pdlContacts.length > 0) {
+      makers = mergeDecisionMakers(makers, pdlContacts);
+    }
 
     // 如果有域名，尝试用 Hunter.io 查找邮箱
-    if (domain && makers.length > 0) {
+    if (normalizedDomain && makers.length > 0) {
       console.log(`[RadarEnrich] Finding emails for ${makers.length} contacts of ${companyName} via Hunter.io...`);
       for (const person of makers) {
         // 只查找还没有邮箱的联系人
         if (!person.email) {
-          const hResult = await hunterFindEmail(domain, person.name);
+          const hResult = await hunterFindEmail(normalizedDomain, person.name);
           if (hResult.email) {
             person.email = hResult.email;
             person.emailConfidence = hResult.confidence;
@@ -381,12 +688,45 @@ export async function enrichCandidateIntelligence(
 
   const candidate = await prisma.radarCandidate.findUnique({
     where: { id: candidateId },
+    include: {
+      source: {
+        select: { code: true },
+      },
+    },
   });
 
   if (!candidate) return { candidateId, success: false, data: {}, errors: ['Not found'] };
 
   const companyName = candidate.displayName;
-  const domain = candidate.website ? candidate.website.replace(/^https?:\/\//, '').replace(/\/.*$/, '') : undefined;
+  const googlePlacesEnrichResult = await enrichFromGooglePlacesIdentity(candidate);
+  let exaEnrichResult:
+    | Awaited<ReturnType<typeof enrichCandidateWithExa>>
+    | null = null;
+
+  if (
+    process.env.EXA_API_KEY &&
+    (options?.includeContacts !== false ||
+      !candidate.website ||
+      !candidate.description ||
+      !candidate.linkedInUrl)
+  ) {
+    try {
+      exaEnrichResult = await enrichCandidateWithExa(
+        companyName,
+        candidate.country || null,
+        candidate.industry || null
+      );
+    } catch (error) {
+      errors.push(`Exa enrich: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  const workingWebsite =
+    candidate.website ||
+    googlePlacesEnrichResult?.website ||
+    exaEnrichResult?.website ||
+    undefined;
+  const domain = normalizeCompanyDomain(workingWebsite) || undefined;
 
   const tasks: Promise<unknown>[] = [];
 
@@ -398,23 +738,59 @@ export async function enrichCandidateIntelligence(
   }
   if (options?.includeContacts !== false) {
     tasks.push(searchContacts(companyName, domain).then(d => { if (d) intelligence.contacts = d; }).catch(e => errors.push(`Contacts: ${e.message}`)));
+    if (workingWebsite) {
+      tasks.push(
+        scanWebsiteContactPoints(workingWebsite)
+          .then((contacts) => {
+            if (!intelligence.contacts) intelligence.contacts = {};
+            intelligence.contacts.companyContacts = contacts;
+          })
+          .catch((e) => errors.push(`Website contacts: ${e.message}`))
+      );
+    }
   }
 
   await Promise.allSettled(tasks);
 
-  if (Object.keys(intelligence).length > 0) {
+  const hasBaseEnrichment = Boolean(
+    googlePlacesEnrichResult?.website ||
+      googlePlacesEnrichResult?.phone ||
+      googlePlacesEnrichResult?.address ||
+      googlePlacesEnrichResult?.description ||
+    exaEnrichResult?.website ||
+      exaEnrichResult?.email ||
+      exaEnrichResult?.linkedInUrl ||
+      exaEnrichResult?.description
+  );
+
+  if (Object.keys(intelligence).length > 0 || hasBaseEnrichment) {
     // 尝试从决策者联系人中提取邮箱和电话
     const foundEmail = intelligence.contacts?.decisionMakers?.find(m => m.email)?.email;
     const foundPhone = intelligence.contacts?.decisionMakers?.find(m => m.phone)?.phone;
+    const companyEmail = intelligence.contacts?.companyContacts?.emails?.[0];
+    const companyPhone = intelligence.contacts?.companyContacts?.phones?.[0];
+    const linkedInUrl =
+      intelligence.contacts?.decisionMakers?.find((m) => m.linkedIn)?.linkedIn ||
+      intelligence.contacts?.companyContacts?.linkedInUrls?.[0] ||
+      exaEnrichResult?.linkedInUrl;
     
     const updateData: Record<string, unknown> = {
       enrichedAt: new Date(),
       // 优先使用 Hunter.io 找到的邮箱，如果没有则保持原有值
-      ...(foundEmail && !candidate.email && { email: foundEmail }),
+      ...((foundEmail || companyEmail || exaEnrichResult?.email) &&
+        !candidate.email && { email: foundEmail || companyEmail || exaEnrichResult?.email }),
       // 回填电话（如果有）
-      ...(foundPhone && !candidate.phone && { phone: foundPhone }),
+      ...((foundPhone || companyPhone || googlePlacesEnrichResult?.phone) &&
+        !candidate.phone && { phone: foundPhone || companyPhone || googlePlacesEnrichResult?.phone }),
+      ...(workingWebsite && !candidate.website && { website: workingWebsite }),
+      ...(googlePlacesEnrichResult?.address && !candidate.address && { address: googlePlacesEnrichResult.address }),
+      ...(googlePlacesEnrichResult?.description && !candidate.description && { description: googlePlacesEnrichResult.description }),
+      ...(exaEnrichResult?.description && !candidate.description && { description: exaEnrichResult.description }),
+      ...(linkedInUrl && !candidate.linkedInUrl && { linkedInUrl }),
       rawData: {
         ...(candidate.rawData as object || {}),
+        ...(googlePlacesEnrichResult?.rawSnapshot || {}),
+        ...(exaEnrichResult?.rawSnapshot || {}),
         intelligence,
       } as object,
     };
@@ -427,7 +803,7 @@ export async function enrichCandidateIntelligence(
 
   return {
     candidateId,
-    success: Object.keys(intelligence).length > 0,
+    success: Object.keys(intelligence).length > 0 || hasBaseEnrichment,
     data: intelligence,
     errors,
   };

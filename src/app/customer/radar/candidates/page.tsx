@@ -22,6 +22,7 @@ import {
   CheckCircle2,
   ExternalLink,
   Mail,
+  Phone,
   DollarSign,
   Filter,
   ChevronRight,
@@ -30,14 +31,13 @@ import {
   Clock,
   ArrowRight,
   Zap,
-  Send,
   SearchCheck,
   Target,
   Users,
   TrendingUp,
   Shield,
+  Linkedin,
   MessageSquare,
-  Copy,
   Trash2,
 } from 'lucide-react';
 import {
@@ -63,7 +63,6 @@ import type { RadarPipelineStatus } from '@/lib/radar/pipeline';
 import type { RadarCandidate, RadarSource } from '@prisma/client';
 import type { CandidateStatus } from '@prisma/client';
 import { RadarHeader } from '@/components/radar/radar-header';
-import { RadarContentMatchPanel } from '@/components/radar/radar-content-match-panel';
 import { toast } from 'sonner';
 
 // ==================== 类型 ====================
@@ -92,7 +91,15 @@ interface CandidateIntelligence {
       title: string;
       email?: string;
       emailConfidence?: number;
+      phone?: string;
+      linkedIn?: string;
+      linkedin?: string;
     }>;
+    companyContacts?: {
+      emails?: string[];
+      phones?: string[];
+      linkedInUrls?: string[];
+    };
   };
   news?: {
     recentHeadlines?: string[];
@@ -221,6 +228,7 @@ export default function RadarCandidatesPage() {
 
   // 手动丰富化状态（P3）
   const [isEnriching, setIsEnriching] = useState(false);
+  const [isBatchEnriching, setIsBatchEnriching] = useState(false);
   const [enrichDone, setEnrichDone] = useState(false);
 
   // Task #125: 排除反馈学习
@@ -333,6 +341,36 @@ export default function RadarCandidatesPage() {
       loadData(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : '批量操作失败');
+    }
+  };
+
+  const handleBatchEnrich = async () => {
+    if (selectedIds.size === 0) return;
+
+    setIsBatchEnriching(true);
+    try {
+      const ids = Array.from(selectedIds);
+      let successCount = 0;
+
+      for (let index = 0; index < ids.length; index += 3) {
+        const batch = ids.slice(index, index + 3);
+        const results = await Promise.allSettled(batch.map((id) => enrichCandidateNow(id)));
+
+        for (const result of results) {
+          if (result.status === 'fulfilled' && result.value.success) {
+            successCount += 1;
+          }
+        }
+      }
+
+      await loadData(true);
+      toast.success('批量丰富情报完成', {
+        description: `成功更新 ${successCount} / ${ids.length} 个候选`,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '批量丰富化失败');
+    } finally {
+      setIsBatchEnriching(false);
     }
   };
 
@@ -781,6 +819,13 @@ export default function RadarCandidatesPage() {
             </span>
             <div className="flex-1" />
             <button
+              onClick={handleBatchEnrich}
+              disabled={isBatchEnriching}
+              className="px-3 py-1.5 bg-sky-500/20 text-sky-300 rounded-lg text-xs font-medium hover:bg-sky-500/30 transition-colors disabled:opacity-50"
+            >
+              {isBatchEnriching ? '丰富中...' : '批量丰富情报'}
+            </button>
+            <button
               onClick={() => handleBatchQualify('A')}
               className="px-3 py-1.5 bg-emerald-500/20 text-emerald-400 rounded-lg text-xs font-medium hover:bg-emerald-500/30 transition-colors"
             >
@@ -1051,7 +1096,10 @@ export default function RadarCandidatesPage() {
                     <DetailItem label="网站" value={getCandidateWebsite(selectedCandidate).label} href={getCandidateWebsite(selectedCandidate).href} />
                     <DetailItem label="国家 / 地区" value={getCandidateLocation(selectedCandidate)} />
                     <DetailItem label="行业" value={getCandidateIndustry(selectedCandidate)} />
-                    <DetailItem label="联系人覆盖" value={getContactCoverage(selectedCandidate).label} />
+                    <DetailItem label="联系人质量" value={getContactCoverage(selectedCandidate).label} />
+                    <DetailItem label="公司电话" value={getCandidatePhone(selectedCandidate).label} href={getCandidatePhone(selectedCandidate).href} />
+                    <DetailItem label="公司邮箱" value={getCandidateEmail(selectedCandidate).label} href={getCandidateEmail(selectedCandidate).href} />
+                    <DetailItem label="公司 LinkedIn" value={getCandidateLinkedIn(selectedCandidate).label} href={getCandidateLinkedIn(selectedCandidate).href} />
                     <DetailItem label="ICP 分数" value={formatMatchScore(selectedCandidate.matchScore)} accent={getMatchScoreColor(selectedCandidate.matchScore)} />
                     <DetailItem label="补全状态" value={getEnrichmentStatus(selectedCandidate)} />
                   </div>
@@ -1217,6 +1265,29 @@ export default function RadarCandidatesPage() {
                                         <span className="text-slate-400 shrink-0">({person.emailConfidence}%)</span>
                                       )}
                                     </a>
+                                  )}
+                                  {person.phone && (
+                                    <a
+                                      href={buildPhoneHref(person.phone)}
+                                      className="text-[10px] text-[#0B1B2B] hover:underline flex items-center gap-1 truncate mt-1"
+                                    >
+                                      <Phone size={9} />
+                                      {person.phone}
+                                    </a>
+                                  )}
+                                  {(person.linkedIn || person.linkedin) && (
+                                    <a
+                                      href={person.linkedIn || person.linkedin}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-[10px] text-[#0A66C2] hover:underline flex items-center gap-1 truncate mt-1"
+                                    >
+                                      <Linkedin size={9} />
+                                      LinkedIn 主页
+                                    </a>
+                                  )}
+                                  {!person.email && !person.phone && !(person.linkedIn || person.linkedin) && (
+                                    <div className="text-[10px] text-amber-600 mt-1">已识别角色，但还没有可触达方式</div>
                                   )}
                                 </div>
                               </div>
@@ -1643,6 +1714,34 @@ function DetailItem({
   );
 }
 
+function buildPhoneHref(phone: string) {
+  return `tel:${phone.replace(/[^\d+]/g, '')}`;
+}
+
+function getCandidatePhone(candidate: CandidateWithSource) {
+  if (candidate.phone) {
+    return { label: candidate.phone, href: buildPhoneHref(candidate.phone) };
+  }
+
+  return { label: '电话待补全', href: undefined };
+}
+
+function getCandidateEmail(candidate: CandidateWithSource) {
+  if (candidate.email) {
+    return { label: candidate.email, href: `mailto:${candidate.email}` };
+  }
+
+  return { label: '邮箱待补全', href: undefined };
+}
+
+function getCandidateLinkedIn(candidate: CandidateWithSource) {
+  if (candidate.linkedInUrl) {
+    return { label: '已找到公司主页', href: candidate.linkedInUrl };
+  }
+
+  return { label: 'LinkedIn 待补全', href: undefined };
+}
+
 function getCandidateWebsite(candidate: CandidateWithSource) {
   const rawValue = candidate.website;
   if (!rawValue) {
@@ -1713,40 +1812,58 @@ function buildFallbackReasons(candidate: CandidateWithSource) {
   return uniqueStrings(reasons);
 }
 
-function getContactCoverage(candidate: CandidateWithSource) {
+function getDecisionMakers(candidate: CandidateWithSource) {
   const rawData = candidate.rawData as CandidateRadarData | null;
-  const decisionMakers = rawData?.intelligence?.contacts?.decisionMakers ?? [];
+  return rawData?.intelligence?.contacts?.decisionMakers ?? [];
+}
+
+function getReachableDecisionMakerCount(candidate: CandidateWithSource) {
+  return getDecisionMakers(candidate).filter(
+    (person) => person.email || person.phone || person.linkedIn || person.linkedin
+  ).length;
+}
+
+function getContactCoverage(candidate: CandidateWithSource) {
+  const decisionMakers = getDecisionMakers(candidate);
+  const reachableCount = getReachableDecisionMakerCount(candidate);
+
+  if (reachableCount > 0) {
+    return {
+      label: `已识别 ${reachableCount} 位可触达联系人`,
+      tone: 'success' as const,
+    };
+  }
 
   if (decisionMakers.length > 0) {
     return {
-      label: `已识别 ${decisionMakers.length} 位联系人`,
-      tone: 'success' as const,
+      label: `已识别 ${decisionMakers.length} 位角色联系人`,
+      tone: 'warning' as const,
     };
   }
 
   if (candidate.email || candidate.phone) {
     return {
-      label: '已有基础联系方式',
+      label: '已有公司级联系方式',
       tone: 'success' as const,
     };
   }
 
   if (candidate.status === 'ENRICHING') {
     return {
-      label: '联系人识别中',
+      label: '自动识别联系人中',
       tone: 'warning' as const,
     };
   }
 
   return {
-    label: '待识别联系人',
+    label: '待补全联系人',
     tone: 'default' as const,
   };
 }
 
 function getEnrichmentStatus(candidate: CandidateWithSource) {
   if (candidate.status === 'ENRICHING') {
-    return '补全中';
+    return '自动补全中';
   }
 
   if (candidate.enrichedAt) {

@@ -1605,7 +1605,7 @@ export async function createRadarSearchProfile(input: CreateRadarSearchProfileIn
       scheduleRule: input.scheduleRule || '0 6 * * *',
       maxRunSeconds: input.maxRunSeconds || 45,
       autoQualify: input.autoQualify ?? true,
-      autoEnrich: input.autoEnrich ?? false,
+      autoEnrich: input.autoEnrich ?? true,
       nextRunAt,
       isActive: true,
     },

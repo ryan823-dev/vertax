@@ -126,8 +126,8 @@ export const radarProfileCreateSchema = z.object({
   scheduleRule: z.string().regex(/^[\d\*\/\-\,\s]+$/, 'Invalid cron expression').optional(),
   isActive: z.boolean().default(true),
   maxRunSeconds: z.number().int().min(10).max(900).default(45),
-  autoQualify: z.boolean().default(false),
-  autoEnrich: z.boolean().default(false),
+  autoQualify: z.boolean().default(true),
+  autoEnrich: z.boolean().default(true),
 });
 
 // ==================== 产品验证 Schema ====================

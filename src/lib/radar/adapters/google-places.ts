@@ -29,6 +29,7 @@ interface PlaceResult {
   formatted_phone_number?: string;
   international_phone_number?: string;
   url?: string; // Google Maps URL
+  editorial_summary?: { overview: string };
 }
 
 interface PlaceDetailsResult extends PlaceResult {
@@ -86,9 +87,10 @@ export class GooglePlacesAdapter implements RadarAdapter {
     
     // 执行 Text Search
     const results = await this.textSearch(searchText, query);
+    const hydratedResults = await this.hydrateResultsWithDetails(results);
     
     // 标准化结果
-    const items = results.map(r => this.normalize(r));
+    const items = hydratedResults.map(r => this.normalize(r));
     
     const duration = Date.now() - startTime;
     
@@ -105,6 +107,37 @@ export class GooglePlacesAdapter implements RadarAdapter {
       // Google Places: 无分页 token 时视为 exhausted
       isExhausted: true,
     };
+  }
+
+  private async hydrateResultsWithDetails(results: PlaceResult[]): Promise<PlaceResult[]> {
+    const hydrated = await Promise.allSettled(
+      results.map(async (result) => {
+        const details = await this.getDetails(result.place_id);
+        if (!details) {
+          return result;
+        }
+
+        return {
+          ...result,
+          formatted_address: result.formatted_address || details.address,
+          international_phone_number:
+            result.international_phone_number || result.formatted_phone_number || details.phone,
+          formatted_phone_number: result.formatted_phone_number || details.phone,
+          website: result.website || details.website,
+          url:
+            result.url ||
+            (typeof details.additionalInfo?.googleMapsUrl === 'string'
+              ? details.additionalInfo.googleMapsUrl
+              : undefined),
+          editorial_summary:
+            typeof details.description === 'string'
+              ? { overview: details.description }
+              : result.editorial_summary,
+        } satisfies PlaceResult;
+      })
+    );
+
+    return hydrated.map((item, index) => (item.status === 'fulfilled' ? item.value : results[index]));
   }
 
   /**
@@ -186,6 +219,7 @@ export class GooglePlacesAdapter implements RadarAdapter {
    */
   async getDetails(externalId: string): Promise<{
     externalId: string;
+    name?: string;
     phone?: string;
     email?: string;
     website?: string;
@@ -217,6 +251,7 @@ export class GooglePlacesAdapter implements RadarAdapter {
       
       return {
         externalId,
+        name: place.name,
         phone: place.international_phone_number || place.formatted_phone_number,
         website: place.website,
         address: place.formatted_address,
@@ -251,6 +286,7 @@ export class GooglePlacesAdapter implements RadarAdapter {
       sourceUrl: place.url || `https://www.google.com/maps/place/?q=place_id:${place.place_id}`,
       displayName: place.name,
       candidateType: 'COMPANY',
+      description: place.editorial_summary?.overview,
       
       website: place.website,
       phone: place.international_phone_number || place.formatted_phone_number,
