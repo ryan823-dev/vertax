@@ -1,9 +1,9 @@
-/**
+﻿/**
  * Cron: Auto-publish
- * 每小时运行，扫描 awaiting_publish 状态且 autoPublishAt 已到期的内容，自动发布并推送。
- */
+ * 姣忓皬鏃惰繍琛岋紝鎵弿 awaiting_publish 鐘舵€佷笖 autoPublishAt 宸插埌鏈熺殑鍐呭锛岃嚜鍔ㄥ彂甯冨苟鎺ㄩ€併€? */
 
 import { NextRequest, NextResponse } from "next/server";
+import { ensureCronAuthorized } from "@/lib/cron-auth";
 import { prisma } from "@/lib/prisma";
 import { pushContentToWebsiteInternal } from "@/actions/publishing";
 import { logActivity, ACTIVITY_ACTIONS, EVENT_CATEGORIES } from "@/lib/utils/activity-logger";
@@ -13,9 +13,9 @@ export const runtime = "nodejs";
 export const maxDuration = 120;
 
 export async function GET(req: NextRequest) {
-  const authHeader = req.headers.get("authorization");
-  if (process.env.NODE_ENV === "production" && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const unauthorizedResponse = ensureCronAuthorized(req);
+  if (unauthorizedResponse) {
+    return unauthorizedResponse;
   }
 
   const now = new Date();
@@ -114,3 +114,4 @@ export async function GET(req: NextRequest) {
     failed: results.filter(r => !r.success).length,
   });
 }
+

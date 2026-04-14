@@ -1,30 +1,25 @@
-/**
- * Cron: 雷达详情补全 & 情报丰富化 (Exa + Tavily + Hunter.io)
+﻿/**
+ * Cron: 闆疯揪璇︽儏琛ュ叏 & 鎯呮姤涓板瘜鍖?(Exa + Tavily + Hunter.io)
  * 
- * 每 6 小时执行一次 (vercel.json: 0 *\/6 * * *)
- * 对 status=ENRICHING 的候选进行深度丰富。
- * 
- * 2026-04-01 增强：
- * - 结合原始适配器 getDetails() 与通用的 Intelligence Enricher
- * - 引入 Hunter.io 查找决策者邮箱
- * - 引入 Tavily 作为备用搜索
+ * 姣?6 灏忔椂鎵ц涓€娆?(vercel.json: 0 *\/6 * * *)
+ * 瀵?status=ENRICHING 鐨勫€欓€夎繘琛屾繁搴︿赴瀵屻€? * 
+ * 2026-04-01 澧炲己锛? * - 缁撳悎鍘熷閫傞厤鍣?getDetails() 涓庨€氱敤鐨?Intelligence Enricher
+ * - 寮曞叆 Hunter.io 鏌ユ壘鍐崇瓥鑰呴偖绠? * - 寮曞叆 Tavily 浣滀负澶囩敤鎼滅储
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { ensureCronAuthorized } from "@/lib/cron-auth";
 import { prisma } from '@/lib/prisma';
 import { getAdapter, ensureAdaptersInitialized } from '@/lib/radar/adapters';
 import { enrichWithSignalScore } from '@/lib/radar/intelligence-enricher';
 import { resolveApiKey } from '@/lib/services/api-key-resolver';
 
 const MAX_RUN_SECONDS = 55; // Vercel Hobby max is 60s, leave buffer
-const MAX_BATCH_SIZE = 10;  // 深度丰富耗时较长，减小批次
-
+const MAX_BATCH_SIZE = 10;  // 娣卞害涓板瘜鑰楁椂杈冮暱锛屽噺灏忔壒娆?
 export async function GET(req: NextRequest) {
-  const authHeader = req.headers.get('authorization');
-  const cronSecret = process.env.CRON_SECRET;
-
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const unauthorizedResponse = ensureCronAuthorized(req);
+  if (unauthorizedResponse) {
+    return unauthorizedResponse;
   }
 
   const deadline = Date.now() + MAX_RUN_SECONDS * 1000;
@@ -40,7 +35,7 @@ export async function GET(req: NextRequest) {
   };
 
   try {
-    // 查询 ENRICHING 候选
+    // Pull the oldest ENRICHING candidates first so stalled items keep moving.
     const candidates = await prisma.radarCandidate.findMany({
       where: { status: 'ENRICHING' },
       include: { source: true },
@@ -61,7 +56,7 @@ export async function GET(req: NextRequest) {
       console.log(`[RadarEnrich] Enriching candidate: ${candidate.displayName} (${candidate.id})`);
       
       try {
-        // 1. 尝试原始适配器的 getDetails (比如从 Google Places 拿电话/详情)
+        // 1. 灏濊瘯鍘熷閫傞厤鍣ㄧ殑 getDetails (姣斿浠?Google Places 鎷跨數璇?璇︽儏)
         try {
           const adapter = getAdapter(
             candidate.source.code,
@@ -87,8 +82,8 @@ export async function GET(req: NextRequest) {
           console.warn(`[RadarEnrich] Adapter getDetails failed for ${candidate.id}, continuing to intelligence enrich...`);
         }
 
-        // 2. 深度情报丰富 (Exa + Tavily + Hunter.io)
-        // 只有配置了 key 才会真正执行
+        // 2. 娣卞害鎯呮姤涓板瘜 (Exa + Tavily + Hunter.io)
+        // 鍙湁閰嶇疆浜?key 鎵嶄細鐪熸鎵ц
         if ((await resolveApiKey('exa')) || (await resolveApiKey('tavily'))) {
           const enrichResult = await enrichWithSignalScore(candidate.id);
           if (enrichResult.enrichment.success) {
@@ -96,7 +91,7 @@ export async function GET(req: NextRequest) {
           }
         }
 
-        // 3. 标记为 QUALIFIED
+        // 3. 鏍囪涓?QUALIFIED
         await prisma.radarCandidate.update({
           where: { id: candidate.id },
           data: { status: 'QUALIFIED' },
@@ -108,7 +103,7 @@ export async function GET(req: NextRequest) {
         stats.failed++;
         stats.errors.push(`${candidate.displayName}: ${error instanceof Error ? error.message : 'Unknown'}`);
         
-        // 报错也要流转状态，避免卡死
+        // 鎶ラ敊涔熻娴佽浆鐘舵€侊紝閬垮厤鍗℃
         await prisma.radarCandidate.update({
           where: { id: candidate.id },
           data: { status: 'QUALIFIED' },
@@ -122,3 +117,4 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }
 }
+

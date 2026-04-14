@@ -1,20 +1,17 @@
-/**
- * Cron: 推送超时检查
- *
- * 每小时执行一次，将 status=PENDING 且已过 timeoutAt 的 PushRecord 标记为 TIMEOUT。
- */
+﻿/**
+ * Cron: 鎺ㄩ€佽秴鏃舵鏌? *
+ * 姣忓皬鏃舵墽琛屼竴娆★紝灏?status=PENDING 涓斿凡杩?timeoutAt 鐨?PushRecord 鏍囪涓?TIMEOUT銆? */
 
 import { NextRequest, NextResponse } from "next/server";
+import { ensureCronAuthorized } from "@/lib/cron-auth";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
-  const authHeader = req.headers.get("authorization");
-  const cronSecret = process.env.CRON_SECRET;
-
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const unauthorizedResponse = ensureCronAuthorized(req);
+  if (unauthorizedResponse) {
+    return unauthorizedResponse;
   }
 
   try {
@@ -35,3 +32,4 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
+

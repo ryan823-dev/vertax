@@ -1,9 +1,10 @@
-/**
+﻿/**
  * Cron: Social metrics sync
- * 每日 UTC 8:00 运行：回拉 Twitter/YouTube 互动数据写回 PostVersion.metrics
+ * 姣忔棩 UTC 8:00 杩愯锛氬洖鎷?Twitter/YouTube 浜掑姩鏁版嵁鍐欏洖 PostVersion.metrics
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { ensureCronAuthorized } from "@/lib/cron-auth";
 import { prisma } from '@/lib/prisma';
 
 export const runtime = 'nodejs';
@@ -57,17 +58,14 @@ async function fetchYouTubeMetrics(
 }
 
 export async function GET(req: NextRequest) {
-  const authHeader = req.headers.get('authorization');
-  if (
-    process.env.NODE_ENV === 'production' &&
-    authHeader !== `Bearer ${process.env.CRON_SECRET}`
-  ) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const unauthorizedResponse = ensureCronAuthorized(req);
+  if (unauthorizedResponse) {
+    return unauthorizedResponse;
   }
 
   const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // 7 days ago
 
-  // 找出 7 天内发布成功且有 platformPostId 的 PostVersions
+  // 鎵惧嚭 7 澶╁唴鍙戝竷鎴愬姛涓旀湁 platformPostId 鐨?PostVersions
   const versions = await prisma.postVersion.findMany({
     where: {
       publishedAt: { gte: since },
@@ -90,7 +88,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ synced: 0, message: 'No recent published versions' });
   }
 
-  // 按 tenant 分组后批量取 SocialAccount credentials
+  // 鎸?tenant 鍒嗙粍鍚庢壒閲忓彇 SocialAccount credentials
   const tenantIds = [...new Set(versions.map(v => v.post.tenantId))];
   const accounts = await prisma.socialAccount.findMany({
     where: { tenantId: { in: tenantIds }, isActive: true },
@@ -123,7 +121,7 @@ export async function GET(req: NextRequest) {
       const apiKey = meta?.apiKey ?? process.env.YOUTUBE_API_KEY ?? '';
       metrics = await fetchYouTubeMetrics(version.platformPostId, apiKey);
     }
-    // LinkedIn public metrics require special scopes — skip for now
+    // LinkedIn public metrics require special scopes 鈥?skip for now
 
     if (metrics) {
       await prisma.postVersion.update({
@@ -139,3 +137,4 @@ export async function GET(req: NextRequest) {
   const synced = results.filter(r => r.success).length;
   return NextResponse.json({ synced, total: versions.length, results });
 }
+

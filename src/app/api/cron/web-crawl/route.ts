@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
+import { ensureCronAuthorized } from "@/lib/cron-auth";
 import { db } from "@/lib/db";
 import { fetchWebContent } from "@/lib/services/web-scraper";
 import { splitTextIntoChunks } from "@/lib/utils/chunk-utils";
@@ -35,18 +36,14 @@ type CrawlQueueMetadata = Record<string, unknown>;
 /**
  * Web Crawl Background Worker
  * 
- * 分段处理爬取任务，每次处理 20 页
- * 由 Vercel Cron 定时调用：每 5 分钟执行一次
- * 
- * 重要：Vercel Cron Jobs 只发送 GET 请求，必须导出 GET handler
+ * 鍒嗘澶勭悊鐖彇浠诲姟锛屾瘡娆″鐞?20 椤? * 鐢?Vercel Cron 瀹氭椂璋冪敤锛氭瘡 5 鍒嗛挓鎵ц涓€娆? * 
+ * 閲嶈锛歏ercel Cron Jobs 鍙彂閫?GET 璇锋眰锛屽繀椤诲鍑?GET handler
  */
 export async function GET(req: NextRequest) {
-  // 验证 cron secret
-  const authHeader = req.headers.get("authorization");
-  const cronSecret = process.env.CRON_SECRET;
-
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // 楠岃瘉 cron secret
+  const unauthorizedResponse = ensureCronAuthorized(req);
+  if (unauthorizedResponse) {
+    return unauthorizedResponse;
   }
 
   try {
@@ -296,3 +293,4 @@ async function processCrawlTask(task: {
 
   return { taskId, processed, failed, skipped };
 }
+

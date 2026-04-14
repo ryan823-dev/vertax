@@ -1,26 +1,26 @@
 /**
- * Cron: 已导入线索的深度丰富化 (Decision-Maker Hunting)
- * 
- * 职责：针对已导入线索库的 Tier A/B 公司，自动寻找决策人并填补联系方式。
- * 周期：每 6 小时 (0 *\/6 * * *)
- * 
- * Task #134
+ * Cron: enrich imported Tier A/B prospects with decision-maker contacts.
+ *
+ * This queue retries failures after a cooling period and rechecks empty
+ * results later so the pipeline can keep filling contact gaps over time.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { createNotification } from '@/actions/notifications';
+import { ensureCronAuthorized } from '@/lib/cron-auth';
 import { db } from '@/lib/db';
 import { enrichProspectCompany } from '@/lib/radar/enrich-pipeline';
-import { createNotification } from '@/actions/notifications';
 
-const MAX_BATCH_SIZE = 5; // 深度丰富包含多个 AI 搜索，批次设小
+const MAX_BATCH_SIZE = 18;
 const MAX_RUN_SECONDS = 50;
+const CONCURRENCY = 3;
+const FAILED_RETRY_HOURS = 6;
+const EMPTY_RETRY_HOURS = 24;
 
 export async function GET(req: NextRequest) {
-  const authHeader = req.headers.get('authorization');
-  const cronSecret = process.env.CRON_SECRET;
-
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const unauthorizedResponse = ensureCronAuthorized(req);
+  if (unauthorizedResponse) {
+    return unauthorizedResponse;
   }
 
   const deadline = Date.now() + MAX_RUN_SECONDS * 1000;
@@ -33,54 +33,89 @@ export async function GET(req: NextRequest) {
   };
 
   try {
-    // 1. 查找 Tier A/B 且缺失联系人且未失败过的公司
-    // 优先处理 Tier A
+    const failedRetryAt = new Date(Date.now() - FAILED_RETRY_HOURS * 60 * 60 * 1000);
+    const emptyRetryAt = new Date(Date.now() - EMPTY_RETRY_HOURS * 60 * 60 * 1000);
+
     const prospects = await db.prospectCompany.findMany({
       where: {
+        deletedAt: null,
         tier: { in: ['A', 'B'] },
-        enrichmentStatus: { not: 'COMPLETED' }, // 包含 null, PENDING, FAILED (可重试)
         contacts: {
-          none: {} // 没有任何联系人
-        }
+          none: { deletedAt: null },
+        },
+        OR: [
+          { enrichmentStatus: null },
+          { enrichmentStatus: 'PENDING' },
+          {
+            enrichmentStatus: 'FAILED',
+            OR: [
+              { lastEnrichedAt: null },
+              { lastEnrichedAt: { lte: failedRetryAt } },
+            ],
+          },
+          {
+            enrichmentStatus: 'COMPLETED',
+            OR: [
+              { lastEnrichedAt: null },
+              { lastEnrichedAt: { lte: emptyRetryAt } },
+            ],
+          },
+        ],
       },
       take: MAX_BATCH_SIZE,
       orderBy: [
-        { tier: 'asc' }, // A before B
-        { lastEnrichedAt: { sort: 'asc', nulls: 'first' } as { sort: 'asc'; nulls: 'first' } }
-      ]
+        { tier: 'asc' },
+        { lastEnrichedAt: { sort: 'asc', nulls: 'first' } as { sort: 'asc'; nulls: 'first' } },
+      ],
     });
 
     if (prospects.length === 0) {
       return NextResponse.json({ ok: true, message: 'No prospects to enrich' });
     }
 
-    for (const company of prospects) {
+    for (let index = 0; index < prospects.length; index += CONCURRENCY) {
       if (Date.now() >= deadline) {
-        stats.skipped++;
-        continue;
+        stats.skipped += prospects.length - index;
+        break;
       }
 
-      console.log(`[ProspectEnrich] Enriching: ${company.name} (${company.id})`);
-      
-      const result = await enrichProspectCompany(company.id);
-      
-      if (result.success) {
-        stats.success++;
-        // Task #139: 发送通知
-        if (result.personCount && result.personCount > 0) {
-          await createNotification({
-            tenantId: company.tenantId,
-            type: 'tier_a_lead',
-            title: `线索已富化：${company.name}`,
-            body: `AI 成功为该企业猎寻到 ${result.personCount} 个关键决策人联系方式，可以开始外联。`,
-            actionUrl: `/customer/radar/prospects?id=${company.id}`,
-          }).catch(() => {});
+      const chunk = prospects.slice(index, index + CONCURRENCY);
+      const results = await Promise.allSettled(
+        chunk.map(async (company) => {
+          console.log(`[ProspectEnrich] Enriching: ${company.name} (${company.id})`);
+          const result = await enrichProspectCompany(company.id);
+          return { company, result };
+        }),
+      );
+
+      for (const settled of results) {
+        stats.processed++;
+
+        if (settled.status === 'fulfilled') {
+          const { company, result } = settled.value;
+          if (result.success) {
+            stats.success++;
+
+            if (result.personCount && result.personCount > 0) {
+              await createNotification({
+                tenantId: company.tenantId,
+                type: 'tier_a_lead',
+                title: `线索已富化：${company.name}`,
+                body: `AI found ${result.personCount} new decision-maker contacts for ${company.name}.`,
+                actionUrl: `/customer/radar/prospects?id=${company.id}`,
+              }).catch(() => undefined);
+            }
+          } else {
+            stats.failed++;
+            stats.errors.push(`${company.name}: ${result.error}`);
+          }
+        } else {
+          stats.failed++;
+          stats.errors.push(
+            settled.reason instanceof Error ? settled.reason.message : 'Unknown enrichment error',
+          );
         }
-      } else {
-        stats.failed++;
-        stats.errors.push(`${company.name}: ${result.error}`);
       }
-      stats.processed++;
     }
 
     return NextResponse.json({ ok: true, ...stats });

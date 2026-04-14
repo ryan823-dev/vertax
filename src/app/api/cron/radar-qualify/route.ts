@@ -11,6 +11,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { ensureCronAuthorized } from "@/lib/cron-auth";
 import { prisma } from '@/lib/prisma';
 import { ensureAdaptersInitialized } from '@/lib/radar/adapters';
 import { Prisma } from '@prisma/client';
@@ -28,11 +29,9 @@ const MAX_BATCH_SIZE = 50;
 const AI_BATCH_SIZE = 10; // AI 每批处理的候选数量
 
 export async function GET(req: NextRequest) {
-  const authHeader = req.headers.get('authorization');
-  const cronSecret = process.env.CRON_SECRET;
-
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const unauthorizedResponse = ensureCronAuthorized(req);
+  if (unauthorizedResponse) {
+    return unauthorizedResponse;
   }
 
   const deadline = Date.now() + MAX_RUN_SECONDS * 1000;
@@ -350,3 +349,4 @@ async function appendExclusionRule(
     // 静默失败
   }
 }
+

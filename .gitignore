@@ -154,3 +154,5 @@ test-*.js
 tmp-*.js
 radar-demo.html
 nul
+
+.vercel

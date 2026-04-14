@@ -1,10 +1,9 @@
-/**
+﻿/**
  * Cron: Auto-push
- * 每小时运行，扫描 status=published 但尚无成功 PushRecord 的内容，批量补推。
- * 防重：跳过已有 PENDING / CONFIRMED 状态 PushRecord 的内容。
- */
+ * 姣忓皬鏃惰繍琛岋紝鎵弿 status=published 浣嗗皻鏃犳垚鍔?PushRecord 鐨勫唴瀹癸紝鎵归噺琛ユ帹銆? * 闃查噸锛氳烦杩囧凡鏈?PENDING / CONFIRMED 鐘舵€?PushRecord 鐨勫唴瀹广€? */
 
 import { NextRequest, NextResponse } from "next/server";
+import { ensureCronAuthorized } from "@/lib/cron-auth";
 import { prisma } from "@/lib/prisma";
 import { createPublisherAdapter, mapVertaxToPaintcell } from "@/lib/publishers";
 import type { PublisherAdapterConfig } from "@/lib/publishers";
@@ -13,15 +12,12 @@ export const runtime = "nodejs";
 export const maxDuration = 120;
 
 export async function GET(req: NextRequest) {
-  const authHeader = req.headers.get("authorization");
-  if (
-    process.env.NODE_ENV === "production" &&
-    authHeader !== `Bearer ${process.env.CRON_SECRET}`
-  ) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const unauthorizedResponse = ensureCronAuthorized(req);
+  if (unauthorizedResponse) {
+    return unauthorizedResponse;
   }
 
-  // 获取所有活跃 WebsiteConfig（支持多站）
+  // 鑾峰彇鎵€鏈夋椿璺?WebsiteConfig锛堟敮鎸佸绔欙級
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const configs: any[] = await (prisma.websiteConfig as any).findMany({
     where: { isActive: true },
@@ -34,7 +30,7 @@ export async function GET(req: NextRequest) {
   const results: { tenantId: string; contentId: string; success: boolean; error?: string }[] = [];
 
   for (const config of configs) {
-    // 找出该租户已发布但没有成功推送记录的内容
+    // 鎵惧嚭璇ョ鎴峰凡鍙戝竷浣嗘病鏈夋垚鍔熸帹閫佽褰曠殑鍐呭
     const unpushed = await prisma.seoContent.findMany({
       where: {
         tenantId: config.tenantId,
@@ -48,13 +44,12 @@ export async function GET(req: NextRequest) {
         },
       },
       include: { category: { select: { slug: true } } },
-      take: 20, // 每次每站最多补推 20 条，防止超时
+      take: 20, // 姣忔姣忕珯鏈€澶氳ˉ鎺?20 鏉★紝闃叉瓒呮椂
       orderBy: { publishedAt: "desc" },
     });
 
     if (unpushed.length === 0) continue;
 
-    // 创建适配器
     let adapter;
     try {
       adapter = createPublisherAdapter({
@@ -158,3 +153,4 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({ pushed, failed, total: results.length, results });
 }
+

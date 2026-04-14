@@ -1,28 +1,24 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
+import { ensureCronAuthorized } from "@/lib/cron-auth";
 import { processScheduledEmails } from "@/lib/outreach/email-sequence";
 
-// ==================== 序列调度 Cron ====================
+// ==================== 搴忓垪璋冨害 Cron ====================
 
 /**
  * GET /api/cron/sequence-scheduler
  *
- * 处理待发送的序列邮件
- * 应配置为每5-15分钟执行一次
- */
+ * 澶勭悊寰呭彂閫佺殑搴忓垪閭欢
+ * 搴旈厤缃负姣?-15鍒嗛挓鎵ц涓€娆? */
 export async function GET(request: NextRequest) {
-  // 验证 cron secret（防止未授权访问）
-  const authHeader = request.headers.get("authorization");
-  const cronSecret = process.env.CRON_SECRET;
-
-  // 安全修复：如果 CRON_SECRET 未设置或不匹配，都拒绝访问
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const unauthorizedResponse = ensureCronAuthorized(request);
+  if (unauthorizedResponse) {
+    return unauthorizedResponse;
   }
 
   try {
     const startTime = Date.now();
 
-    // 处理序列邮件
+    // 澶勭悊搴忓垪閭欢
     const result = await processScheduledEmails();
 
     const duration = Date.now() - startTime;

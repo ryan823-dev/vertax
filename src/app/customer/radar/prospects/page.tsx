@@ -50,9 +50,11 @@ import {
   generateProspectDossier,
   getLatestProspectDossier,
   enrichProspectCompanyAction,
+  enrichProspectCompaniesBatchAction,
   type ProspectCompanyData,
   type ProspectContactData,
   type CreateProspectContactInput,
+  type ProspectEnrichmentItemResult,
 } from '@/actions/radar-v2';
 import { executeSkill } from '@/actions/skills';
 import { SKILL_NAMES } from '@/lib/skills/registry';
@@ -65,6 +67,10 @@ import {
   getCompanyOutreachHistory,
   saveOutreachArtifacts,
   getSavedOutreachArtifacts,
+  listOutreachPackVersions,
+  listOutreachPackTemplates,
+  saveOutreachPackDraft,
+  saveOutreachPackTemplate,
   generateLinkedInDraft,
   recordLinkedInCopy,
   type OutreachRecordItem,
@@ -72,9 +78,11 @@ import {
   type OutreachDraft,
   type CompanyOutreachRecord,
   type LinkedInDraft,
+  type OutreachPackVersionSummary,
 } from '@/actions/outreach-draft';
 import { suggestLinksForProspect } from '@/actions/radar-content-links';
 import { exportProspectsToCSV } from '@/actions/prospect-export';
+import { toast } from 'sonner';
 
 // ==================== 类型 ====================
 
@@ -114,6 +122,20 @@ type ProspectCompanyView = Omit<ProspectCompanyData, 'matchReasons' | 'outreachA
   matchReasons: string[] | null;
   outreachArtifacts: OutreachPackContent[] | null;
 };
+
+interface BatchEnrichmentState {
+  isRunning: boolean;
+  processed: number;
+  total: number;
+  currentLabel: string | null;
+  results: ProspectEnrichmentItemResult[];
+  summary: {
+    total: number;
+    succeeded: number;
+    failed: number;
+    contactsFound: number;
+  } | null;
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -167,19 +189,58 @@ function normalizeProspectCompany(company: ProspectCompanyData): ProspectCompany
   };
 }
 
+function decorateOutreachPack(
+  value: unknown,
+  options?: { timestamp?: string; version?: number }
+): OutreachPackContent | null {
+  const normalized = normalizeOutreachArtifacts(value as ProspectCompanyData['outreachArtifacts'])?.[0] ?? null;
+  if (!normalized) {
+    return null;
+  }
+
+  return {
+    ...normalized,
+    timestamp: normalized.timestamp ?? options?.timestamp,
+    version: normalized.version ?? options?.version,
+  };
+}
+
+function summarizeBatchResults(results: ProspectEnrichmentItemResult[]) {
+  return {
+    total: results.length,
+    succeeded: results.filter((item) => item.success).length,
+    failed: results.filter((item) => !item.success).length,
+    contactsFound: results.reduce((sum, item) => sum + item.personCount, 0),
+  };
+}
+
 export default function RadarProspectsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [companies, setCompanies] = useState<ProspectCompanyView[]>([]);
   const [total, setTotal] = useState(0);
   const [selectedCompany, setSelectedCompany] = useState<ProspectCompanyView | null>(null);
+  const [selectedCompanyIds, setSelectedCompanyIds] = useState<Set<string>>(new Set());
+  const [batchEnrichment, setBatchEnrichment] = useState<BatchEnrichmentState>({
+    isRunning: false,
+    processed: 0,
+    total: 0,
+    currentLabel: null,
+    results: [],
+    summary: null,
+  });
   
   // Outreach Pack state
   const [isGenerating, setIsGenerating] = useState(false);
   const [outreachPack, setOutreachPack] = useState<OutreachPackContent | null>(null);
+  const [selectedOutreachVersionId, setSelectedOutreachVersionId] = useState<string | null>(null);
+  const [outreachVersions, setOutreachVersions] = useState<OutreachPackVersionSummary[]>([]);
+  const [outreachTemplates, setOutreachTemplates] = useState<OutreachPackVersionSummary[]>([]);
   const [activeTab, setActiveTab] = useState<'info' | 'contacts' | 'outreach' | 'dossier'>('info');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingPackDraft, setIsSavingPackDraft] = useState(false);
+  const [isSavingPackTemplate, setIsSavingPackTemplate] = useState(false);
   const [savedContentId, setSavedContentId] = useState<string | null>(null);
 
   // 联系人 state
@@ -236,7 +297,6 @@ export default function RadarProspectsPage() {
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const selectedCompanyId = selectedCompany?.id ?? null;
   const selectedMatchReasons = selectedCompany?.matchReasons ?? [];
-  const selectedOutreachArtifacts = selectedCompany?.outreachArtifacts ?? [];
 
   const handleExport = async () => {
     setIsExporting(true);
@@ -287,6 +347,108 @@ export default function RadarProspectsPage() {
     }
   };
 
+  const toggleCompanySelection = (companyId: string) => {
+    setSelectedCompanyIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(companyId)) {
+        next.delete(companyId);
+      } else {
+        next.add(companyId);
+      }
+      return next;
+    });
+  };
+
+  const toggleSelectAllCompanies = () => {
+    setSelectedCompanyIds((prev) => {
+      if (prev.size === companies.length) {
+        return new Set();
+      }
+      return new Set(companies.map((company) => company.id));
+    });
+  };
+
+  const runBatchEnrichment = async (companyIds: string[]) => {
+    const ids = Array.from(new Set(companyIds.filter(Boolean)));
+    if (ids.length === 0) {
+      return;
+    }
+
+    setBatchEnrichment({
+      isRunning: true,
+      processed: 0,
+      total: ids.length,
+      currentLabel: null,
+      results: [],
+      summary: null,
+    });
+
+    const companyMap = new Map(companies.map((company) => [company.id, company.name]));
+    const aggregatedResults: ProspectEnrichmentItemResult[] = [];
+
+    try {
+      for (let index = 0; index < ids.length; index += 3) {
+        const chunk = ids.slice(index, index + 3);
+        const label = chunk.map((id) => companyMap.get(id)).filter(Boolean).join(' / ');
+
+        setBatchEnrichment((prev) => ({
+          ...prev,
+          currentLabel: label || null,
+        }));
+
+        const response = await enrichProspectCompaniesBatchAction(chunk);
+        aggregatedResults.push(...response.results);
+
+        setBatchEnrichment({
+          isRunning: true,
+          processed: Math.min(ids.length, index + chunk.length),
+          total: ids.length,
+          currentLabel: label || null,
+          results: [...aggregatedResults],
+          summary: summarizeBatchResults(aggregatedResults),
+        });
+      }
+
+      await loadData();
+
+      if (selectedCompanyId && ids.includes(selectedCompanyId)) {
+        const refreshedContacts = await getProspectContacts(selectedCompanyId).catch(() => []);
+        setContacts(refreshedContacts);
+      }
+
+      const summary = summarizeBatchResults(aggregatedResults);
+      toast.success('批量富化完成', {
+        description: `成功 ${summary.succeeded}/${summary.total} 条，新增 ${summary.contactsFound} 位联系人。`,
+      });
+
+      setSelectedCompanyIds((prev) => {
+        const next = new Set(prev);
+        ids.forEach((id) => next.delete(id));
+        return next;
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '批量富化失败';
+      setError(message);
+      toast.error(message);
+    } finally {
+      setBatchEnrichment((prev) => ({
+        ...prev,
+        isRunning: false,
+        currentLabel: null,
+        summary: prev.summary ?? summarizeBatchResults(prev.results),
+      }));
+    }
+  };
+
+  const handleBatchEnrichSelected = async () => {
+    await runBatchEnrichment(Array.from(selectedCompanyIds));
+  };
+
+  const handleRetryFailedEnrichment = async () => {
+    const failedIds = batchEnrichment.results.filter((item) => !item.success).map((item) => item.companyId);
+    await runBatchEnrichment(failedIds);
+  };
+
   const [isExporting, setIsExporting] = useState(false);
 
   // 加载数据
@@ -327,6 +489,19 @@ export default function RadarProspectsPage() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    setSelectedCompanyIds((prev) => {
+      const nextIds = companies.filter((company) => prev.has(company.id)).map((company) => company.id);
+      const next = new Set(nextIds);
+      const unchanged = next.size === prev.size && nextIds.every((id) => prev.has(id));
+      return unchanged ? prev : next;
+    });
+
+    if (selectedCompany && !companies.some((company) => company.id === selectedCompany.id)) {
+      setSelectedCompany(null);
+    }
+  }, [companies, selectedCompany]);
 
   // 加载联系人（contacts / outreach tab 都需要）
   useEffect(() => {
@@ -381,20 +556,54 @@ export default function RadarProspectsPage() {
 
   // 加载已保存的外联包 (Task #130)
   useEffect(() => {
-    if (!selectedCompanyId || activeTab !== 'outreach' || outreachPack || isGenerating) {
+    if (!selectedCompanyId || activeTab !== 'outreach') {
       return;
     }
 
-    getSavedOutreachArtifacts(selectedCompanyId).then((res) => {
-      const latestArtifact = normalizeOutreachArtifacts(
-        (res.success ? res.artifacts : null) as ProspectCompanyData['outreachArtifacts']
-      )?.[0] ?? null;
+    const loadOutreachWorkspace = async () => {
+      try {
+        const [savedRes, versionsRes, templatesRes] = await Promise.all([
+          getSavedOutreachArtifacts(selectedCompanyId),
+          listOutreachPackVersions(selectedCompanyId),
+          listOutreachPackTemplates(),
+        ]);
 
-      if (latestArtifact) {
-        setOutreachPack(latestArtifact);
+        const versions = versionsRes.success ? versionsRes.versions || [] : [];
+        const templates = templatesRes.success ? templatesRes.templates || [] : [];
+        const latestVersion = versions[0];
+        const latestVersionPack = latestVersion
+          ? decorateOutreachPack(latestVersion.content, {
+              timestamp: latestVersion.createdAt.toISOString(),
+              version: latestVersion.version,
+            })
+          : null;
+
+        setOutreachVersions(versions);
+        setOutreachTemplates(templates);
+
+        if (!outreachPack) {
+          if (latestVersionPack) {
+            setOutreachPack(latestVersionPack);
+            setSelectedOutreachVersionId(latestVersion.id);
+            return;
+          }
+
+          const cachedArtifact = decorateOutreachPack(
+            (savedRes.success ? savedRes.artifacts : null) as ProspectCompanyData['outreachArtifacts']
+          );
+
+          if (cachedArtifact) {
+            setOutreachPack(cachedArtifact);
+            setSelectedOutreachVersionId(null);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load outreach workspace:', err);
       }
-    });
-  }, [selectedCompanyId, activeTab, outreachPack, isGenerating]);
+    };
+
+    void loadOutreachWorkspace();
+  }, [selectedCompanyId, activeTab, outreachPack]);
 
   // 联系人 CRUD 操作
   const handleCreateContact = async () => {
@@ -526,6 +735,7 @@ export default function RadarProspectsPage() {
         const pack = result.output as unknown as OutreachPackContent;
         const newEntry = { ...pack, timestamp: new Date().toISOString() };
         setOutreachPack(newEntry);
+        setSelectedOutreachVersionId(result.versionId || null);
         
         // Task #130: 持久化保存生成的工具包
         await saveOutreachArtifacts(company.id, pack);
@@ -538,6 +748,17 @@ export default function RadarProspectsPage() {
             outreachArtifacts: [newEntry, ...(prev.outreachArtifacts || [])].slice(0, 10)
           };
         });
+
+        const [versionsRes, templatesRes] = await Promise.all([
+          listOutreachPackVersions(company.id),
+          listOutreachPackTemplates(),
+        ]);
+        if (versionsRes.success) {
+          setOutreachVersions(versionsRes.versions || []);
+        }
+        if (templatesRes.success) {
+          setOutreachTemplates(templatesRes.templates || []);
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : '生成外联包失败');
@@ -547,6 +768,89 @@ export default function RadarProspectsPage() {
   };
 
   // 复制到剪贴板
+  const handleSelectOutreachVersion = (version: OutreachPackVersionSummary) => {
+    const pack = decorateOutreachPack(version.content, {
+      timestamp: version.createdAt.toISOString(),
+      version: version.version,
+    });
+    if (!pack) return;
+
+    setOutreachPack(pack);
+    setSelectedOutreachVersionId(version.id);
+  };
+
+  const handleApplyTemplate = (template: OutreachPackVersionSummary) => {
+    const pack = decorateOutreachPack(template.content, {
+      timestamp: template.createdAt.toISOString(),
+      version: template.version,
+    });
+    if (!pack) return;
+
+    setOutreachPack(pack);
+    setSelectedOutreachVersionId(template.id);
+    toast.success('模板已载入当前工作台', {
+      description: template.templateName || template.sourceCompanyName || '可复用模板',
+    });
+  };
+
+  const handleSavePackDraft = async () => {
+    if (!selectedCompany || !outreachPack) return;
+
+    setIsSavingPackDraft(true);
+    try {
+      const response = await saveOutreachPackDraft(
+        selectedCompany.id,
+        outreachPack,
+        `Draft snapshot for ${selectedCompany.name}`
+      );
+
+      if (!response.success || !response.version) {
+        throw new Error(response.error || '保存草稿失败');
+      }
+
+      setSelectedOutreachVersionId(response.version.id);
+      setOutreachVersions((prev) => [response.version!, ...prev.filter((item) => item.id !== response.version!.id)]);
+      toast.success('外联草稿已保存', {
+        description: `版本 v${response.version.version} 已写入历史记录。`,
+      });
+      await loadData();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '保存草稿失败';
+      setError(message);
+      toast.error(message);
+    } finally {
+      setIsSavingPackDraft(false);
+    }
+  };
+
+  const handleSavePackTemplate = async () => {
+    if (!selectedCompany || !outreachPack) return;
+
+    setIsSavingPackTemplate(true);
+    try {
+      const response = await saveOutreachPackTemplate(
+        selectedCompany.id,
+        outreachPack,
+        `${selectedCompany.name} reusable template`
+      );
+
+      if (!response.success || !response.template) {
+        throw new Error(response.error || '保存模板失败');
+      }
+
+      setOutreachTemplates((prev) => [response.template!, ...prev.filter((item) => item.id !== response.template!.id)].slice(0, 12));
+      toast.success('复用模板已保存', {
+        description: response.template.templateName || selectedCompany.name,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '保存模板失败';
+      setError(message);
+      toast.error(message);
+    } finally {
+      setIsSavingPackTemplate(false);
+    }
+  };
+
   const handleCopy = async (text: string, id: string) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -1008,7 +1312,81 @@ export default function RadarProspectsPage() {
       <div className="grid gap-6 xl:grid-cols-[minmax(320px,0.95fr)_minmax(0,1.55fr)]">
           {/* Companies List */}
         <div className="min-w-0 rounded-[28px] border border-[#E8E0D0] bg-[#F7F3E8] p-6 shadow-[0_18px_36px_-28px_rgba(11,27,43,0.35)] xl:sticky xl:top-6">
-          <h3 className="font-bold text-[#0B1B2B] mb-4">线索列表</h3>
+          <div className="mb-4 space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h3 className="font-bold text-[#0B1B2B]">线索列表</h3>
+                <p className="text-xs text-slate-500 mt-1">当前共 {total} 条线索</p>
+              </div>
+              {companies.length > 0 && (
+                <label className="flex items-center gap-2 text-xs text-slate-500">
+                  <input
+                    type="checkbox"
+                    checked={companies.length > 0 && selectedCompanyIds.size === companies.length}
+                    onChange={toggleSelectAllCompanies}
+                    className="w-4 h-4 rounded border-slate-300 text-[#D4AF37] focus:ring-[#D4AF37]"
+                  />
+                  全选
+                </label>
+              )}
+            </div>
+
+            {companies.length > 0 && (
+              <div className="rounded-2xl border border-[#D4AF37]/20 bg-[#FFFCF7] p-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs font-medium text-[#0B1B2B]">
+                    已选 {selectedCompanyIds.size} 条
+                  </span>
+                  <button
+                    onClick={handleBatchEnrichSelected}
+                    disabled={selectedCompanyIds.size === 0 || batchEnrichment.isRunning}
+                    className="px-3 py-1.5 rounded-lg bg-[#0B1220] text-[#D4AF37] text-xs font-medium disabled:opacity-50"
+                  >
+                    {batchEnrichment.isRunning ? '富化中...' : '批量富化联系人'}
+                  </button>
+                  <button
+                    onClick={handleRetryFailedEnrichment}
+                    disabled={batchEnrichment.isRunning || !batchEnrichment.results.some((item) => !item.success)}
+                    className="px-3 py-1.5 rounded-lg border border-[#E8E0D0] bg-white text-xs font-medium text-slate-600 disabled:opacity-50"
+                  >
+                    重试失败项
+                  </button>
+                </div>
+
+                {(batchEnrichment.isRunning || batchEnrichment.summary) && (
+                  <div className="mt-3 rounded-xl bg-[#F7F3E8] border border-[#E8E0D0] p-3">
+                    <div className="flex items-center justify-between gap-3 text-xs">
+                      <div>
+                        <p className="font-medium text-[#0B1B2B]">
+                          {batchEnrichment.isRunning
+                            ? `进行中 ${batchEnrichment.processed}/${batchEnrichment.total}`
+                            : `已完成 ${batchEnrichment.summary?.succeeded || 0}/${batchEnrichment.summary?.total || 0}`}
+                        </p>
+                        {batchEnrichment.currentLabel && (
+                          <p className="text-slate-500 mt-1 truncate">{batchEnrichment.currentLabel}</p>
+                        )}
+                      </div>
+                      {batchEnrichment.summary && (
+                        <div className="text-right text-slate-500">
+                          <p>新增 {batchEnrichment.summary.contactsFound} 位联系人</p>
+                          <p>失败 {batchEnrichment.summary.failed} 条</p>
+                        </div>
+                      )}
+                    </div>
+                    {batchEnrichment.results.some((item) => !item.success) && !batchEnrichment.isRunning && (
+                      <div className="mt-2 space-y-1">
+                        {batchEnrichment.results.filter((item) => !item.success).slice(0, 3).map((item) => (
+                          <p key={item.companyId} className="text-[11px] text-red-500">
+                            {item.companyName}: {item.error || '富化失败'}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
           
           {companies.length === 0 ? (
             <div className="relative rounded-2xl overflow-hidden py-16 text-center" style={{ background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)' }}>
@@ -1033,6 +1411,7 @@ export default function RadarProspectsPage() {
               {companies.map((company) => {
                 const statusInfo = getStatusLabel(company.status);
                 const isSelected = selectedCompany?.id === company.id;
+                const isChecked = selectedCompanyIds.has(company.id);
                 const matchReasons = company.matchReasons || [];
                 
                 return (
@@ -1043,6 +1422,9 @@ export default function RadarProspectsPage() {
                       // Task #124: 加载已保存的外联工具包
                       const latestArtifact = company.outreachArtifacts?.[0] ?? null;
                       setOutreachPack(isSelected ? null : latestArtifact);
+                      setSelectedOutreachVersionId(null);
+                      setOutreachVersions([]);
+                      setOutreachTemplates([]);
                       setActiveTab('info');
                       setContacts([]);
                       setDossierData(null);
@@ -1057,6 +1439,16 @@ export default function RadarProspectsPage() {
                   >
                     {/* 第一行: 公司名 + 状态 */}
                     <div className="flex items-center gap-2 mb-2">
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          toggleCompanySelection(company.id);
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-4 h-4 rounded border-slate-300 text-[#D4AF37] focus:ring-[#D4AF37]"
+                      />
                       <Building2 size={14} className="text-[#D4AF37] shrink-0" />
                       <h4 className="font-medium text-[#0B1B2B] text-sm truncate flex-1">
                         {company.name}
@@ -1094,12 +1486,19 @@ export default function RadarProspectsPage() {
                       ) : (
                         <div className="flex-1" />
                       )}
-                      {(company._count?.contacts ?? 0) > 0 && (
-                        <span className="text-[10px] text-slate-400 flex items-center gap-1 shrink-0">
-                          <Users size={10} />
-                          {company._count!.contacts} 联系人
-                        </span>
-                      )}
+                      <div className="flex items-center gap-2 shrink-0">
+                        {company.enrichmentStatus && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 uppercase">
+                            {company.enrichmentStatus}
+                          </span>
+                        )}
+                        {(company._count?.contacts ?? 0) > 0 && (
+                          <span className="text-[10px] text-slate-400 flex items-center gap-1 shrink-0">
+                            <Users size={10} />
+                            {company._count!.contacts} 联系人
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
@@ -1538,23 +1937,107 @@ export default function RadarProspectsPage() {
                 /* Outreach Tab */
                 <div className="space-y-4">
                   {/* Task #124: Version Selector */}
-                  {selectedOutreachArtifacts.length > 1 && (
-                    <div className="flex items-center gap-2 mb-4 p-2 bg-[#D4AF37]/5 rounded-xl border border-[#D4AF37]/20">
-                      <span className="text-[10px] text-slate-500 font-medium uppercase tracking-wider ml-2">历史方案:</span>
-                      <div className="flex gap-1 overflow-x-auto no-scrollbar">
-                        {selectedOutreachArtifacts.map((entry, idx) => (
+                  {(outreachVersions.length > 0 || outreachTemplates.length > 0 || outreachPack) && (
+                    <div className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
+                      <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-4">
+                        <div className="flex items-center justify-between gap-3 mb-3">
+                          <div>
+                            <h4 className="font-bold text-[#0B1B2B]">外联工作台</h4>
+                            <p className="text-xs text-slate-500 mt-1">保存草稿快照、回看历史版本，并沉淀可复用模板。</p>
+                          </div>
+                          {outreachPack?.version && (
+                            <span className="text-[10px] px-2 py-1 rounded-full bg-[#D4AF37]/10 text-[#9A7A1C]">
+                              v{outreachPack.version}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-2">
                           <button
-                            key={idx}
-                            onClick={() => setOutreachPack(entry)}
-                            className={`px-2 py-1 rounded text-[10px] whitespace-nowrap transition-all ${
-                              outreachPack?.timestamp === entry.timestamp
-                                ? 'bg-[#D4AF37] text-[#0B1220] font-bold shadow-sm'
-                                : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-                            }`}
+                            onClick={handleSavePackDraft}
+                            disabled={!outreachPack || isSavingPackDraft}
+                            className="px-3 py-2 rounded-xl bg-[#0B1220] text-[#D4AF37] text-xs font-medium disabled:opacity-50"
                           >
-                            版本 {entry.version || selectedOutreachArtifacts.length - idx} ({new Date(entry.timestamp || Date.now()).toLocaleDateString()})
+                            {isSavingPackDraft ? '保存中...' : '保存草稿快照'}
                           </button>
-                        ))}
+                          <button
+                            onClick={handleSavePackTemplate}
+                            disabled={!outreachPack || isSavingPackTemplate}
+                            className="px-3 py-2 rounded-xl border border-[#D4AF37]/30 bg-white text-xs font-medium text-[#9A7A1C] disabled:opacity-50"
+                          >
+                            {isSavingPackTemplate ? '保存中...' : '保存为复用模板'}
+                          </button>
+                          <button
+                            onClick={handleSaveToLibrary}
+                            disabled={!outreachPack || isSaving}
+                            className="px-3 py-2 rounded-xl border border-[#E8E0D0] bg-white text-xs font-medium text-slate-600 disabled:opacity-50"
+                          >
+                            {isSaving ? '保存中...' : '保存到内容库'}
+                          </button>
+                        </div>
+                        {savedContentId && (
+                          <p className="text-[11px] text-emerald-600 mt-3">内容库草稿已保存，可继续审核和复用。</p>
+                        )}
+                      </div>
+
+                      <div className="space-y-4">
+                        {outreachVersions.length > 0 && (
+                          <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-4">
+                            <h4 className="font-bold text-[#0B1B2B]">版本历史</h4>
+                            <div className="mt-3 space-y-2 max-h-48 overflow-y-auto pr-1">
+                              {outreachVersions.map((version) => (
+                                <button
+                                  key={version.id}
+                                  onClick={() => handleSelectOutreachVersion(version)}
+                                  className={`w-full text-left rounded-xl border px-3 py-2 transition-colors ${
+                                    selectedOutreachVersionId === version.id
+                                      ? 'border-[#D4AF37] bg-[#D4AF37]/5'
+                                      : 'border-[#E8E0D0] bg-white hover:border-[#D4AF37]/40'
+                                  }`}
+                                >
+                                  <div className="flex items-center justify-between gap-2">
+                                    <span className="text-xs font-medium text-[#0B1B2B]">
+                                      v{version.version}
+                                    </span>
+                                    <span className="text-[10px] text-slate-400">
+                                      {new Date(version.createdAt).toLocaleDateString()}
+                                    </span>
+                                  </div>
+                                  <p className="text-[11px] text-slate-500 mt-1">
+                                    {version.changeNote || version.createdByName || '已保存版本'}
+                                  </p>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {outreachTemplates.length > 0 && (
+                          <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-4">
+                            <h4 className="font-bold text-[#0B1B2B]">模板库</h4>
+                            <div className="mt-3 space-y-2 max-h-48 overflow-y-auto pr-1">
+                              {outreachTemplates.map((template) => (
+                                <div key={template.id} className="rounded-xl border border-[#E8E0D0] bg-white px-3 py-2">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <div>
+                                      <p className="text-xs font-medium text-[#0B1B2B]">
+                                        {template.templateName || '可复用模板'}
+                                      </p>
+                                      <p className="text-[11px] text-slate-500 mt-1">
+                                        {template.sourceCompanyName || '已沉淀模板'}
+                                      </p>
+                                    </div>
+                                    <button
+                                      onClick={() => handleApplyTemplate(template)}
+                                      className="px-2.5 py-1 rounded-lg bg-[#0B1220] text-[#D4AF37] text-[11px] font-medium"
+                                    >
+                                      载入
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
@@ -2362,14 +2845,14 @@ export default function RadarProspectsPage() {
                           );
                         };
 
-                        const companyOverview = dossier.companyOverview as { summary?: string; keyFacts?: Array<{ label: string; value: string; source: string }>; dataGaps?: string[] } | undefined;
-                        const decisionMakers = dossier.decisionMakerAnalysis as { contacts?: Array<{ name: string; role: string; seniority: string; influence: string; approachAngle: string; source: string }>; orgStructureInsight?: string; dataGaps?: string[] } | undefined;
+                        const companyOverview = dossier.companyOverview as { summary?: string; keyFacts?: Array<{ label: string; value: string }>; dataGaps?: string[] } | undefined;
+                        const decisionMakers = dossier.decisionMakerAnalysis as { contacts?: Array<{ name: string; role: string; seniority: string; influence: string; approachAngle: string }>; orgStructureInsight?: string; dataGaps?: string[] } | undefined;
                         const bizOpps = dossier.businessOpportunities as { opportunities?: Array<{ title: string; stage: string; value: string; deadline: string; relevance: string }>; dataGaps?: string[] } | undefined;
                         const intel = dossier.intelligenceSummary as { funding?: string; news?: string; competitors?: string; dataGaps?: string[] } | undefined;
                         const matchAnalysis = dossier.matchAnalysis as { overallScore?: number | null; matchReasons?: string[]; relevanceInsights?: string[]; dataGaps?: string[] } | undefined;
                         const riskAlerts = dossier.riskAlerts as Array<{ risk: string; severity: string; basis: string }> | undefined;
                         const approach = dossier.recommendedApproach as { nextSteps?: Array<{ action: string; priority: string; rationale: string }>; talkingPoints?: string[]; avoidTopics?: string[] } | undefined;
-                        const dataSources = dossier.dataSources as Array<{ field: string; source: string; status: string }> | undefined;
+                        const dataSources = undefined as Array<{ field: string; source: string; status: string }> | undefined;
 
                         return (
                           <>
@@ -2389,7 +2872,6 @@ export default function RadarProspectsPage() {
                                       <div key={i} className="bg-[#FFFCF7] rounded-lg border border-[#E8E0D0] px-3 py-2">
                                         <div className="text-[10px] text-slate-400">{fact.label}</div>
                                         <div className="text-sm font-medium text-[#0B1B2B]">{fact.value}</div>
-                                        <div className="text-[9px] text-slate-400">[{fact.source}]</div>
                                       </div>
                                     ))}
                                   </div>
@@ -2414,7 +2896,6 @@ export default function RadarProspectsPage() {
                                           {c.seniority && (
                                             <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${getSeniorityStyle(c.seniority)}`}>{c.seniority}</span>
                                           )}
-                                          <span className="text-[10px] text-slate-400 ml-auto">[{c.source}]</span>
                                         </div>
                                         <p className="text-xs text-slate-500">{c.role}</p>
                                         {c.influence && <p className="text-xs text-slate-600 mt-1">影响力: {c.influence}</p>}

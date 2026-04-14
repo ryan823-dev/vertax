@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { signIn, useSession } from "next-auth/react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -52,19 +52,48 @@ export default function LoginPage() {
   const { data: session, status } = useSession();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const redirect = params.get("redirect");
-    if (redirect) {
-      setRedirectUrl(redirect); // eslint-disable-line react-hooks/set-state-in-effect -- one-time URL param hydration
+  const resolveInternalCallback = useCallback((value: string | null) => {
+    if (!value) return null;
+
+    try {
+      if (value.startsWith("/")) {
+        return value;
+      }
+
+      const parsed = new URL(value);
+      if (typeof window !== "undefined" && parsed.origin === window.location.origin) {
+        return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+      }
+
+      return null;
+    } catch {
+      return null;
     }
   }, []);
+
+  const { redirectUrl, callbackPath } = useMemo(() => {
+    if (typeof window === "undefined") {
+      return {
+        redirectUrl: null,
+        callbackPath: null,
+      };
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    return {
+      redirectUrl: params.get("redirect"),
+      callbackPath: resolveInternalCallback(params.get("callbackUrl")),
+    };
+  }, [resolveInternalCallback]);
 
   const isExternalRedirect = redirectUrl && isValidVertaxRedirect(redirectUrl);
   const targetTenant = redirectUrl ? getTenantSlugFromUrl(redirectUrl) : null;
   const isPlatformAdmin = isPlatformAdminRoleName(session?.user?.roleName);
+
+  const getDefaultPostLoginUrl = useCallback(() => {
+    return isPlatformAdmin ? "/tower" : "/customer/home";
+  }, [isPlatformAdmin]);
 
   const handleCrossDomainRedirect = useCallback(async () => {
     if (!redirectUrl || !isExternalRedirect) return;
@@ -86,18 +115,27 @@ export default function LoginPage() {
     }
   }, [redirectUrl, isExternalRedirect]);
 
+  const navigateAfterLogin = useCallback(async () => {
+    if (isExternalRedirect) {
+      await handleCrossDomainRedirect();
+      return;
+    }
+
+    window.location.href = callbackPath || getDefaultPostLoginUrl();
+  }, [
+    callbackPath,
+    getDefaultPostLoginUrl,
+    handleCrossDomainRedirect,
+    isExternalRedirect,
+  ]);
+
   useEffect(() => {
     if (status !== "authenticated" || !session?.user) {
       return;
     }
 
-    if (isExternalRedirect) {
-      handleCrossDomainRedirect();
-      return;
-    }
-
-    window.location.href = isPlatformAdmin ? "/tower" : "/customer/home";
-  }, [status, session, isExternalRedirect, handleCrossDomainRedirect, isPlatformAdmin]);
+    void navigateAfterLogin();
+  }, [status, session, navigateAfterLogin]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -117,10 +155,8 @@ export default function LoginPage() {
     } else {
       // 登录成功，使用硬跳转强制刷新页面，让 middleware 正确检测认证状态
       if (isExternalRedirect) {
-        await handleCrossDomainRedirect();
-      } else {
-        window.location.href = isPlatformAdmin ? "/tower" : "/customer/home";
-      }
+      await navigateAfterLogin();
+    }
     }
   }
 

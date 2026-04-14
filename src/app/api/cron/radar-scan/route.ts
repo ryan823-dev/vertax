@@ -1,22 +1,19 @@
-/**
- * Cron: 雷达持续扫描
+﻿/**
+ * Cron: 闆疯揪鎸佺画鎵弿
  * 
- * 每 5 分钟执行一次，查询到期的 RadarSearchProfile，
- * 通过乐观锁争抢后执行增量扫描。
- * 
- * 配置 vercel.json cron: every 5 minutes
+ * 姣?5 鍒嗛挓鎵ц涓€娆★紝鏌ヨ鍒版湡鐨?RadarSearchProfile锛? * 閫氳繃涔愯閿佷簤鎶㈠悗鎵ц澧為噺鎵弿銆? * 
+ * 閰嶇疆 vercel.json cron: every 5 minutes
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { ensureCronAuthorized } from "@/lib/cron-auth";
 import { runScheduledScans } from '@/lib/radar/scan-scheduler';
 
 export async function GET(req: NextRequest) {
-  // 验证 cron secret
-  const authHeader = req.headers.get('authorization');
-  const cronSecret = process.env.CRON_SECRET;
-
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  // 楠岃瘉 cron secret
+  const unauthorizedResponse = ensureCronAuthorized(req);
+  if (unauthorizedResponse) {
+    return unauthorizedResponse;
   }
 
   try {
@@ -54,3 +51,4 @@ export async function GET(req: NextRequest) {
     );
   }
 }
+

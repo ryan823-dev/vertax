@@ -1,23 +1,21 @@
-/**
- * Cron: 雷达清理
+﻿/**
+ * Cron: 闆疯揪娓呯悊
  * 
- * 每日凌晨 2 点执行：
- * 1. 清理过期候选（TTL）
- * 2. 释放死锁的 RadarSearchProfile
+ * 姣忔棩鍑屾櫒 2 鐐规墽琛岋細
+ * 1. 娓呯悊杩囨湡鍊欓€夛紙TTL锛? * 2. 閲婃斁姝婚攣鐨?RadarSearchProfile
  * 
- * 配置 vercel.json cron: 0 2 * * *
+ * 閰嶇疆 vercel.json cron: 0 2 * * *
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { ensureCronAuthorized } from "@/lib/cron-auth";
 import { prisma } from '@/lib/prisma';
 import { cleanupExpiredCandidates } from '@/lib/radar/sync-service';
 
 export async function GET(req: NextRequest) {
-  const authHeader = req.headers.get('authorization');
-  const cronSecret = process.env.CRON_SECRET;
-
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const unauthorizedResponse = ensureCronAuthorized(req);
+  if (unauthorizedResponse) {
+    return unauthorizedResponse;
   }
 
   const stats = {
@@ -27,10 +25,8 @@ export async function GET(req: NextRequest) {
   };
 
   try {
-    // 1. 清理过期候选
     stats.expiredCandidates = await cleanupExpiredCandidates();
 
-    // 2. 释放死锁（超过1小时的锁）
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
     const lockResult = await prisma.radarSearchProfile.updateMany({
       where: {
@@ -59,3 +55,4 @@ export async function GET(req: NextRequest) {
     );
   }
 }
+

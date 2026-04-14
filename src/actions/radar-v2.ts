@@ -81,6 +81,25 @@ export interface RadarStatsData {
   runningTasks: number;
 }
 
+export interface ProspectEnrichmentItemResult {
+  companyId: string;
+  companyName: string;
+  success: boolean;
+  personCount: number;
+  error?: string;
+}
+
+export interface ProspectEnrichmentBatchResult {
+  success: boolean;
+  summary: {
+    total: number;
+    succeeded: number;
+    failed: number;
+    contactsFound: number;
+  };
+  results: ProspectEnrichmentItemResult[];
+}
+
 // ==================== 閸樺鍣稿銉ュ徔閸戣姤鏆?====================
 
 /**
@@ -1857,4 +1876,94 @@ export async function enrichProspectCompanyAction(companyId: string) {
   });
   if (!company) throw new Error('Company not found');
   return await enrichProspectCompany(company.id);
+}
+
+/**
+ * Batch enrich prospect companies and return per-company results for UI progress/summary.
+ */
+export async function enrichProspectCompaniesBatchAction(
+  companyIds: string[]
+): Promise<ProspectEnrichmentBatchResult> {
+  const session = await auth();
+  if (!session?.user?.tenantId) {
+    throw new Error('Unauthorized');
+  }
+
+  const tenantId = session.user.tenantId;
+  const uniqueIds = Array.from(new Set(companyIds.filter(Boolean)));
+  if (uniqueIds.length === 0) {
+    return {
+      success: true,
+      summary: {
+        total: 0,
+        succeeded: 0,
+        failed: 0,
+        contactsFound: 0,
+      },
+      results: [],
+    };
+  }
+
+  const companies = await prisma.prospectCompany.findMany({
+    where: {
+      tenantId,
+      id: { in: uniqueIds },
+      deletedAt: null,
+    },
+    select: {
+      id: true,
+      name: true,
+    },
+  });
+
+  const companyMap = new Map(companies.map((company) => [company.id, company]));
+  const results: ProspectEnrichmentItemResult[] = [];
+
+  for (const companyId of uniqueIds) {
+    const company = companyMap.get(companyId);
+    if (!company) {
+      results.push({
+        companyId,
+        companyName: 'Unknown company',
+        success: false,
+        personCount: 0,
+        error: 'Company not found',
+      });
+      continue;
+    }
+
+    try {
+      const result = await enrichProspectCompany(company.id);
+      results.push({
+        companyId: company.id,
+        companyName: company.name,
+        success: result.success,
+        personCount: result.success ? result.personCount ?? 0 : 0,
+        error: result.success ? undefined : result.error,
+      });
+    } catch (error) {
+      results.push({
+        companyId: company.id,
+        companyName: company.name,
+        success: false,
+        personCount: 0,
+        error: error instanceof Error ? error.message : 'Enrichment failed',
+      });
+    }
+  }
+
+  const succeeded = results.filter((item) => item.success).length;
+  const failed = results.length - succeeded;
+  const contactsFound = results.reduce((sum, item) => sum + item.personCount, 0);
+
+  return {
+    success: failed === 0,
+    summary: {
+      total: results.length,
+      succeeded,
+      failed,
+      contactsFound,
+    },
+    results,
+  };
 }

@@ -24,6 +24,29 @@ function isStoredOutreachArtifact(value: unknown): value is StoredOutreachArtifa
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+function normalizeStoredOutreachArtifact(value: unknown): StoredOutreachArtifact | null {
+  return isStoredOutreachArtifact(value) ? value : null;
+}
+
+function buildTemplateEntityId() {
+  return `template:${Date.now().toString(36)}:${Math.random().toString(36).slice(2, 8)}`;
+}
+
+export interface OutreachPackVersionSummary {
+  id: string;
+  entityId: string;
+  version: number;
+  status: string;
+  createdAt: Date;
+  createdByName?: string;
+  changeNote?: string;
+  isTemplate: boolean;
+  templateName?: string;
+  sourceCompanyId?: string;
+  sourceCompanyName?: string;
+  content: StoredOutreachArtifact | null;
+}
+
 // ==================== 类型 ====================
 
 export interface OutreachDraft {
@@ -770,6 +793,233 @@ export async function getCompanyOutreachHistory(
 /**
  * 保存外联工具包到公司档案（支持版本管理）
  */
+function toOutreachPackVersionSummary(version: {
+  id: string;
+  entityId: string;
+  version: number;
+  status: string;
+  content: unknown;
+  meta: unknown;
+  createdAt: Date;
+  createdBy?: { name: string | null } | null;
+}): OutreachPackVersionSummary {
+  const meta = (version.meta ?? {}) as Record<string, unknown>;
+
+  return {
+    id: version.id,
+    entityId: version.entityId,
+    version: version.version,
+    status: version.status,
+    createdAt: version.createdAt,
+    createdByName: version.createdBy?.name || undefined,
+    changeNote: typeof meta.changeNote === 'string' ? meta.changeNote : undefined,
+    isTemplate: meta.savedType === 'template',
+    templateName: typeof meta.templateName === 'string' ? meta.templateName : undefined,
+    sourceCompanyId: typeof meta.sourceCompanyId === 'string' ? meta.sourceCompanyId : undefined,
+    sourceCompanyName: typeof meta.sourceCompanyName === 'string' ? meta.sourceCompanyName : undefined,
+    content: normalizeStoredOutreachArtifact(version.content),
+  };
+}
+
+export async function listOutreachPackVersions(
+  companyId: string
+): Promise<{ success: boolean; versions?: OutreachPackVersionSummary[]; error?: string }> {
+  const session = await auth();
+  if (!session?.user?.tenantId) return { success: false, error: 'Unauthorized' };
+
+  try {
+    const company = await prisma.prospectCompany.findUnique({
+      where: { id: companyId, tenantId: session.user.tenantId },
+      select: { id: true },
+    });
+
+    if (!company) {
+      return { success: false, error: 'Company not found' };
+    }
+
+    const versions = await prisma.artifactVersion.findMany({
+      where: {
+        tenantId: session.user.tenantId,
+        entityType: 'OutreachPack',
+        entityId: companyId,
+      },
+      orderBy: { version: 'desc' },
+      include: {
+        createdBy: { select: { name: true } },
+      },
+    });
+
+    return {
+      success: true,
+      versions: versions.map(toOutreachPackVersionSummary),
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to load versions',
+    };
+  }
+}
+
+export async function listOutreachPackTemplates(
+  limit = 12
+): Promise<{ success: boolean; templates?: OutreachPackVersionSummary[]; error?: string }> {
+  const session = await auth();
+  if (!session?.user?.tenantId) return { success: false, error: 'Unauthorized' };
+
+  try {
+    const templates = await prisma.artifactVersion.findMany({
+      where: {
+        tenantId: session.user.tenantId,
+        entityType: 'OutreachPack',
+        entityId: { startsWith: 'template:' },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      include: {
+        createdBy: { select: { name: true } },
+      },
+    });
+
+    return {
+      success: true,
+      templates: templates.map(toOutreachPackVersionSummary),
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to load templates',
+    };
+  }
+}
+
+export async function saveOutreachPackDraft(
+  companyId: string,
+  artifacts: unknown,
+  changeNote?: string
+): Promise<{ success: boolean; version?: OutreachPackVersionSummary; error?: string }> {
+  const session = await auth();
+  if (!session?.user?.tenantId || !session.user.id) return { success: false, error: 'Unauthorized' };
+
+  const normalizedArtifacts = normalizeStoredOutreachArtifact(artifacts);
+  if (!normalizedArtifacts) {
+    return { success: false, error: 'Invalid outreach pack payload' };
+  }
+
+  try {
+    const company = await prisma.prospectCompany.findUnique({
+      where: { id: companyId, tenantId: session.user.tenantId },
+      select: { id: true, name: true },
+    });
+
+    if (!company) {
+      return { success: false, error: 'Company not found' };
+    }
+
+    const latestVersion = await prisma.artifactVersion.findFirst({
+      where: {
+        tenantId: session.user.tenantId,
+        entityType: 'OutreachPack',
+        entityId: companyId,
+      },
+      orderBy: { version: 'desc' },
+      select: { version: true },
+    });
+
+    const created = await prisma.artifactVersion.create({
+      data: {
+        tenantId: session.user.tenantId,
+        entityType: 'OutreachPack',
+        entityId: companyId,
+        version: (latestVersion?.version ?? 0) + 1,
+        status: 'draft',
+        content: normalizedArtifacts as Prisma.InputJsonValue,
+        meta: {
+          generatedBy: 'human',
+          savedType: 'draft',
+          changeNote: changeNote || 'Saved from prospects workspace',
+          sourceCompanyId: company.id,
+          sourceCompanyName: company.name,
+        } as Prisma.InputJsonValue,
+        createdById: session.user.id,
+      },
+      include: {
+        createdBy: { select: { name: true } },
+      },
+    });
+
+    await saveOutreachArtifacts(companyId, normalizedArtifacts);
+
+    return {
+      success: true,
+      version: toOutreachPackVersionSummary(created),
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to save draft',
+    };
+  }
+}
+
+export async function saveOutreachPackTemplate(
+  companyId: string,
+  artifacts: unknown,
+  templateName?: string
+): Promise<{ success: boolean; template?: OutreachPackVersionSummary; error?: string }> {
+  const session = await auth();
+  if (!session?.user?.tenantId || !session.user.id) return { success: false, error: 'Unauthorized' };
+
+  const normalizedArtifacts = normalizeStoredOutreachArtifact(artifacts);
+  if (!normalizedArtifacts) {
+    return { success: false, error: 'Invalid outreach pack payload' };
+  }
+
+  try {
+    const company = await prisma.prospectCompany.findUnique({
+      where: { id: companyId, tenantId: session.user.tenantId },
+      select: { id: true, name: true },
+    });
+
+    if (!company) {
+      return { success: false, error: 'Company not found' };
+    }
+
+    const created = await prisma.artifactVersion.create({
+      data: {
+        tenantId: session.user.tenantId,
+        entityType: 'OutreachPack',
+        entityId: buildTemplateEntityId(),
+        version: 1,
+        status: 'draft',
+        content: normalizedArtifacts as Prisma.InputJsonValue,
+        meta: {
+          generatedBy: 'human',
+          savedType: 'template',
+          templateName: templateName || `${company.name} playbook`,
+          sourceCompanyId: company.id,
+          sourceCompanyName: company.name,
+          changeNote: 'Saved as reusable template',
+        } as Prisma.InputJsonValue,
+        createdById: session.user.id,
+      },
+      include: {
+        createdBy: { select: { name: true } },
+      },
+    });
+
+    return {
+      success: true,
+      template: toOutreachPackVersionSummary(created),
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to save template',
+    };
+  }
+}
+
 export async function saveOutreachArtifacts(
   companyId: string,
   artifacts: unknown

@@ -1,10 +1,11 @@
-/**
- * Cron: 商机推送通知
+﻿/**
+ * Cron: 鍟嗘満鎺ㄩ€侀€氱煡
  * 
- * 每天推送新发现的商机给租户管理员
+ * 姣忓ぉ鎺ㄩ€佹柊鍙戠幇鐨勫晢鏈虹粰绉熸埛绠＄悊鍛?
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { ensureCronAuthorized } from "@/lib/cron-auth";
 import { COMPANY_ADMIN_ROLE_CANDIDATES } from '@/lib/permissions';
 import { prisma } from '@/lib/prisma';
 import { sendNewCandidatesNotification } from '@/lib/email/resend-client';
@@ -12,11 +13,9 @@ import { sendNewCandidatesNotification } from '@/lib/email/resend-client';
 export const maxDuration = 60;
 
 export async function GET(req: NextRequest) {
-  const authHeader = req.headers.get('authorization');
-  const cronSecret = process.env.CRON_SECRET;
-
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const unauthorizedResponse = ensureCronAuthorized(req);
+  if (unauthorizedResponse) {
+    return unauthorizedResponse;
   }
 
   const stats = {
@@ -26,8 +25,8 @@ export async function GET(req: NextRequest) {
   };
 
   try {
-    // 查找所有有新候选的租户
-    // 先查询有新候选的租户ID
+    // 鏌ユ壘鎵€鏈夋湁鏂板€欓€夌殑绉熸埛
+    // 鍏堟煡璇㈡湁鏂板€欓€夌殑绉熸埛ID
     const tenantIdsWithNewCandidates = await prisma.radarCandidate.findMany({
       where: {
         status: 'NEW',
@@ -71,7 +70,7 @@ export async function GET(req: NextRequest) {
     for (const tenant of tenants) {
       if (tenant.users.length === 0) continue;
 
-      // 统计该租户的新候选数量
+      // 缁熻璇ョ鎴风殑鏂板€欓€夋暟閲?
       const newCount = await prisma.radarCandidate.count({
         where: {
           tenantId: tenant.id,
@@ -84,7 +83,7 @@ export async function GET(req: NextRequest) {
 
       if (newCount === 0) continue;
 
-      // 获取该租户的新候选（按评分排序）
+      // 鑾峰彇璇ョ鎴风殑鏂板€欓€夛紙鎸夎瘎鍒嗘帓搴忥級
       const newCandidates = await prisma.radarCandidate.findMany({
         where: {
           tenantId: tenant.id,
@@ -108,13 +107,13 @@ export async function GET(req: NextRequest) {
 
       stats.totalCandidates += newCount;
 
-      // 发送邮件给每个管理员
+      // 鍙戦€侀偖浠剁粰姣忎釜绠＄悊鍛?
       for (const admin of tenant.users) {
         if (!admin.email) continue;
 
         const result = await sendNewCandidatesNotification({
           to: admin.email,
-          tenantId: tenant.id, // 传递租户ID以使用其邮件配置
+          tenantId: tenant.id, // 浼犻€掔鎴稩D浠ヤ娇鐢ㄥ叾閭欢閰嶇疆
           tenantName: tenant.name,
           newCandidatesCount: newCount,
           topCandidates: newCandidates,
@@ -146,3 +145,4 @@ export async function GET(req: NextRequest) {
     );
   }
 }
+

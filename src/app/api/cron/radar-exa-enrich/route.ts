@@ -1,13 +1,12 @@
-/**
- * Cron: Exa 二阶段候选丰富化
+﻿/**
+ * Cron: Exa 浜岄樁娈靛€欓€変赴瀵屽寲
  *
- * 每6小时运行，处理 QUALIFIED 状态但缺少 website 或 email 的 Tier A/B 候选，
- * 用 Exa Search 补全联系方式、官网、LinkedIn、公司描述。
- *
- * 每次最多处理 15 条（防超时），Exa 每条约 2 次搜索请求。
- */
+ * 姣?灏忔椂杩愯锛屽鐞?QUALIFIED 鐘舵€佷絾缂哄皯 website 鎴?email 鐨?Tier A/B 鍊欓€夛紝
+ * 鐢?Exa Search 琛ュ叏鑱旂郴鏂瑰紡銆佸畼缃戙€丩inkedIn銆佸叕鍙告弿杩般€? *
+ * 姣忔鏈€澶氬鐞?15 鏉★紙闃茶秴鏃讹級锛孍xa 姣忔潯绾?2 娆℃悳绱㈣姹傘€? */
 
 import { NextRequest, NextResponse } from "next/server";
+import { ensureCronAuthorized } from "@/lib/cron-auth";
 import { prisma } from "@/lib/prisma";
 import { enrichCandidateWithExa } from "@/lib/radar/exa-enrich";
 import { resolveApiKey } from "@/lib/services/api-key-resolver";
@@ -16,19 +15,19 @@ export const runtime = "nodejs";
 export const maxDuration = 100;
 
 const MAX_BATCH = 15;
-const RATE_LIMIT_MS = 500; // Exa 请求间隔
+const RATE_LIMIT_MS = 500; // Exa 璇锋眰闂撮殧
 
 export async function GET(req: NextRequest) {
-  const authHeader = req.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const unauthorizedResponse = ensureCronAuthorized(req);
+  if (unauthorizedResponse) {
+    return unauthorizedResponse;
   }
 
   if (!(await resolveApiKey("exa"))) {
     return NextResponse.json({ error: "EXA_API_KEY not configured" }, { status: 503 });
   }
 
-  // 找 QUALIFIED 且 Tier A/B 且缺关键字段的候选
+  // Target A/B qualified companies that still miss core contact fields.
   const candidates = await prisma.radarCandidate.findMany({
     where: {
       status: "QUALIFIED",
@@ -49,7 +48,7 @@ export async function GET(req: NextRequest) {
       rawData: true,
     },
     orderBy: [
-      { qualifyTier: "asc" }, // A 先处理
+      { qualifyTier: "asc" },
       { createdAt: "asc" },
     ],
     take: MAX_BATCH,
@@ -70,7 +69,7 @@ export async function GET(req: NextRequest) {
         candidate.industry
       );
 
-      // 只更新实际缺失的字段，不覆盖已有数据
+      // 鍙洿鏂板疄闄呯己澶辩殑瀛楁锛屼笉瑕嗙洊宸叉湁鏁版嵁
       const updateData: Record<string, unknown> = {
         enrichedAt: new Date(),
       };
@@ -78,11 +77,10 @@ export async function GET(req: NextRequest) {
       if (!candidate.email && result.email) updateData.email = result.email;
       if (result.linkedInUrl) updateData.linkedInUrl = result.linkedInUrl;
       if (result.description) {
-        // 只在没有描述时写入
         updateData.description = result.description;
       }
 
-      // 合并 rawData，追加 exaEnrich 快照
+      // 鍚堝苟 rawData锛岃拷鍔?exaEnrich 蹇収
       const existingRaw = (candidate.rawData as Record<string, unknown> | null) ?? {};
       updateData.rawData = {
         ...existingRaw,
@@ -109,10 +107,11 @@ export async function GET(req: NextRequest) {
       console.error(`[radar-exa-enrich] Failed ${candidate.id}:`, msg);
     }
 
-    // 速率限制
+    // 閫熺巼闄愬埗
     await new Promise(r => setTimeout(r, RATE_LIMIT_MS));
   }
 
   console.log(`[radar-exa-enrich] processed=${stats.processed} enriched=${stats.enriched} failed=${stats.failed}`);
   return NextResponse.json({ ok: true, ...stats, errors });
 }
+

@@ -1165,6 +1165,76 @@ export default function RadarCandidatesPage() {
                   </div>
                 </div>
 
+                {(() => {
+                  const rel = selectedCandidate.aiRelevance as {
+                    tier?: string;
+                    dataGaps?: string[];
+                    exclusionReason?: string | null;
+                  } | null;
+                  const isExcluded = selectedCandidate.qualifyTier === 'excluded' || selectedCandidate.status === 'EXCLUDED';
+                  const decisionReason = selectedCandidate.qualifyReason || rel?.exclusionReason || null;
+                  const tierSummary = isExcluded
+                    ? '当前被判定为不建议进入外联主链路。'
+                    : selectedCandidate.qualifyTier === 'A'
+                      ? '高匹配、高优先级，建议优先转入富化与外联。'
+                      : selectedCandidate.qualifyTier === 'B'
+                        ? '匹配度明确，但还需要补足关键信息来提高命中率。'
+                        : selectedCandidate.qualifyTier === 'C'
+                          ? '当前相关性偏弱，更适合低频跟进或继续观察。'
+                          : '当前还没有形成最终分层结论。';
+
+                  if (!decisionReason && !selectedCandidate.qualifyTier && !(rel?.dataGaps?.length)) {
+                    return null;
+                  }
+
+                  return (
+                    <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-5">
+                      <h4 className="flex items-center gap-2 text-sm font-bold text-[#0B1B2B] mb-3">
+                        <AlertCircle size={14} className="text-[#D4AF37]" />
+                        分层解释
+                      </h4>
+                      {selectedCandidate.qualifyTier && (
+                        <div className="rounded-2xl border border-[#E8E0D0] bg-[#FFFCF7] px-3 py-3 mb-3">
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="text-xs font-semibold text-[#0B1B2B]">
+                              {isExcluded ? '为什么被排除' : `为什么是 ${selectedCandidate.qualifyTier} 档`}
+                            </span>
+                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                              isExcluded
+                                ? 'bg-red-50 text-red-600'
+                                : selectedCandidate.qualifyTier === 'A'
+                                  ? 'bg-emerald-100 text-emerald-700'
+                                  : selectedCandidate.qualifyTier === 'B'
+                                    ? 'bg-amber-100 text-amber-700'
+                                    : 'bg-slate-100 text-slate-600'
+                            }`}>
+                              {isExcluded ? '已排除' : `Tier ${selectedCandidate.qualifyTier}`}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-600 leading-relaxed mt-2">{tierSummary}</p>
+                          {decisionReason && (
+                            <p className="text-xs text-slate-700 leading-relaxed mt-2">{decisionReason}</p>
+                          )}
+                        </div>
+                      )}
+                      {rel?.dataGaps?.length ? (
+                        <div className="rounded-2xl border border-dashed border-[#D4AF37]/30 bg-[#FFF9E9] px-3 py-3">
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#9A7A1C]">
+                            还缺什么
+                          </p>
+                          <div className="mt-2 space-y-1">
+                            {rel.dataGaps.slice(0, 4).map((gap) => (
+                              <p key={gap} className="text-xs text-slate-600">
+                                {gap}
+                              </p>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })()}
+
                 {/* Enrichment Summary */}
                 {selectedCandidate.aiSummary && !researchData && (
                   <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-5">

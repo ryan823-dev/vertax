@@ -1,6 +1,8 @@
 import NextAuth from "next-auth";
 import { NextResponse } from "next/server";
 import { authConfig } from "@/lib/auth.config";
+import { ensureCronAuthorized } from "@/lib/cron-auth";
+import { isDebugEnabled } from "@/lib/debug-guard";
 import { isPlatformAdmin } from "@/lib/permissions";
 import { resolveTenant } from "@/lib/tenant-resolver";
 
@@ -11,31 +13,62 @@ const CRON_ROUTES = ["/api/cron/"];
 
 const BASE_DOMAIN = process.env.NEXT_PUBLIC_BASE_DOMAIN || "vertax.top";
 
-function shouldBlockApiRequest(pathname: string, requestUrl: URL) {
+function shouldBlockApiRequest(
+  pathname: string,
+  request: {
+    headers: Headers;
+    nextUrl: URL;
+    auth?: {
+      user?: {
+        permissions?: unknown;
+        roleName?: unknown;
+      };
+    } | null;
+  },
+) {
+  if (pathname.startsWith("/api/debug/")) {
+    if (process.env.NODE_ENV !== "production") {
+      return null;
+    }
+
+    if (!isDebugEnabled()) {
+      return NextResponse.json(
+        {
+          error: "Debug routes disabled in production",
+          message: "Set DEBUG_ROUTES_ENABLED=true to enable temporary access",
+          environment: process.env.NODE_ENV,
+        },
+        { status: 403 }
+      );
+    }
+
+    if (!request.auth?.user) {
+      return NextResponse.json(
+        { error: "Unauthorized", message: "Debug routes require an authenticated platform admin" },
+        { status: 401 }
+      );
+    }
+
+    if (
+      !isPlatformAdmin({
+        permissions: (request.auth.user.permissions as string[]) ?? [],
+        roleName: (request.auth.user.roleName as string) ?? "",
+      })
+    ) {
+      return NextResponse.json(
+        { error: "Forbidden", message: "Debug routes are restricted to platform administrators" },
+        { status: 403 }
+      );
+    }
+  }
+
   if (process.env.NODE_ENV !== "production") {
     return null;
   }
 
-  if (pathname.startsWith("/api/debug/")) {
-    return NextResponse.json(
-      {
-        error: "Debug routes disabled in production",
-        message: "Set DEBUG_ROUTES_ENABLED=true to enable",
-        environment: process.env.NODE_ENV,
-      },
-      { status: 403 }
-    );
-  }
-
   const isCronRoute = CRON_ROUTES.some((route) => pathname.startsWith(route));
   if (isCronRoute) {
-    const secret = requestUrl.searchParams.get("secret");
-    if (secret !== process.env.CRON_SECRET) {
-      return NextResponse.json(
-        { error: "Unauthorized: Invalid cron secret" },
-        { status: 401 }
-      );
-    }
+    return ensureCronAuthorized(request);
   }
 
   return null;
@@ -45,7 +78,7 @@ const proxy = auth((req) => {
   const { pathname } = req.nextUrl;
 
   if (pathname.startsWith("/api/")) {
-    const blockedResponse = shouldBlockApiRequest(pathname, req.nextUrl);
+    const blockedResponse = shouldBlockApiRequest(pathname, req);
     if (blockedResponse) {
       return blockedResponse;
     }

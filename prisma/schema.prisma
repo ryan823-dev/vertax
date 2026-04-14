@@ -51,6 +51,7 @@ model Tenant {
   contentBriefs      ContentBrief[]
   chatConversations  ChatConversation[]
   prospectCompanies  ProspectCompany[]
+  radarDailySnapshots RadarDailySnapshot[]
   // Web crawl queue
   crawlQueues        CrawlQueue[]
   // Asset processing queue
@@ -1704,6 +1705,35 @@ model Notification {
   @@index([tenantId])
   @@index([tenantId, readAt])
   @@map("notifications")
+}
+
+model RadarDailySnapshot {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  dayKey             String
+  rawCandidates      Int  @default(0)
+  qualifiedCompanies Int  @default(0)
+  importedProspects  Int  @default(0)
+  contactsAdded      Int  @default(0)
+  readyCompanies     Int  @default(0)
+
+  workspaceTotal     Int  @default(0)
+  readyNowCount      Int  @default(0)
+  phonePriorityCount Int  @default(0)
+  emailPriorityCount Int  @default(0)
+  pendingCount       Int  @default(0)
+  avgReadyScore      Int  @default(0)
+
+  feedbackSummary Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, dayKey])
+  @@index([tenantId, dayKey])
+  @@map("radar_daily_snapshots")
 }
 
 // ==================== WEB CRAWL QUEUE ====================

@@ -1,9 +1,10 @@
-/**
- * Cron: 定时帖子发布
- * 每小时运行，找出 scheduledAt <= now 的 scheduled 状态帖子并发布
+﻿/**
+ * Cron: 瀹氭椂甯栧瓙鍙戝竷
+ * 姣忓皬鏃惰繍琛岋紝鎵惧嚭 scheduledAt <= now 鐨?scheduled 鐘舵€佸笘瀛愬苟鍙戝竷
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { ensureCronAuthorized } from "@/lib/cron-auth";
 import { prisma } from '@/lib/prisma';
 import { publishSocialPost } from '@/actions/social';
 
@@ -11,17 +12,14 @@ export const runtime = 'nodejs';
 export const maxDuration = 60;
 
 export async function GET(req: NextRequest) {
-  const authHeader = req.headers.get('authorization');
-  if (
-    process.env.NODE_ENV === 'production' &&
-    authHeader !== `Bearer ${process.env.CRON_SECRET}`
-  ) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const unauthorizedResponse = ensureCronAuthorized(req);
+  if (unauthorizedResponse) {
+    return unauthorizedResponse;
   }
 
   const now = new Date();
 
-  // 查找所有已到期的定时帖子
+  // Find all scheduled posts that are due to publish.
   const duePosts = await prisma.socialPost.findMany({
     where: {
       status: 'scheduled',
@@ -43,7 +41,6 @@ export async function GET(req: NextRequest) {
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error(`[social-publish] Failed to publish post ${post.id}:`, msg);
-      // 标记为失败
       await prisma.socialPost.update({
         where: { id: post.id },
         data: { status: 'failed' },
@@ -62,3 +59,4 @@ export async function GET(req: NextRequest) {
     results,
   });
 }
+

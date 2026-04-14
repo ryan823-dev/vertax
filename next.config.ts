@@ -1,4 +1,7 @@
 import type { NextConfig } from "next";
+import { assertStartupEnv } from "./src/lib/startup-env";
+
+assertStartupEnv();
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["127.0.0.1", "localhost", "*.localhost"],
