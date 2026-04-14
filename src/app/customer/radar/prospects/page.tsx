@@ -667,7 +667,7 @@ export default function RadarProspectsPage() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header - 深蓝舞台指令台 */}
       <div className="relative rounded-2xl overflow-hidden" style={{ background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)', boxShadow: '0 8px 32px -8px rgba(0,0,0,0.45)' }}>
         <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 70% 60% at 50% -20%, rgba(212,175,55,0.14) 0%, transparent 65%)' }} />
@@ -1005,9 +1005,9 @@ export default function RadarProspectsPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-3 gap-6">
-        {/* Companies List */}
-        <div className="col-span-1 bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
+      <div className="grid gap-6 xl:grid-cols-[minmax(320px,0.95fr)_minmax(0,1.55fr)]">
+          {/* Companies List */}
+        <div className="min-w-0 rounded-[28px] border border-[#E8E0D0] bg-[#F7F3E8] p-6 shadow-[0_18px_36px_-28px_rgba(11,27,43,0.35)] xl:sticky xl:top-6">
           <h3 className="font-bold text-[#0B1B2B] mb-4">线索列表</h3>
           
           {companies.length === 0 ? (
@@ -1109,7 +1109,7 @@ export default function RadarProspectsPage() {
         </div>
 
         {/* Detail Panel */}
-        <div className="col-span-2 space-y-4">
+        <div className="space-y-4 xl:sticky xl:top-6">
           {selectedCompany ? (
             <>
               {/* Tabs */}

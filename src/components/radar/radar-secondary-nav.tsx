@@ -16,9 +16,9 @@ export function RadarSecondaryNav() {
   const items = getSortedSubItems(radarNav);
 
   return (
-    <div className="rounded-2xl border border-[#E8E0D0] bg-[#FFFCF7] p-3 shadow-[0_8px_24px_-20px_rgba(11,27,43,0.35)]">
-      <div className="mb-3 flex items-center gap-2 px-2">
-        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#F0EBD8] text-[#D4AF37]">
+    <div className="rounded-[28px] border border-[#E8E0D0] bg-white/80 p-3 shadow-[0_18px_36px_-28px_rgba(11,27,43,0.45)] backdrop-blur-sm">
+      <div className="mb-3 flex items-center gap-3 px-2">
+        <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[#F0EBD8] text-[#D4AF37] ring-1 ring-[#D4AF37]/15">
           <Radar size={16} />
         </div>
         <div>
@@ -26,7 +26,7 @@ export function RadarSecondaryNav() {
             Radar Flow
           </p>
           <p className="text-xs text-slate-500">
-            用户只做启动、确认、审核和跟进。
+            以目标画像驱动的获客工作台
           </p>
         </div>
       </div>
@@ -41,15 +41,15 @@ export function RadarSecondaryNav() {
             <Link
               key={item.key}
               href={item.href}
-              className={`group rounded-xl border px-3 py-3 transition-all ${
+              className={`group rounded-2xl border px-3.5 py-3.5 transition-all duration-200 ${
                 active
-                  ? "border-[#D4AF37]/40 bg-[#D4AF37]/8 shadow-[0_10px_28px_-22px_rgba(212,175,55,0.75)]"
-                  : "border-[#E8E0D0] bg-white hover:border-[#D4AF37]/30 hover:bg-[#FFF9ED]"
+                  ? "border-[#D4AF37]/40 bg-[#FFF8E6] shadow-[0_14px_34px_-24px_rgba(212,175,55,0.85)]"
+                  : "border-[#E8E0D0] bg-[#FFFCF8] hover:border-[#D4AF37]/30 hover:bg-[#FFF9ED]"
               }`}
             >
               <div className="flex items-center gap-3">
                 <div
-                  className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${
+                  className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
                     active
                       ? "bg-[#D4AF37]/15 text-[#9A7A1C]"
                       : "bg-[#F7F3E8] text-slate-500 group-hover:text-[#9A7A1C]"
@@ -61,7 +61,7 @@ export function RadarSecondaryNav() {
                   <div className={`text-sm font-semibold ${active ? "text-[#0B1B2B]" : "text-slate-700"}`}>
                     {item.label}
                   </div>
-                  <div className="text-xs text-slate-500">
+                  <div className="mt-0.5 text-xs leading-5 text-slate-500">
                     {getRadarSectionDescription(item.key)}
                   </div>
                 </div>

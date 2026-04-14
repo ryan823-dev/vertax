@@ -117,9 +117,9 @@ describe('Directory Sources', () => {
       expect(region).toBe('MIDDLE_EAST');
     });
 
-    it('should find Germany in WESTERN_EUROPE', () => {
+    it('should find Germany in EUROPE', () => {
       const region = getRegionByCountry('DE');
-      expect(region).toBe('WESTERN_EUROPE');
+      expect(region).toBe('EUROPE');
     });
 
     it('should return null for unknown country', () => {

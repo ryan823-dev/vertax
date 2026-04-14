@@ -230,7 +230,7 @@ export default function RadarSearchPage() {
     <div className="space-y-6">
       <section className="relative overflow-hidden rounded-[28px] border border-[rgba(212,175,55,0.18)] p-6 text-white" style={{ background: "linear-gradient(135deg, #0B1220 0%, #101B31 55%, #152942 100%)" }}>
         <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[rgba(212,175,55,0.18)] bg-[rgba(212,175,55,0.08)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#D4AF37]"><Radar size={12} />画像驱动自动执行</div>
-        <div className="grid gap-6 xl:grid-cols-[1fr_420px]">
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">自动搜索</h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">系统会按目标客户画像自动找客户、补全信息、评估价值并沉淀结果。你只需要决定何时启动，确认系统按什么找，审核结果，然后推进跟进。</p>
@@ -437,7 +437,25 @@ function Pill({ label, value, tone = "default" }: { label: string; value: string
 }
 
 function ActionCard({ label, hint, icon: Icon, onClick, active, disabled, primary = false }: { label: string; hint: string; icon: LucideIcon; onClick: () => void; active: boolean; disabled: boolean; primary?: boolean }) {
-  return <button onClick={onClick} disabled={disabled || active} className={`rounded-2xl border px-4 py-4 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${primary ? "border-[#D4AF37]/35 bg-[#D4AF37] text-[#0B1220] hover:bg-[#C5A030]" : "border-white/10 bg-white/5 text-white hover:bg-white/10"}`}><div className="flex items-center justify-between gap-3"><div><div className="text-sm font-semibold">{label}</div><div className={`mt-1 text-xs ${primary ? "text-[#2A2208]/80" : "text-slate-400"}`}>{hint}</div></div>{active ? <Loader2 size={18} className="animate-spin" /> : <Icon size={18} />}</div></button>;
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled || active}
+      className={`rounded-2xl border px-4 py-4 text-left transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
+        primary
+          ? "border-[#D4AF37]/35 bg-[#D4AF37] text-[#0B1220] shadow-[0_14px_28px_-20px_rgba(212,175,55,0.9)] hover:bg-[#C5A030]"
+          : "border-white/10 bg-white/5 text-white hover:border-[#D4AF37]/30 hover:bg-white/10"
+      }`}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <div className="text-sm font-semibold">{label}</div>
+          <div className={`mt-1 text-xs ${primary ? "text-[#2A2208]/80" : "text-slate-400"}`}>{hint}</div>
+        </div>
+        {active ? <Loader2 size={18} className="animate-spin" /> : <Icon size={18} />}
+      </div>
+    </button>
+  );
 }
 
 function buildQuery(targetingSpec: TargetingSpecContent["targetingSpec"], preferences: Preferences): RadarSearchQuery {

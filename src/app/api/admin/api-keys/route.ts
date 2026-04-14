@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { isPlatformAdminRoleName } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
@@ -98,20 +98,21 @@ export async function POST(request: NextRequest) {
       dashscope: "AI Provider",
       openrouter: "AI Provider",
       gemini: "AI Provider",
-      brave_search: "搜索 API",
-      tavily: "搜索 API",
-      exa: "搜索 API",
-      serper: "搜索 API",
-      google_places: "企业数据",
-      hunter: "企业数据",
-      pdl: "企业数据",
-      apollo: "企业数据",
-      skrapp: "企业数据",
-      sam_gov: "政府采购",
-      ungm: "政府采购",
+      brave_search: "Search API",
+      tavily: "Search API",
+      exa: "Search API",
+      serper: "Search API",
+      google_places: "Business Data",
+      hunter: "Business Data",
+      pdl: "Business Data",
+      apollo: "Business Data",
+      skrapp: "Business Data",
+      sam_gov: "Government Procurement",
+      ungm: "Government Procurement",
+      firecrawl: "Web Scraping",
     };
 
-    const category = service === "firecrawl" ? "��ҳץȡ" : (serviceCategories[service] || "其他");
+    const category = serviceCategories[service] || "Other";
 
     const config = await prisma.apiKeyConfig.upsert({
       where: { service },

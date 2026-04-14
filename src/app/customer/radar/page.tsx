@@ -225,7 +225,7 @@ export default function RadarPage() {
   const isInitialState = currentStep === 1 && steps[0].status !== 'DONE';
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7]">
+    <div className="space-y-6">
       {/* A) RadarHeader with Stepper */}
       <RadarHeader
         title="获客雷达"

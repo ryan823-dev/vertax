@@ -1,25 +1,26 @@
 "use client";
 
-/**
- * 获客雷达顶部条 - 统一显示在所有雷达子页面
- *
- * 包含：
- * - 左：页面标题 + 说明
- * - 中：5步 Stepper（进度指示器）
- * - 右：主 CTA 按钮 + 最近扫描时间 + 错误提示
- */
-
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import type { ReactNode } from "react";
 import {
-  Radar, Sparkles, CheckCircle2, AlertCircle,
-  ChevronRight, Clock, Loader2, AlertTriangle, RefreshCw,
-} from 'lucide-react';
-import type { StepState, StepStatus, RadarPipelineCounts, PrimaryCTA } from '@/lib/radar/pipeline';
-
-// ============================================
-// 类型定义
-// ============================================
+  AlertCircle,
+  AlertTriangle,
+  ArrowRight,
+  CheckCircle2,
+  ChevronRight,
+  Clock,
+  Loader2,
+  Radar,
+  RefreshCw,
+  Sparkles,
+} from "lucide-react";
+import type {
+  PrimaryCTA,
+  RadarPipelineCounts,
+  StepState,
+  StepStatus,
+} from "@/lib/radar/pipeline";
 
 interface RadarHeaderProps {
   title: string;
@@ -33,9 +34,45 @@ interface RadarHeaderProps {
   onRefresh?: () => void;
 }
 
-// ============================================
-// Stepper 组件
-// ============================================
+function formatRelativeTime(date: Date | null) {
+  if (!date) return "暂无记录";
+  const diff = Date.now() - new Date(date).getTime();
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+
+  if (minutes < 1) return "刚刚";
+  if (minutes < 60) return `${minutes} 分钟前`;
+  if (hours < 24) return `${hours} 小时前`;
+  if (days < 7) return `${days} 天前`;
+  return new Date(date).toLocaleDateString("zh-CN");
+}
+
+function getStatusTone(status: StepStatus) {
+  if (status === "DONE") return "text-emerald-600";
+  if (status === "BLOCKED") return "text-red-500";
+  return "text-[#D4AF37]";
+}
+
+function getStepBadge(status: StepStatus, isCurrent: boolean) {
+  if (status === "DONE") {
+    return <CheckCircle2 size={14} className="text-emerald-500" />;
+  }
+
+  if (status === "BLOCKED") {
+    return <AlertCircle size={14} className="text-red-500" />;
+  }
+
+  return (
+    <span
+      className={`flex h-3.5 w-3.5 items-center justify-center rounded-full border ${
+        isCurrent ? "border-[#D4AF37] bg-[#D4AF37]/15" : "border-white/20 bg-transparent"
+      }`}
+    >
+      <span className={`h-1.5 w-1.5 rounded-full ${isCurrent ? "bg-[#D4AF37]" : "bg-white/40"}`} />
+    </span>
+  );
+}
 
 function RadarStepper({
   steps,
@@ -46,93 +83,41 @@ function RadarStepper({
 }) {
   const router = useRouter();
 
-  const getStepIcon = (status: StepStatus, isCurrentStep: boolean) => {
-    if (status === 'DONE') {
-      return <CheckCircle2 size={14} style={{ color: '#22C55E' }} />;
-    }
-    if (status === 'BLOCKED') {
-      return <AlertCircle size={14} style={{ color: '#EF4444' }} />;
-    }
-    if (isCurrentStep) {
-      return (
-        <div
-          className="w-3.5 h-3.5 rounded-full flex items-center justify-center"
-          style={{
-            background: 'rgba(212,175,55,0.2)',
-            border: '1.5px solid #D4AF37',
-            boxShadow: '0 0 6px rgba(212,175,55,0.4)',
-          }}
-        >
-          <div className="w-1.5 h-1.5 rounded-full bg-[#D4AF37]" />
-        </div>
-      );
-    }
-    return (
-      <div
-        className="w-3.5 h-3.5 rounded-full"
-        style={{ border: '1.5px solid rgba(255,255,255,0.2)' }}
-      />
-    );
-  };
-
   return (
-    <div className="flex items-center gap-0.5" data-testid="radar-stepper">
+    <div className="flex items-center gap-2 overflow-x-auto pb-1" data-testid="radar-stepper">
       {steps.map((step, idx) => {
-        const isCurrentStep = idx + 1 === currentStep;
-        const isDone = step.status === 'DONE';
+        const isCurrent = idx + 1 === currentStep;
         const isLast = idx === steps.length - 1;
 
         return (
-          <div key={step.key} className="flex items-center">
+          <div key={step.key} className="flex min-w-0 items-center gap-2">
             <button
+              type="button"
               onClick={() => router.push(step.href)}
-              className="group flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all"
-              style={
-                isCurrentStep
-                  ? {
-                      background: 'rgba(212,175,55,0.1)',
-                      border: '1px solid rgba(212,175,55,0.2)',
-                    }
-                  : {
-                      background: 'transparent',
-                      border: '1px solid transparent',
-                    }
-              }
               title={step.blocker || step.label}
+              className={`group flex shrink-0 items-center gap-2 rounded-full border px-3 py-2 text-left transition-all ${
+                isCurrent
+                  ? "border-[#D4AF37]/30 bg-[#FFF4D6] shadow-[0_8px_18px_-14px_rgba(212,175,55,0.8)]"
+                  : "border-transparent bg-white/0 hover:border-[#E8E0D0] hover:bg-white/60"
+              }`}
             >
-              {getStepIcon(step.status, isCurrentStep)}
+              {getStepBadge(step.status, isCurrent)}
               <span
-                className="text-[11px] whitespace-nowrap font-medium transition-colors"
-                style={{
-                  color: isDone
-                    ? '#22C55E'
-                    : step.status === 'BLOCKED'
-                    ? '#EF4444'
-                    : isCurrentStep
-                    ? '#D4AF37'
-                    : 'rgba(255,255,255,0.35)',
-                }}
+                className={`text-[11px] font-medium whitespace-nowrap ${getStatusTone(step.status)} ${
+                  isCurrent ? "font-semibold" : ""
+                }`}
               >
                 {step.label}
               </span>
             </button>
 
-            {!isLast && (
-              <ChevronRight
-                size={11}
-                style={{ color: 'rgba(255,255,255,0.15)', margin: '0 1px' }}
-              />
-            )}
+            {!isLast && <ChevronRight size={12} className="flex-none text-slate-300" />}
           </div>
         );
       })}
     </div>
   );
 }
-
-// ============================================
-// 主组件
-// ============================================
 
 export function RadarHeader({
   title,
@@ -145,176 +130,116 @@ export function RadarHeader({
   isRefreshing = false,
   onRefresh,
 }: RadarHeaderProps) {
-  const formatDate = (date: Date | null) => {
-    if (!date) return '暂无记录';
-    const now = new Date();
-    const diff = now.getTime() - new Date(date).getTime();
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(diff / 3600000);
-    const days = Math.floor(diff / 86400000);
-
-    if (minutes < 1) return '刚刚';
-    if (minutes < 60) return `${minutes} 分钟前`;
-    if (hours < 24) return `${hours} 小时前`;
-    if (days < 7) return `${days} 天前`;
-    return new Date(date).toLocaleDateString('zh-CN');
-  };
-
   const hasErrors = errors.length > 0;
-
   const pendingHint =
     counts.pendingReviewCount > 0
-      ? `${counts.pendingReviewCount} 个待审核`
+      ? `${counts.pendingReviewCount} 待审核`
       : counts.candidatesEnriching > 0
-      ? `${counts.candidatesEnriching} 个补全中`
-      : null;
+        ? `${counts.candidatesEnriching} 正在补全`
+        : null;
 
   return (
-    <div
-      className="px-5 py-3 sticky top-0 z-10"
-      style={{
-        background: 'rgba(11,18,32,0.95)',
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
-        borderBottom: '1px solid rgba(212,175,55,0.1)',
-        boxShadow: '0 1px 0 rgba(255,255,255,0.02), 0 4px 20px -4px rgba(0,0,0,0.4)',
-      }}
-    >
-      <div className="flex items-center justify-between gap-4">
-        {/* Left: Title + Description */}
-        <div className="shrink-0">
-          <div className="flex items-center gap-2">
-            <Radar size={18} style={{ color: '#D4AF37' }} />
-            <h1 className="text-[15px] font-bold text-white">{title}</h1>
+    <div className="sticky top-0 z-20 px-0 pt-0">
+      <div className="rounded-[28px] border border-[#E8E0D0] bg-white/85 px-4 py-4 shadow-[0_18px_36px_-28px_rgba(11,27,43,0.45)] backdrop-blur-md sm:px-5">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#F0EBD8] text-[#D4AF37] ring-1 ring-[#D4AF37]/15">
+                <Radar size={18} />
+              </div>
+              <div className="min-w-0">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#9A7A1C]">
+                  Radar Workspace
+                </div>
+                <h1 className="truncate text-[18px] font-bold tracking-tight text-[#0B1B2B] sm:text-[20px]">
+                  {title}
+                </h1>
+              </div>
+            </div>
+
+            <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-500">{description}</p>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <MiniStat label="待审核" value={counts.pendingReviewCount} tone={counts.pendingReviewCount > 0 ? "warning" : "neutral"} />
+              <MiniStat label="高质量" value={counts.candidatesQualifiedAB7d} tone={counts.candidatesQualifiedAB7d > 0 ? "success" : "neutral"} />
+              <MiniStat label="已导入" value={counts.prospectCompanyCount} tone="neutral" />
+              <MiniStat label="最后扫描" value={formatRelativeTime(counts.lastScanAt)} tone="neutral" />
+            </div>
           </div>
-          <p className="text-[11px] ml-[26px] mt-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>
-            {description}
-          </p>
-        </div>
 
-        {/* Center: Stepper */}
-        <div className="flex-1 flex justify-center">
-          <RadarStepper steps={steps} currentStep={currentStep} />
-        </div>
+          <div className="flex min-w-0 flex-col gap-3 xl:w-[460px]">
+            <div className="flex flex-wrap items-center gap-2 xl:justify-end">
+              {hasErrors && (
+                <StatusChip
+                  tone="danger"
+                  icon={<AlertTriangle size={12} />}
+                  label="扫描异常"
+                  hint={errors[0]}
+                />
+              )}
 
-        {/* Right: CTA + Meta */}
-        <div className="shrink-0 flex items-center gap-2.5 max-w-[40%] min-w-0">
-          <div className="flex items-center gap-2.5">
-            {/* Error Indicator */}
-            {hasErrors && (
-              <div
-                className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] cursor-help whitespace-nowrap"
-                style={{
-                  background: 'rgba(239,68,68,0.1)',
-                  color: '#EF4444',
-                  border: '1px solid rgba(239,68,68,0.2)',
-                }}
-                title={errors[0]}
-              >
-                <AlertTriangle size={11} />
-                <span className="truncate">扫描异常</span>
-              </div>
-            )}
+              {!hasErrors && pendingHint && (
+                <StatusChip
+                  tone="warning"
+                  icon={<Loader2 size={12} className="animate-spin" />}
+                  label={pendingHint}
+                />
+              )}
 
-            {/* Pending Indicator */}
-            {pendingHint && !hasErrors && (
-              <div
-                className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] whitespace-nowrap"
-                style={{
-                  background: 'rgba(245,158,11,0.1)',
-                  color: '#F59E0B',
-                  border: '1px solid rgba(245,158,11,0.2)',
-                }}
-              >
-                <Loader2 size={11} className="animate-spin" />
-                <span className="truncate">{pendingHint}</span>
-              </div>
-            )}
+              <StatusChip
+                tone="neutral"
+                icon={<Clock size={12} />}
+                label={formatRelativeTime(counts.lastScanAt)}
+              />
 
-            {/* Last Scan Time + Refresh */}
-            <div className="flex items-center gap-1.5">
-              <div
-                className="flex items-center gap-1 text-[10px] whitespace-nowrap"
-                style={{ color: 'rgba(255,255,255,0.3)' }}
-              >
-                <Clock size={10} />
-                <span className="truncate">{formatDate(counts.lastScanAt)}</span>
-              </div>
               {onRefresh && (
                 <button
+                  type="button"
                   onClick={onRefresh}
                   disabled={isRefreshing}
-                  className="p-1 rounded transition-all disabled:opacity-40 shrink-0"
-                  style={{ color: 'rgba(255,255,255,0.35)' }}
-                  title="刷新状态"
-                  onMouseEnter={(e) => (e.currentTarget.style.color = '#D4AF37')}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.35)')}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-[#E8E0D0] bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-[#D4AF37]/35 hover:text-[#D4AF37] disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  <RefreshCw size={12} className={isRefreshing ? 'animate-spin' : ''} />
+                  <RefreshCw size={12} className={isRefreshing ? "animate-spin" : ""} />
+                  刷新
                 </button>
               )}
             </div>
-          </div>
 
-          {/* Primary CTA */}
-          {primaryCTA && (
-            <div className="relative shrink-0">
-              <Link
-                href={primaryCTA.href}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[13px] font-semibold transition-all whitespace-nowrap"
-                style={
-                  primaryCTA.disabled
-                    ? {
-                        background: 'rgba(255,255,255,0.05)',
-                        color: 'rgba(255,255,255,0.25)',
-                        cursor: 'not-allowed',
-                        pointerEvents: 'none',
-                        border: '1px solid rgba(255,255,255,0.06)',
-                      }
-                    : {
-                        background: 'linear-gradient(135deg, #D4AF37 0%, #C4A028 100%)',
-                        color: '#0B1220',
-                        boxShadow: '0 2px 12px -2px rgba(212,175,55,0.4)',
-                        border: '1px solid rgba(212,175,55,0.3)',
-                      }
-                }
-                onClick={(e) => primaryCTA.disabled && e.preventDefault()}
-              >
-                <Sparkles size={14} className="shrink-0" />
-                <span className="truncate">{primaryCTA.label}</span>
-              </Link>
-
-              {primaryCTA.disabled && primaryCTA.disabledReason && (
-                <div
-                  className="absolute top-full mt-1.5 right-0 px-2.5 py-1.5 rounded-lg text-[10px] whitespace-nowrap z-20"
-                  style={{
-                    background: '#0F1728',
-                    color: 'rgba(255,255,255,0.5)',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
-                  }}
+            <div className="flex justify-end">
+              {primaryCTA && (
+                <Link
+                  href={primaryCTA.href}
+                  className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-all ${
+                    primaryCTA.disabled
+                      ? "pointer-events-none cursor-not-allowed border border-[#E8E0D0] bg-slate-100 text-slate-400"
+                      : "border border-[#D4AF37]/30 bg-gradient-to-r from-[#D4AF37] to-[#C4A028] text-[#0B1220] shadow-[0_12px_24px_-16px_rgba(212,175,55,0.9)]"
+                  }`}
+                  onClick={(event) => primaryCTA.disabled && event.preventDefault()}
+                  aria-disabled={primaryCTA.disabled}
                 >
-                  {primaryCTA.disabledReason}
-                </div>
+                  <Sparkles size={14} />
+                  <span>{primaryCTA.label}</span>
+                  <ArrowRight size={14} />
+                </Link>
               )}
             </div>
-          )}
+          </div>
+        </div>
+
+        <div className="mt-4 rounded-2xl border border-[#E8E0D0] bg-[#FCFAF7] px-3 py-2">
+          <RadarStepper steps={steps} currentStep={currentStep} />
         </div>
       </div>
     </div>
   );
 }
 
-// ============================================
-// 统计卡片组件（用于 Radar Home）
-// ============================================
-
 interface StatCardProps {
   label: string;
   value: number | string;
   icon: React.ReactNode;
   href?: string;
-  trend?: 'up' | 'down' | 'neutral';
+  trend?: "up" | "down" | "neutral";
   trendValue?: string;
   highlight?: boolean;
 }
@@ -328,81 +253,54 @@ export function StatCard({
   trendValue,
   highlight = false,
 }: StatCardProps) {
-  const inner = (
+  const content = (
     <div
-      className="p-4 rounded-xl transition-all group cursor-default"
-      style={
+      className={`group h-full rounded-2xl border p-4 transition-all duration-200 ${
         highlight
-          ? {
-              background: 'linear-gradient(135deg, rgba(212,175,55,0.1) 0%, rgba(212,175,55,0.05) 100%)',
-              border: '1px solid rgba(212,175,55,0.25)',
-              boxShadow: '0 2px 16px -4px rgba(212,175,55,0.1)',
-            }
-          : {
-              background: '#FFFCF7',
-              border: '1px solid #E8E0D0',
-            }
-      }
-      onMouseEnter={(e) => {
-        const el = e.currentTarget;
-        el.style.borderColor = highlight ? 'rgba(212,175,55,0.5)' : '#D4AF37';
-        el.style.boxShadow = '0 4px 20px -4px rgba(212,175,55,0.2)';
-        el.style.transform = 'translateY(-1px)';
-      }}
-      onMouseLeave={(e) => {
-        const el = e.currentTarget;
-        el.style.borderColor = highlight ? 'rgba(212,175,55,0.25)' : '#E8E0D0';
-        el.style.boxShadow = highlight ? '0 2px 16px -4px rgba(212,175,55,0.1)' : '';
-        el.style.transform = '';
-      }}
+          ? "border-[#D4AF37]/30 bg-[#FFF8E8] shadow-[0_14px_32px_-24px_rgba(212,175,55,0.8)]"
+          : "border-[#E8E0D0] bg-white hover:border-[#D4AF37]/30 hover:shadow-[0_14px_30px_-26px_rgba(11,27,43,0.3)]"
+      }`}
     >
-      <div className="flex items-start justify-between mb-3">
+      <div className="mb-4 flex items-start justify-between gap-3">
         <div
-          className="p-2 rounded-lg"
-          style={
-            highlight
-              ? { background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.2)' }
-              : { background: '#F7F3E8', border: '1px solid #E8E0D0' }
-          }
+          className={`flex h-10 w-10 items-center justify-center rounded-xl ring-1 ${
+            highlight ? "bg-[#D4AF37]/12 text-[#9A7A1C] ring-[#D4AF37]/10" : "bg-[#F7F3E8] text-slate-500 ring-[#E8E0D0]"
+          }`}
         >
           {icon}
         </div>
         {trend && trendValue && (
           <span
-            className="text-[10px] px-1.5 py-0.5 rounded font-medium"
-            style={
-              trend === 'up'
-                ? { background: 'rgba(34,197,94,0.1)', color: '#22C55E' }
-                : trend === 'down'
-                ? { background: 'rgba(239,68,68,0.1)', color: '#EF4444' }
-                : { background: 'rgba(255,255,255,0.1)', color: 'rgba(0,0,0,0.4)' }
-            }
+            className={`rounded-full px-2 py-1 text-[10px] font-medium ${
+              trend === "up"
+                ? "bg-emerald-500/10 text-emerald-600"
+                : trend === "down"
+                  ? "bg-red-500/10 text-red-500"
+                  : "bg-slate-100 text-slate-500"
+            }`}
           >
-            {trend === 'up' ? '↑' : trend === 'down' ? '↓' : ''} {trendValue}
+            {trend === "up" ? "↑" : trend === "down" ? "↓" : ""} {trendValue}
           </span>
         )}
       </div>
-      <div
-        className="text-2xl font-bold mb-0.5 font-tabular"
-        style={{ color: highlight ? '#D4AF37' : '#0B1B2B' }}
-      >
+
+      <div className={`text-2xl font-bold tracking-tight ${highlight ? "text-[#9A7A1C]" : "text-[#0B1B2B]"}`}>
         {value}
       </div>
-      <div className="text-xs" style={{ color: 'rgba(0,0,0,0.45)' }}>
-        {label}
-      </div>
+      <div className="mt-1 text-xs text-slate-500">{label}</div>
     </div>
   );
 
-  if (href) {
-    return <Link href={href}>{inner}</Link>;
+  if (!href) {
+    return content;
   }
-  return inner;
-}
 
-// ============================================
-// 空态引导组件
-// ============================================
+  return (
+    <Link href={href} className="block h-full">
+      {content}
+    </Link>
+  );
+}
 
 interface RadarEmptyGuideProps {
   currentStep: number;
@@ -414,60 +312,32 @@ export function RadarEmptyGuide({ currentStep, steps, primaryCTA }: RadarEmptyGu
   const currentStepData = steps[currentStep - 1];
   const nextStepData = steps[currentStep] || null;
 
-  const getGuideIcon = () => {
-    switch (currentStep) {
-      case 1: return <Radar size={28} style={{ color: '#D4AF37' }} />;
-      case 2: return <Sparkles size={28} style={{ color: '#D4AF37' }} />;
-      default: return <AlertCircle size={28} style={{ color: '#D4AF37' }} />;
-    }
-  };
-
   return (
-    <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
-      <div
-        className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5"
-        style={{
-          background: 'rgba(212,175,55,0.08)',
-          border: '1px solid rgba(212,175,55,0.2)',
-          boxShadow: '0 0 24px rgba(212,175,55,0.1)',
-        }}
-      >
-        {getGuideIcon()}
+    <div className="flex flex-col items-center justify-center rounded-[28px] border border-dashed border-[#E8E0D0] bg-white/80 px-6 py-14 text-center shadow-[0_18px_36px_-28px_rgba(11,27,43,0.35)]">
+      <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#FFF4D6] text-[#D4AF37] ring-1 ring-[#D4AF37]/10">
+        {currentStep === 1 ? <Radar size={28} /> : currentStep === 2 ? <Sparkles size={28} /> : <AlertCircle size={28} />}
       </div>
 
-      <h3 className="text-lg font-bold text-[#0B1B2B] mb-2">
-        当前处于第 {currentStep} 步：{currentStepData?.label}
+      <div className="text-sm font-semibold uppercase tracking-[0.16em] text-[#9A7A1C]">
+        当前处于第 {currentStep} 步
+      </div>
+      <h3 className="mt-2 text-lg font-bold text-[#0B1B2B]">
+        {currentStepData?.label}
       </h3>
 
-      {currentStepData?.blocker ? (
-        <p className="text-sm mb-5" style={{ color: '#EF4444' }}>
-          {currentStepData.blocker}
-        </p>
-      ) : (
-        <p className="text-sm mb-5" style={{ color: 'rgba(0,0,0,0.45)' }}>
-          完成此步骤后，可以继续{nextStepData?.label || '下一步'}
-        </p>
-      )}
+      <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500">
+        {currentStepData?.blocker || `完成这一环节后，系统会继续推进到 ${nextStepData?.label || "下一步"}`}
+      </p>
 
       {primaryCTA && (
         <Link
           href={primaryCTA.href}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all"
-          style={
+          className={`mt-6 inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-all ${
             primaryCTA.disabled
-              ? {
-                  background: 'rgba(0,0,0,0.06)',
-                  color: 'rgba(0,0,0,0.3)',
-                  cursor: 'not-allowed',
-                  pointerEvents: 'none',
-                }
-              : {
-                  background: 'linear-gradient(135deg, #D4AF37 0%, #C4A028 100%)',
-                  color: '#0B1220',
-                  boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)',
-                }
-          }
-          onClick={(e) => primaryCTA.disabled && e.preventDefault()}
+              ? "pointer-events-none cursor-not-allowed bg-slate-100 text-slate-400"
+              : "bg-[#0B1220] text-[#D4AF37] shadow-[0_12px_24px_-16px_rgba(11,18,32,0.75)] hover:bg-[#132036]"
+          }`}
+          onClick={(event) => primaryCTA.disabled && event.preventDefault()}
         >
           <Sparkles size={15} />
           {primaryCTA.label}
@@ -477,10 +347,6 @@ export function RadarEmptyGuide({ currentStep, steps, primaryCTA }: RadarEmptyGu
   );
 }
 
-// ============================================
-// 秘书提醒面板组件（用于 Radar Home 右侧）
-// ============================================
-
 interface SecretaryPanelProps {
   counts: RadarPipelineCounts;
   errors: string[];
@@ -488,7 +354,7 @@ interface SecretaryPanelProps {
 
 export function SecretaryPanel({ counts, errors }: SecretaryPanelProps) {
   const items: Array<{
-    type: 'warning' | 'info' | 'action';
+    type: "warning" | "info" | "action";
     title: string;
     description: string;
     href?: string;
@@ -496,112 +362,137 @@ export function SecretaryPanel({ counts, errors }: SecretaryPanelProps) {
 
   if (errors.length > 0) {
     items.push({
-      type: 'warning',
-      title: '扫描异常',
+      type: "warning",
+      title: "扫描异常",
       description: errors[0],
     });
   }
 
   if (counts.pendingReviewCount > 0) {
     items.push({
-      type: 'action',
+      type: "action",
       title: `${counts.pendingReviewCount} 个候选待审核`,
-      description: '新发现的潜在客户等待您的分层判断',
-      href: '/customer/radar/candidates?status=NEW',
+      description: "这些候选已经被系统发现，但还需要你做最后一层筛选。",
+      href: "/customer/radar/candidates?status=NEW",
     });
   }
 
   if (counts.candidatesQualifiedAB7d > 0) {
     items.push({
-      type: 'info',
+      type: "info",
       title: `${counts.candidatesQualifiedAB7d} 个高质量候选`,
-      description: '过去7天已识别的 A/B 级潜在客户',
-      href: '/customer/radar/candidates?tier=A,B',
+      description: "过去 7 天里被评为 A/B 的高价值目标，可继续导入线索池。",
+      href: "/customer/radar/candidates?tier=A,B",
     });
   }
 
   if (!counts.targetingSpecFresh && counts.targetingSpecExists) {
     items.push({
-      type: 'warning',
-      title: '画像需要更新',
-      description: '买家画像已超过30天未同步',
-      href: '/customer/knowledge/profiles',
+      type: "warning",
+      title: "画像需要更新",
+      description: "目标客户画像已经超过 30 天未同步，建议先刷新知识引擎。",
+      href: "/customer/knowledge/profiles",
     });
   }
 
   if (items.length === 0) {
     items.push({
-      type: 'info',
-      title: '一切正常',
-      description: '雷达系统运行顺畅，持续为您发现商机',
+      type: "info",
+      title: "一切正常",
+      description: "雷达系统正在稳定运行，持续为你积累新的目标客户。",
     });
   }
 
-  const getTypeStyle = (type: 'warning' | 'info' | 'action') => {
-    if (type === 'warning') return { dot: '#F59E0B', icon: 'text-amber-500' };
-    if (type === 'action') return { dot: '#D4AF37', icon: 'text-[#D4AF37]' };
-    return { dot: '#22C55E', icon: 'text-emerald-500' };
-  };
-
   return (
-    <div className="module-card overflow-hidden">
-      <div
-        className="px-4 py-3 flex items-center gap-2"
-        style={{
-          background: 'rgba(212,175,55,0.04)',
-          borderBottom: '1px solid #E8E0D0',
-        }}
-      >
-        <div className="w-1.5 h-1.5 rounded-full bg-[#D4AF37] animate-pulse" />
-        <h3 className="text-[13px] font-semibold" style={{ color: '#0B1B2B' }}>
-          秘书提醒
-        </h3>
-        <span
-          className="ml-auto text-[10px] px-1.5 py-0.5 rounded"
-          style={{ background: 'rgba(212,175,55,0.1)', color: '#D4AF37' }}
-        >
+    <div className="overflow-hidden rounded-[28px] border border-[#E8E0D0] bg-white/90 shadow-[0_18px_36px_-28px_rgba(11,27,43,0.4)]">
+      <div className="flex items-center gap-2 border-b border-[#E8E0D0] bg-[#FCFAF7] px-4 py-3">
+        <div className="h-2 w-2 rounded-full bg-[#D4AF37] animate-pulse" />
+        <h3 className="text-sm font-semibold text-[#0B1B2B]">秘书提醒</h3>
+        <span className="ml-auto rounded-full bg-[#FFF4D6] px-2.5 py-1 text-[10px] font-medium text-[#9A7A1C]">
           {items.length} 条
         </span>
       </div>
-      <div className="divide-y" style={{ borderColor: '#E8E0D0' }}>
-        {items.map((item, idx) => {
-          const style = getTypeStyle(item.type);
-          const inner = (
-            <div className="flex items-start gap-2.5 p-3.5 group transition-colors hover:bg-[#F7F3E8]">
-              <div
-                className="mt-0.5 w-1.5 h-1.5 rounded-full shrink-0 mt-1.5"
-                style={{ background: style.dot }}
-              />
-              <div className="flex-1 min-w-0">
-                <div
-                  className="text-[13px] font-medium transition-colors"
-                  style={{ color: '#0B1B2B' }}
-                >
-                  {item.title}
-                </div>
-                <div className="text-[11px] mt-0.5 line-clamp-2" style={{ color: 'rgba(0,0,0,0.45)' }}>
-                  {item.description}
-                </div>
+
+      <div className="divide-y divide-[#E8E0D0]">
+        {items.map((item, index) => {
+          const tone =
+            item.type === "warning"
+              ? "text-amber-500"
+              : item.type === "action"
+                ? "text-[#D4AF37]"
+                : "text-emerald-500";
+
+          const card = (
+            <div className="group flex items-start gap-3 px-4 py-4 transition-colors hover:bg-[#FCFAF7]">
+              <div className={`mt-1 h-2.5 w-2.5 rounded-full ${tone.replace("text-", "bg-")}`} />
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-medium text-[#0B1B2B]">{item.title}</div>
+                <div className="mt-1 text-xs leading-5 text-slate-500">{item.description}</div>
               </div>
-              {item.href && (
-                <ChevronRight
-                  size={13}
-                  className="mt-0.5 shrink-0 transition-colors group-hover:text-[#D4AF37]"
-                  style={{ color: 'rgba(0,0,0,0.2)' }}
-                />
-              )}
+              {item.href && <ChevronRight size={13} className="mt-1 text-slate-300 group-hover:text-[#D4AF37]" />}
             </div>
           );
 
           return item.href ? (
-            <Link key={idx} href={item.href} className="block">
-              {inner}
+            <Link key={index} href={item.href} className="block">
+              {card}
             </Link>
           ) : (
-            <div key={idx}>{inner}</div>
+            <div key={index}>{card}</div>
           );
         })}
       </div>
+    </div>
+  );
+}
+
+function MiniStat({
+  label,
+  value,
+  tone = "neutral",
+}: {
+  label: string;
+  value: number | string;
+  tone?: "neutral" | "warning" | "success";
+}) {
+  const toneClass =
+    tone === "warning"
+      ? "border-amber-200 bg-amber-50 text-amber-700"
+      : tone === "success"
+        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+        : "border-[#E8E0D0] bg-[#FCFAF7] text-slate-600";
+
+  return (
+    <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs ${toneClass}`}>
+      <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-slate-400">{label}</span>
+      <span className="font-semibold text-[#0B1B2B]">{value}</span>
+    </div>
+  );
+}
+
+function StatusChip({
+  tone,
+  icon,
+  label,
+  hint,
+}: {
+  tone: "neutral" | "warning" | "danger";
+  icon: ReactNode;
+  label: string;
+  hint?: string;
+}) {
+  const toneClass =
+    tone === "danger"
+      ? "border-red-200 bg-red-50 text-red-600"
+      : tone === "warning"
+        ? "border-amber-200 bg-amber-50 text-amber-700"
+        : "border-[#E8E0D0] bg-[#FCFAF7] text-slate-600";
+
+  return (
+    <div className={`group inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs ${toneClass}`}>
+      <span className="flex-none">{icon}</span>
+      <span className="max-w-[180px] truncate font-medium">{label}</span>
+      {hint ? <span className="hidden text-[10px] text-slate-400 xl:inline">{hint}</span> : null}
     </div>
   );
 }

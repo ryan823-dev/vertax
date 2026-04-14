@@ -741,7 +741,7 @@ export default function RadarCandidatesPage() {
     : null;
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7]">
+    <div className="space-y-6">
       {/* RadarHeader with Stepper */}
       <RadarHeader
         title="候选池"
@@ -898,9 +898,9 @@ export default function RadarCandidatesPage() {
         )}
 
         {/* Main Content */}
-        <div className="grid grid-cols-12 gap-6">
-          {/* Candidates List */}
-          <div className="col-span-7 bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] overflow-hidden">
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(380px,0.9fr)]">
+            {/* Candidates List */}
+          <div className="min-w-0 overflow-hidden rounded-[28px] border border-[#E8E0D0] bg-[#F7F3E8] shadow-[0_18px_36px_-28px_rgba(11,27,43,0.35)]">
             {/* List Header */}
             <div className="border-b border-[#E8E0D0] bg-[#F0EBD8] px-4 py-3">
               <div className="flex items-center gap-3">
@@ -1095,7 +1095,7 @@ export default function RadarCandidatesPage() {
           </div>
 
           {/* Detail Panel */}
-          <div className="col-span-5 space-y-4">
+          <div className="space-y-4 xl:sticky xl:top-6">
             {selectedCandidate ? (
               <>
                 {/* Basic Info Card */}
