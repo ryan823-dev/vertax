@@ -183,6 +183,7 @@ export default function HubPage() {
       BrandGuideline: '品牌规范',
       Persona: '人设',
       ContentBrief: '内容规划',
+      AssistantPlan: '助手计划',
     };
     return labels[entityType] || entityType;
   };
@@ -208,6 +209,7 @@ export default function HubPage() {
       profile: '企业画像',
       asset: '素材',
       Evidence: '证据',
+      AssistantPlan: '助手计划',
       ArtifactVersion: '版本',
       ArtifactComment: '评论',
       ArtifactTask: '任务',

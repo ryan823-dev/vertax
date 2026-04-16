@@ -1,12 +1,11 @@
 "use server";
 
+import type { Prisma } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { chatCompletion } from "@/lib/ai-client";
 import { logActivity, ACTIVITY_ACTIONS, EVENT_CATEGORIES } from "@/lib/utils/activity-logger";
-
-// ==================== Types ====================
 
 export type ConversationData = {
   id: string;
@@ -16,15 +15,6 @@ export type ConversationData = {
   messageCount: number;
 };
 
-export type MessageData = {
-  id: string;
-  conversationId: string;
-  role: "user" | "assistant";
-  content: string;
-  references?: ReferenceData[];
-  createdAt: Date;
-};
-
 export type ReferenceData = {
   type: "evidence" | "profile" | "persona";
   id: string;
@@ -32,7 +22,15 @@ export type ReferenceData = {
   snippet?: string;
 };
 
-// ==================== Helpers ====================
+export type MessageData = {
+  id: string;
+  conversationId: string;
+  role: "user" | "assistant";
+  content: string;
+  references?: ReferenceData[];
+  payload?: Prisma.JsonObject | null;
+  createdAt: Date;
+};
 
 async function getSession() {
   const session = await auth();
@@ -42,90 +40,83 @@ async function getSession() {
   return session;
 }
 
-// Build system prompt with company context
-async function buildSystemPrompt(tenantId: string): Promise<{ prompt: string; context: Record<string, unknown> }> {
-  // Fetch company profile
-  const profile = await prisma.companyProfile.findUnique({
-    where: { tenantId },
-  });
+async function buildSystemPrompt(
+  tenantId: string
+): Promise<{ prompt: string; context: Record<string, unknown> }> {
+  const [profile, personas, evidences, briefs] = await Promise.all([
+    prisma.companyProfile.findUnique({ where: { tenantId } }),
+    prisma.persona.findMany({
+      where: { tenantId },
+      take: 5,
+      orderBy: { order: "asc" },
+    }),
+    prisma.evidence.findMany({
+      where: { tenantId, deletedAt: null, status: "active" },
+      take: 20,
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.contentBrief.findMany({
+      where: { tenantId, deletedAt: null },
+      take: 5,
+      orderBy: { createdAt: "desc" },
+    }),
+  ]);
 
-  // Fetch top personas
-  const personas = await prisma.persona.findMany({
-    where: { tenantId },
-    take: 5,
-    orderBy: { order: "asc" },
-  });
-
-  // Fetch active evidences
-  const evidences = await prisma.evidence.findMany({
-    where: { tenantId, deletedAt: null, status: "active" },
-    take: 20,
-    orderBy: { createdAt: "desc" },
-  });
-
-  // Fetch recent briefs
-  const briefs = await prisma.contentBrief.findMany({
-    where: { tenantId, deletedAt: null },
-    take: 5,
-    orderBy: { createdAt: "desc" },
-  });
-
-  // Build context summary
   const profileSummary = profile
     ? `企业名称: ${profile.companyName || "未设置"}
-核心产品: ${(profile.coreProducts as string[])?.join("、") || "未设置"}
-差异化卖点: ${(profile.differentiators as string[])?.join("、") || "未设置"}
-目标行业: ${(profile.targetIndustries as string[])?.join("、") || "未设置"}`
+核心产品: ${Array.isArray(profile.coreProducts) ? (profile.coreProducts as string[]).join("、") : "未设置"}
+差异化卖点: ${Array.isArray(profile.differentiators) ? (profile.differentiators as string[]).join("、") : "未设置"}
+目标行业: ${Array.isArray(profile.targetIndustries) ? (profile.targetIndustries as string[]).join("、") : "未设置"}`
     : "企业画像尚未创建";
 
-  const personasSummary = personas.length > 0
-    ? personas.map(p => `- ${p.name} (${p.title}): 关注 ${p.concerns.slice(0, 3).join("、")}`).join("\n")
-    : "尚未创建买家角色";
+  const personasSummary =
+    personas.length > 0
+      ? personas
+          .map((persona) => `- ${persona.name} (${persona.title}): 关注 ${persona.concerns.slice(0, 3).join("、")}`)
+          .join("\n")
+      : "暂无买家画像";
 
-  const evidencesSummary = evidences.length > 0
-    ? evidences.slice(0, 10).map((e, i) => `[E${i + 1}] ${e.title}: ${e.content.substring(0, 100)}...`).join("\n")
-    : "尚未收集证据";
+  const evidencesSummary =
+    evidences.length > 0
+      ? evidences
+          .slice(0, 10)
+          .map((evidence, index) => `[E${index + 1}] ${evidence.title}: ${evidence.content.slice(0, 100)}...`)
+          .join("\n")
+      : "暂无可引用证据";
 
-  const briefsSummary = briefs.length > 0
-    ? briefs.map(b => `- ${b.title} (${b.status}): 关键词 ${b.targetKeywords.slice(0, 3).join("、")}`).join("\n")
-    : "暂无内容规划";
+  const briefsSummary =
+    briefs.length > 0
+      ? briefs
+          .map((brief) => `- ${brief.title} (${brief.status}): ${brief.targetKeywords.slice(0, 3).join("、")}`)
+          .join("\n")
+      : "暂无内容规划";
 
-  const systemPrompt = `你是 VertaX 决策中心的AI助手，专门帮助B2B企业管理层了解营销和获客进展。
+  return {
+    prompt: `你是 VertaX 决策中心的 AI 助手，帮助管理层快速了解营销、内容与获客进展。
 
 ## 企业背景
 ${profileSummary}
 
-## 目标客户画像
+## 买家画像
 ${personasSummary}
 
-## 证据库（可引用）
+## 证据库
 ${evidencesSummary}
 
-## 内容规划进度
+## 内容规划
 ${briefsSummary}
 
 ## 回答规则
-1. 基于上述真实数据回答问题，不要编造信息
-2. 如果引用证据，使用 [E1]、[E2] 等标记
-3. 回答要简洁专业，适合管理层快速了解
-4. 如果数据不足，诚实说明并建议补充
-5. 可以主动提供下一步建议
-
-请用中文回答。`;
-
-  return {
-    prompt: systemPrompt,
+1. 只基于已知信息回答，不编造。
+2. 引用证据时使用 [E1]、[E2] 这样的编号。
+3. 回答简洁、专业、适合老板快速阅读。
+4. 数据不足时明确指出，并给出下一步建议。
+5. 全程使用中文。`,
     context: {
-      hasProfile: !!profile,
-      personaCount: personas.length,
-      evidenceCount: evidences.length,
-      briefCount: briefs.length,
-      evidenceIds: evidences.map(e => e.id),
+      evidenceIds: evidences.map((evidence) => evidence.id),
     },
   };
 }
-
-// ==================== Conversations ====================
 
 export async function getConversations(): Promise<ConversationData[]> {
   const session = await getSession();
@@ -139,16 +130,19 @@ export async function getConversations(): Promise<ConversationData[]> {
     take: 20,
   });
 
-  return conversations.map((c) => ({
-    id: c.id,
-    title: c.title || "未命名对话",
-    createdAt: c.createdAt,
-    updatedAt: c.updatedAt,
-    messageCount: c._count.messages,
+  return conversations.map((conversation) => ({
+    id: conversation.id,
+    title: conversation.title || "未命名对话",
+    createdAt: conversation.createdAt,
+    updatedAt: conversation.updatedAt,
+    messageCount: conversation._count.messages,
   }));
 }
 
-export async function createConversation(title?: string): Promise<ConversationData> {
+export async function createConversation(
+  title?: string,
+  contextSnapshot?: Prisma.InputJsonValue
+): Promise<ConversationData> {
   const session = await getSession();
 
   const conversation = await prisma.chatConversation.create({
@@ -156,6 +150,7 @@ export async function createConversation(title?: string): Promise<ConversationDa
       tenantId: session.user.tenantId,
       userId: session.user.id,
       title: title || `对话 ${new Date().toLocaleDateString("zh-CN")}`,
+      contextSnapshot,
     },
   });
 
@@ -190,45 +185,42 @@ export async function deleteConversation(id: string): Promise<void> {
   revalidatePath("/customer/home");
 }
 
-// ==================== Messages ====================
-
 export async function getMessages(conversationId: string): Promise<MessageData[]> {
   const session = await getSession();
 
-  // Verify conversation belongs to tenant
   const conversation = await prisma.chatConversation.findFirst({
     where: { id: conversationId, tenantId: session.user.tenantId },
   });
-  if (!conversation) throw new Error("对话不存在");
+  if (!conversation) {
+    throw new Error("对话不存在");
+  }
 
   const messages = await prisma.chatMessage.findMany({
     where: { conversationId },
     orderBy: { createdAt: "asc" },
   });
 
-  return messages.map((m) => ({
-    id: m.id,
-    conversationId: m.conversationId,
-    role: m.role as "user" | "assistant",
-    content: m.content,
-    references: m.references as ReferenceData[] | undefined,
-    createdAt: m.createdAt,
+  return messages.map((message) => ({
+    id: message.id,
+    conversationId: message.conversationId,
+    role: message.role as "user" | "assistant",
+    content: message.content,
+    references: message.references as ReferenceData[] | undefined,
+    payload: (message.payload as Prisma.JsonObject | null | undefined) ?? null,
+    createdAt: message.createdAt,
   }));
 }
 
-export async function sendMessage(
-  conversationId: string,
-  userMessage: string
-): Promise<MessageData> {
+export async function sendMessage(conversationId: string, userMessage: string): Promise<MessageData> {
   const session = await getSession();
 
-  // Verify conversation belongs to tenant
   const conversation = await prisma.chatConversation.findFirst({
     where: { id: conversationId, tenantId: session.user.tenantId },
   });
-  if (!conversation) throw new Error("对话不存在");
+  if (!conversation) {
+    throw new Error("对话不存在");
+  }
 
-  // Save user message
   await prisma.chatMessage.create({
     data: {
       conversationId,
@@ -237,55 +229,54 @@ export async function sendMessage(
     },
   });
 
-  // Build system prompt with context
   const { prompt: systemPrompt, context } = await buildSystemPrompt(session.user.tenantId);
-
-  // Get conversation history (last 10 messages for context)
   const history = await prisma.chatMessage.findMany({
     where: { conversationId },
     orderBy: { createdAt: "asc" },
     take: 10,
   });
 
-  const messages = [
-    { role: "system" as const, content: systemPrompt },
-    ...history.map((m) => ({
-      role: m.role as "user" | "assistant",
-      content: m.content,
-    })),
-  ];
+  const response = await chatCompletion(
+    [
+      { role: "system", content: systemPrompt },
+      ...history.map((message) => ({
+        role: message.role as "user" | "assistant",
+        content: message.content,
+      })),
+    ],
+    {
+      model: "qwen-plus",
+      temperature: 0.3,
+      maxTokens: 2048,
+    }
+  );
 
-  // Call AI
-  const response = await chatCompletion(messages, {
-    model: "qwen-plus",
-    temperature: 0.3,
-    maxTokens: 2048,
-  });
-
-  // Extract references from response (simple pattern matching)
   const references: ReferenceData[] = [];
   const evidencePattern = /\[E(\d+)\]/g;
-  let match;
   const evidenceIds = (context.evidenceIds as string[]) || [];
+
+  let match: RegExpExecArray | null;
   while ((match = evidencePattern.exec(response.content)) !== null) {
-    const idx = parseInt(match[1]) - 1;
-    if (idx >= 0 && idx < evidenceIds.length) {
-      const evidence = await prisma.evidence.findUnique({
-        where: { id: evidenceIds[idx] },
-        select: { id: true, title: true, content: true },
+    const index = Number.parseInt(match[1], 10) - 1;
+    if (index < 0 || index >= evidenceIds.length) {
+      continue;
+    }
+
+    const evidence = await prisma.evidence.findUnique({
+      where: { id: evidenceIds[index] },
+      select: { id: true, title: true, content: true },
+    });
+
+    if (evidence && !references.some((reference) => reference.id === evidence.id)) {
+      references.push({
+        type: "evidence",
+        id: evidence.id,
+        title: evidence.title,
+        snippet: evidence.content.slice(0, 100),
       });
-      if (evidence && !references.find((r) => r.id === evidence.id)) {
-        references.push({
-          type: "evidence",
-          id: evidence.id,
-          title: evidence.title,
-          snippet: evidence.content.substring(0, 100),
-        });
-      }
     }
   }
 
-  // Save assistant message
   const assistantMessage = await prisma.chatMessage.create({
     data: {
       conversationId,
@@ -295,13 +286,11 @@ export async function sendMessage(
     },
   });
 
-  // Update conversation timestamp
   await prisma.chatConversation.update({
     where: { id: conversationId },
     data: { updatedAt: new Date() },
   });
 
-  // Activity log
   logActivity({
     tenantId: session.user.tenantId,
     userId: session.user.id,
@@ -321,9 +310,7 @@ export async function sendMessage(
     role: "assistant",
     content: assistantMessage.content,
     references,
+    payload: null,
     createdAt: assistantMessage.createdAt,
   };
 }
-
-// ==================== Quick Questions ====================
-// 注意：常量必须放在非 "use server" 文件中导出

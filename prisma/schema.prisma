@@ -866,6 +866,7 @@ model ChatMessage {
   role           String // "user"|"assistant"|"system"
   content        String
   references     Json? // [{ evidenceId, title, excerpt }]
+  payload        Json?
   tokens         Int?
   createdAt      DateTime         @default(now())
 }

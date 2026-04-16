@@ -1,278 +1,335 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import Link from 'next/link';
-import { 
-  Sparkles, 
-  Clock, 
-  TrendingUp,
-  FileText,
-  CheckCircle2,
-  AlertTriangle,
-  Send, 
-  RefreshCw,
-  Loader2,
-  ChevronRight,
-  Zap,
-  Target,
-} from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
+  AlertTriangle,
+  CheckCircle2,
+  ChevronRight,
+  Clock,
+  FileText,
+  Loader2,
+  RefreshCw,
+  Send,
+  Sparkles,
+  Target,
+  TrendingUp,
+  Zap,
+} from "lucide-react";
+import { toast } from "sonner";
+import {
+  generateAIBriefing,
   getDashboardStats,
   getPendingActions,
   getTenantInfo,
-  generateAIBriefing,
+  type AIBriefing,
   type DashboardStats,
   type PendingAction,
   type TenantInfo,
-  type AIBriefing,
-} from '@/actions/dashboard';
+} from "@/actions/dashboard";
+import { BigChat, type ChatMessage, type QuickPrompt, type StructuredResponse } from "@/components/executive/BigChat";
 import {
-  createConversation,
-  sendMessage,
-  type MessageData,
-} from '@/actions/chat';
+  askExecutiveAssistant,
+  executeExecutiveAssistantAction,
+  getLatestExecutiveAssistantState,
+} from "@/actions/executive-assistant";
+import { deleteConversation, type MessageData } from "@/actions/chat";
+import type { AssistantAction } from "@/lib/executive-assistant/types";
+import { formatError } from "@/lib/format-error";
 
-// ============================================
-// 快捷指令（动词开头，更紧凑）
-// ============================================
-const quickCommands = [
-  { label: '一分钟汇报', icon: Clock, recommended: true },
-  { label: '本周战果', icon: TrendingUp },
-  { label: '商机概览', icon: Target },
-  { label: '待您审批', icon: CheckCircle2 },
-  { label: '增长瓶颈', icon: AlertTriangle },
+const quickPrompts: QuickPrompt[] = [
+  { label: "一分钟汇报", icon: Clock, prompt: "请用一分钟给我汇报当前经营进展。" },
+  { label: "本周战果", icon: TrendingUp, prompt: "总结一下本周已经推进出的成果。" },
+  { label: "商机概览", icon: Target, prompt: "现在最值得我关注的商机是什么？" },
+  { label: "待我审批", icon: CheckCircle2, prompt: "目前有哪些事情需要我确认或拍板？" },
+  { label: "增长瓶颈", icon: AlertTriangle, prompt: "当前增长推进最卡的地方是什么？" },
 ];
 
-// ============================================
-// 主页面
-// ============================================
+function toChatMessage(message: MessageData): ChatMessage {
+  return {
+    id: message.id,
+    role: message.role,
+    content: message.content,
+    structuredContent: (message.payload as StructuredResponse | null | undefined) ?? undefined,
+    timestamp: new Date(message.createdAt),
+  };
+}
+
 export default function CEOCockpitPage() {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
+  const [isSending, setIsSending] = useState(false);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [actions, setActions] = useState<PendingAction[]>([]);
   const [tenantInfo, setTenantInfo] = useState<TenantInfo | null>(null);
   const [briefing, setBriefing] = useState<AIBriefing | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
-  
-  // Chat
-  const [inputValue, setInputValue] = useState('');
   const [conversationId, setConversationId] = useState<string | null>(null);
-  const [, setMessages] = useState<MessageData[]>([]);
-  const [isSending, setIsSending] = useState(false);
-  
-  // 从 RoleContext 读取角色与显示模式
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [assistantExpanded, setAssistantExpanded] = useState(false);
+  const [retryPrompt, setRetryPrompt] = useState<string | null>(null);
 
-  // ============================================
-  // 数据加载
-  // ============================================
   const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [statsData, actionsData, tenantData, briefingData] = await Promise.all([
+      const [statsData, actionsData, tenantData, briefingData, assistantState] = await Promise.all([
         getDashboardStats(),
         getPendingActions(),
         getTenantInfo(),
         generateAIBriefing().catch(() => null),
+        getLatestExecutiveAssistantState(),
       ]);
+
       setStats(statsData);
       setActions(actionsData);
       setTenantInfo(tenantData);
-      if (briefingData) setBriefing(briefingData);
+      setBriefing(briefingData);
+      setConversationId(assistantState.conversationId);
+      setMessages(assistantState.messages.map(toChatMessage));
+      setAssistantExpanded(assistantState.messages.length > 0);
+      setRetryPrompt(null);
       setLastUpdated(new Date());
-    } catch (err) {
-      console.error('Failed to load dashboard:', err);
+    } catch (error) {
+      toast.error("首页数据加载失败", {
+        description: formatError(error, "请稍后再试"),
+      });
     } finally {
       setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    loadData();
+    void loadData();
   }, [loadData]);
 
-  // ============================================
-  // Chat
-  // ============================================
-  const handleSend = useCallback(async () => {
-    if (!inputValue.trim() || isSending) return;
-    setIsSending(true);
-    const content = inputValue;
-    setInputValue('');
+  const handleAsk = useCallback(
+    async (prompt: string) => {
+      if (!prompt.trim() || isSending) {
+        return;
+      }
+
+      setAssistantExpanded(true);
+      setIsSending(true);
+
+      const optimisticId = `optimistic-${Date.now()}`;
+      const optimisticMessage: ChatMessage = {
+        id: optimisticId,
+        role: "user",
+        content: prompt,
+        timestamp: new Date(),
+      };
+
+      setMessages((current) => [...current, optimisticMessage]);
+
+      try {
+        const result = await askExecutiveAssistant(prompt, conversationId);
+        setConversationId(result.conversation.id);
+        setRetryPrompt(null);
+        setMessages((current) => [
+          ...current.filter((item) => item.id !== optimisticId),
+          toChatMessage(result.userMessage),
+          toChatMessage(result.assistantMessage),
+        ]);
+      } catch (error) {
+        setMessages((current) => [
+          ...current.filter((item) => item.id !== optimisticId),
+          optimisticMessage,
+          {
+            id: `assistant-error-${Date.now()}`,
+            role: "assistant",
+            content: `这次没有成功发出去。我已经保留了你的问题，你可以直接重试。\n\n原因：${formatError(error, "服务暂时不可用，请稍后重试")}`,
+            timestamp: new Date(),
+          },
+        ]);
+        setRetryPrompt(prompt);
+
+        toast.error("发送失败", {
+          description: formatError(error, "请稍后重试"),
+        });
+      } finally {
+        setIsSending(false);
+      }
+    },
+    [conversationId, isSending]
+  );
+
+  const handleAssistantAction = useCallback(
+    async (action: AssistantAction) => {
+      try {
+        const result = await executeExecutiveAssistantAction(action, conversationId);
+        toast.success(result.message);
+        setRetryPrompt(null);
+
+        if (action.type === "open_module" && result.href) {
+          router.push(result.href);
+          return;
+        }
+
+        const assistantState = await getLatestExecutiveAssistantState();
+        setConversationId(assistantState.conversationId);
+        setMessages(assistantState.messages.map(toChatMessage));
+        await loadData();
+      } catch (error) {
+        toast.error("执行失败", {
+          description: formatError(error, "请稍后重试"),
+        });
+      }
+    },
+    [conversationId, loadData, router]
+  );
+
+  const handleResetConversation = useCallback(async () => {
+    const currentConversationId = conversationId;
+    setConversationId(null);
+    setMessages([]);
+    setAssistantExpanded(false);
+    setRetryPrompt(null);
+
+    if (!currentConversationId) {
+      return;
+    }
 
     try {
-      let convId = conversationId;
-      if (!convId) {
-        const conv = await createConversation(content.slice(0, 20) + '...');
-        convId = conv.id;
-        setConversationId(convId);
-      }
-      const response = await sendMessage(convId, content);
-      setMessages(prev => [...prev, 
-        { id: `user-${Date.now()}`, conversationId: convId!, role: 'user', content, createdAt: new Date() },
-        response
-      ]);
-    } catch (err) {
-      console.error('Failed to send:', err);
-    } finally {
-      setIsSending(false);
+      await deleteConversation(currentConversationId);
+    } catch (error) {
+      toast.error("旧会话清理失败", {
+        description: formatError(error, "你仍然可以继续开启新对话"),
+      });
     }
-  }, [inputValue, isSending, conversationId]);
+  }, [conversationId]);
 
-  const handleQuickCommand = (label: string) => {
-    setInputValue(label);
-  };
+  const assistantSubtitle = useMemo(() => {
+    if (tenantInfo?.companyName) {
+      return `在线 · 已接入 ${tenantInfo.companyName} 的首页经营上下文`;
+    }
+    return "在线 · 已接入首页经营上下文";
+  }, [tenantInfo?.companyName]);
 
-  // ============================================
-  // 渲染
-  // ============================================
+  const topPendingActions = actions.slice(0, 2);
+
   return (
     <div className="min-h-full bg-cream">
-      <div className="max-w-[1720px] mx-auto">
-        {/* 主内容区：9:3 栅格 */}
+      <div className="mx-auto max-w-[1720px]">
         <div className="grid grid-cols-12 gap-5">
-          {/* 左侧：驾驶舱主容器（8栏） */}
           <main className="col-span-12 lg:col-span-8 xl:col-span-9">
-            {/* CEO驾驶舱大容器 - 增加高度 */}
             <div className="cockpit-container-v2 p-6 lg:p-7">
-              {/* 容器头部 */}
-              <div className="flex items-start justify-between mb-5 relative z-10">
+              <div className="relative z-10 mb-5 flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 bg-navy-elevated rounded-xl flex items-center justify-center border border-[var(--border-navy)]">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--border-navy)] bg-navy-elevated">
                     <ChevronRight size={16} className="text-gold" />
                   </div>
                   <div>
-                    <h1 className="text-light text-xl font-bold tracking-tight">
-                      VertaX AI · <span className="text-gold">出海获客智能体</span>
+                    <h1 className="text-xl font-bold tracking-tight text-light">
+                      VertaX AI <span className="text-gold">出海获客智能体</span>
                     </h1>
-                    <p className="text-light-muted text-xs flex items-center gap-2 mt-1">
+                    <p className="mt-1 flex items-center gap-2 text-xs text-light-muted">
                       <span className="status-dot status-dot-success" />
-                      AI驱动 · 全球市场情报 · 智能外贸决策
+                      AI 驱动 · 全球市场情报 · 经营决策辅助
                     </p>
                   </div>
                 </div>
-                <button 
-                  onClick={loadData}
-                  className="flex items-center gap-2 px-3 py-1.5 text-light-muted hover:text-light border border-[var(--border-navy)] rounded-lg transition-colors text-xs"
+                <button
+                  type="button"
+                  onClick={() => void loadData()}
+                  className="flex items-center gap-2 rounded-lg border border-[var(--border-navy)] px-3 py-1.5 text-xs text-light-muted transition-colors hover:text-light"
                 >
-                  <RefreshCw size={12} className={isLoading ? 'animate-spin' : ''} />
-                  <span>{lastUpdated.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}</span>
+                  <RefreshCw size={12} className={isLoading ? "animate-spin" : undefined} />
+                  <span>{lastUpdated.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })}</span>
                 </button>
               </div>
 
-              {/* 主内容区：左侧快报 + 右侧指令 */}
-              <div className="flex gap-5 relative z-10">
-                {/* CEO专属增长快报（奶油白卡片）- 更大更突出 */}
-                <div className="flex-1 report-card-v2 p-5 lg:p-6">
-                  <div className="flex items-center gap-2 mb-5">
+              <div className="relative z-10 flex flex-col gap-5 xl:flex-row">
+                <div className="report-card-v2 flex-1 p-5 lg:p-6">
+                  <div className="mb-5 flex items-center gap-2">
                     <Sparkles size={18} className="text-gold" />
-                    <h2 className="text-dark font-bold text-base">CEO专属增长快报</h2>
-                    <span className="ml-auto text-dark-muted text-xs font-tabular">
-                      {lastUpdated.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })} 更新
+                    <h2 className="text-base font-bold text-dark">CEO 专属增长快报</h2>
+                    <span className="ml-auto text-xs text-dark-muted">
+                      {lastUpdated.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })} 更新
                     </span>
                   </div>
 
-                  {tenantInfo?.isPublishingSetupPending && (
+                  {tenantInfo?.isPublishingSetupPending ? (
                     <div className="mb-5 rounded-xl border border-[rgba(245,158,11,0.24)] bg-[rgba(245,158,11,0.08)] p-4">
                       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="rounded-full bg-[rgba(245,158,11,0.14)] px-2.5 py-1 text-[11px] font-semibold tracking-[0.18em] text-warning uppercase">
+                            <span className="rounded-full bg-[rgba(245,158,11,0.14)] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-warning">
                               待配置
                             </span>
-                            <span className="text-dark text-sm font-semibold">发布配置未完成，已自动进入安全模式</span>
+                            <span className="text-sm font-semibold text-dark">发布配置未完成，系统已自动进入安全模式</span>
                           </div>
                           <p className="mt-2 text-xs leading-relaxed text-dark-muted">
-                            新租户需先授权至少 1 个发布账号，声量枢纽才会开放创建和发布入口，避免在未完成配置前误操作。
+                            先授权至少一个发布账号后，声量枢纽的创建与发布入口才会开放，避免在未完成配置前误操作。
                           </p>
                         </div>
                         <Link
                           href="/customer/social/accounts"
-                          className="btn-gold-sm inline-flex items-center justify-center px-4 py-2 text-sm shrink-0"
+                          className="btn-gold-sm inline-flex items-center justify-center px-4 py-2 text-sm"
                         >
                           完成发布配置
                         </Link>
                       </div>
                     </div>
-                  )}
+                  ) : null}
 
                   {isLoading ? (
                     <div className="flex items-center justify-center py-16">
-                      <Loader2 className="w-8 h-8 text-gold animate-spin" />
+                      <Loader2 className="h-8 w-8 animate-spin text-gold" />
                     </div>
                   ) : (
                     <div className="space-y-5">
-                      {/* 核心结论 - 三段式结构 */}
-                      <div className="grid grid-cols-[100px_1fr] gap-3 items-start">
-                        <span className="text-dark-secondary text-sm font-medium pt-0.5">核心结论</span>
-                        <p className="text-dark text-[15px] leading-relaxed">
-                          {briefing?.summary || (
-                            <>推进正常：资料结构化与内容校正进入关键阶段；站点与社媒数据接入中。</>
-                          )}
+                      <div className="grid grid-cols-[104px_1fr] gap-3 items-start">
+                        <span className="pt-0.5 text-sm font-medium text-dark-secondary">核心结论</span>
+                        <p className="text-[15px] leading-relaxed text-dark">
+                          {briefing?.summary || "当前经营节奏整体稳定，重点在于把已有商机和内容动作继续往前推进。"}
                         </p>
                       </div>
-                      
-                      {/* 关键成果 */}
-                      <div className="grid grid-cols-[100px_1fr] gap-3 items-start">
+
+                      <div className="grid grid-cols-[104px_1fr] gap-3 items-start">
                         <div className="flex items-center gap-1.5">
-                          <span className="text-dark-secondary text-sm font-medium">关键成果</span>
-                          <span className="badge-gold text-[9px] py-0.5 px-1.5">AI</span>
+                          <span className="text-sm font-medium text-dark-secondary">关键成果</span>
+                          <span className="badge-gold px-1.5 py-0.5 text-[9px]">AI</span>
                         </div>
                         <div className="space-y-2">
-                          {briefing?.highlights?.slice(0, 3).map((item, idx) => (
-                            <div key={idx} className="flex items-start gap-2 text-[15px] text-dark">
-                              <CheckCircle2 size={15} className="text-success mt-0.5 shrink-0" />
+                          {(briefing?.highlights?.length ? briefing.highlights.slice(0, 3) : [
+                            `累计沉淀 ${stats?.totalContents || 0} 篇内容资产`,
+                            `当前识别到 ${stats?.highIntentLeads || 0} 条高意向线索`,
+                            `首页经营数据已汇总，可直接展开对话追问`,
+                          ]).map((item) => (
+                            <div key={item} className="flex items-start gap-2 text-[15px] text-dark">
+                              <CheckCircle2 size={15} className="mt-0.5 shrink-0 text-success" />
                               <span>{item}</span>
                             </div>
-                          )) || (
-                            <>
-                              <div className="flex items-start gap-2 text-[15px] text-dark">
-                                <CheckCircle2 size={15} className="text-success mt-0.5 shrink-0" />
-                                <span>已生成内容草稿 <span className="text-gold font-semibold">1 篇</span>（待你确认 1 篇）</span>
-                              </div>
-                              <div className="flex items-start gap-2 text-[15px] text-dark">
-                                <CheckCircle2 size={15} className="text-success mt-0.5 shrink-0" />
-                                <span>已完成知识结构化：OfferingCard 1 项、ProofCard 1 项...</span>
-                              </div>
-                            </>
-                          )}
+                          ))}
                         </div>
                       </div>
 
-                      {/* 当前阻塞点 - 更明显的警示块 */}
-                      <div className="grid grid-cols-[100px_1fr] gap-3 items-start">
-                        <span className="text-dark-secondary text-sm font-medium pt-1">阻塞卡点</span>
+                      <div className="grid grid-cols-[104px_1fr] gap-3 items-start">
+                        <span className="pt-1 text-sm font-medium text-dark-secondary">阻塞卡点</span>
                         <div className="space-y-2">
-                          {actions.length > 0 ? actions.slice(0, 2).map((action, idx) => (
-                            <div key={idx} className="alert-block-warning p-3">
+                          {topPendingActions.length > 0 ? (
+                            topPendingActions.map((action) => (
+                              <div key={action.id} className="alert-block-warning p-3">
+                                <div className="flex items-start gap-2">
+                                  <AlertTriangle size={14} className="mt-0.5 shrink-0 text-warning" />
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-sm font-medium text-dark">{action.title}</p>
+                                    <p className="mt-0.5 text-xs text-dark-muted">影响模块：{action.module}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="alert-block-warning p-3">
                               <div className="flex items-start gap-2">
-                                <AlertTriangle size={14} className="text-warning mt-0.5 shrink-0" />
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-dark text-sm font-medium">{action.title}</p>
-                                  <p className="text-dark-muted text-xs mt-0.5">影响：{action.module}</p>
+                                <AlertTriangle size={14} className="mt-0.5 shrink-0 text-warning" />
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-sm font-medium text-dark">暂无显著阻塞项</p>
+                                  <p className="mt-0.5 text-xs text-dark-muted">可以直接通过下方对话框追问“下一步建议”。</p>
                                 </div>
                               </div>
                             </div>
-                          )) : (
-                            <>
-                              <div className="alert-block-warning p-3">
-                                <div className="flex items-start gap-2">
-                                  <AlertTriangle size={14} className="text-warning mt-0.5 shrink-0" />
-                                  <div>
-                                    <p className="text-dark text-sm font-medium">渠道授权未完成</p>
-                                    <p className="text-dark-muted text-xs mt-0.5">影响：LinkedIn 自动发布排程已挂起</p>
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="alert-block-danger p-3">
-                                <div className="flex items-start gap-2">
-                                  <AlertTriangle size={14} className="text-danger mt-0.5 shrink-0" />
-                                  <div>
-                                    <p className="text-dark text-sm font-medium">关键参数缺失</p>
-                                    <p className="text-dark-muted text-xs mt-0.5">影响 2 项选型指南生成精度</p>
-                                  </div>
-                                </div>
-                              </div>
-                            </>
                           )}
                         </div>
                       </div>
@@ -280,165 +337,172 @@ export default function CEOCockpitPage() {
                   )}
                 </div>
 
-                {/* 右侧快捷指令区 - 更紧凑 */}
-                <div className="w-36 space-y-1.5 shrink-0">
-                  <p className="text-light-muted text-xs mb-2 px-1">快捷预案</p>
-                  {quickCommands.map((cmd) => (
-                    <button
-                      key={cmd.label}
-                      onClick={() => handleQuickCommand(cmd.label)}
-                      className="btn-cockpit-v2 flex items-center gap-2"
-                    >
-                      {cmd.recommended && <span className="w-1.5 h-1.5 rounded-full bg-gold shrink-0" />}
-                      <cmd.icon size={13} />
-                      <span className="truncate">{cmd.label}</span>
-                    </button>
-                  ))}
+                <div className="w-full shrink-0 xl:w-36">
+                  <p className="mb-2 px-1 text-xs text-light-muted">快捷预案</p>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-1 xl:gap-1.5">
+                    {quickPrompts.map((prompt, index) => {
+                      const PromptIcon = prompt.icon;
+
+                      return (
+                        <button
+                          key={prompt.label}
+                          type="button"
+                          onClick={() => void handleAsk(prompt.prompt)}
+                          disabled={isSending}
+                          className="btn-cockpit-v2 flex items-center gap-2 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {index === 0 ? <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-gold" /> : null}
+                          {PromptIcon ? <PromptIcon size={13} /> : null}
+                          <span className="truncate">{prompt.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
-              {/* 底部大输入框 - 更高更气派 */}
-              <div className="mt-5 relative z-10">
-                <div className="flex gap-3">
-                  <input
-                    type="text"
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-                    placeholder="董事长您请吩咐：想查看本周商机、内容进度，或需要我给出下一步建议？"
-                    className="input-cockpit-v2 flex-1"
-                    disabled={isSending}
-                  />
-                  <button
-                    onClick={handleSend}
-                    disabled={!inputValue.trim() || isSending}
-                    className="btn-gold-v2 px-6 flex items-center justify-center"
-                  >
-                    {isSending ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
-                  </button>
-                </div>
+              <div
+                className="home-assistant-frame relative z-10 mt-6"
+                data-open={assistantExpanded ? "true" : "false"}
+              >
+                <BigChat
+                  messages={messages}
+                  onSend={handleAsk}
+                  onAction={handleAssistantAction}
+                  onRetryPrompt={handleAsk}
+                  isLoading={isSending}
+                  quickPrompts={quickPrompts}
+                  quickPromptMode="send"
+                  retryPrompt={retryPrompt}
+                  retryDescription="点击后会直接重发刚才那条问题，不需要重新输入。"
+                  placeholder="董事长您请吩咐：想看本周商机、内容进度，还是让我直接给出下一步建议？"
+                  welcomeMessage="我已经接入首页经营数据。你可以直接问“本周商机怎么样”“内容推进到哪了”“下一步我该怎么拍板”。"
+                  onReset={() => void handleResetConversation()}
+                  title="CEO 助手"
+                  subtitle={assistantSubtitle}
+                  collapsed={!assistantExpanded}
+                  onExpand={() => setAssistantExpanded(true)}
+                  className="h-full"
+                />
               </div>
             </div>
 
-            {/* 底部：待决策区 - 间距缩小 */}
             <div className="mt-4 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Zap size={15} className="text-gold" />
-                  <h2 className="text-dark font-bold text-sm">AI 缺口识别与待您决策</h2>
+                  <h2 className="text-sm font-bold text-dark">AI 缺口识别与待您决策</h2>
                 </div>
-                <span className="text-dark-muted text-xs">P0 优先级：{actions.filter(a => a.priority === 'P0').length}</span>
+                <span className="text-xs text-dark-muted">P0 优先级：{actions.filter((item) => item.priority === "P0").length}</span>
               </div>
 
               {actions.slice(0, 2).map((action) => (
-                <div key={action.id} className="secretary-card-v2 p-4 flex items-center gap-4">
-                  <span className={`px-2 py-1 text-xs font-bold rounded ${
-                    action.priority === 'P0' ? 'bg-[rgba(239,68,68,0.1)] text-danger' : 'bg-[rgba(245,158,11,0.1)] text-warning'
-                  }`}>
-                    {action.priority === 'P0' ? '发布审批' : '权限连接'}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-dark font-medium text-sm">{action.title}</p>
-                    <p className="text-dark-muted text-xs mt-0.5 truncate">内容已根据「旧线改造案例」生成，需校实涂料节省数据准确性</p>
-                  </div>
-                  <Link
-                    href={action.actionLink}
-                    className="btn-gold-sm px-4 py-2 text-sm shrink-0"
+                <div key={action.id} className="secretary-card-v2 flex items-center gap-4 p-4">
+                  <span
+                    className={`rounded px-2 py-1 text-xs font-bold ${
+                      action.priority === "P0"
+                        ? "bg-[rgba(239,68,68,0.1)] text-danger"
+                        : "bg-[rgba(245,158,11,0.1)] text-warning"
+                    }`}
                   >
-                    {action.action || '立即审批'}
+                    {action.priority === "P0" ? "老板决策" : "待推进"}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-dark">{action.title}</p>
+                    <p className="mt-0.5 truncate text-xs text-dark-muted">来自 {action.module}，建议尽快处理以免拖慢本周推进节奏。</p>
+                  </div>
+                  <Link href={action.actionLink} className="btn-gold-sm shrink-0 px-4 py-2 text-sm">
+                    {action.action || "立即处理"}
                   </Link>
                 </div>
               ))}
             </div>
           </main>
 
-          {/* 右侧：秘书台（4栏）- 重构为汇报清单 */}
-          <aside className="col-span-12 lg:col-span-4 xl:col-span-3 space-y-3">
-            {/* A) 秘书汇报主卡（置顶） */}
+          <aside className="col-span-12 space-y-3 lg:col-span-4 xl:col-span-3">
             <div className="secretary-card-v2 p-4">
-              <div className="flex items-center gap-2 mb-4 pb-3 border-b border-[var(--border-cream)]">
+              <div className="mb-4 flex items-center gap-2 border-b border-[var(--border-cream)] pb-3">
                 <FileText size={14} className="text-dark-secondary" />
-                <span className="text-dark font-bold text-sm">秘书汇报</span>
-                <span className="ml-auto text-dark-muted text-[10px]">实时</span>
+                <span className="text-sm font-bold text-dark">秘书汇报</span>
+                <span className="ml-auto text-[10px] text-dark-muted">实时</span>
               </div>
-              
-              {/* KPI清单 - 更像汇报条目 */}
+
               <div className="space-y-0">
-                <SecretaryRow 
-                  label="知识完整度" 
-                  value={`${stats?.knowledgeCompleteness || 78}%`}
-                  status="progress"
+                <SecretaryRow
+                  label="知识完整度"
+                  value={`${stats?.knowledgeCompleteness || 0}%`}
+                  status={(stats?.knowledgeCompleteness || 0) >= 60 ? "progress" : "attention"}
                   href="/customer/knowledge/assets"
                 />
-                <SecretaryRow 
-                  label="内容库存" 
-                  value="1.2GB"
-                  status="progress"
-                  href="/customer/knowledge/assets"
+                <SecretaryRow
+                  label="高意向线索"
+                  value={`${stats?.highIntentLeads || 0} 条`}
+                  status={(stats?.highIntentLeads || 0) > 0 ? "attention" : "progress"}
+                  href="/customer/radar"
                 />
-                <SecretaryRow 
-                  label="待您确认" 
+                <SecretaryRow
+                  label="待您确认"
                   value={`${actions.length} 项`}
-                  status={actions.length > 0 ? 'attention' : 'progress'}
+                  status={actions.length > 0 ? "attention" : "progress"}
                   href="/customer/hub"
                 />
-                <SecretaryRow 
-                  label="VOC 合规" 
-                  value="A+"
-                  subtext="行业领先"
-                  status="progress"
-                  href="/customer/radar"
+                <SecretaryRow
+                  label="待处理内容"
+                  value={`${stats?.pendingContents || 0} 篇`}
+                  status={(stats?.pendingContents || 0) > 0 ? "attention" : "progress"}
+                  href="/customer/marketing/contents"
                   isLast
                 />
               </div>
             </div>
 
-            {/* B) AI执行官消息（缩小，更像秘书建议） */}
             <div className="highlight-card-v2 p-4">
-              <div className="flex items-center gap-2 mb-3">
+              <div className="mb-3 flex items-center gap-2">
                 <Sparkles size={13} className="text-gold" />
-                <span className="text-gold text-xs font-semibold">AI 执行官建议</span>
+                <span className="text-xs font-semibold text-gold">AI 执行官建议</span>
               </div>
-              <p className="text-dark-secondary text-sm leading-relaxed">
-                {briefing?.recommendations?.[0]?.slice(0, 60) || '识别到喷涂工作站参数缺口。补齐将提升选型手册质量。'}
-                {(briefing?.recommendations?.[0]?.length || 0) > 60 && '...'}
+              <p className="text-sm leading-relaxed text-dark-secondary">
+                {briefing?.recommendations?.[0] || "建议先补齐企业档案与发布配置，再继续放大内容和商机动作。"}
               </p>
-              <button className="mt-3 flex items-center gap-1.5 text-gold text-xs font-medium hover:underline">
-                <FileText size={12} />
-                立即补齐资料
+              <button
+                type="button"
+                onClick={() => void handleAsk("请根据当前首页数据，直接给我一个最值得执行的下一步建议。")}
+                className="mt-3 flex items-center gap-1.5 text-xs font-medium text-gold hover:underline"
+              >
+                <Send size={12} />
+                让我直接生成建议
               </button>
             </div>
 
-            {/* C) 待您审批列表 */}
             <div className="secretary-card-v2 p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <CheckCircle2 size={14} className="text-dark-secondary" />
-                  <span className="text-dark font-bold text-sm">待您审批</span>
-                  {actions.length > 0 && (
-                    <span className="ml-auto badge-attention text-[10px]">{actions.length}</span>
-                  )}
-                </div>
-                
-                {actions.length > 0 ? (
-                  <div className="space-y-2">
-                    {actions.slice(0, 3).map((action) => (
-                      <Link 
-                        key={action.id} 
-                        href={action.actionLink}
-                        className="flex items-center gap-2 p-2 rounded-lg hover:bg-cream-warm transition-colors group"
-                      >
-                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                          action.priority === 'P0' ? 'bg-danger' : 'bg-warning'
-                        }`} />
-                        <span className="text-dark text-sm truncate flex-1">{action.title}</span>
-                        <ChevronRight size={12} className="text-dark-muted group-hover:text-gold transition-colors" />
-                      </Link>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-dark-muted text-sm py-2">已为您处理完毕，暂无需确认事项。</p>
-                )}
+              <div className="mb-3 flex items-center gap-2">
+                <CheckCircle2 size={14} className="text-dark-secondary" />
+                <span className="text-sm font-bold text-dark">待您审批</span>
+                {actions.length > 0 ? <span className="ml-auto badge-attention text-[10px]">{actions.length}</span> : null}
               </div>
+
+              {actions.length > 0 ? (
+                <div className="space-y-2">
+                  {actions.slice(0, 3).map((action) => (
+                    <Link
+                      key={action.id}
+                      href={action.actionLink}
+                      className="group flex items-center gap-2 rounded-lg p-2 transition-colors hover:bg-cream-warm"
+                    >
+                      <span
+                        className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                          action.priority === "P0" ? "bg-danger" : "bg-warning"
+                        }`}
+                      />
+                      <span className="flex-1 truncate text-sm text-dark">{action.title}</span>
+                      <ChevronRight size={12} className="text-dark-muted transition-colors group-hover:text-gold" />
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <p className="py-2 text-sm text-dark-muted">当前没有需要老板拍板的事项，可以直接通过对话框继续追问。</p>
+              )}
+            </div>
           </aside>
         </div>
       </div>
@@ -446,45 +510,44 @@ export default function CEOCockpitPage() {
   );
 }
 
-// ============================================
-// 子组件：秘书汇报行
-// ============================================
-function SecretaryRow({ 
-  label, 
-  value, 
+function SecretaryRow({
+  label,
+  value,
   subtext,
-  status, 
+  status,
   href,
   isLast = false,
-}: { 
-  label: string; 
-  value: string; 
+}: {
+  label: string;
+  value: string;
   subtext?: string;
-  status: 'progress' | 'attention';
+  status: "progress" | "attention";
   href: string;
   isLast?: boolean;
 }) {
   return (
-    <Link 
+    <Link
       href={href}
-      className={`flex items-center justify-between py-2.5 group hover:bg-cream-warm -mx-2 px-2 rounded-lg transition-colors ${
-        !isLast ? 'border-b border-[var(--border-cream)]' : ''
+      className={`group flex items-center justify-between rounded-lg px-2 py-2.5 transition-colors hover:bg-cream-warm ${
+        !isLast ? "border-b border-[var(--border-cream)]" : ""
       }`}
     >
-      <span className="text-dark-secondary text-sm">{label}</span>
+      <span className="text-sm text-dark-secondary">{label}</span>
       <div className="flex items-center gap-2">
         <div className="text-right">
-          <span className="text-dark font-bold font-tabular text-sm">{value}</span>
-          {subtext && <span className="text-dark-muted text-[10px] ml-1">{subtext}</span>}
+          <span className="font-tabular text-sm font-bold text-dark">{value}</span>
+          {subtext ? <span className="ml-1 text-[10px] text-dark-muted">{subtext}</span> : null}
         </div>
-        <span className={`text-[10px] px-1.5 py-0.5 rounded ${
-          status === 'attention' 
-            ? 'bg-[rgba(245,158,11,0.12)] text-warning' 
-            : 'bg-[rgba(34,197,94,0.12)] text-success'
-        }`}>
-          {status === 'attention' ? '需关注' : '稳步'}
+        <span
+          className={`rounded px-1.5 py-0.5 text-[10px] ${
+            status === "attention"
+              ? "bg-[rgba(245,158,11,0.12)] text-warning"
+              : "bg-[rgba(34,197,94,0.12)] text-success"
+          }`}
+        >
+          {status === "attention" ? "需关注" : "稳步"}
         </span>
-        <ChevronRight size={12} className="text-dark-muted group-hover:text-gold transition-colors" />
+        <ChevronRight size={12} className="text-dark-muted transition-colors group-hover:text-gold" />
       </div>
     </Link>
   );

@@ -605,6 +605,30 @@
   box-shadow: 0 4px 12px -2px rgba(212,175,55,0.4);
 }
 
+.home-assistant-frame {
+  height: 90px;
+  transition:
+    height 280ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 280ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 220ms ease;
+}
+
+.home-assistant-frame[data-open="true"] {
+  height: clamp(420px, 56vh, 620px);
+}
+
+@media (min-width: 768px) {
+  .home-assistant-frame[data-open="true"] {
+    height: clamp(380px, 50vh, 520px);
+  }
+}
+
+@media (min-width: 1280px) {
+  .home-assistant-frame[data-open="true"] {
+    height: clamp(420px, 52vh, 560px);
+  }
+}
+
 /* 秘书台卡片 V2 - 更紧凑 */
 .secretary-card-v2 {
   background: #F7F3E8;

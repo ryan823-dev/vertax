@@ -29,7 +29,9 @@ export type EntityType =
   | 'TopicCluster'
   | 'ContentDraft'
   | 'ClaimsVerification'
-  | 'PublishPack';
+  | 'PublishPack'
+  // 助手产物
+  | 'AssistantPlan';
 
 export interface ArtifactVersionMeta {
   changeNote?: string;
@@ -281,6 +283,7 @@ export interface ChatMessageData {
   role: 'user' | 'assistant' | 'system';
   content: string;
   references: EvidenceReference[] | null;
+  payload?: Record<string, unknown> | null;
   tokens: number | null;
   createdAt: Date;
 }

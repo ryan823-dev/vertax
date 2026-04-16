@@ -1,49 +1,31 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from 'react';
-import Link from 'next/link';
-import { 
-  Send, 
-  Sparkles, 
-  Loader2, 
+import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import {
+  AlertCircle,
+  CheckCircle2,
   ChevronDown,
   ExternalLink,
   FileText,
-  CheckCircle2,
-  AlertCircle,
   Lightbulb,
-  Clock,
+  Loader2,
   RotateCcw,
-} from 'lucide-react';
+  Send,
+  Sparkles,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import type { AssistantAction, AssistantReference, ExecutiveAssistantPayload } from "@/lib/executive-assistant/types";
 
-export interface Reference {
-  id: string;
-  type: 'evidence' | 'product' | 'activity' | 'artifact';
-  title: string;
-  source?: string;
-  href?: string;
-}
-
-export interface StructuredResponse {
-  /** 结论 - 一句话结论 */
-  conclusion: string;
-  /** 依据 - 支撑结论的数据/证据 */
-  evidence?: string[];
-  /** 建议 - 下一步行动建议 */
-  suggestions?: string[];
-  /** 待确认 - 需要用户决策的事项 */
-  pendingConfirmation?: string[];
-  /** 引用证据 */
-  references?: Reference[];
-}
+export type Reference = AssistantReference;
+export type StructuredResponse = ExecutiveAssistantPayload;
 
 export interface ChatMessage {
   id: string;
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: string;
   structuredContent?: StructuredResponse;
   timestamp: Date;
-  isLoading?: boolean;
 }
 
 export interface QuickPrompt {
@@ -53,350 +35,493 @@ export interface QuickPrompt {
 }
 
 export interface BigChatProps {
-  /** 对话消息列表 */
   messages: ChatMessage[];
-  /** 发送消息回调 */
   onSend: (message: string) => Promise<void>;
-  /** 是否正在加载 */
+  onAction?: (action: AssistantAction) => Promise<void> | void;
+  onRetryPrompt?: (prompt: string) => Promise<void> | void;
   isLoading?: boolean;
-  /** 快捷指令列表 */
   quickPrompts?: QuickPrompt[];
-  /** 输入框占位符 */
   placeholder?: string;
-  /** 欢迎语 */
   welcomeMessage?: string;
-  /** 重置对话 */
   onReset?: () => void;
+  retryPrompt?: string | null;
+  retryDescription?: string;
+  title?: string;
+  subtitle?: string;
+  className?: string;
+  collapsed?: boolean;
+  onExpand?: () => void;
+  quickPromptMode?: "fill" | "send";
 }
 
-/**
- * BigChat - 高管AI对话组件
- * 
- * 特性：
- * - 大输入框，打字舒适
- * - 结构化回复展示（结论/依据/建议/待确认）
- * - 证据溯源（可展开查看引用）
- * - 秘书式语气
- */
 export function BigChat({
   messages,
   onSend,
+  onAction,
+  onRetryPrompt,
   isLoading = false,
   quickPrompts = [],
-  placeholder = '请指示…',
-  welcomeMessage = '我已深度了解贵司业务，可以随时为您分析战略、解答疑问。',
+  placeholder = "告诉我你想看什么，我会把重点捞出来。",
+  welcomeMessage = "我会结合首页经营数据、内容进度和商机状态，给你一个适合现在这一步的答案。",
   onReset,
+  retryPrompt = null,
+  retryDescription = "上一次提问没有成功发出，原问题还在这里。",
+  title = "CEO 助手",
+  subtitle = "在线 · 首页经营上下文已接入",
+  className,
+  collapsed = false,
+  onExpand,
+  quickPromptMode = "fill",
 }: BigChatProps) {
-  const [inputValue, setInputValue] = useState('');
+  const [inputValue, setInputValue] = useState("");
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Auto-scroll to bottom
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    if (!collapsed) {
+      chatEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    }
+  }, [collapsed, messages, isLoading]);
 
-  // Auto-resize textarea
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setInputValue(e.target.value);
-    // Auto-resize
-    e.target.style.height = 'auto';
-    e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px';
+  const resizeTextarea = useCallback((target: HTMLTextAreaElement | null) => {
+    if (!target) {
+      return;
+    }
+
+    target.style.height = "auto";
+    target.style.height = `${Math.min(target.scrollHeight, collapsed ? 72 : 160)}px`;
+  }, [collapsed]);
+
+  const handleInputChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInputValue(event.target.value);
+    resizeTextarea(event.target);
   };
 
   const handleSend = useCallback(async () => {
-    if (!inputValue.trim() || isLoading) return;
-    const msg = inputValue;
-    setInputValue('');
-    if (inputRef.current) {
-      inputRef.current.style.height = 'auto';
+    if (!inputValue.trim() || isLoading) {
+      return;
     }
-    await onSend(msg);
-  }, [inputValue, isLoading, onSend]);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
+    const value = inputValue.trim();
+    onExpand?.();
+    setInputValue("");
+    if (inputRef.current) {
+      inputRef.current.style.height = "auto";
     }
+    await onSend(value);
+  }, [inputValue, isLoading, onExpand, onSend]);
+
+  const handleQuickPrompt = async (prompt: string) => {
+    onExpand?.();
+
+    if (quickPromptMode === "send") {
+      await onSend(prompt);
+      return;
+    }
+
+    setInputValue(prompt);
+    requestAnimationFrame(() => {
+      resizeTextarea(inputRef.current);
+      inputRef.current?.focus();
+    });
   };
 
-  const handleQuickPrompt = (prompt: string) => {
-    setInputValue(prompt);
-    inputRef.current?.focus();
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      void handleSend();
+    }
   };
 
   const hasMessages = messages.length > 0;
 
-  return (
-    <div className="exec-card flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center justify-between p-6 border-b border-exec-subtle">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-exec-gold rounded-xl flex items-center justify-center shadow-exec-gold-glow">
-            <Sparkles className="text-exec-base" size={20} />
-          </div>
-          <div>
-            <h3 className="text-exec-primary font-bold">VertaX 战略顾问</h3>
-            <p className="text-exec-success text-xs flex items-center gap-1">
-              <span className="w-1.5 h-1.5 bg-exec-success rounded-full animate-pulse" />
-              在线 · 深度了解您的业务
-            </p>
-          </div>
-        </div>
-        {onReset && hasMessages && (
-          <button
-            onClick={onReset}
-            className="btn-exec-ghost flex items-center gap-1.5 text-xs"
-          >
-            <RotateCcw size={14} />
-            新对话
-          </button>
+  if (collapsed) {
+    return (
+      <div
+        className={cn(
+          "rounded-[28px] border border-[#E8E0D0] bg-[#F7F3E8] p-3 shadow-[0_12px_30px_-18px_rgba(11,18,32,0.55)]",
+          className
         )}
-      </div>
-
-      {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-exec">
-        {!hasMessages && (
-          <div className="text-center py-12">
-            <div className="w-16 h-16 bg-exec-gold-subtle rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Sparkles className="text-exec-gold" size={28} />
-            </div>
-            <p className="text-exec-secondary text-sm max-w-md mx-auto">
-              {welcomeMessage}
-            </p>
-            {quickPrompts.length > 0 && (
-              <div className="flex flex-wrap justify-center gap-2 mt-6">
-                {quickPrompts.map((qp, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => handleQuickPrompt(qp.prompt)}
-                    className="btn-exec-secondary text-xs py-2 px-4 flex items-center gap-1.5"
-                  >
-                    {qp.icon && <qp.icon size={14} />}
-                    {qp.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {messages.map((msg) => (
-          <MessageBubble key={msg.id} message={msg} />
-        ))}
-
-        {isLoading && (
-          <div className="flex justify-start">
-            <div className="bg-exec-elevated rounded-2xl px-5 py-4 border border-exec-subtle">
-              <div className="flex items-center gap-2 text-exec-gold">
-                <Loader2 size={16} className="animate-spin" />
-                <span className="text-sm">正在分析中…</span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div ref={chatEndRef} />
-      </div>
-
-      {/* Quick prompts when has messages */}
-      {hasMessages && quickPrompts.length > 0 && (
-        <div className="px-6 pb-2 flex gap-2 flex-wrap">
-          {quickPrompts.slice(0, 4).map((qp, idx) => (
-            <button
-              key={idx}
-              onClick={() => handleQuickPrompt(qp.prompt)}
-              className="text-exec-muted text-xs hover:text-exec-gold transition-colors"
-            >
-              {qp.label}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Input Area */}
-      <div className="p-6 pt-3 border-t border-exec-subtle">
-        <div className="flex gap-3">
+      >
+        <div className="flex items-end gap-3">
           <textarea
             ref={inputRef}
             value={inputValue}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
+            rows={1}
             placeholder={placeholder}
             disabled={isLoading}
-            rows={1}
-            className="input-exec flex-1 resize-none min-h-[56px] text-base"
+            className="min-h-[56px] flex-1 resize-none rounded-[22px] border border-[#E8E0D0] bg-[#FCF8EF] px-5 py-4 text-[15px] leading-6 text-[#102034] outline-none transition focus:border-[#D4AF37] focus:ring-2 focus:ring-[rgba(212,175,55,0.22)]"
+            aria-label="CEO 助手输入框"
           />
           <button
-            onClick={handleSend}
+            type="button"
+            onClick={() => void handleSend()}
             disabled={!inputValue.trim() || isLoading}
-            className="btn-exec-primary px-6 self-end disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex h-14 w-14 items-center justify-center rounded-[22px] bg-[#D4AF37] text-[#0B1220] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
+            aria-label="发送消息"
           >
-            {isLoading ? (
-              <Loader2 size={20} className="animate-spin" />
-            ) : (
-              <Send size={20} />
-            )}
+            {isLoading ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
           </button>
-        </div>
-        <p className="text-exec-muted text-xs mt-2">
-          按 Enter 发送 · Shift+Enter 换行
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function MessageBubble({ message }: { message: ChatMessage }) {
-  const isUser = message.role === 'user';
-
-  if (isUser) {
-    return (
-      <div className="flex justify-end">
-        <div className="max-w-[80%] bg-exec-gold text-exec-base rounded-2xl rounded-br-md px-5 py-3">
-          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
         </div>
       </div>
     );
   }
 
-  // Assistant message - check for structured content
+  return (
+    <div
+      className={cn(
+        "flex h-full flex-col overflow-hidden rounded-[28px] border border-[rgba(255,255,255,0.06)] bg-[linear-gradient(180deg,rgba(10,16,24,0.96),rgba(8,12,20,0.98))] shadow-[0_22px_60px_-26px_rgba(0,0,0,0.8)]",
+        className
+      )}
+    >
+      <div className="flex items-center justify-between gap-4 border-b border-[rgba(255,255,255,0.06)] px-5 py-4 sm:px-6">
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[rgba(212,175,55,0.16)] text-[#D4AF37] shadow-[0_12px_30px_-18px_rgba(212,175,55,0.75)]">
+            <Sparkles size={18} />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-[#F8F5EE] sm:text-base">{title}</h3>
+            <p className="text-xs text-[rgba(248,245,238,0.62)]">{subtitle}</p>
+          </div>
+        </div>
+        {onReset && hasMessages ? (
+          <button
+            type="button"
+            onClick={onReset}
+            className="inline-flex items-center gap-1.5 rounded-full border border-[rgba(255,255,255,0.08)] px-3 py-1.5 text-xs font-medium text-[rgba(248,245,238,0.76)] transition hover:border-[rgba(212,175,55,0.32)] hover:text-[#F8F5EE]"
+          >
+            <RotateCcw size={14} />
+            新对话
+          </button>
+        ) : null}
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-6">
+        {!hasMessages ? (
+          <div className="mx-auto flex max-w-2xl flex-col items-center justify-center gap-4 py-10 text-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-[22px] bg-[rgba(212,175,55,0.14)] text-[#D4AF37]">
+              <Sparkles size={28} />
+            </div>
+            <div className="space-y-2">
+              <p className="text-base font-medium text-[#F8F5EE]">首页经营上下文已就绪</p>
+              <p className="mx-auto max-w-[42rem] text-sm leading-7 text-[rgba(248,245,238,0.68)]">
+                {welcomeMessage}
+              </p>
+            </div>
+            {quickPrompts.length > 0 ? (
+              <div className="mt-2 flex flex-wrap justify-center gap-2">
+                {quickPrompts.map((prompt) => (
+                  <button
+                    key={prompt.label}
+                    type="button"
+                    onClick={() => void handleQuickPrompt(prompt.prompt)}
+                    className="inline-flex items-center gap-2 rounded-full border border-[rgba(212,175,55,0.24)] bg-[rgba(255,255,255,0.03)] px-4 py-2 text-xs font-medium text-[rgba(248,245,238,0.76)] transition hover:border-[rgba(212,175,55,0.45)] hover:text-[#F8F5EE]"
+                  >
+                    {prompt.icon ? <prompt.icon size={13} /> : null}
+                    {prompt.label}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {messages.map((message) => (
+              <MessageBubble
+                key={message.id}
+                message={message}
+                onAction={onAction}
+              />
+            ))}
+            {isLoading ? (
+              <div className="flex justify-start">
+                <div className="inline-flex items-center gap-2 rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.04)] px-4 py-3 text-sm text-[#D4AF37]">
+                  <Loader2 size={16} className="animate-spin" />
+                  正在整理经营结论...
+                </div>
+              </div>
+            ) : null}
+            <div ref={chatEndRef} />
+          </div>
+        )}
+      </div>
+
+      {hasMessages && quickPrompts.length > 0 ? (
+        <div className="border-t border-[rgba(255,255,255,0.05)] px-5 py-3 sm:px-6">
+          <div className="flex flex-wrap gap-2">
+            {quickPrompts.map((prompt) => (
+              <button
+                key={prompt.label}
+                type="button"
+                onClick={() => void handleQuickPrompt(prompt.prompt)}
+                className="rounded-full border border-[rgba(255,255,255,0.08)] px-3 py-1.5 text-xs text-[rgba(248,245,238,0.72)] transition hover:border-[rgba(212,175,55,0.32)] hover:text-[#F8F5EE]"
+              >
+                {prompt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      <div className="sticky bottom-0 border-t border-[rgba(255,255,255,0.06)] bg-[linear-gradient(180deg,rgba(9,13,21,0.82),rgba(9,13,21,0.96))] px-4 py-4 backdrop-blur sm:px-6">
+        {retryPrompt && onRetryPrompt ? (
+          <div className="mb-3 flex items-center justify-between gap-3 rounded-[20px] border border-[rgba(245,158,11,0.18)] bg-[rgba(245,158,11,0.1)] px-4 py-3">
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-[#F8F5EE]">发送未完成</p>
+              <p className="text-xs leading-6 text-[rgba(248,245,238,0.72)]">{retryDescription}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => void onRetryPrompt(retryPrompt)}
+              disabled={isLoading}
+              className="shrink-0 rounded-full border border-[rgba(212,175,55,0.32)] bg-[rgba(212,175,55,0.14)] px-4 py-2 text-xs font-semibold text-[#F8F5EE] transition hover:border-[rgba(212,175,55,0.5)] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              重试上一条
+            </button>
+          </div>
+        ) : null}
+        <div className="flex items-end gap-3">
+          <textarea
+            ref={inputRef}
+            value={inputValue}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            rows={1}
+            placeholder={placeholder}
+            disabled={isLoading}
+            className="min-h-[64px] flex-1 resize-none rounded-[24px] border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.03)] px-5 py-4 text-[15px] leading-6 text-[#F8F5EE] outline-none transition placeholder:text-[rgba(248,245,238,0.38)] focus:border-[rgba(212,175,55,0.45)] focus:ring-2 focus:ring-[rgba(212,175,55,0.2)]"
+            aria-label="CEO 助手输入框"
+          />
+          <button
+            type="button"
+            onClick={() => void handleSend()}
+            disabled={!inputValue.trim() || isLoading}
+            className="flex h-16 w-16 items-center justify-center rounded-[24px] bg-[#D4AF37] text-[#0B1220] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
+            aria-label="发送消息"
+          >
+            {isLoading ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
+          </button>
+        </div>
+        <p className="mt-2 text-xs text-[rgba(248,245,238,0.45)]">Enter 发送，Shift + Enter 换行</p>
+      </div>
+    </div>
+  );
+}
+
+function MessageBubble({
+  message,
+  onAction,
+}: {
+  message: ChatMessage;
+  onAction?: (action: AssistantAction) => Promise<void> | void;
+}) {
+  const isUser = message.role === "user";
+
+  if (isUser) {
+    return (
+      <div className="flex justify-end">
+        <div className="max-w-[85%] rounded-[22px] rounded-br-md bg-[#D4AF37] px-4 py-3 text-sm leading-7 text-[#0B1220] shadow-[0_16px_40px_-24px_rgba(212,175,55,0.75)]">
+          <p className="whitespace-pre-wrap">{message.content}</p>
+        </div>
+      </div>
+    );
+  }
+
   if (message.structuredContent) {
-    return <StructuredMessage content={message.structuredContent} timestamp={message.timestamp} />;
+    return (
+      <StructuredMessage
+        content={message.structuredContent}
+        timestamp={message.timestamp}
+        onAction={onAction}
+      />
+    );
   }
 
   return (
     <div className="flex justify-start">
-      <div className="max-w-[85%] bg-exec-elevated border border-exec-subtle rounded-2xl rounded-bl-md px-5 py-4">
-        <p className="text-exec-primary text-sm whitespace-pre-wrap leading-relaxed">
-          {message.content}
-        </p>
-        <p className="text-exec-muted text-xs mt-2">
-          {message.timestamp.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
-        </p>
+      <div className="max-w-[88%] rounded-[22px] rounded-bl-md border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.04)] px-4 py-3 text-sm leading-7 text-[#F8F5EE]">
+        <p className="whitespace-pre-wrap">{message.content}</p>
+        <MessageTimestamp timestamp={message.timestamp} />
       </div>
     </div>
   );
 }
 
-function StructuredMessage({ content, timestamp }: { content: StructuredResponse; timestamp: Date }) {
+function StructuredMessage({
+  content,
+  timestamp,
+  onAction,
+}: {
+  content: StructuredResponse;
+  timestamp: Date;
+  onAction?: (action: AssistantAction) => Promise<void> | void;
+}) {
   const [showEvidence, setShowEvidence] = useState(false);
+  const [activeAction, setActiveAction] = useState<string | null>(null);
+
+  const handleAction = async (action: AssistantAction) => {
+    if (!onAction) {
+      return;
+    }
+
+    const key =
+      action.type === "open_module"
+        ? `${action.type}:${action.href}`
+        : action.type === "create_task"
+          ? `${action.type}:${action.title}`
+          : action.type;
+
+    setActiveAction(key);
+    try {
+      await onAction(action);
+    } finally {
+      setActiveAction(null);
+    }
+  };
 
   return (
     <div className="flex justify-start">
-      <div className="max-w-[90%] space-y-3 animate-exec-fade-in">
-        {/* 结论 - Conclusion */}
-        <div className="bg-exec-elevated border border-exec-subtle rounded-2xl rounded-bl-md px-5 py-4">
-          <div className="flex items-start gap-2 mb-2">
-            <CheckCircle2 size={16} className="text-exec-gold mt-0.5 shrink-0" />
-            <span className="text-exec-gold text-xs font-medium">结论</span>
+      <div className="max-w-[92%] space-y-3">
+        <div className="rounded-[22px] rounded-bl-md border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.04)] px-5 py-4">
+          <div className="mb-2 flex items-start gap-2">
+            <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-[#D4AF37]" />
+            <span className="text-xs font-semibold tracking-[0.18em] text-[#D4AF37] uppercase">Conclusion</span>
           </div>
-          <p className="text-exec-primary text-base font-medium leading-relaxed">
-            {content.conclusion}
-          </p>
+          <p className="text-[15px] leading-7 text-[#F8F5EE]">{content.conclusion}</p>
         </div>
 
-        {/* 依据 - Evidence */}
-        {content.evidence && content.evidence.length > 0 && (
-          <div className="bg-exec-panel border border-exec-subtle rounded-xl px-5 py-3">
+        {content.evidence?.length ? (
+          <div className="rounded-[20px] border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] px-4 py-3">
             <button
-              onClick={() => setShowEvidence(!showEvidence)}
-              className="flex items-center gap-2 w-full text-left"
+              type="button"
+              onClick={() => setShowEvidence((value) => !value)}
+              className="flex w-full items-center gap-2 text-left"
             >
-              <FileText size={14} className="text-exec-muted" />
-              <span className="text-exec-secondary text-xs flex-1">
-                依据（{content.evidence.length} 条）
+              <FileText size={14} className="text-[rgba(248,245,238,0.58)]" />
+              <span className="flex-1 text-xs font-medium text-[rgba(248,245,238,0.72)]">
+                依据 ({content.evidence.length})
               </span>
               <ChevronDown
                 size={14}
-                className={`text-exec-muted transition-transform ${showEvidence ? 'rotate-180' : ''}`}
+                className={cn(
+                  "text-[rgba(248,245,238,0.58)] transition-transform",
+                  showEvidence ? "rotate-180" : undefined
+                )}
               />
             </button>
-            {showEvidence && (
-              <div className="mt-3 space-y-2 pt-3 border-t border-exec-subtle">
-                {content.evidence.map((ev, idx) => (
-                  <p key={idx} className="text-exec-secondary text-sm flex items-start gap-2">
-                    <span className="text-exec-muted shrink-0">·</span>
-                    {ev}
+            {showEvidence ? (
+              <div className="mt-3 space-y-2 border-t border-[rgba(255,255,255,0.06)] pt-3">
+                {content.evidence.map((item) => (
+                  <p key={item} className="flex gap-2 text-sm leading-6 text-[rgba(248,245,238,0.78)]">
+                    <span className="text-[#D4AF37]">•</span>
+                    <span>{item}</span>
                   </p>
                 ))}
               </div>
-            )}
+            ) : null}
           </div>
-        )}
+        ) : null}
 
-        {/* 建议 - Suggestions */}
-        {content.suggestions && content.suggestions.length > 0 && (
-          <div className="bg-exec-gold-subtle border border-exec-gold/20 rounded-xl px-5 py-3">
-            <div className="flex items-center gap-2 mb-2">
-              <Lightbulb size={14} className="text-exec-gold" />
-              <span className="text-exec-gold text-xs font-medium">建议</span>
+        {content.suggestions?.length ? (
+          <div className="rounded-[20px] border border-[rgba(212,175,55,0.22)] bg-[rgba(212,175,55,0.08)] px-4 py-3">
+            <div className="mb-2 flex items-center gap-2">
+              <Lightbulb size={14} className="text-[#D4AF37]" />
+              <span className="text-xs font-semibold tracking-[0.18em] text-[#D4AF37] uppercase">Suggestions</span>
             </div>
-            <div className="space-y-1.5">
-              {content.suggestions.map((sug, idx) => (
-                <p key={idx} className="text-exec-secondary text-sm flex items-start gap-2">
-                  <span className="text-exec-gold shrink-0">{idx + 1}.</span>
-                  {sug}
+            <div className="space-y-2">
+              {content.suggestions.map((item, index) => (
+                <p key={item} className="flex gap-2 text-sm leading-6 text-[rgba(248,245,238,0.9)]">
+                  <span className="min-w-4 text-[#D4AF37]">{index + 1}.</span>
+                  <span>{item}</span>
                 </p>
               ))}
             </div>
           </div>
-        )}
+        ) : null}
 
-        {/* 待确认 - Pending Confirmation */}
-        {content.pendingConfirmation && content.pendingConfirmation.length > 0 && (
-          <div className="bg-warning-soft border border-exec-warning/20 rounded-xl px-5 py-3">
-            <div className="flex items-center gap-2 mb-2">
-              <AlertCircle size={14} className="text-exec-warning" />
-              <span className="text-exec-warning text-xs font-medium">待您确认</span>
+        {content.pendingConfirmation?.length ? (
+          <div className="rounded-[20px] border border-[rgba(245,158,11,0.18)] bg-[rgba(245,158,11,0.09)] px-4 py-3">
+            <div className="mb-2 flex items-center gap-2">
+              <AlertCircle size={14} className="text-[#F59E0B]" />
+              <span className="text-xs font-semibold tracking-[0.18em] text-[#F59E0B] uppercase">Pending</span>
             </div>
-            <div className="space-y-1.5">
-              {content.pendingConfirmation.map((item, idx) => (
-                <p key={idx} className="text-exec-secondary text-sm flex items-start gap-2">
-                  <span className="text-exec-warning shrink-0">•</span>
-                  {item}
+            <div className="space-y-2">
+              {content.pendingConfirmation.map((item) => (
+                <p key={item} className="flex gap-2 text-sm leading-6 text-[rgba(248,245,238,0.86)]">
+                  <span className="text-[#F59E0B]">•</span>
+                  <span>{item}</span>
                 </p>
               ))}
             </div>
           </div>
-        )}
+        ) : null}
 
-        {/* References - 引用证据 */}
-        {content.references && content.references.length > 0 && (
-          <div className="px-2">
-            <p className="text-exec-muted text-xs mb-1.5">引用来源：</p>
-            <div className="flex flex-wrap gap-1.5">
-              {content.references.map((ref) => (
-                <ReferenceChip key={ref.id} reference={ref} />
+        {content.actions?.length ? (
+          <div className="rounded-[20px] border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] px-4 py-3">
+            <div className="mb-3 flex items-center gap-2">
+              <Sparkles size={14} className="text-[#D4AF37]" />
+              <span className="text-xs font-semibold tracking-[0.18em] text-[#D4AF37] uppercase">Actions</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {content.actions.map((action) => {
+                const key =
+                  action.type === "open_module"
+                    ? `${action.type}:${action.href}`
+                    : action.type === "create_task"
+                      ? `${action.type}:${action.title}`
+                      : action.type;
+                const isBusy = activeAction === key;
+
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => void handleAction(action)}
+                    disabled={isBusy}
+                    className="inline-flex items-center gap-2 rounded-full border border-[rgba(212,175,55,0.28)] bg-[rgba(212,175,55,0.08)] px-4 py-2 text-xs font-semibold text-[#F8F5EE] transition hover:border-[rgba(212,175,55,0.5)] hover:bg-[rgba(212,175,55,0.14)] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isBusy ? <Loader2 size={13} className="animate-spin" /> : null}
+                    {action.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
+
+        {content.references?.length ? (
+          <div className="px-1">
+            <p className="mb-2 text-xs text-[rgba(248,245,238,0.45)]">引用来源</p>
+            <div className="flex flex-wrap gap-2">
+              {content.references.map((reference) => (
+                <ReferenceChip key={`${reference.type}:${reference.id}`} reference={reference} />
               ))}
             </div>
           </div>
-        )}
+        ) : null}
 
-        {/* Timestamp */}
-        <p className="text-exec-muted text-xs px-2">
-          {timestamp.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
-        </p>
+        <MessageTimestamp timestamp={timestamp} />
       </div>
     </div>
+  );
+}
+
+function MessageTimestamp({ timestamp }: { timestamp: Date }) {
+  return (
+    <p className="mt-2 text-xs text-[rgba(248,245,238,0.42)]">
+      {timestamp.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })}
+    </p>
   );
 }
 
 function ReferenceChip({ reference }: { reference: Reference }) {
-  const typeIcons = {
-    evidence: FileText,
-    product: FileText,
-    activity: Clock,
-    artifact: FileText,
-  };
-  const Icon = typeIcons[reference.type] || FileText;
-
   const content = (
-    <span className="inline-flex items-center gap-1 px-2 py-1 bg-exec-elevated border border-exec-subtle rounded text-xs text-exec-secondary hover:border-exec-gold hover:text-exec-gold transition-colors">
-      <Icon size={10} />
+    <span className="inline-flex items-center gap-1 rounded-full border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-1.5 text-xs text-[rgba(248,245,238,0.78)] transition hover:border-[rgba(212,175,55,0.3)] hover:text-[#F8F5EE]">
+      <FileText size={11} />
       {reference.title}
-      {reference.href && <ExternalLink size={8} />}
+      {reference.href ? <ExternalLink size={10} /> : null}
     </span>
   );
 
