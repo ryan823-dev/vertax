@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { SkillStreamTrigger } from "@/components/skills";
-import { SKILL_NAMES } from "@/lib/skills/registry";
+import { SKILL_NAMES } from "@/lib/skills/names";
 import { GeoDistributionPanel } from "@/components/marketing/geo-distribution-panel";
 
 function GeoCard({ item, onRefresh }: { item: GeoContentItem; onRefresh: () => void }) {

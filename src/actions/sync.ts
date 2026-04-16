@@ -13,7 +13,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { executeSkill } from "@/lib/skills/runner";
-import { SKILL_NAMES } from "@/lib/skills/registry";
+import { SKILL_NAMES } from "@/lib/skills/names";
 import { logActivity, ACTIVITY_ACTIONS, EVENT_CATEGORIES } from "@/lib/utils/activity-logger";
 
 // ==================== Types ====================

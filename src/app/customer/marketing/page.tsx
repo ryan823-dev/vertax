@@ -48,7 +48,7 @@ import {
 } from '@/actions/publishing';
 import type { PushRecordData, WebsiteConfigData } from '@/actions/publishing.types';
 import { SkillStreamPanel, SkillStreamTrigger } from '@/components/skills';
-import { SKILL_NAMES } from '@/lib/skills/registry';
+import { SKILL_NAMES } from '@/lib/skills/names';
 
 type ViewMode = 'list' | 'create' | 'detail';
 

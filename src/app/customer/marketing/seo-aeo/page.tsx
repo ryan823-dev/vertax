@@ -37,7 +37,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { SkillStreamTrigger } from "@/components/skills";
-import { SKILL_NAMES } from "@/lib/skills/registry";
+import { SKILL_NAMES } from "@/lib/skills/names";
 
 // ============================================
 // Check Row

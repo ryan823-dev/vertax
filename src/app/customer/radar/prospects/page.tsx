@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { 
   Building2, 
@@ -57,7 +57,7 @@ import {
   type ProspectEnrichmentItemResult,
 } from '@/actions/radar-v2';
 import { executeSkill } from '@/actions/skills';
-import { SKILL_NAMES } from '@/lib/skills/registry';
+import { SKILL_NAMES } from '@/lib/skills/names';
 import { saveContent } from '@/actions/marketing';
 import {
   getOutreachRecords,
@@ -141,24 +141,210 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
-function isOutreachPackContent(value: unknown): value is OutreachPackContent {
+function toStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.filter((entry): entry is string => typeof entry === 'string');
+}
+
+function extractEvidenceIdsFromText(value: string): string[] {
+  return Array.from(value.matchAll(/\[(E\d+)\]/g), (match) => match[1]);
+}
+
+function normalizeReplyType(value: string): string {
+  const replyTypeMap: Record<string, string> = {
+    positiveResponse: 'interested',
+    neutralResponse: 'need_info',
+    negativeResponse: 'not_relevant',
+    noResponse: 'unsubscribe',
+  };
+
+  return replyTypeMap[value] ?? value;
+}
+
+function normalizeTierValue(...values: unknown[]): 'A' | 'B' | 'C' {
+  for (const value of values) {
+    if (value === 'A' || value === 'B' || value === 'C') {
+      return value;
+    }
+  }
+
+  return 'B';
+}
+
+function toIsoTimestamp(value: unknown, fallback = new Date()): string {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value.toISOString();
+  }
+
+  if (typeof value === 'string') {
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toISOString();
+    }
+  }
+
+  return fallback.toISOString();
+}
+
+function normalizeOutreachPackContent(
+  value: unknown,
+  options?: { timestamp?: string; version?: number }
+): OutreachPackContent | null {
   if (!isRecord(value)) {
-    return false;
+    return null;
   }
 
-  const outreachPack = value.outreachPack;
-  if (!isRecord(outreachPack)) {
-    return false;
+  const outer = value;
+  const outreachPackSource = isRecord(outer.outreachPack)
+    ? outer.outreachPack
+    : isRecord(outer.outreachPackage)
+      ? outer.outreachPackage
+      : outer;
+
+  const openings = Array.isArray(outreachPackSource.openings)
+    ? outreachPackSource.openings.flatMap((entry) => {
+        if (!isRecord(entry) || typeof entry.text !== 'string') {
+          return [];
+        }
+        return [{ text: entry.text, evidenceIds: toStringArray(entry.evidenceIds) }];
+      })
+    : Array.isArray(outreachPackSource.openingLines)
+      ? outreachPackSource.openingLines.flatMap((entry) => {
+          if (typeof entry !== 'string') {
+            return [];
+          }
+          return [{ text: entry, evidenceIds: extractEvidenceIdsFromText(entry) }];
+        })
+    : [];
+
+  const emails = Array.isArray(outreachPackSource.emails)
+    ? outreachPackSource.emails.flatMap((entry) => {
+        if (!isRecord(entry) || typeof entry.subject !== 'string' || typeof entry.body !== 'string') {
+          return [];
+        }
+        const evidenceIds = toStringArray(entry.evidenceIds);
+        return [{
+          subject: entry.subject,
+          body: entry.body,
+          evidenceIds: evidenceIds.length > 0 ? evidenceIds : extractEvidenceIdsFromText(`${entry.subject}\n${entry.body}`),
+        }];
+      })
+    : [];
+
+  const whatsapps = Array.isArray(outreachPackSource.whatsapps)
+    ? outreachPackSource.whatsapps.flatMap((entry) => {
+        if (!isRecord(entry) || typeof entry.text !== 'string') {
+          return [];
+        }
+        return [{ text: entry.text, evidenceIds: toStringArray(entry.evidenceIds) }];
+      })
+    : Array.isArray(outreachPackSource.whatsAppMessages)
+      ? outreachPackSource.whatsAppMessages.flatMap((entry) => {
+          if (typeof entry !== 'string') {
+            return [];
+          }
+          return [{ text: entry, evidenceIds: extractEvidenceIdsFromText(entry) }];
+        })
+    : [];
+
+  const playbook = Array.isArray(outreachPackSource.playbook)
+    ? outreachPackSource.playbook.flatMap((entry) => {
+        if (
+          !isRecord(entry) ||
+          typeof entry.replyType !== 'string' ||
+          typeof entry.goal !== 'string' ||
+          typeof entry.responseTemplate !== 'string'
+        ) {
+          return [];
+        }
+        return [{
+          replyType: entry.replyType,
+          goal: entry.goal,
+          responseTemplate: entry.responseTemplate,
+          nextStepTasks: toStringArray(entry.nextStepTasks),
+          evidenceIds: toStringArray(entry.evidenceIds),
+        }];
+      })
+    : isRecord(outreachPackSource.followUpPlaybook)
+      ? Object.entries(outreachPackSource.followUpPlaybook).flatMap(([replyType, template]) => {
+          if (!isRecord(template)) {
+            return [];
+          }
+          const emailTemplate = typeof template.email === 'string' ? template.email : '';
+          const whatsappTemplate = typeof template.whatsApp === 'string' ? template.whatsApp : '';
+          const responseTemplate = [emailTemplate, whatsappTemplate].filter(Boolean).join('\n\nWhatsApp:\n');
+          if (!responseTemplate) {
+            return [];
+          }
+          return [{
+            replyType: normalizeReplyType(replyType),
+            goal: `Handle ${replyType} replies`,
+            responseTemplate,
+            nextStepTasks: [],
+            evidenceIds: extractEvidenceIdsFromText(responseTemplate),
+          }];
+        })
+    : [];
+
+  const evidenceMap = Array.isArray(outreachPackSource.evidenceMap)
+    ? outreachPackSource.evidenceMap.flatMap((entry) => {
+        if (
+          !isRecord(entry) ||
+          typeof entry.label !== 'string' ||
+          typeof entry.evidenceId !== 'string' ||
+          typeof entry.why !== 'string'
+        ) {
+          return [];
+        }
+        return [{ label: entry.label, evidenceId: entry.evidenceId, why: entry.why }];
+      })
+    : [];
+
+  const warnings = toStringArray(outreachPackSource.warnings);
+  const forPersona =
+    typeof outreachPackSource.forPersona === 'string'
+      ? outreachPackSource.forPersona
+      : typeof outer.forPersona === 'string'
+        ? outer.forPersona
+        : '';
+  const forTier = normalizeTierValue(outreachPackSource.forTier, outer.forTier, outer.tier);
+
+  const hasRenderableContent =
+    Boolean(forPersona) ||
+    openings.length > 0 ||
+    emails.length > 0 ||
+    whatsapps.length > 0 ||
+    playbook.length > 0 ||
+    evidenceMap.length > 0 ||
+    warnings.length > 0;
+
+  if (!hasRenderableContent) {
+    return null;
   }
 
-  return (
-    Array.isArray(outreachPack.openings) &&
-    Array.isArray(outreachPack.emails) &&
-    Array.isArray(outreachPack.whatsapps) &&
-    Array.isArray(outreachPack.playbook) &&
-    Array.isArray(outreachPack.evidenceMap) &&
-    Array.isArray(outreachPack.warnings)
-  );
+  return {
+    timestamp:
+      typeof outer.timestamp === 'string'
+        ? outer.timestamp
+        : options?.timestamp,
+    version:
+      typeof outer.version === 'number'
+        ? outer.version
+        : options?.version,
+    outreachPack: {
+      forPersona,
+      forTier,
+      openings,
+      emails,
+      whatsapps,
+      playbook,
+      evidenceMap,
+      warnings,
+    },
+  };
 }
 
 function normalizeMatchReasons(value: ProspectCompanyData['matchReasons']): string[] | null {
@@ -174,11 +360,14 @@ function normalizeOutreachArtifacts(
   value: ProspectCompanyData['outreachArtifacts']
 ): OutreachPackContent[] | null {
   if (Array.isArray(value)) {
-    const artifacts = (value as unknown[]).filter(isOutreachPackContent);
+    const artifacts = (value as unknown[])
+      .map((entry) => normalizeOutreachPackContent(entry))
+      .filter((entry): entry is OutreachPackContent => entry !== null);
     return artifacts.length > 0 ? artifacts : null;
   }
 
-  return isOutreachPackContent(value) ? [value] : null;
+  const artifact = normalizeOutreachPackContent(value);
+  return artifact ? [artifact] : null;
 }
 
 function normalizeProspectCompany(company: ProspectCompanyData): ProspectCompanyView {
@@ -193,16 +382,7 @@ function decorateOutreachPack(
   value: unknown,
   options?: { timestamp?: string; version?: number }
 ): OutreachPackContent | null {
-  const normalized = normalizeOutreachArtifacts(value as ProspectCompanyData['outreachArtifacts'])?.[0] ?? null;
-  if (!normalized) {
-    return null;
-  }
-
-  return {
-    ...normalized,
-    timestamp: normalized.timestamp ?? options?.timestamp,
-    version: normalized.version ?? options?.version,
-  };
+  return normalizeOutreachPackContent(value, options);
 }
 
 function summarizeBatchResults(results: ProspectEnrichmentItemResult[]) {
@@ -233,6 +413,7 @@ export default function RadarProspectsPage() {
   // Outreach Pack state
   const [isGenerating, setIsGenerating] = useState(false);
   const [outreachPack, setOutreachPack] = useState<OutreachPackContent | null>(null);
+  const outreachPackRef = useRef<OutreachPackContent | null>(null);
   const [selectedOutreachVersionId, setSelectedOutreachVersionId] = useState<string | null>(null);
   const [outreachVersions, setOutreachVersions] = useState<OutreachPackVersionSummary[]>([]);
   const [outreachTemplates, setOutreachTemplates] = useState<OutreachPackVersionSummary[]>([]);
@@ -297,6 +478,10 @@ export default function RadarProspectsPage() {
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const selectedCompanyId = selectedCompany?.id ?? null;
   const selectedMatchReasons = selectedCompany?.matchReasons ?? [];
+
+  useEffect(() => {
+    outreachPackRef.current = outreachPack;
+  }, [outreachPack]);
 
   const handleExport = async () => {
     setIsExporting(true);
@@ -560,6 +745,8 @@ export default function RadarProspectsPage() {
       return;
     }
 
+    let cancelled = false;
+
     const loadOutreachWorkspace = async () => {
       try {
         const [savedRes, versionsRes, templatesRes] = await Promise.all([
@@ -573,15 +760,19 @@ export default function RadarProspectsPage() {
         const latestVersion = versions[0];
         const latestVersionPack = latestVersion
           ? decorateOutreachPack(latestVersion.content, {
-              timestamp: latestVersion.createdAt.toISOString(),
+              timestamp: toIsoTimestamp(latestVersion.createdAt),
               version: latestVersion.version,
             })
           : null;
 
+        if (cancelled) {
+          return;
+        }
+
         setOutreachVersions(versions);
         setOutreachTemplates(templates);
 
-        if (!outreachPack) {
+        if (!outreachPackRef.current) {
           if (latestVersionPack) {
             setOutreachPack(latestVersionPack);
             setSelectedOutreachVersionId(latestVersion.id);
@@ -603,7 +794,10 @@ export default function RadarProspectsPage() {
     };
 
     void loadOutreachWorkspace();
-  }, [selectedCompanyId, activeTab, outreachPack]);
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedCompanyId, activeTab]);
 
   // 联系人 CRUD 操作
   const handleCreateContact = async () => {
@@ -732,13 +926,17 @@ export default function RadarProspectsPage() {
       );
       
       if (result.ok && result.output) {
-        const pack = result.output as unknown as OutreachPackContent;
-        const newEntry = { ...pack, timestamp: new Date().toISOString() };
+        const newEntry = decorateOutreachPack(result.output, {
+          timestamp: new Date().toISOString(),
+        });
+        if (!newEntry) {
+          throw new Error('Generated outreach pack returned an unexpected shape');
+        }
         setOutreachPack(newEntry);
         setSelectedOutreachVersionId(result.versionId || null);
         
         // Task #130: 持久化保存生成的工具包
-        await saveOutreachArtifacts(company.id, pack);
+        await saveOutreachArtifacts(company.id, newEntry);
 
         // Task #124: 更新本地状态以立即显示版本历史
         setSelectedCompany((prev) => {
@@ -770,7 +968,7 @@ export default function RadarProspectsPage() {
   // 复制到剪贴板
   const handleSelectOutreachVersion = (version: OutreachPackVersionSummary) => {
     const pack = decorateOutreachPack(version.content, {
-      timestamp: version.createdAt.toISOString(),
+      timestamp: toIsoTimestamp(version.createdAt),
       version: version.version,
     });
     if (!pack) return;
@@ -781,7 +979,7 @@ export default function RadarProspectsPage() {
 
   const handleApplyTemplate = (template: OutreachPackVersionSummary) => {
     const pack = decorateOutreachPack(template.content, {
-      timestamp: template.createdAt.toISOString(),
+      timestamp: toIsoTimestamp(template.createdAt),
       version: template.version,
     });
     if (!pack) return;

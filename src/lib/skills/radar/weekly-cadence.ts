@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { SkillDefinition, PromptContext } from '../types';
-import { SKILL_NAMES } from '../registry';
+import { SKILL_NAMES } from '../names';
 
 // ==================== Input/Output Schemas ====================
 

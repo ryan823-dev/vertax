@@ -3,7 +3,7 @@ import { chatCompletion } from '@/lib/ai-client';
 import { prisma } from '@/lib/prisma';
 import { normalizeTargetRegions } from '@/lib/regions';
 import { logActivity, ACTIVITY_ACTIONS, EVENT_CATEGORIES } from '@/lib/utils/activity-logger';
-import { getSkill, getSkillNames } from './registry';
+import { ensureSkillsRegistered, getSkill, getSkillNames } from './registry';
 import { loadEvidenceContext } from './evidence-loader';
 import {
   type SkillDefinition,
@@ -36,6 +36,7 @@ export async function executeSkill(
   config: RunnerConfig
 ): Promise<SkillResponse> {
   const { tenantId } = config;
+  await ensureSkillsRegistered();
   
   // 获取 Skill 定义（需要在调用前注册好）
   const skill = getSkill(skillName);
@@ -208,6 +209,7 @@ function parseAIOutput(
   }
   
   // 合并通用 Schema 验证
+  parsed = normalizeSkillOutputShape(skillName, parsed);
   const combinedSchema = outputSchema.and(skillOutputCommonSchema);
   const validation = combinedSchema.safeParse(parsed);
   
@@ -223,6 +225,251 @@ function parseAIOutput(
 /**
  * 验证 Evidence 引用
  */
+function isObjectRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function toStringList(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.filter((item): item is string => typeof item === 'string');
+}
+
+function extractEvidenceIdsFromText(value: string): string[] {
+  return Array.from(value.matchAll(/\[(E\d+)\]/g), (match) => match[1]);
+}
+
+function normalizeReplyType(value: string): string {
+  const replyTypeMap: Record<string, string> = {
+    positiveResponse: 'interested',
+    neutralResponse: 'need_info',
+    negativeResponse: 'not_relevant',
+    noResponse: 'unsubscribe',
+  };
+
+  return replyTypeMap[value] ?? value;
+}
+
+function normalizeTierValue(...values: unknown[]): 'A' | 'B' | 'C' {
+  for (const value of values) {
+    if (value === 'A' || value === 'B' || value === 'C') {
+      return value;
+    }
+  }
+
+  return 'B';
+}
+
+function normalizeOutreachPackPayload(parsed: Record<string, unknown>): Record<string, unknown> | null {
+  const source = isObjectRecord(parsed.outreachPack)
+    ? parsed.outreachPack
+    : isObjectRecord(parsed.outreachPackage)
+      ? parsed.outreachPackage
+      : parsed;
+
+  const openings = Array.isArray(source.openings)
+    ? source.openings.flatMap((entry) => {
+        if (!isObjectRecord(entry) || typeof entry.text !== 'string') {
+          return [];
+        }
+
+        return [{
+          text: entry.text,
+          evidenceIds: toStringList(entry.evidenceIds),
+        }];
+      })
+    : Array.isArray(source.openingLines)
+      ? source.openingLines.flatMap((entry) => {
+          if (typeof entry !== 'string') {
+            return [];
+          }
+
+          return [{
+            text: entry,
+            evidenceIds: extractEvidenceIdsFromText(entry),
+          }];
+        })
+      : [];
+
+  const emails = Array.isArray(source.emails)
+    ? source.emails.flatMap((entry) => {
+        if (!isObjectRecord(entry) || typeof entry.subject !== 'string' || typeof entry.body !== 'string') {
+          return [];
+        }
+
+        return [{
+          subject: entry.subject,
+          body: entry.body,
+          evidenceIds:
+            toStringList(entry.evidenceIds).length > 0
+              ? toStringList(entry.evidenceIds)
+              : extractEvidenceIdsFromText(`${entry.subject}\n${entry.body}`),
+        }];
+      })
+    : [];
+
+  const whatsapps = Array.isArray(source.whatsapps)
+    ? source.whatsapps.flatMap((entry) => {
+        if (!isObjectRecord(entry) || typeof entry.text !== 'string') {
+          return [];
+        }
+
+        return [{
+          text: entry.text,
+          evidenceIds: toStringList(entry.evidenceIds),
+        }];
+      })
+    : Array.isArray(source.whatsAppMessages)
+      ? source.whatsAppMessages.flatMap((entry) => {
+          if (typeof entry !== 'string') {
+            return [];
+          }
+
+          return [{
+            text: entry,
+            evidenceIds: extractEvidenceIdsFromText(entry),
+          }];
+        })
+      : [];
+
+  const playbook = Array.isArray(source.playbook)
+    ? source.playbook.flatMap((entry) => {
+        if (
+          !isObjectRecord(entry) ||
+          typeof entry.replyType !== 'string' ||
+          typeof entry.goal !== 'string' ||
+          typeof entry.responseTemplate !== 'string'
+        ) {
+          return [];
+        }
+
+        return [{
+          replyType: entry.replyType,
+          goal: entry.goal,
+          responseTemplate: entry.responseTemplate,
+          nextStepTasks: toStringList(entry.nextStepTasks),
+          evidenceIds: toStringList(entry.evidenceIds),
+        }];
+      })
+    : isObjectRecord(source.followUpPlaybook)
+      ? Object.entries(source.followUpPlaybook).flatMap(([replyType, template]) => {
+          if (!isObjectRecord(template)) {
+            return [];
+          }
+
+          const emailTemplate = typeof template.email === 'string' ? template.email : '';
+          const whatsappTemplate = typeof template.whatsApp === 'string' ? template.whatsApp : '';
+          const responseTemplate = [emailTemplate, whatsappTemplate].filter(Boolean).join('\n\nWhatsApp:\n');
+          if (!responseTemplate) {
+            return [];
+          }
+
+          return [{
+            replyType: normalizeReplyType(replyType),
+            goal: `Handle ${replyType} replies`,
+            responseTemplate,
+            nextStepTasks: [],
+            evidenceIds: extractEvidenceIdsFromText(responseTemplate),
+          }];
+        })
+      : [];
+
+  const evidenceMap = Array.isArray(source.evidenceMap)
+    ? source.evidenceMap.flatMap((entry) => {
+        if (
+          !isObjectRecord(entry) ||
+          typeof entry.label !== 'string' ||
+          typeof entry.evidenceId !== 'string' ||
+          typeof entry.why !== 'string'
+        ) {
+          return [];
+        }
+
+        return [{
+          label: entry.label,
+          evidenceId: entry.evidenceId,
+          why: entry.why,
+        }];
+      })
+    : [];
+
+  const warnings = toStringList(source.warnings);
+  const forPersona =
+    typeof source.forPersona === 'string'
+      ? source.forPersona
+      : typeof parsed.forPersona === 'string'
+        ? parsed.forPersona
+        : '';
+  const forTier = normalizeTierValue(source.forTier, parsed.forTier, parsed.tier);
+
+  if (
+    !forPersona &&
+    openings.length === 0 &&
+    emails.length === 0 &&
+    whatsapps.length === 0 &&
+    playbook.length === 0 &&
+    evidenceMap.length === 0 &&
+    warnings.length === 0
+  ) {
+    return null;
+  }
+
+  return {
+    forPersona,
+    forTier,
+    openings,
+    emails,
+    whatsapps,
+    playbook,
+    evidenceMap,
+    warnings,
+  };
+}
+
+function normalizeSkillOutputShape(skillName: string, parsed: unknown): unknown {
+  if (!isObjectRecord(parsed)) {
+    return parsed;
+  }
+
+  if (skillName === 'radar.generateProspectDossier' && !isObjectRecord(parsed.dossier)) {
+    const dossierKeys = [
+      'companyOverview',
+      'decisionMakerAnalysis',
+      'businessOpportunities',
+      'intelligenceSummary',
+      'matchAnalysis',
+      'riskAlerts',
+      'recommendedApproach',
+      'dataSources',
+    ] as const;
+
+    if (dossierKeys.some((key) => key in parsed)) {
+      return {
+        ...parsed,
+        dossier: Object.fromEntries(
+          dossierKeys
+            .filter((key) => key in parsed)
+            .map((key) => [key, parsed[key]])
+        ),
+      };
+    }
+  }
+
+  if (skillName === 'radar.generateOutreachPack') {
+    const normalizedOutreachPack = normalizeOutreachPackPayload(parsed);
+    if (normalizedOutreachPack) {
+      return {
+        ...parsed,
+        outreachPack: normalizedOutreachPack,
+      };
+    }
+  }
+
+  return parsed;
+}
+
 function validateEvidenceReferences(
   referencedIds: string[],
   availableEvidences: Array<{ id: string; title: string }>

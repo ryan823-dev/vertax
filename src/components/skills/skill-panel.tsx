@@ -18,7 +18,7 @@ import {
   Package,
 } from 'lucide-react';
 import { getAvailableSkills } from '@/actions/skills';
-import { SKILL_NAMES } from '@/lib/skills/registry';
+import { SKILL_NAMES } from '@/lib/skills/names';
 import { SkillStreamTrigger } from './skill-stream-trigger';
 import type { SkillEngine } from '@/lib/skills/types';
 import type { EntityType } from '@/types/artifact';
