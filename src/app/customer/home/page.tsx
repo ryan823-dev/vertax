@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -69,25 +69,55 @@ export default function CEOCockpitPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [assistantExpanded, setAssistantExpanded] = useState(false);
   const [retryPrompt, setRetryPrompt] = useState<string | null>(null);
+  const assistantInteractionVersionRef = useRef(0);
+  const assistantSyncLockRef = useRef(false);
+  const assistantStateSnapshotRef = useRef({
+    conversationId: null as string | null,
+    messageCount: 0,
+  });
+
+  useEffect(() => {
+    assistantStateSnapshotRef.current = {
+      conversationId,
+      messageCount: messages.length,
+    };
+  }, [conversationId, messages.length]);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
+    const assistantVersionAtStart = assistantInteractionVersionRef.current;
+
     try {
       const [statsData, actionsData, tenantData, briefingData, assistantState] = await Promise.all([
         getDashboardStats(),
         getPendingActions(),
         getTenantInfo(),
         generateAIBriefing().catch(() => null),
-        getLatestExecutiveAssistantState(),
+        getLatestExecutiveAssistantState().catch((error) => {
+          console.warn("[customer-home] failed to load executive assistant state:", error);
+          return {
+            conversationId: null,
+            messages: [],
+          };
+        }),
       ]);
 
       setStats(statsData);
       setActions(actionsData);
       setTenantInfo(tenantData);
       setBriefing(briefingData);
-      setConversationId(assistantState.conversationId);
-      setMessages(assistantState.messages.map(toChatMessage));
-      setAssistantExpanded(assistantState.messages.length > 0);
+
+      if (
+        !assistantSyncLockRef.current &&
+        assistantVersionAtStart === assistantInteractionVersionRef.current &&
+        !assistantStateSnapshotRef.current.conversationId &&
+        assistantStateSnapshotRef.current.messageCount === 0
+      ) {
+        setConversationId(assistantState.conversationId);
+        setMessages(assistantState.messages.map(toChatMessage));
+        setAssistantExpanded(assistantState.messages.length > 0);
+      }
+
       setRetryPrompt(null);
       setLastUpdated(new Date());
     } catch (error) {
@@ -109,6 +139,8 @@ export default function CEOCockpitPage() {
         return;
       }
 
+      assistantInteractionVersionRef.current += 1;
+      assistantSyncLockRef.current = true;
       setAssistantExpanded(true);
       setIsSending(true);
 
@@ -126,6 +158,7 @@ export default function CEOCockpitPage() {
         const result = await askExecutiveAssistant(prompt, conversationId);
         setConversationId(result.conversation.id);
         setRetryPrompt(null);
+        setAssistantExpanded(true);
         setMessages((current) => [
           ...current.filter((item) => item.id !== optimisticId),
           toChatMessage(result.userMessage),
@@ -148,6 +181,7 @@ export default function CEOCockpitPage() {
           description: formatError(error, "请稍后重试"),
         });
       } finally {
+        assistantSyncLockRef.current = false;
         setIsSending(false);
       }
     },
@@ -157,6 +191,7 @@ export default function CEOCockpitPage() {
   const handleAssistantAction = useCallback(
     async (action: AssistantAction) => {
       try {
+        assistantInteractionVersionRef.current += 1;
         const result = await executeExecutiveAssistantAction(action, conversationId);
         toast.success(result.message);
         setRetryPrompt(null);
@@ -166,7 +201,13 @@ export default function CEOCockpitPage() {
           return;
         }
 
-        const assistantState = await getLatestExecutiveAssistantState();
+        const assistantState = await getLatestExecutiveAssistantState().catch((error) => {
+          console.warn("[customer-home] failed to refresh executive assistant state:", error);
+          return {
+            conversationId: null,
+            messages: [],
+          };
+        });
         setConversationId(assistantState.conversationId);
         setMessages(assistantState.messages.map(toChatMessage));
         await loadData();
@@ -181,6 +222,7 @@ export default function CEOCockpitPage() {
 
   const handleResetConversation = useCallback(async () => {
     const currentConversationId = conversationId;
+    assistantInteractionVersionRef.current += 1;
     setConversationId(null);
     setMessages([]);
     setAssistantExpanded(false);

@@ -32,6 +32,17 @@ export type MessageData = {
   createdAt: Date;
 };
 
+function isMissingChatMessagePayloadColumn(error: unknown): boolean {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const code = "code" in error ? error.code : undefined;
+  const message = error instanceof Error ? error.message : "";
+
+  return code === "P2022" && message.includes("ChatMessage.payload");
+}
+
 async function getSession() {
   const session = await auth();
   if (!session?.user?.tenantId || !session?.user?.id) {
@@ -195,10 +206,43 @@ export async function getMessages(conversationId: string): Promise<MessageData[]
     throw new Error("对话不存在");
   }
 
-  const messages = await prisma.chatMessage.findMany({
-    where: { conversationId },
-    orderBy: { createdAt: "asc" },
-  });
+  let messages: Array<{
+    id: string;
+    conversationId: string;
+    role: string;
+    content: string;
+    createdAt: Date;
+    references?: Prisma.JsonValue | null;
+    payload?: Prisma.JsonValue | null;
+  }>;
+
+  try {
+    messages = await prisma.chatMessage.findMany({
+      where: { conversationId },
+      orderBy: { createdAt: "asc" },
+    });
+  } catch (error) {
+    if (!isMissingChatMessagePayloadColumn(error)) {
+      throw error;
+    }
+
+    console.warn(
+      "[chat] ChatMessage.payload column is missing, falling back to legacy message mapping."
+    );
+
+    messages = await prisma.chatMessage.findMany({
+      where: { conversationId },
+      orderBy: { createdAt: "asc" },
+      select: {
+        id: true,
+        conversationId: true,
+        role: true,
+        content: true,
+        references: true,
+        createdAt: true,
+      },
+    });
+  }
 
   return messages.map((message) => ({
     id: message.id,

@@ -52,6 +52,17 @@ type AssistantContext = {
   openTasks: Array<{ title: string; priority: string; status: string; createdAt: Date }>;
 };
 
+function isMissingChatMessagePayloadColumn(error: unknown): boolean {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const code = "code" in error ? error.code : undefined;
+  const message = error instanceof Error ? error.message : "";
+
+  return code === "P2022" && message.includes("ChatMessage.payload");
+}
+
 async function requireAssistantSession() {
   const session = await auth();
 
@@ -506,10 +517,41 @@ async function createAssistantConversation(title: string, tenantId: string, user
 }
 
 async function mapStoredMessages(conversationId: string): Promise<MessageData[]> {
-  const messages = await prisma.chatMessage.findMany({
-    where: { conversationId },
-    orderBy: { createdAt: "asc" },
-  });
+  let messages: Array<{
+    id: string;
+    conversationId: string;
+    role: string;
+    content: string;
+    createdAt: Date;
+    payload?: Prisma.JsonValue | null;
+  }>;
+
+  try {
+    messages = await prisma.chatMessage.findMany({
+      where: { conversationId },
+      orderBy: { createdAt: "asc" },
+    });
+  } catch (error) {
+    if (!isMissingChatMessagePayloadColumn(error)) {
+      throw error;
+    }
+
+    console.warn(
+      "[executive-assistant] ChatMessage.payload column is missing, falling back to legacy message mapping."
+    );
+
+    messages = await prisma.chatMessage.findMany({
+      where: { conversationId },
+      orderBy: { createdAt: "asc" },
+      select: {
+        id: true,
+        conversationId: true,
+        role: true,
+        content: true,
+        createdAt: true,
+      },
+    });
+  }
 
   return messages.map((message) => ({
     id: message.id,
@@ -527,14 +569,48 @@ async function appendAssistantMessage(
   payload: ExecutiveAssistantPayload
 ): Promise<MessageData> {
   const content = serializePayload(payload);
-  const message = await prisma.chatMessage.create({
-    data: {
-      conversationId,
-      role: "assistant",
-      content,
-      payload: payload as Prisma.InputJsonValue,
-    },
-  });
+  let message:
+    | {
+        id: string;
+        conversationId: string;
+        content: string;
+        createdAt: Date;
+      }
+    | {
+        id: string;
+        conversationId: string;
+        content: string;
+        createdAt: Date;
+      };
+  let storedPayload: Prisma.JsonObject | null = payload as Prisma.JsonObject;
+
+  try {
+    message = await prisma.chatMessage.create({
+      data: {
+        conversationId,
+        role: "assistant",
+        content,
+        payload: payload as Prisma.InputJsonValue,
+      },
+    });
+  } catch (error) {
+    if (!isMissingChatMessagePayloadColumn(error)) {
+      throw error;
+    }
+
+    console.warn(
+      "[executive-assistant] ChatMessage.payload column is missing, storing assistant message without structured payload."
+    );
+
+    storedPayload = null;
+    message = await prisma.chatMessage.create({
+      data: {
+        conversationId,
+        role: "assistant",
+        content,
+      },
+    });
+  }
 
   await prisma.chatConversation.update({
     where: { id: conversationId },
@@ -546,7 +622,7 @@ async function appendAssistantMessage(
     conversationId: message.conversationId,
     role: "assistant",
     content: message.content,
-    payload: payload as Prisma.JsonObject,
+    payload: storedPayload,
     createdAt: message.createdAt,
   };
 }
