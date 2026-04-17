@@ -110,11 +110,13 @@ export function formatCompanyProfileForPrompt(profile: {
   companyIntro: string;
   coreProducts: Array<{ name: string; description: string }>;
   techAdvantages: Array<{ title: string; description: string }>;
+  scenarios: Array<{ industry: string; scenario: string }>;
   differentiators: Array<{ point: string; description: string }>;
   targetIndustries: string[];
   targetRegions: Array<{ region: string; countries: string[]; rationale: string }> | string[];
   buyerPersonas: Array<{ role: string; title: string; concerns: string[] }>;
   painPoints: Array<{ pain: string; howWeHelp: string }>;
+  buyingTriggers?: string[];
 }): string {
   return `
 === 企业认知 ===
@@ -130,6 +132,9 @@ ${profile.techAdvantages.map(a => `- ${a.title}：${a.description}`).join('\n')}
 差异化优势：
 ${profile.differentiators.map(d => `- ${d.point}：${d.description}`).join('\n')}
 
+典型应用场景：
+${profile.scenarios.map(s => `- ${s.industry}：${s.scenario}`).join('\n')}
+
 目标行业：${profile.targetIndustries.join('、')}
 海外目标市场：${profile.targetRegions.map(r => typeof r === 'string' ? r : `${r.region}(${r.countries.join('/')}): ${r.rationale}`).join('; ')}
 
@@ -138,6 +143,9 @@ ${profile.buyerPersonas.map(p => `- ${p.role}（${p.title}）：关注 ${p.conce
 
 客户痛点：
 ${profile.painPoints.map(p => `- ${p.pain} → ${p.howWeHelp}`).join('\n')}
+
+触发购买/搜索的信号：
+${(profile.buyingTriggers || []).map(trigger => `- ${trigger}`).join('\n')}
 `;
 }
 

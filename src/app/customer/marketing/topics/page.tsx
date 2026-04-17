@@ -36,6 +36,7 @@ import { GrowthHeader, GrowthSecretaryPanel } from '@/components/marketing/growt
 import { TopicClusterStarter } from '@/components/marketing/topic-cluster-starter';
 import { toast } from 'sonner';
 import type { GrowthPipelineStatus } from '@/lib/marketing/growth-pipeline';
+import type { TopicClusterContent } from '@/lib/marketing/topic-cluster';
 
 // Content type badge colors
 const CONTENT_TYPE_COLORS: Record<string, { bg: string; text: string }> = {
@@ -46,6 +47,9 @@ const CONTENT_TYPE_COLORS: Record<string, { bg: string; text: string }> = {
   KnowledgeBase: { bg: 'bg-emerald-50', text: 'text-emerald-600' },
   Comparison: { bg: 'bg-rose-50', text: 'text-rose-600' },
   UseCasePage: { bg: 'bg-indigo-50', text: 'text-indigo-600' },
+  CaseStudy: { bg: 'bg-cyan-50', text: 'text-cyan-700' },
+  TechnicalDoc: { bg: 'bg-slate-100', text: 'text-slate-700' },
+  Checklist: { bg: 'bg-lime-50', text: 'text-lime-700' },
 };
 
 // Funnel badge colors
@@ -55,34 +59,9 @@ const FUNNEL_COLORS: Record<string, { bg: string; text: string }> = {
   BOFU: { bg: 'bg-rose-100', text: 'text-rose-700' },
 };
 
-const CONTENT_TYPES = ['BuyingGuide', 'Whitepaper', 'FAQ', 'QnA', 'KnowledgeBase', 'Comparison', 'UseCasePage'];
+const CONTENT_TYPES = ['BuyingGuide', 'Whitepaper', 'FAQ', 'QnA', 'KnowledgeBase', 'Comparison', 'UseCasePage', 'CaseStudy', 'TechnicalDoc', 'Checklist'];
 const FUNNEL_STAGES = ['TOFU', 'MOFU', 'BOFU'];
 const INTENT_TYPES = ['informational', 'commercial', 'transactional', 'navigational'];
-
-interface ContentMapItem {
-  type: string;
-  title: string;
-  briefGoal: string;
-  funnel: string;
-  intent: string;
-  mustUseEvidenceIds: string[];
-}
-
-interface ClusterData {
-  pillar: string;
-  intent: string;
-  contentMap: ContentMapItem[];
-  requiredEvidenceIds: string[];
-}
-
-interface TopicClusterContent {
-  topicCluster: {
-    name: string;
-    clusters: ClusterData[];
-  };
-  openQuestions?: string[];
-  confidence?: number;
-}
 
 interface VersionData {
   id: string;
@@ -229,10 +208,14 @@ export default function TopicClustersPage() {
   };
 
   // 更新 pillar
-  const updatePillar = (clusterIdx: number, field: keyof ClusterData, value: string) => {
+  const updatePillar = (clusterIdx: number, field: 'pillar' | 'intent', value: string) => {
     if (!editData) return;
     const clusters = [...editData.topicCluster.clusters];
-    clusters[clusterIdx] = { ...clusters[clusterIdx], [field]: value };
+    clusters[clusterIdx] = {
+      ...clusters[clusterIdx],
+      [field]: value,
+      ...(field === 'pillar' ? { clusterName: value } : {}),
+    };
     setEditData({
       ...editData,
       topicCluster: { ...editData.topicCluster, clusters },
@@ -240,7 +223,12 @@ export default function TopicClustersPage() {
   };
 
   // 更新 contentMap item
-  const updateContentMapItem = (clusterIdx: number, itemIdx: number, field: keyof ContentMapItem, value: string) => {
+  const updateContentMapItem = (
+    clusterIdx: number,
+    itemIdx: number,
+    field: 'type' | 'title' | 'briefGoal' | 'funnel' | 'intent',
+    value: string
+  ) => {
     if (!editData) return;
     const clusters = [...editData.topicCluster.clusters];
     const contentMap = [...clusters[clusterIdx].contentMap];
@@ -263,6 +251,7 @@ export default function TopicClustersPage() {
       funnel: 'TOFU',
       intent: 'informational',
       mustUseEvidenceIds: [],
+      suggestedDistributionTargets: [],
     });
     setEditData({
       ...editData,
@@ -287,7 +276,17 @@ export default function TopicClustersPage() {
     const clusters = [...editData.topicCluster.clusters];
     clusters.push({
       pillar: '新支柱主题',
+      clusterName: '新支柱主题',
       intent: 'informational',
+      coreKeywords: [],
+      longTailKeywords: [],
+      aeoQuestions: [],
+      commercialKeywords: [],
+      negatives: [],
+      targetRoles: [],
+      questionMap: [],
+      primaryPublishTarget: '客户官网（API直发）',
+      suggestedDistributionTargets: [],
       contentMap: [],
       requiredEvidenceIds: [],
     });
@@ -551,6 +550,102 @@ export default function TopicClustersPage() {
                 </div>
               )}
 
+              {(topicCluster.customerUnderstanding.length > 0 ||
+                topicCluster.buyerUnderstanding.length > 0 ||
+                topicCluster.questionDirections.length > 0 ||
+                topicCluster.publishingDirections.length > 0) && (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {topicCluster.customerUnderstanding.length > 0 && (
+                    <div className="bg-white rounded-xl border border-[#E8E0D0] p-4">
+                      <h4 className="text-sm font-semibold text-[#0B1B2B] mb-2">客户认知</h4>
+                      <ul className="space-y-1">
+                        {topicCluster.customerUnderstanding.map((item, index) => (
+                          <li key={index} className="text-xs text-slate-600 flex items-start gap-2">
+                            <span className="text-[#D4AF37]">•</span>
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {topicCluster.buyerUnderstanding.length > 0 && (
+                    <div className="bg-white rounded-xl border border-[#E8E0D0] p-4">
+                      <h4 className="text-sm font-semibold text-[#0B1B2B] mb-2">目标买家认知</h4>
+                      <ul className="space-y-1">
+                        {topicCluster.buyerUnderstanding.map((item, index) => (
+                          <li key={index} className="text-xs text-slate-600 flex items-start gap-2">
+                            <span className="text-[#D4AF37]">•</span>
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {topicCluster.questionDirections.length > 0 && (
+                    <div className="bg-white rounded-xl border border-[#E8E0D0] p-4 md:col-span-2">
+                      <h4 className="text-sm font-semibold text-[#0B1B2B] mb-3">全局问题地图</h4>
+                      <div className="grid gap-2">
+                        {topicCluster.questionDirections.slice(0, 6).map((item, index) => (
+                          <div key={index} className="rounded-lg border border-[#F0EBD8] bg-[#FFFCF7] px-3 py-2">
+                            <div className="flex items-center gap-2 flex-wrap mb-1">
+                              {item.stage && (
+                                <span className={`px-2 py-0.5 text-[10px] font-medium rounded ${FUNNEL_COLORS[item.stage].bg} ${FUNNEL_COLORS[item.stage].text}`}>
+                                  {item.stage}
+                                </span>
+                              )}
+                              {(item.role || item.persona) && (
+                                <span className="px-2 py-0.5 text-[10px] font-medium rounded bg-slate-100 text-slate-600">
+                                  {item.role || item.persona}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm text-[#0B1B2B] font-medium">{item.question}</p>
+                            {item.whyThisQuestion && (
+                              <p className="text-xs text-slate-500 mt-1">{item.whyThisQuestion}</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {topicCluster.publishingDirections.length > 0 && (
+                    <div className="bg-white rounded-xl border border-[#E8E0D0] p-4 md:col-span-2">
+                      <h4 className="text-sm font-semibold text-[#0B1B2B] mb-3">建议发布方向</h4>
+                      <div className="grid gap-3 md:grid-cols-2">
+                        {topicCluster.publishingDirections.map((item, index) => (
+                          <div key={index} className="rounded-lg border border-[#F0EBD8] bg-[#FFFCF7] p-3">
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
+                              <p className="text-sm font-medium text-[#0B1B2B]">{item.channel}</p>
+                              <span className={`px-2 py-0.5 text-[10px] rounded-full ${item.mode === 'integrated' ? 'bg-emerald-50 text-emerald-700' : 'bg-[#D4AF37]/10 text-[#8C6A00]'}`}>
+                                {item.mode === 'integrated' ? '可执行主发布' : '建议分发'}
+                              </span>
+                            </div>
+                            {item.purpose && (
+                              <p className="text-xs text-slate-500 mt-1">{item.purpose}</p>
+                            )}
+                            {item.reason && (
+                              <p className="text-xs text-slate-500 mt-1">{item.reason}</p>
+                            )}
+                            {item.contentTypes.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-2">
+                                {item.contentTypes.map((type) => (
+                                  <span key={type} className="px-2 py-0.5 text-[10px] rounded bg-slate-100 text-slate-600">
+                                    {type}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Add Cluster Button (Edit Mode) */}
               {isEditing && (
                 <button
@@ -619,6 +714,81 @@ export default function TopicClustersPage() {
                     {/* Cluster Content Map */}
                     {expandedCluster === idx && cluster.contentMap && (
                       <div className="border-t border-[#E8E0D0] p-5">
+                        {(cluster.questionMap.length > 0 ||
+                          Boolean(cluster.primaryPublishTarget) ||
+                          cluster.suggestedDistributionTargets.length > 0 ||
+                          cluster.targetRoles.length > 0) && (
+                          <div className="grid gap-3 md:grid-cols-2 mb-4">
+                            {cluster.questionMap.length > 0 && (
+                              <div className="rounded-xl border border-[#E8E0D0] bg-white p-4 md:col-span-2">
+                                <h4 className="text-sm font-semibold text-[#0B1B2B] mb-2">此支柱重点回答的问题</h4>
+                                <div className="grid gap-2">
+                                  {cluster.questionMap.slice(0, 5).map((question, questionIdx) => (
+                                    <div key={questionIdx} className="rounded-lg bg-[#FFFCF7] border border-[#F0EBD8] px-3 py-2">
+                                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                                        {question.stage && (
+                                          <span className={`px-2 py-0.5 text-[10px] font-medium rounded ${FUNNEL_COLORS[question.stage].bg} ${FUNNEL_COLORS[question.stage].text}`}>
+                                            {question.stage}
+                                          </span>
+                                        )}
+                                        {(question.role || question.persona) && (
+                                          <span className="px-2 py-0.5 text-[10px] font-medium rounded bg-slate-100 text-slate-600">
+                                            {question.role || question.persona}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <p className="text-sm text-[#0B1B2B] font-medium">{question.question}</p>
+                                      {question.whyThisQuestion && (
+                                        <p className="text-xs text-slate-500 mt-1">{question.whyThisQuestion}</p>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {cluster.targetRoles.length > 0 && (
+                              <div className="rounded-xl border border-[#E8E0D0] bg-white p-4">
+                                <h4 className="text-sm font-semibold text-[#0B1B2B] mb-2">优先服务角色</h4>
+                                <div className="flex flex-wrap gap-2">
+                                  {cluster.targetRoles.map((role) => (
+                                    <span key={role} className="px-2 py-1 text-[11px] rounded-full bg-slate-100 text-slate-600">
+                                      {role}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {(cluster.primaryPublishTarget ||
+                              cluster.suggestedDistributionTargets.length > 0) && (
+                              <div className="rounded-xl border border-[#E8E0D0] bg-white p-4">
+                                <h4 className="text-sm font-semibold text-[#0B1B2B] mb-2">发布方式</h4>
+                                {cluster.primaryPublishTarget && (
+                                  <div className="mb-2">
+                                    <p className="text-[11px] text-slate-500 mb-1">主发布渠道</p>
+                                    <span className="px-2 py-1 text-[11px] rounded-full bg-emerald-50 text-emerald-700">
+                                      {cluster.primaryPublishTarget}
+                                    </span>
+                                  </div>
+                                )}
+                                {cluster.suggestedDistributionTargets.length > 0 && (
+                                  <div>
+                                    <p className="text-[11px] text-slate-500 mb-1">建议分发方向</p>
+                                    <div className="flex flex-wrap gap-2">
+                                      {cluster.suggestedDistributionTargets.map((target) => (
+                                        <span key={target} className="px-2 py-1 text-[11px] rounded-full bg-[#D4AF37]/10 text-[#8C6A00]">
+                                          {target}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
                         <div className="grid gap-3">
                           {cluster.contentMap.map((item, itemIdx) => {
                             const typeColor = CONTENT_TYPE_COLORS[item.type] || { bg: 'bg-[#F7F3E8]', text: 'text-slate-600' };
@@ -696,12 +866,36 @@ export default function TopicClustersPage() {
                                       </div>
                                       <h4 className="font-medium text-[#0B1B2B] text-sm">{item.title}</h4>
                                       <p className="text-xs text-slate-500 mt-1">{item.briefGoal}</p>
+                                      {(item.targetRole || item.targetQuestion) && (
+                                        <div className="mt-2 space-y-1">
+                                          {item.targetRole && (
+                                            <p className="text-[10px] text-slate-500">面向角色：{item.targetRole}</p>
+                                          )}
+                                          {item.targetQuestion && (
+                                            <p className="text-[10px] text-slate-500">优先回答：{item.targetQuestion}</p>
+                                          )}
+                                        </div>
+                                      )}
                                       {item.mustUseEvidenceIds?.length > 0 && (
                                         <div className="flex items-center gap-1 mt-2">
                                           <CheckCircle2 size={10} className="text-emerald-500" />
                                           <span className="text-[10px] text-slate-400">
                                             引用 {item.mustUseEvidenceIds.length} 条证据
                                           </span>
+                                        </div>
+                                      )}
+                                      {item.primaryPublishTarget && (
+                                        <p className="text-[10px] text-emerald-700 mt-2">
+                                          主发布：{item.primaryPublishTarget}
+                                        </p>
+                                      )}
+                                      {item.suggestedDistributionTargets.length > 0 && (
+                                        <div className="flex flex-wrap gap-1 mt-2">
+                                          {item.suggestedDistributionTargets.map((target) => (
+                                            <span key={target} className="px-2 py-0.5 text-[10px] rounded bg-[#D4AF37]/10 text-[#8C6A00]">
+                                              {target}
+                                            </span>
+                                          ))}
                                         </div>
                                       )}
                                     </>

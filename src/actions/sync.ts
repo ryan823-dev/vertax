@@ -11,7 +11,9 @@
  */
 
 import { auth } from "@/lib/auth";
+import { normalizeTopicClusterContent } from "@/lib/marketing/topic-cluster";
 import { prisma } from "@/lib/prisma";
+import { buildTopicClusterSkillContext } from "@/lib/marketing/topic-cluster-sync";
 import { executeSkill } from "@/lib/skills/runner";
 import { SKILL_NAMES } from "@/lib/skills/names";
 import { logActivity, ACTIVITY_ACTIONS, EVENT_CATEGORIES } from "@/lib/utils/activity-logger";
@@ -173,47 +175,14 @@ export async function syncMarketingFromKnowledge(options?: {
   const { tenantId, id: userId } = session.user;
   
   try {
-    // 1. 加载知识上下文
-    const [companyProfile, personas, evidences, guidelines] = await Promise.all([
-      loadCompanyProfile(tenantId),
-      loadPersonas(tenantId),
-      options?.evidenceIds?.length 
-        ? prisma.evidence.findMany({
-            where: { id: { in: options.evidenceIds }, tenantId },
-            select: { id: true, title: true, content: true, type: true, tags: true },
-          })
-        : loadEvidences(tenantId),
-      loadGuidelines(tenantId),
-    ]);
-    
-    if (!companyProfile) {
-      return {
-        success: false,
-        error: '请先完善企业认知（Company Profile）',
-      };
-    }
-    
-    // 2. 构建 Skill 输入
-    const input = {
-      profiles: {
-        personas: personas,
-        guidelines: guidelines,
-      },
-      advantages: companyProfile.techAdvantages.map(a => `${a.title}: ${a.description}`),
+    const { request, evidenceCount } = await buildTopicClusterSkillContext(tenantId, {
       focusSegment: options?.focusSegment,
-    };
-    
-    // 3. 调用 TopicCluster Skill
+      evidenceIds: options?.evidenceIds,
+    });
+
     const result = await executeSkill(
       SKILL_NAMES.MARKETING_BUILD_TOPIC_CLUSTER,
-      {
-        input,
-        entityType: 'TopicCluster',
-        entityId: `topic-cluster-${tenantId}-${Date.now()}`,
-        useCompanyProfile: true,
-        evidenceIds: evidences.map(e => e.id),
-        mode: 'generate',
-      },
+      request,
       { tenantId, userId }
     );
     
@@ -229,13 +198,13 @@ export async function syncMarketingFromKnowledge(options?: {
       tenantId,
       userId,
       action: ACTIVITY_ACTIONS.SKILL_EXECUTED,
-      entityType: 'TopicCluster',
-      entityId: result.versionId || '',
-      eventCategory: EVENT_CATEGORIES.MARKETING,
+        entityType: 'TopicCluster',
+        entityId: result.versionId || '',
+        eventCategory: EVENT_CATEGORIES.MARKETING,
       severity: 'info',
       context: {
         skillName: SKILL_NAMES.MARKETING_BUILD_TOPIC_CLUSTER,
-        evidenceCount: evidences.length,
+        evidenceCount,
         openQuestions: result.openQuestions?.length || 0,
       },
     });
@@ -416,7 +385,9 @@ export async function getLatestTopicCluster() {
     entityId: version.entityId,
     version: version.version,
     status: version.status,
-    content: version.content as Record<string, unknown>,
+    content:
+      normalizeTopicClusterContent(version.content as unknown) ??
+      (version.content as Record<string, unknown>),
     meta: version.meta as Record<string, unknown>,
     createdAt: version.createdAt,
     createdBy: version.createdBy.name,

@@ -1,39 +1,8 @@
 import { chatCompletion } from "@/lib/ai-client";
+import { buildTopicClusterSkillContext } from "@/lib/marketing/topic-cluster-sync";
 import { prisma } from "@/lib/prisma";
-
-const TOPIC_CLUSTER_PROMPT = `You are a B2B SEO/AEO strategist. Generate a practical Topic Cluster for the company context below.
-
-Return strict JSON:
-{
-  "topicCluster": {
-    "name": "segment name",
-    "clusters": [
-      {
-        "clusterName": "cluster name",
-        "coreKeywords": ["keyword"],
-        "longTailKeywords": ["keyword"],
-        "aeoQuestions": ["question"],
-        "commercialKeywords": ["keyword"],
-        "negatives": ["keyword"],
-        "contentMap": [
-          {
-            "type": "BuyingGuide|FAQ|CaseStudy|Comparison|UseCasePage",
-            "title": "content title",
-            "briefGoal": "content goal",
-            "funnel": "TOFU|MOFU|BOFU",
-            "intent": "informational|commercial|transactional"
-          }
-        ]
-      }
-    ]
-  },
-  "confidence": 0.8
-}
-
-Rules:
-- Each cluster must include at least 3 contentMap items.
-- Cover TOFU, MOFU, and BOFU when possible.
-- Return JSON only.`;
+import { SKILL_NAMES } from "@/lib/skills/names";
+import { executeSkill } from "@/lib/skills/runner";
 
 const TARGETING_SPEC_PROMPT = `You are a B2B outbound strategist. Generate a practical targeting specification from the company context below.
 
@@ -68,82 +37,25 @@ export async function createTopicClusterDraft(
   userId: string,
   options: SyncMarketingOptions = {}
 ) {
-  const [companyProfile, evidences] = await Promise.all([
-    prisma.companyProfile.findUnique({ where: { tenantId } }),
-    prisma.evidence.findMany({
-      where: { tenantId },
-      orderBy: { createdAt: "desc" },
-      take: 10,
-      select: { id: true, type: true, title: true },
-    }),
-  ]);
+  const { request } = await buildTopicClusterSkillContext(tenantId, {
+    focusSegment: options.focusSegment,
+  });
 
-  if (!companyProfile) {
-    throw new Error("请先完善企业档案后再同步到增长系统");
-  }
-
-  const techAdvantages =
-    (companyProfile.techAdvantages as Array<{ title?: string; description?: string }>) || [];
-  const coreProducts =
-    (companyProfile.coreProducts as Array<{ name?: string; description?: string }>) || [];
-
-  let context = `Company: ${companyProfile.companyName || "Unknown"}\nIntro: ${(
-    companyProfile.companyIntro || ""
-  ).slice(0, 600)}`;
-
-  if (coreProducts.length > 0) {
-    context += `\n\nCore products:\n${coreProducts
-      .map((product) => `- ${product.name || "Product"}: ${product.description || ""}`)
-      .join("\n")}`;
-  }
-
-  if (techAdvantages.length > 0) {
-    context += `\n\nTech advantages:\n${techAdvantages
-      .map((advantage) => `- ${advantage.title || "Advantage"}: ${advantage.description || ""}`)
-      .join("\n")}`;
-  }
-
-  if (evidences.length > 0) {
-    context += `\n\nEvidence:\n${evidences
-      .map((evidence) => `- [${evidence.id}] (${evidence.type}) ${evidence.title}`)
-      .join("\n")}`;
-  }
-
-  if (options.focusSegment) {
-    context += `\n\nPriority segment: ${options.focusSegment}`;
-  }
-
-  const aiResponse = await chatCompletion(
-    [
-      { role: "system", content: TOPIC_CLUSTER_PROMPT },
-      { role: "user", content: context },
-    ],
-    { model: "qwen-plus", temperature: 0.4, maxTokens: 4096 }
+  const result = await executeSkill(
+    SKILL_NAMES.MARKETING_BUILD_TOPIC_CLUSTER,
+    request,
+    { tenantId, userId }
   );
 
-  let parsed: object;
-  try {
-    parsed = parseJsonResponse(aiResponse.content);
-  } catch {
-    parsed = { rawContent: aiResponse.content };
+  const version = await prisma.artifactVersion.findUnique({
+    where: { id: result.versionId },
+  });
+
+  if (!version) {
+    throw new Error("TopicCluster 版本创建失败");
   }
 
-  return prisma.artifactVersion.create({
-    data: {
-      tenantId,
-      entityType: "TopicCluster",
-      entityId: `topic-cluster-${tenantId}-${Date.now()}`,
-      version: 1,
-      status: "draft",
-      content: parsed,
-      meta: {
-        generatedBy: "ai",
-        model: aiResponse.model,
-        tokens: aiResponse.usage.totalTokens,
-      },
-      createdById: userId,
-    },
-  });
+  return version;
 }
 
 export async function createTargetingSpecDraft(tenantId: string, userId: string) {

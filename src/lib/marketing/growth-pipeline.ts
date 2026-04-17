@@ -5,6 +5,7 @@
  * 统一封装所有口径与阈值
  */
 
+import { normalizeTopicClusterContent } from "@/lib/marketing/topic-cluster";
 import { prisma } from '@/lib/prisma';
 
 // ============================================
@@ -227,8 +228,10 @@ async function getTopicClusterStats(tenantId: string): Promise<TopicClusterStats
   let contentMapCount = 0;
 
   try {
-    const content = latestVersion.content as { topicCluster?: { clusters?: Array<{ contentMap?: unknown[] }> } };
-    const clusters = content?.topicCluster?.clusters || [];
+    const content =
+      normalizeTopicClusterContent(latestVersion.content as unknown) ??
+      ({ topicCluster: { clusters: [] } } as { topicCluster: { clusters: Array<{ contentMap?: unknown[] }> } });
+    const clusters = content.topicCluster?.clusters || [];
     clustersCount = clusters.length;
     contentMapCount = clusters.reduce((sum, c) => sum + (c.contentMap?.length || 0), 0);
   } catch (error) {

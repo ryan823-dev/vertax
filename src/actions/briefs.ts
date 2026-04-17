@@ -378,6 +378,12 @@ export type ContentMapItem = {
   funnel: string;
   intent: string;
   mustUseEvidenceIds?: string[];
+  targetQuestion?: string;
+  targetRole?: string;
+  targetPersonaId?: string;
+  targetPersonaName?: string;
+  primaryPublishTarget?: string;
+  suggestedDistributionTargets?: string[];
   pillar?: string;
   clusterIndex?: number;
   itemIndex?: number;
@@ -433,16 +439,40 @@ export async function createBriefsFromTopicCluster(
         keywords.push(item.pillar);
       }
       
+      const resolvedPersonaId = targetPersonaId || item.targetPersonaId || null;
+      const noteSections = [
+        item.briefGoal,
+        `来源：TopicCluster / ${item.pillar || '未分类'}`,
+        `漏斗阶段：${item.funnel}`,
+        `内容类型：${item.type}`,
+      ];
+
+      if (item.targetRole) {
+        noteSections.push(`目标角色：${item.targetRole}`);
+      }
+      if (item.targetPersonaName) {
+        noteSections.push(`目标画像：${item.targetPersonaName}`);
+      }
+      if (item.targetQuestion) {
+        noteSections.push(`优先回答问题：${item.targetQuestion}`);
+      }
+      if (item.primaryPublishTarget) {
+        noteSections.push(`主发布渠道：${item.primaryPublishTarget}`);
+      }
+      if (item.suggestedDistributionTargets?.length) {
+        noteSections.push(`建议分发渠道：${item.suggestedDistributionTargets.join('、')}`);
+      }
+
       const brief = await prisma.contentBrief.create({
         data: {
           tenantId: session.user.tenantId,
           title: item.title,
-          targetPersonaId: targetPersonaId || null,
+          targetPersonaId: resolvedPersonaId,
           targetKeywords: keywords.slice(0, 5), // Limit to 5 keywords
           intent: mapIntent(item.intent),
           cta: null,
           evidenceIds: item.mustUseEvidenceIds || [],
-          notes: `${item.briefGoal}\n\n来源：TopicCluster / ${item.pillar || '未分类'}\n漏斗阶段：${item.funnel}\n内容类型：${item.type}`,
+          notes: noteSections.join('\n'),
           status: "draft",
           createdById: session.user.id,
         },

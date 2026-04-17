@@ -613,6 +613,14 @@ export async function generateFullContentPackage(briefId: string): Promise<FullC
           ? (companyProfile.targetIndustries as string[]).join(', ')
           : 'global B2B buyers',
     } : undefined,
+    buyerContext: brief.targetPersona || brief.notes
+      ? {
+          personaName: brief.targetPersona?.name || undefined,
+          title: brief.targetPersona?.title || undefined,
+          concerns: brief.targetPersona?.concerns || [],
+          notes: brief.notes || undefined,
+        }
+      : undefined,
     evidence: evidence.map(e => ({ id: e.id, title: e.title, content: e.content })),
     forceFramework: undefined,
   };

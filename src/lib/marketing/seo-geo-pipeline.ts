@@ -98,6 +98,13 @@ export interface PipelineContext {
     advantages: string[];
     targetMarket: string;
   };
+  /** Optional buyer/searcher context derived from briefs and personas */
+  buyerContext?: {
+    personaName?: string;
+    title?: string;
+    concerns?: string[];
+    notes?: string;
+  };
   /** Optional evidence to weave into content */
   evidence?: Array<{ id: string; title: string; content: string }>;
   /** Force a specific framework instead of auto-selecting */
@@ -149,9 +156,17 @@ Rules:
 - Only output JSON, no other text`;
 
 export async function step1KeywordResearch(ctx: PipelineContext): Promise<KeywordMatrix> {
-  const context = ctx.companyContext
+  const companyContext = ctx.companyContext
     ? `${ctx.companyContext.name} sells ${ctx.companyContext.products.join(', ')} to ${ctx.companyContext.targetMarket}`
     : 'B2B manufacturing / industrial products for global buyers';
+  const buyerContext = ctx.buyerContext
+    ? ` Buyer/searcher context: ${ctx.buyerContext.personaName || 'target buyer'}${
+        ctx.buyerContext.title ? ` (${ctx.buyerContext.title})` : ''
+      } concerns ${ctx.buyerContext.concerns?.slice(0, 4).join(', ') || 'unspecified'}.${
+        ctx.buyerContext.notes ? ` Brief notes: ${ctx.buyerContext.notes.slice(0, 260)}` : ''
+      }`
+    : '';
+  const context = `${companyContext}${buyerContext}`;
 
   const prompt = STEP1_PROMPT
     .replace('{keyword}', ctx.keyword)
@@ -511,6 +526,13 @@ export async function step3ArticleWriting(
   const companyBlock = ctx.companyContext
     ? `\nCompany context (weave in naturally where relevant, don't force it):\n- Company: ${ctx.companyContext.name}\n- Products: ${ctx.companyContext.products.join(', ')}\n- Key advantages: ${ctx.companyContext.advantages.join(', ')}\n- Target market: ${ctx.companyContext.targetMarket}`
     : '';
+  const buyerBlock = ctx.buyerContext
+    ? `\nBuyer/searcher context (this article should feel like it answers their actual questions):\n- Persona: ${ctx.buyerContext.personaName || 'Target buyer'}${
+        ctx.buyerContext.title ? ` / ${ctx.buyerContext.title}` : ''
+      }\n- Concerns: ${ctx.buyerContext.concerns?.join(', ') || 'Not specified'}${
+        ctx.buyerContext.notes ? `\n- Brief notes: ${ctx.buyerContext.notes.slice(0, 500)}` : ''
+      }`
+    : '';
 
   const userPrompt = `Write a complete SEO article for the following brief.
 
@@ -537,7 +559,7 @@ Keyword placement rules:
 - Primary keyword must appear in: H1, first 100 words, at least one H2, conclusion
 - Meta description must contain primary keyword (write at end as HTML comment: <!-- META: ... -->)
 - Supporting keywords distributed naturally throughout
-${companyBlock}${evidenceBlock}
+${companyBlock}${buyerBlock}${evidenceBlock}
 
 Output the complete article in Markdown. Start directly with the H1.`;
 

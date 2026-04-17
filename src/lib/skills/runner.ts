@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { chatCompletion } from '@/lib/ai-client';
+import { normalizeTopicClusterContent } from '@/lib/marketing/topic-cluster';
 import { prisma } from '@/lib/prisma';
 import { normalizeTargetRegions } from '@/lib/regions';
 import { logActivity, ACTIVITY_ACTIONS, EVENT_CATEGORIES } from '@/lib/utils/activity-logger';
@@ -464,6 +465,13 @@ function normalizeSkillOutputShape(skillName: string, parsed: unknown): unknown 
         ...parsed,
         outreachPack: normalizedOutreachPack,
       };
+    }
+  }
+
+  if (skillName === 'marketing.buildTopicCluster') {
+    const normalizedTopicCluster = normalizeTopicClusterContent(parsed);
+    if (normalizedTopicCluster) {
+      return normalizedTopicCluster;
     }
   }
 

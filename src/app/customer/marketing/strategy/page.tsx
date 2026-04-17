@@ -33,6 +33,7 @@ import {
   type BatchBriefResult,
 } from '@/actions/briefs';
 import { getPersonasBySegment } from '@/actions/personas';
+import type { TopicClusterContent } from '@/lib/marketing/topic-cluster';
 import { toast } from 'sonner';
 
 // Content type badge colors
@@ -44,6 +45,9 @@ const CONTENT_TYPE_COLORS: Record<string, { bg: string; text: string }> = {
   KnowledgeBase: { bg: 'bg-emerald-50', text: 'text-emerald-600' },
   Comparison: { bg: 'bg-rose-50', text: 'text-rose-600' },
   UseCasePage: { bg: 'bg-indigo-50', text: 'text-indigo-600' },
+  CaseStudy: { bg: 'bg-cyan-50', text: 'text-cyan-700' },
+  TechnicalDoc: { bg: 'bg-slate-100', text: 'text-slate-700' },
+  Checklist: { bg: 'bg-lime-50', text: 'text-lime-700' },
 };
 
 // Funnel badge colors
@@ -52,27 +56,6 @@ const FUNNEL_COLORS: Record<string, { bg: string; text: string }> = {
   MOFU: { bg: 'bg-amber-100', text: 'text-amber-700' },
   BOFU: { bg: 'bg-rose-100', text: 'text-rose-700' },
 };
-
-interface TopicClusterContent {
-  topicCluster: {
-    name: string;
-    clusters: Array<{
-      pillar: string;
-      intent: string;
-      contentMap: Array<{
-        type: string;
-        title: string;
-        briefGoal: string;
-        funnel: string;
-        intent: string;
-        mustUseEvidenceIds: string[];
-      }>;
-      requiredEvidenceIds: string[];
-    }>;
-  };
-  openQuestions?: string[];
-  confidence?: number;
-}
 
 interface VersionData {
   id: string;
@@ -231,6 +214,22 @@ export default function MarketingStrategyPage() {
         items.push({
           ...item,
           pillar: cluster.pillar,
+          targetPersonaId: item.targetPersonaId || cluster.personaRef?.entityId,
+          targetRole:
+            item.targetRole ||
+            cluster.targetRoles[0] ||
+            cluster.questionMap[0]?.role ||
+            cluster.questionMap[0]?.persona,
+          targetQuestion:
+            item.targetQuestion ||
+            cluster.questionMap[0]?.question ||
+            cluster.aeoQuestions[0],
+          primaryPublishTarget:
+            item.primaryPublishTarget || cluster.primaryPublishTarget,
+          suggestedDistributionTargets:
+            item.suggestedDistributionTargets?.length > 0
+              ? item.suggestedDistributionTargets
+              : cluster.suggestedDistributionTargets,
           clusterIndex: clusterIdx,
           itemIndex: itemIdx,
         });
@@ -528,6 +527,67 @@ export default function MarketingStrategyPage() {
                   {/* Cluster Content Map */}
                   {isExpanded && cluster.contentMap && (
                     <div className="border-t border-[#E8E0D0] p-5">
+                      {(cluster.questionMap.length > 0 ||
+                        Boolean(cluster.primaryPublishTarget) ||
+                        cluster.suggestedDistributionTargets.length > 0) && (
+                        <div className="grid gap-3 md:grid-cols-2 mb-4">
+                          {cluster.questionMap.length > 0 && (
+                            <div className="rounded-xl border border-[#E8E0D0] bg-white p-4 md:col-span-2">
+                              <h4 className="text-sm font-semibold text-[#0B1B2B] mb-2">这组内容要回答的问题</h4>
+                              <div className="grid gap-2">
+                                {cluster.questionMap.slice(0, 4).map((question, questionIdx) => (
+                                  <div key={questionIdx} className="rounded-lg bg-[#FFFCF7] border border-[#F0EBD8] px-3 py-2">
+                                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                                      {question.stage && (
+                                        <span className={`px-2 py-0.5 text-[10px] font-medium rounded ${FUNNEL_COLORS[question.stage].bg} ${FUNNEL_COLORS[question.stage].text}`}>
+                                          {question.stage}
+                                        </span>
+                                      )}
+                                      {(question.role || question.persona) && (
+                                        <span className="px-2 py-0.5 text-[10px] font-medium rounded bg-slate-100 text-slate-600">
+                                          {question.role || question.persona}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="text-sm text-[#0B1B2B] font-medium">{question.question}</p>
+                                    {question.whyThisQuestion && (
+                                      <p className="text-xs text-slate-500 mt-1">{question.whyThisQuestion}</p>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {(cluster.primaryPublishTarget ||
+                            cluster.suggestedDistributionTargets.length > 0) && (
+                            <div className="rounded-xl border border-[#E8E0D0] bg-white p-4 md:col-span-2">
+                              <h4 className="text-sm font-semibold text-[#0B1B2B] mb-2">发布方式</h4>
+                              {cluster.primaryPublishTarget && (
+                                <div className="mb-2">
+                                  <p className="text-[11px] text-slate-500 mb-1">主发布渠道</p>
+                                  <span className="px-2 py-1 text-[11px] rounded-full bg-emerald-50 text-emerald-700">
+                                    {cluster.primaryPublishTarget}
+                                  </span>
+                                </div>
+                              )}
+                              {cluster.suggestedDistributionTargets.length > 0 && (
+                                <div>
+                                  <p className="text-[11px] text-slate-500 mb-1">建议分发方向</p>
+                                  <div className="flex flex-wrap gap-2">
+                                    {cluster.suggestedDistributionTargets.map((target) => (
+                                      <span key={target} className="px-2 py-1 text-[11px] rounded-full bg-[#D4AF37]/10 text-[#8C6A00]">
+                                        {target}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       <div className="grid gap-3">
                         {cluster.contentMap.map((item, itemIdx) => {
                           const isSelected = selectedItems.has(`${clusterIdx}-${itemIdx}`);
@@ -581,12 +641,36 @@ export default function MarketingStrategyPage() {
                                 </div>
                                 <h4 className="font-medium text-[#0B1B2B] text-sm">{item.title}</h4>
                                 <p className="text-xs text-slate-500 mt-1 line-clamp-2">{item.briefGoal}</p>
+                                {(item.targetRole || item.targetQuestion) && (
+                                  <div className="space-y-1 mt-2">
+                                    {item.targetRole && (
+                                      <p className="text-[10px] text-slate-500">面向角色：{item.targetRole}</p>
+                                    )}
+                                    {item.targetQuestion && (
+                                      <p className="text-[10px] text-slate-500">优先回答：{item.targetQuestion}</p>
+                                    )}
+                                  </div>
+                                )}
                                 {item.mustUseEvidenceIds?.length > 0 && (
                                   <div className="flex items-center gap-1 mt-2">
                                     <CheckCircle2 size={10} className="text-emerald-500" />
                                     <span className="text-[10px] text-slate-400">
                                       引用 {item.mustUseEvidenceIds.length} 条证据
                                     </span>
+                                  </div>
+                                )}
+                                {item.primaryPublishTarget && (
+                                  <p className="text-[10px] text-emerald-700 mt-2">
+                                    主发布：{item.primaryPublishTarget}
+                                  </p>
+                                )}
+                                {item.suggestedDistributionTargets.length > 0 && (
+                                  <div className="flex flex-wrap gap-1 mt-2">
+                                    {item.suggestedDistributionTargets.map((target) => (
+                                      <span key={target} className="px-2 py-0.5 text-[10px] rounded bg-[#D4AF37]/10 text-[#8C6A00]">
+                                        {target}
+                                      </span>
+                                    ))}
                                   </div>
                                 )}
                               </div>
