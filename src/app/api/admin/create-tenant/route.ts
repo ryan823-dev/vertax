@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
       adminEmail,
       adminPassword,
       adminName,
-      plan = "pro",
+      plan = "free",
     } = body;
 
     if (!name || !slug || !domain || !adminEmail || !adminPassword) {

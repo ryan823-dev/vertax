@@ -14,6 +14,15 @@ import { prisma } from '@/lib/prisma';
 import { chatCompletion } from '@/lib/ai-client';
 import { sendEmail } from '@/lib/email/resend-client';
 import { enrichWithSignalScore } from '@/lib/radar/intelligence-enricher';
+import {
+  formatCandidateContactHint,
+  getCandidateOutreachContactProfile,
+} from '@/lib/radar/contact-enrichment';
+import {
+  buildProspectOutreachStateValue,
+  getProspectOutreachVersions,
+  mergeProspectContactsWithSnapshot,
+} from '@/lib/radar/prospect-outreach-state';
 
 type StoredOutreachArtifact = Prisma.JsonObject & {
   timestamp?: string;
@@ -87,8 +96,17 @@ export async function generateOutreachDraft(
   });
   if (!candidate) return { success: false, error: '候选不存在' };
 
-  const toEmail = overrideEmail || candidate.email;
-  if (!toEmail) return { success: false, error: '该候选没有邮箱地址' };
+  const contactProfile = getCandidateOutreachContactProfile(candidate, overrideEmail);
+  const toEmail = contactProfile.email;
+  if (!toEmail) {
+    const contactHint = formatCandidateContactHint(contactProfile);
+    return {
+      success: false,
+      error: contactHint
+        ? `该候选暂无可用邮箱。${contactHint}`
+        : '该候选没有邮箱地址',
+    };
+  }
 
   // 加载 CompanyProfile（我方背景）
   const companyProfile = await prisma.companyProfile.findUnique({
@@ -142,6 +160,9 @@ export async function generateOutreachDraft(
 ${rel?.matchReasons?.length ? `- 匹配理由：${rel.matchReasons.join('；')}` : ''}
 ${rel?.approachAngle ? `- 推荐接触角度：${rel.approachAngle}` : ''}
 ${firstContact ? `- 决策者：${firstContact.name}（${firstContact.title}）` : ''}
+${contactProfile.recommendedContact ? `- 推荐触达渠道：${contactProfile.recommendedContact.label}` : ''}
+${contactProfile.primaryEmail?.confidence ? `- 当前首选邮箱置信度：${contactProfile.primaryEmail.confidence}%` : ''}
+${contactProfile.complianceNote ? `- 联系方式合规说明：${contactProfile.complianceNote}` : ''}
 
 【要求】
 1. 语言：英文，专业且简洁，不超过 200 词
@@ -346,7 +367,7 @@ export async function generateLinkedInDraft(
       where: { id: prospectCompanyId, tenantId },
       include: {
         contacts: {
-          where: { linkedInUrl: { not: null } },
+          where: { deletedAt: null },
           take: 5,
         },
       },
@@ -358,11 +379,13 @@ export async function generateLinkedInDraft(
     matchReasons = prospect.matchReasons as string[] | null;
     approachAngle = prospect.approachAngle;
 
-    // 从 ProspectContact 找匹配的联系人
-    const matchedContact = prospect.contacts.find(c => c.linkedInUrl === linkedInUrl);
-    const fallbackContact = prospect.contacts[0];
+    const outreachContacts = mergeProspectContactsWithSnapshot(prospect, prospect.contacts);
+    const linkedInContacts = outreachContacts.filter((contact) => Boolean(contact.linkedInUrl));
+    const matchedContact = linkedInContacts.find((contact) => contact.linkedInUrl === linkedInUrl);
+    const fallbackContact = linkedInContacts[0] || outreachContacts[0] || null;
     dmName = matchedContact?.name || fallbackContact?.name || null;
     dmTitle = matchedContact?.role || fallbackContact?.role || null;
+    linkedInUrl = linkedInUrl || matchedContact?.linkedInUrl || fallbackContact?.linkedInUrl || undefined;
   } else {
     // 原逻辑: 从 RadarCandidate 加载
     entityType = 'candidate';
@@ -1028,31 +1051,18 @@ export async function saveOutreachArtifacts(
   if (!session?.user?.tenantId) return { success: false, error: 'Unauthorized' };
 
   try {
+    const normalizedArtifacts = normalizeStoredOutreachArtifact(artifacts);
+    if (!normalizedArtifacts) {
+      return {
+        success: false,
+        error: 'Invalid outreach pack payload',
+      };
+    }
+
     const company = await prisma.prospectCompany.findUnique({
       where: { id: companyId, tenantId: session.user.tenantId },
       select: { outreachArtifacts: true }
     });
-
-    const existingArtifacts = company?.outreachArtifacts;
-    let currentArtifacts: StoredOutreachArtifact[];
-    const newEntry: StoredOutreachArtifact = {
-      ...(isStoredOutreachArtifact(artifacts) ? artifacts : {}),
-      timestamp: new Date().toISOString(),
-      version: 1
-    };
-
-    if (!existingArtifacts) {
-      currentArtifacts = [newEntry];
-    } else if (Array.isArray(existingArtifacts)) {
-      currentArtifacts = (existingArtifacts as unknown[]).filter(isStoredOutreachArtifact);
-      newEntry.version = currentArtifacts.length + 1;
-      currentArtifacts = [newEntry, ...currentArtifacts].slice(0, 10); // Keep last 10
-    } else if (isStoredOutreachArtifact(existingArtifacts)) {
-      // Legacy single object format
-      currentArtifacts = [newEntry, { ...existingArtifacts, version: 0, timestamp: new Date(0).toISOString() }];
-    } else {
-      currentArtifacts = [newEntry];
-    }
 
     await prisma.prospectCompany.update({
       where: { 
@@ -1060,7 +1070,9 @@ export async function saveOutreachArtifacts(
         tenantId: session.user.tenantId
       },
       data: {
-        outreachArtifacts: currentArtifacts as unknown as Prisma.InputJsonValue
+        outreachArtifacts: buildProspectOutreachStateValue(company?.outreachArtifacts, {
+          appendVersion: normalizedArtifacts,
+        })
       }
     });
     return { success: true };
@@ -1092,14 +1104,15 @@ export async function getSavedOutreachArtifacts(
       }
     });
 
-    const artifacts = company?.outreachArtifacts;
-    if (Array.isArray(artifacts)) {
-      const artifactList = (artifacts as unknown[]).filter(isStoredOutreachArtifact);
-      return { success: true, artifacts: artifactList[0] || null, latest: artifactList[0] || null, all: artifactList };
-    }
+    const versions = getProspectOutreachVersions(company?.outreachArtifacts)
+      .filter(isStoredOutreachArtifact);
 
-    const artifact = isStoredOutreachArtifact(artifacts) ? artifacts : null;
-    return { success: true, artifacts: artifact, latest: artifact, all: artifact ? [artifact] : [] };
+    return {
+      success: true,
+      artifacts: versions[0] || null,
+      latest: versions[0] || null,
+      all: versions,
+    };
   } catch (err) {
     return { 
       success: false, 

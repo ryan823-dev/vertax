@@ -19,18 +19,21 @@ export type FacebookPublishResult = {
   postId: string;
 };
 
-export function getAuthUrl(state: string): string {
+export function getAuthUrl(state: string, appOrigin: string): string {
   const appId = process.env.FACEBOOK_APP_ID;
-  const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/api/oauth/facebook/callback`;
+  const redirectUri = `${appOrigin}/api/oauth/facebook/callback`;
   const scopes = "pages_manage_posts,pages_read_engagement,pages_show_list";
 
   return `https://www.facebook.com/${GRAPH_API_VERSION}/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}&scope=${scopes}&response_type=code`;
 }
 
-export async function exchangeCodeForToken(code: string): Promise<FacebookTokenResponse> {
+export async function exchangeCodeForToken(
+  code: string,
+  appOrigin: string
+): Promise<FacebookTokenResponse> {
   const appId = process.env.FACEBOOK_APP_ID;
   const appSecret = process.env.FACEBOOK_APP_SECRET;
-  const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/api/oauth/facebook/callback`;
+  const redirectUri = `${appOrigin}/api/oauth/facebook/callback`;
 
   const url = `${GRAPH_API_BASE}/oauth/access_token?client_id=${appId}&client_secret=${appSecret}&redirect_uri=${encodeURIComponent(redirectUri)}&code=${code}`;
 

@@ -1,5 +1,7 @@
 import { Prisma, type ProspectCompany, type RadarCandidate, type RadarSource } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
+import { getCandidateContactEnrichment } from './contact-enrichment';
+import { buildProspectOutreachStateValue } from './prospect-outreach-state';
 
 interface ImportContext {
   tenantId: string;
@@ -203,6 +205,7 @@ export async function importCandidateToProspectForTenant(
   }
 
   const patch = buildProspectPatch(candidate);
+  const candidateContactSnapshot = getCandidateContactEnrichment(candidate);
 
   let company: ProspectCompany;
   let created = false;
@@ -229,6 +232,11 @@ export async function importCandidateToProspectForTenant(
           existingCompany.enrichmentStatus === 'IN_PROGRESS'
             ? existingCompany.enrichmentStatus
             : (existingCompany.enrichmentStatus || patch.enrichmentStatus),
+        outreachArtifacts: candidateContactSnapshot
+          ? buildProspectOutreachStateValue(existingCompany.outreachArtifacts, {
+              contactSnapshot: candidateContactSnapshot,
+            })
+          : undefined,
       },
     });
   } else {
@@ -236,6 +244,11 @@ export async function importCandidateToProspectForTenant(
       data: {
         tenantId: context.tenantId,
         ...patch,
+        outreachArtifacts: candidateContactSnapshot
+          ? buildProspectOutreachStateValue(null, {
+              contactSnapshot: candidateContactSnapshot,
+            })
+          : undefined,
       },
     });
     created = true;

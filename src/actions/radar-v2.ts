@@ -37,6 +37,8 @@ import {
 } from '@/lib/radar/adapters/registry';
 import type { RadarSearchQuery } from '@/lib/radar/adapters/types';
 import { enrichProspectCompany } from '@/lib/radar/enrich-pipeline';
+import { getCandidateContactEnrichment } from '@/lib/radar/contact-enrichment';
+import { buildProspectOutreachStateValue } from '@/lib/radar/prospect-outreach-state';
 
 // ==================== 缁鐎风€电厧鍤?====================
 
@@ -691,7 +693,14 @@ export async function importCandidateToCompanyV2(
   const companyCountry = candidate.buyerCountry || candidate.country;
 
   // 閸樺鍣稿Λ鈧弻銉窗閸╄桨绨純鎴犵彲閸╃喎鎮?
-  let existingCompany: { id: string } | null = null;
+  let existingCompany: {
+    id: string;
+    outreachArtifacts: Prisma.JsonValue | null;
+    website: string | null;
+    phone: string | null;
+    email: string | null;
+    address: string | null;
+  } | null = null;
   if (candidate.website) {
     const domain = normalizeDomainForDedup(candidate.website);
     if (domain) {
@@ -700,6 +709,14 @@ export async function importCandidateToCompanyV2(
           tenantId: session.user.tenantId,
           website: { contains: domain, mode: 'insensitive' },
           deletedAt: null,
+        },
+        select: {
+          id: true,
+          outreachArtifacts: true,
+          website: true,
+          phone: true,
+          email: true,
+          address: true,
         },
       });
     }
@@ -714,11 +731,36 @@ export async function importCandidateToCompanyV2(
         country: companyCountry || null,
         deletedAt: null,
       },
+      select: {
+        id: true,
+        outreachArtifacts: true,
+        website: true,
+        phone: true,
+        email: true,
+        address: true,
+      },
     });
   }
 
   // 婵″倹鐏夊鎻掔摠閸︻煉绱濇潻鏂挎礀瀹稿弶婀佺拋鏉跨秿楠炶埖鐖ｇ拋鏉库偓娆撯偓澶婂嚒鐎电厧鍙?
   if (existingCompany) {
+    const candidateContactSnapshot = getCandidateContactEnrichment(candidate);
+
+    await prisma.prospectCompany.update({
+      where: { id: existingCompany.id },
+      data: {
+        website: existingCompany.website || candidate.website || null,
+        phone: existingCompany.phone || candidate.phone || null,
+        email: existingCompany.email || candidate.email || null,
+        address: existingCompany.address || candidate.address || null,
+        outreachArtifacts: candidateContactSnapshot
+          ? buildProspectOutreachStateValue(existingCompany.outreachArtifacts, {
+              contactSnapshot: candidateContactSnapshot,
+            })
+          : undefined,
+      },
+    });
+
     await prisma.radarCandidate.update({
       where: { id: candidateId },
       data: {
@@ -736,6 +778,7 @@ export async function importCandidateToCompanyV2(
   const matchReasons =
     extractStringReasons(candidate.aiRelevance) ??
     extractStringReasons(candidate.matchExplain);
+  const candidateContactSnapshot = getCandidateContactEnrichment(candidate);
 
   const company = await prisma.prospectCompany.create({
     data: {
@@ -759,6 +802,11 @@ export async function importCandidateToCompanyV2(
       sourceCandidateId: candidateId,
       sourceUrl: candidate.sourceUrl,
       status: 'new',
+      outreachArtifacts: candidateContactSnapshot
+        ? buildProspectOutreachStateValue(null, {
+            contactSnapshot: candidateContactSnapshot,
+          })
+        : undefined,
     },
   });
   

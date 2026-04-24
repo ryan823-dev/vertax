@@ -3,6 +3,10 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { generateOutreachEmail } from '@/lib/email/outreach-service';
 import { sendEmail } from '@/lib/email/resend-client';
+import {
+  formatCandidateContactHint,
+  getCandidateOutreachContactProfile,
+} from '@/lib/radar/contact-enrichment';
 
 export const maxDuration = 60;
 
@@ -33,12 +37,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Candidate not found' }, { status: 404 });
     }
 
-    // 使用手动输入的email或候选已有的email
-    const targetEmail = manualEmail || candidate.email;
+    const contactProfile = getCandidateOutreachContactProfile(candidate, manualEmail);
+    const targetEmail = contactProfile.email;
     if (!targetEmail) {
       return NextResponse.json({
         error: 'No email available',
-        hint: 'Please provide an email address',
+        hint: formatCandidateContactHint(contactProfile) || 'Please provide an email address',
       }, { status: 400 });
     }
 
@@ -69,6 +73,9 @@ export async function POST(request: NextRequest) {
       candidateCountry: candidate.country || undefined,
       candidateWebsite: candidate.website || undefined,
       candidateDescription: candidate.description || undefined,
+      recommendedContact: contactProfile.recommendedContact?.label,
+      primaryEmail: contactProfile.primaryEmail?.value,
+      complianceNote: contactProfile.complianceNote || undefined,
       senderName: tenant.companyProfile?.companyName || 'VertaX',
       senderCompany: tenant.companyProfile?.companyName || 'VertaX',
       valueProposition: 'We provide advanced coating solutions for manufacturers.',
@@ -111,6 +118,11 @@ export async function POST(request: NextRequest) {
           messageId: result.messageId,
           status: 'sent',
           sentAt: new Date(),
+          metadata: {
+            recommendedContact: contactProfile.recommendedContact?.label || null,
+            primaryEmail: contactProfile.primaryEmail?.value || null,
+            complianceNote: contactProfile.complianceNote || null,
+          },
         },
       });
 

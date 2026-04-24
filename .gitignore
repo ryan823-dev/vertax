@@ -107,6 +107,7 @@ workspace/
 generated/
 tmp/
 temp/
+/tmp_*
 
 # ----- Build/debug outputs -----
 tsc-out.txt
@@ -146,6 +147,7 @@ REDIRECTS.md
 REDIRECTS_UPDATE.md
 VERTAX_USER_GUIDE.html
 SEO-GEO-AUDIT-AND-PLAN.md
+generate_agreement.py
 seed-website-config.mjs
 export-candidates.cjs
 all_category_slugs.*

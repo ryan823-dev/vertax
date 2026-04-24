@@ -4,7 +4,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { analyzeCompanyProfile } from "@/lib/ai-client";
-import { normalizeTargetRegionRecords } from "@/lib/regions";
+import { normalizeTargetRegions, normalizeTargetRegionRecords } from "@/lib/regions";
 import {
   buildCompanyProfileAnalysisContext,
   getCompanyProfileAnalysisAssets,

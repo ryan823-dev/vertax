@@ -1,5 +1,6 @@
 import type { NextAuthConfig } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import { shouldIgnoreStaticAuthOriginInDev } from "@/lib/app-origin";
 
 // Cross-platform JWT configuration (shared with Vertax)
 // Both Tower and Vertax must use the same JWT_SECRET
@@ -8,6 +9,12 @@ export const CROSS_PLATFORM_JWT_CONFIG = {
   issuer: "vertax.top",
   audience: "vertax-platform",
 };
+
+for (const envKey of ["AUTH_URL", "NEXTAUTH_URL"] as const) {
+  if (shouldIgnoreStaticAuthOriginInDev(process.env[envKey])) {
+    delete process.env[envKey];
+  }
+}
 
 // This config is safe for Edge runtime (no Prisma imports)
 // The actual authorize logic is in auth.ts

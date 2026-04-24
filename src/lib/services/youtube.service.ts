@@ -25,9 +25,9 @@ export function generateState(): string {
 
 // --- OAuth 2.0 ---
 
-export function getAuthUrl(state: string): string {
+export function getAuthUrl(state: string, appOrigin: string): string {
   const clientId = process.env.YOUTUBE_CLIENT_ID;
-  const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/api/oauth/youtube/callback`;
+  const redirectUri = `${appOrigin}/api/oauth/youtube/callback`;
   const scopes = [
     "https://www.googleapis.com/auth/youtube.readonly",
     "https://www.googleapis.com/auth/youtube.upload",
@@ -48,11 +48,12 @@ export function getAuthUrl(state: string): string {
 }
 
 export async function exchangeCodeForToken(
-  code: string
+  code: string,
+  appOrigin: string
 ): Promise<YouTubeTokenResponse> {
   const clientId = process.env.YOUTUBE_CLIENT_ID!;
   const clientSecret = process.env.YOUTUBE_CLIENT_SECRET!;
-  const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/api/oauth/youtube/callback`;
+  const redirectUri = `${appOrigin}/api/oauth/youtube/callback`;
 
   const res = await fetch(GOOGLE_TOKEN_URL, {
     method: "POST",

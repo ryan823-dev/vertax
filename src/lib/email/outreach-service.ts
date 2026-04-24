@@ -4,6 +4,10 @@
 import { sendEmail } from './resend-client';
 import { prisma } from '@/lib/prisma';
 import { chatCompletion } from '@/lib/ai-client';
+import {
+  formatCandidateContactHint,
+  getCandidateOutreachContactProfile,
+} from '@/lib/radar/contact-enrichment';
 
 // ==================== Cold Email 核心原则 ====================
 // 1. 写作风格：像同事，不是销售机器
@@ -65,6 +69,9 @@ export async function generateOutreachEmail(options: {
   candidateWebsite?: string;
   candidateDescription?: string;        // 新增：候选公司描述
   candidatePainPoints?: string[];       // 新增：推测的痛点
+  recommendedContact?: string;
+  primaryEmail?: string;
+  complianceNote?: string;
   senderName: string;
   senderCompany: string;
   senderTitle?: string;
@@ -85,6 +92,9 @@ export async function generateOutreachEmail(options: {
     candidateWebsite,
     candidateDescription,
     candidatePainPoints,
+    recommendedContact,
+    primaryEmail,
+    complianceNote,
     senderName,
     senderCompany,
     senderTitle,
@@ -171,6 +181,16 @@ Output JSON:
   const descriptionSection = candidateDescription
     ? `\n公司简介：${candidateDescription}`
     : '';
+  const zhContactSection = [
+    recommendedContact ? `\n推荐联系渠道：${recommendedContact}` : '',
+    primaryEmail ? `\n当前首选邮箱：${primaryEmail}` : '',
+    complianceNote ? `\n联系方式合规说明：${complianceNote}` : '',
+  ].join('');
+  const enContactSection = [
+    recommendedContact ? `\nPreferred outreach channel: ${recommendedContact}` : '',
+    primaryEmail ? `\nPreferred email on file: ${primaryEmail}` : '',
+    complianceNote ? `\nCompliance note: ${complianceNote}` : '',
+  ].join('');
 
   const userPrompt = language === 'zh'
     ? `目标客户信息：
@@ -178,7 +198,7 @@ Output JSON:
 - 联系人：${candidateName}
 - 行业：${candidateIndustry || '未知'}
 - 国家：${candidateCountry || '未知'}
-- 网站：${candidateWebsite || '无'}${descriptionSection}${painPointsSection}
+- 网站：${candidateWebsite || '无'}${descriptionSection}${painPointsSection}${zhContactSection}
 
 发件人信息：
 - 姓名：${senderName}
@@ -196,7 +216,7 @@ ${evidencePoints.map((e, i) => `${i + 1}. ${e}`).join('\n')}
 - Contact: ${candidateName}
 - Industry: ${candidateIndustry || 'Unknown'}
 - Country: ${candidateCountry || 'Unknown'}
-- Website: ${candidateWebsite || 'None'}${descriptionSection}${painPointsSection}
+- Website: ${candidateWebsite || 'None'}${descriptionSection}${painPointsSection}${enContactSection}
 
 Sender:
 - Name: ${senderName}
@@ -438,9 +458,16 @@ export async function sendOutreachBatch(options: {
           where: { id: recipientId },
         });
 
-        if (!candidate || !candidate.email) {
+        const contactProfile = candidate ? getCandidateOutreachContactProfile(candidate) : null;
+        const targetEmail = contactProfile?.email;
+
+        if (!candidate || !targetEmail) {
           result.failedCount++;
-          result.errors.push(`Candidate ${recipientId}: no email`);
+          result.errors.push(
+            `Candidate ${recipientId}: ${
+              contactProfile ? formatCandidateContactHint(contactProfile) || 'no email' : 'no email'
+            }`
+          );
           continue;
         }
 
@@ -453,6 +480,9 @@ export async function sendOutreachBatch(options: {
           candidateWebsite: candidate.website || undefined,
           candidateDescription: candidate.description || undefined,
           candidatePainPoints: inferPainPoints(candidate.industry || undefined, candidate.country || undefined),
+          recommendedContact: contactProfile?.recommendedContact?.label,
+          primaryEmail: contactProfile?.primaryEmail?.value,
+          complianceNote: contactProfile?.complianceNote || undefined,
           senderName: tenant.companyProfile?.companyName || 'VertaX',
           senderCompany: tenant.companyProfile?.companyName || 'VertaX',
           valueProposition: 'We help manufacturers optimize their coating processes with advanced automation solutions.',
@@ -472,7 +502,7 @@ export async function sendOutreachBatch(options: {
 
         // 发送邮件（使用租户配置）
         const sendResult = await sendEmail({
-          to: candidate.email,
+          to: targetEmail,
           tenantId, // 使用租户邮件配置
           subject: emailContent.subject,
           html: emailContent.html,
@@ -523,6 +553,8 @@ export async function getOutreachEligibleCandidates(tenantId: string): Promise<{
   id: string;
   displayName: string;
   email: string | null;
+  recommendedContact: string | null;
+  complianceNote: string | null;
   country: string | null;
   industry: string | null;
   website: string | null;
@@ -532,13 +564,13 @@ export async function getOutreachEligibleCandidates(tenantId: string): Promise<{
     where: {
       tenantId,
       status: 'QUALIFIED',
-      email: { not: null },
       qualifyTier: { in: ['A', 'B'] },
     },
     select: {
       id: true,
       displayName: true,
       email: true,
+      rawData: true,
       country: true,
       industry: true,
       website: true,
@@ -551,5 +583,20 @@ export async function getOutreachEligibleCandidates(tenantId: string): Promise<{
     take: 100,
   });
 
-  return candidates;
+  return candidates
+    .map((candidate) => {
+      const contactProfile = getCandidateOutreachContactProfile(candidate);
+      return {
+        id: candidate.id,
+        displayName: candidate.displayName,
+        email: contactProfile.email,
+        recommendedContact: contactProfile.recommendedContact?.label || null,
+        complianceNote: contactProfile.complianceNote,
+        country: candidate.country,
+        industry: candidate.industry,
+        website: candidate.website,
+        qualifyTier: candidate.qualifyTier,
+      };
+    })
+    .filter((candidate) => Boolean(candidate.email));
 }

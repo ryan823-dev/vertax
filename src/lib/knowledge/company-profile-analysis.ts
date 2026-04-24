@@ -148,7 +148,7 @@ type EvidenceCandidate = {
   entry: string;
 };
 
-const BUCKET_PRIORITY: AssetBucket[] = [
+const BUCKET_PRIORITY: Array<Exclude<AssetBucket, "default" | "utility">> = [
   "home",
   "about",
   "products",
@@ -711,8 +711,8 @@ function createChunkCandidates(
           entry: `- [${BUCKET_LABELS[scoredAsset.bucket]}] ${getAssetLabel(scoredAsset.asset)} | ${sourceLabel} | 片段${chunk.chunkIndex + 1}: ${excerpt}`,
         } satisfies ChunkCandidate;
       })
-      .filter((candidate): candidate is ChunkCandidate => Boolean(candidate))
-      .sort((left, right) => right.score - left.score);
+      .filter((candidate) => candidate !== null)
+      .sort((left, right) => right!.score - left!.score) as ChunkCandidate[];
 
     if (candidates.length > 0) {
       candidatesByAsset.set(scoredAsset.asset.id, candidates);

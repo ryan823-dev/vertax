@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { auth } from "@/lib/auth";
+import { resolveAppOrigin } from "@/lib/app-origin";
 import { db } from "@/lib/db";
 import {
   exchangeCodeForToken,
@@ -8,8 +9,8 @@ import {
 } from "@/lib/services/twitter.service";
 
 export async function GET(req: NextRequest) {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL!;
-  const accountsUrl = `${appUrl}/zh-CN/social/accounts`;
+  const appUrl = resolveAppOrigin(req);
+  const accountsUrl = `${appUrl}/customer/social/accounts`;
 
   try {
     const session = await auth();
@@ -46,7 +47,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Exchange code for tokens
-    const tokens = await exchangeCodeForToken(code, codeVerifier);
+    const tokens = await exchangeCodeForToken(code, codeVerifier, appUrl);
     const expiresAt = new Date(Date.now() + tokens.expiresIn * 1000);
 
     // Get user info

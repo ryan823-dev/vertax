@@ -38,9 +38,13 @@ export function generateState(): string {
 
 // --- OAuth ---
 
-export function getAuthUrl(state: string, codeChallenge: string): string {
+export function getAuthUrl(
+  state: string,
+  codeChallenge: string,
+  appOrigin: string
+): string {
   const clientId = process.env.TWITTER_CLIENT_ID;
-  const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/api/oauth/twitter/callback`;
+  const redirectUri = `${appOrigin}/api/oauth/twitter/callback`;
   const scopes = "tweet.read tweet.write users.read offline.access";
 
   const params = new URLSearchParams({
@@ -58,11 +62,12 @@ export function getAuthUrl(state: string, codeChallenge: string): string {
 
 export async function exchangeCodeForToken(
   code: string,
-  codeVerifier: string
+  codeVerifier: string,
+  appOrigin: string
 ): Promise<TwitterTokenResponse> {
   const clientId = process.env.TWITTER_CLIENT_ID!;
   const clientSecret = process.env.TWITTER_CLIENT_SECRET!;
-  const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/api/oauth/twitter/callback`;
+  const redirectUri = `${appOrigin}/api/oauth/twitter/callback`;
 
   const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
 

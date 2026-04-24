@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { auth } from "@/lib/auth";
+import { resolveAppOrigin } from "@/lib/app-origin";
 import { db } from "@/lib/db";
 import {
   exchangeCodeForToken,
@@ -8,8 +9,7 @@ import {
 } from "@/lib/services/youtube.service";
 
 export async function GET(req: NextRequest) {
-  const origin = new URL(req.url).origin;
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || origin;
+  const appUrl = resolveAppOrigin(req);
   const accountsUrl = `${appUrl}/customer/social/accounts`;
 
   try {
@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Exchange code for tokens
-    const tokens = await exchangeCodeForToken(code);
+    const tokens = await exchangeCodeForToken(code, appUrl);
     const expiresAt = new Date(Date.now() + tokens.expiresIn * 1000);
 
     // Get channel info

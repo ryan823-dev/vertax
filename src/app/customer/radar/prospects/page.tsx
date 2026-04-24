@@ -82,6 +82,13 @@ import {
 } from '@/actions/outreach-draft';
 import { suggestLinksForProspect } from '@/actions/radar-content-links';
 import { exportProspectsToCSV } from '@/actions/prospect-export';
+import {
+  getProspectCompanyContactSnapshot,
+  getProspectCompanyOutreachContactProfile,
+  getProspectOutreachVersions,
+  mergeProspectContactsWithSnapshot,
+  type ProspectOutreachContact,
+} from '@/lib/radar/prospect-outreach-state';
 import { toast } from 'sonner';
 
 // ==================== 类型 ====================
@@ -121,6 +128,7 @@ interface SuggestedContent {
 type ProspectCompanyView = Omit<ProspectCompanyData, 'matchReasons' | 'outreachArtifacts'> & {
   matchReasons: string[] | null;
   outreachArtifacts: OutreachPackContent[] | null;
+  outreachState: ProspectCompanyData['outreachArtifacts'];
 };
 
 interface BatchEnrichmentState {
@@ -359,15 +367,11 @@ function normalizeMatchReasons(value: ProspectCompanyData['matchReasons']): stri
 function normalizeOutreachArtifacts(
   value: ProspectCompanyData['outreachArtifacts']
 ): OutreachPackContent[] | null {
-  if (Array.isArray(value)) {
-    const artifacts = (value as unknown[])
-      .map((entry) => normalizeOutreachPackContent(entry))
-      .filter((entry): entry is OutreachPackContent => entry !== null);
-    return artifacts.length > 0 ? artifacts : null;
-  }
+  const artifacts = getProspectOutreachVersions(value)
+    .map((entry) => normalizeOutreachPackContent(entry))
+    .filter((entry): entry is OutreachPackContent => entry !== null);
 
-  const artifact = normalizeOutreachPackContent(value);
-  return artifact ? [artifact] : null;
+  return artifacts.length > 0 ? artifacts : null;
 }
 
 function normalizeProspectCompany(company: ProspectCompanyData): ProspectCompanyView {
@@ -375,6 +379,7 @@ function normalizeProspectCompany(company: ProspectCompanyData): ProspectCompany
     ...company,
     matchReasons: normalizeMatchReasons(company.matchReasons),
     outreachArtifacts: normalizeOutreachArtifacts(company.outreachArtifacts),
+    outreachState: company.outreachArtifacts,
   };
 }
 
@@ -466,18 +471,47 @@ export default function RadarProspectsPage() {
   const [linkedInDraft, setLinkedInDraft] = useState<LinkedInDraft | null>(null);
   const [isGeneratingLinkedIn, setIsGeneratingLinkedIn] = useState(false);
   const [linkedInCopied, setLinkedInCopied] = useState(false);
-  const [selectedLinkedInContact, setSelectedLinkedInContact] = useState<ProspectContactData | null>(null);
+  const [selectedLinkedInContact, setSelectedLinkedInContact] = useState<ProspectOutreachContact | null>(null);
 
   // v2.0: 邮件发送状态
   const [isSendingEmail, setIsSendingEmail] = useState<string | null>(null);
   const [emailSentId, setEmailSentId] = useState<string | null>(null);
-  const [selectedEmailContact, setSelectedEmailContact] = useState<ProspectContactData | null>(null);
+  const [selectedEmailContact, setSelectedEmailContact] = useState<ProspectOutreachContact | null>(null);
 
   // Task #30: 营销内容建议
   const [suggestedContents, setSuggestedContents] = useState<SuggestedContent[]>([]);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const selectedCompanyId = selectedCompany?.id ?? null;
   const selectedMatchReasons = selectedCompany?.matchReasons ?? [];
+  const selectedCompanyOutreachContext = selectedCompany
+    ? {
+        id: selectedCompany.id,
+        name: selectedCompany.name,
+        email: selectedCompany.email,
+        phone: selectedCompany.phone,
+        outreachArtifacts: selectedCompany.outreachState,
+      }
+    : null;
+  const selectedCompanyContactSnapshot = selectedCompanyOutreachContext
+    ? getProspectCompanyContactSnapshot(selectedCompanyOutreachContext)
+    : null;
+  const selectedCompanyContactProfile = selectedCompanyOutreachContext
+    ? getProspectCompanyOutreachContactProfile(selectedCompanyOutreachContext)
+    : null;
+  const outreachContacts = selectedCompany
+    ? mergeProspectContactsWithSnapshot(
+        {
+          id: selectedCompany.id,
+          name: selectedCompany.name,
+          outreachArtifacts: selectedCompany.outreachState,
+        },
+        contacts
+      )
+    : [];
+  const emailOutreachContacts = outreachContacts.filter((contact) => Boolean(contact.email));
+  const phoneOutreachContacts = outreachContacts.filter((contact) => Boolean(contact.phone));
+  const linkedInOutreachContacts = outreachContacts.filter((contact) => Boolean(contact.linkedInUrl));
+  const whatsappContact = phoneOutreachContacts[0] ?? null;
 
   useEffect(() => {
     outreachPackRef.current = outreachPack;
@@ -1081,6 +1115,48 @@ export default function RadarProspectsPage() {
     return map[tier || ''] || 'bg-slate-100 text-slate-700';
   };
 
+  const contactSnapshotPanel = selectedCompanyContactSnapshot ? (
+    <div className="rounded-2xl border border-[#E8E0D0] bg-[#FFFCF7] p-4">
+      <div className="flex items-center gap-2">
+        <Shield size={14} className="text-[#D4AF37]" />
+        <div className="text-sm font-bold text-[#0B1B2B]">导入联系人快照</div>
+        <div className="ml-auto text-[10px] text-slate-400">
+          {new Date(selectedCompanyContactSnapshot.enrichedAt).toLocaleDateString('zh-CN')}
+        </div>
+      </div>
+
+      <div className="mt-3 grid gap-3 md:grid-cols-2">
+        <div className="rounded-2xl border border-[#E8E0D0] bg-[#FCFAF4] px-3 py-3">
+          <div className="text-[11px] uppercase tracking-[0.16em] text-slate-400">主邮箱</div>
+          <div className="mt-2 text-sm font-medium text-[#0B1B2B]">
+            {selectedCompanyContactProfile?.email || '邮箱待补全'}
+          </div>
+        </div>
+        <div className="rounded-2xl border border-[#E8E0D0] bg-[#FCFAF4] px-3 py-3">
+          <div className="text-[11px] uppercase tracking-[0.16em] text-slate-400">主电话</div>
+          <div className="mt-2 text-sm font-medium text-[#0B1B2B]">
+            {selectedCompanyContactProfile?.phone || '电话待补全'}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-3 grid gap-3 md:grid-cols-2">
+        <div className="rounded-2xl border border-[#E8E0D0] bg-[#FCFAF4] px-3 py-3">
+          <div className="text-[11px] uppercase tracking-[0.16em] text-slate-400">推荐联系渠道</div>
+          <div className="mt-2 text-sm font-medium text-[#0B1B2B]">
+            {selectedCompanyContactProfile?.recommendedContact?.label || '待评估'}
+          </div>
+        </div>
+        <div className="rounded-2xl border border-[#E8E0D0] bg-[#FCFAF4] px-3 py-3">
+          <div className="text-[11px] uppercase tracking-[0.16em] text-slate-400">合规说明</div>
+          <div className="mt-2 text-xs leading-5 text-slate-600">
+            {selectedCompanyContactProfile?.complianceNote || '仅使用公开商务联系方式'}
+          </div>
+        </div>
+      </div>
+    </div>
+  ) : null;
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -1621,14 +1697,16 @@ export default function RadarProspectsPage() {
                       const latestArtifact = company.outreachArtifacts?.[0] ?? null;
                       setOutreachPack(isSelected ? null : latestArtifact);
                       setSelectedOutreachVersionId(null);
-                      setOutreachVersions([]);
-                      setOutreachTemplates([]);
-                      setActiveTab('info');
-                      setContacts([]);
-                      setDossierData(null);
-                      setShowContactForm(false);
-                      setOutreachHistory([]);
-                    }}
+                        setOutreachVersions([]);
+                        setOutreachTemplates([]);
+                        setActiveTab('info');
+                        setContacts([]);
+                        setSelectedEmailContact(null);
+                        setSelectedLinkedInContact(null);
+                        setDossierData(null);
+                        setShowContactForm(false);
+                        setOutreachHistory([]);
+                      }}
                     className={`p-4 border rounded-xl cursor-pointer transition-all ${
                       isSelected 
                         ? 'border-[#D4AF37] bg-[#D4AF37]/5' 
@@ -2050,6 +2128,12 @@ export default function RadarProspectsPage() {
                     </div>
                   )}
 
+                  {contactSnapshotPanel && (
+                    <div className="mb-4">
+                      {contactSnapshotPanel}
+                    </div>
+                  )}
+
                   {/* Contact List */}
                   {isLoadingContacts ? (
                     <div className="flex items-center justify-center py-8">
@@ -2063,8 +2147,14 @@ export default function RadarProspectsPage() {
                         <div className="w-12 h-12 rounded-xl bg-[#D4AF37]/10 flex items-center justify-center mx-auto mb-3">
                           <Users size={24} className="text-[#D4AF37]" />
                         </div>
-                        <p className="text-slate-300 text-sm">暂无联系人</p>
-                        <p className="text-xs text-slate-500 mt-1">添加决策者联系人，或从候选池导入时自动提取</p>
+                        <p className="text-slate-300 text-sm">
+                          {contactSnapshotPanel ? '暂无已落库联系人' : '暂无联系人'}
+                        </p>
+                        <p className="text-xs text-slate-500 mt-1">
+                          {contactSnapshotPanel
+                            ? '导入快照已可用于外联，后续可继续补录命名联系人。'
+                            : '添加决策者联系人，或从候选池导入时自动提取'}
+                        </p>
                       </div>
                     </div>
                   ) : (
@@ -2134,6 +2224,8 @@ export default function RadarProspectsPage() {
               {activeTab === 'outreach' && (
                 /* Outreach Tab */
                 <div className="space-y-4">
+                  {contactSnapshotPanel}
+
                   {/* Task #124: Version Selector */}
                   {(outreachVersions.length > 0 || outreachTemplates.length > 0 || outreachPack) && (
                     <div className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
@@ -2297,9 +2389,9 @@ export default function RadarProspectsPage() {
                         </div>
 
                         {/* v2.0: 联系人邮箱选择 */}
-                        {contacts.filter(c => c.email).length > 0 && (
+                        {emailOutreachContacts.length > 0 && (
                           <div className="mb-3 flex flex-wrap gap-2">
-                            {contacts.filter(c => c.email).map(c => (
+                            {emailOutreachContacts.map(c => (
                               <button
                                 key={c.id}
                                 onClick={() => setSelectedEmailContact(c)}
@@ -2311,6 +2403,7 @@ export default function RadarProspectsPage() {
                               >
                                 <Mail size={12} className="inline mr-1" />
                                 {c.name}: {c.email}
+                                {!c.isPersisted && <span className="ml-1 opacity-70">· Radar</span>}
                               </button>
                             ))}
                           </div>
@@ -2396,9 +2489,9 @@ export default function RadarProspectsPage() {
                         </div>
 
                         {/* 提示：无联系人邮箱 */}
-                        {contacts.filter(c => c.email).length === 0 && (
+                        {emailOutreachContacts.length === 0 && (
                           <p className="text-xs text-slate-500 mt-3 text-center">
-                            请先在联系人Tab添加邮箱地址
+                            暂无可用邮箱，请继续联系人富化或补录联系人
                           </p>
                         )}
                       </div>
@@ -2414,12 +2507,13 @@ export default function RadarProspectsPage() {
                         </div>
 
                         {/* 联系人电话选择提示 */}
-                        {contacts.filter(c => c.phone).length > 0 && (
+                        {phoneOutreachContacts.length > 0 && (
                           <div className="mb-3 flex flex-wrap gap-2">
-                            {contacts.filter(c => c.phone).map(c => (
+                            {phoneOutreachContacts.map(c => (
                               <span key={c.id} className="text-xs bg-emerald-50 text-emerald-700 px-2 py-1 rounded-full border border-emerald-200">
                                 <Phone size={10} className="inline mr-1" />
                                 {c.name}: {c.phone}
+                                {!c.isPersisted && <span className="ml-1 opacity-70">· Radar</span>}
                               </span>
                             ))}
                           </div>
@@ -2446,9 +2540,9 @@ export default function RadarProspectsPage() {
                                 </button>
 
                                 {/* Open WhatsApp — pick first contact with phone */}
-                                {contacts.filter(c => c.phone).length > 0 && (
+                                {phoneOutreachContacts.length > 0 && whatsappContact?.phone && (
                                   <a
-                                    href={`https://wa.me/${contacts.find(c => c.phone)!.phone!.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(wa.text)}`}
+                                    href={`https://wa.me/${whatsappContact.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(wa.text)}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="p-1.5 text-[#25D366] hover:text-[#128C7E] transition-colors"
@@ -2461,11 +2555,11 @@ export default function RadarProspectsPage() {
                                 {/* Mark as sent */}
                                 <button
                                   onClick={async () => {
-                                    const contact = contacts.find(c => c.phone);
+                                    const contact = whatsappContact;
                                     setIsSendingManual(`wa-${idx}`);
                                     await recordManualOutreach({
                                       companyId: selectedCompany.id,
-                                      contactId: contact?.id,
+                                      contactId: contact?.isPersisted ? contact.id : undefined,
                                       channel: 'whatsapp',
                                       toPhone: contact?.phone || '',
                                       toName: contact?.name || selectedCompany.name,
@@ -2497,19 +2591,19 @@ export default function RadarProspectsPage() {
                       </div>
 
                       {/* v2.0: LinkedIn DM - 从候选池迁移 */}
-                      {contacts.filter(c => c.linkedInUrl).length > 0 && (
+                      {linkedInOutreachContacts.length > 0 && (
                         <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
                           <div className="flex items-center gap-2 mb-4">
                             <Linkedin size={18} className="text-[#0A66C2]" />
                             <h4 className="font-bold text-[#0B1B2B]">LinkedIn DM</h4>
                             <span className="text-xs text-slate-400 ml-auto">
-                              {contacts.filter(c => c.linkedInUrl).length} 位联系人
+                              {linkedInOutreachContacts.length} 位联系人
                             </span>
                           </div>
 
                           {/* 联系人选择 */}
                           <div className="mb-3 flex flex-wrap gap-2">
-                            {contacts.filter(c => c.linkedInUrl).map(c => (
+                            {linkedInOutreachContacts.map(c => (
                               <button
                                 key={c.id}
                                 onClick={() => {
@@ -2526,6 +2620,7 @@ export default function RadarProspectsPage() {
                                 <Linkedin size={12} className="inline mr-1" />
                                 {c.name}
                                 {c.role && <span className="ml-1 opacity-70">({c.role})</span>}
+                                {!c.isPersisted && <span className="ml-1 opacity-70">· Radar</span>}
                               </button>
                             ))}
                           </div>
@@ -2650,14 +2745,14 @@ export default function RadarProspectsPage() {
                       )}
 
                       {/* Phone Outreach */}
-                      {contacts.filter(c => c.phone).length > 0 && (
+                      {phoneOutreachContacts.length > 0 && (
                         <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
                           <div className="flex items-center gap-2 mb-4">
                             <PhoneCall size={18} className="text-[#D4AF37]" />
                             <h4 className="font-bold text-[#0B1B2B]">电话外联</h4>
                           </div>
                           <div className="space-y-3">
-                            {contacts.filter(c => c.phone).map(contact => (
+                            {phoneOutreachContacts.map(contact => (
                               <div key={contact.id} className="bg-[#FFFCF7] rounded-xl border border-[#E8E0D0] p-4">
                                 <div className="flex items-center justify-between mb-2">
                                   <div>
@@ -2694,7 +2789,7 @@ export default function RadarProspectsPage() {
                                             setIsSendingManual(contact.id);
                                             await recordManualOutreach({
                                               companyId: selectedCompany.id,
-                                              contactId: contact.id,
+                                              contactId: contact.isPersisted ? contact.id : undefined,
                                               channel: 'phone',
                                               toPhone: contact.phone || '',
                                               toName: contact.name,

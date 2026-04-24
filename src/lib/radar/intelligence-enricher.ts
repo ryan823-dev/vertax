@@ -12,7 +12,14 @@
 import { prisma } from '@/lib/prisma';
 import { chatCompletion } from '@/lib/ai-client';
 import type { Prisma } from '@prisma/client';
+import { createContactEnrichmentEngine } from '@/lib/osint/contact-enrichment';
 import { PeopleDataLabsAdapter } from './adapters/pdl';
+import {
+  buildCandidateContactEnrichmentSnapshot,
+  buildCandidateContactEnrichmentUpdate,
+  mergeRadarCandidateRawData,
+  type CandidateContactEnrichmentSnapshot,
+} from './contact-enrichment';
 import { enrichCandidateWithExa } from './exa-enrich';
 import { safeFetch } from '@/lib/ssrf';
 import { resolveApiKey } from '@/lib/services/api-key-resolver';
@@ -728,6 +735,7 @@ export async function enrichCandidateIntelligence(
     exaEnrichResult?.website ||
     undefined;
   const domain = normalizeCompanyDomain(workingWebsite) || undefined;
+  let contactSnapshot: CandidateContactEnrichmentSnapshot | null = null;
 
   const tasks: Promise<unknown>[] = [];
 
@@ -753,18 +761,46 @@ export async function enrichCandidateIntelligence(
 
   await Promise.allSettled(tasks);
 
+  if (options?.includeContacts !== false) {
+    try {
+      const contactEnrichmentEngine = createContactEnrichmentEngine();
+      const contactResult = await contactEnrichmentEngine.deepEnrich(
+        companyName,
+        domain,
+        {
+          country: candidate.country || undefined,
+          city: candidate.city || undefined,
+          industry: candidate.industry || undefined,
+          depth: workingWebsite ? 'standard' : 'deep',
+        }
+      );
+      const contactCrmOutput = contactEnrichmentEngine.generateCRMOutput(contactResult);
+      contactSnapshot = buildCandidateContactEnrichmentSnapshot(contactResult, contactCrmOutput);
+    } catch (error) {
+      errors.push(`Contact enrichment: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
   const hasBaseEnrichment = Boolean(
     googlePlacesEnrichResult?.website ||
       googlePlacesEnrichResult?.phone ||
       googlePlacesEnrichResult?.address ||
       googlePlacesEnrichResult?.description ||
-    exaEnrichResult?.website ||
+      exaEnrichResult?.website ||
       exaEnrichResult?.email ||
       exaEnrichResult?.linkedInUrl ||
       exaEnrichResult?.description
   );
+  const hasContactEnrichment = Boolean(
+    contactSnapshot?.primaryEmail ||
+      contactSnapshot?.primaryPhone ||
+      contactSnapshot?.recommendedContact ||
+      contactSnapshot?.addresses.length ||
+      contactSnapshot?.contactForms.length ||
+      contactSnapshot?.capabilities?.length
+  );
 
-  if (Object.keys(intelligence).length > 0 || hasBaseEnrichment) {
+  if (Object.keys(intelligence).length > 0 || hasBaseEnrichment || hasContactEnrichment) {
     // 尝试从决策者联系人中提取邮箱和电话
     const foundEmail = intelligence.contacts?.decisionMakers?.find(m => m.email)?.email;
     const foundPhone = intelligence.contacts?.decisionMakers?.find(m => m.phone)?.phone;
@@ -774,28 +810,48 @@ export async function enrichCandidateIntelligence(
       intelligence.contacts?.decisionMakers?.find((m) => m.linkedIn)?.linkedIn ||
       intelligence.contacts?.companyContacts?.linkedInUrls?.[0] ||
       exaEnrichResult?.linkedInUrl;
-    
+
+    const contactUpdate = contactSnapshot
+      ? buildCandidateContactEnrichmentUpdate(candidate, contactSnapshot)
+      : null;
+
     const updateData: Record<string, unknown> = {
-      enrichedAt: new Date(),
-      // 优先使用 Hunter.io 找到的邮箱，如果没有则保持原有值
-      ...((foundEmail || companyEmail || exaEnrichResult?.email) &&
-        !candidate.email && { email: foundEmail || companyEmail || exaEnrichResult?.email }),
-      // 回填电话（如果有）
-      ...((foundPhone || companyPhone || googlePlacesEnrichResult?.phone) &&
-        !candidate.phone && { phone: foundPhone || companyPhone || googlePlacesEnrichResult?.phone }),
-      ...(workingWebsite && !candidate.website && { website: workingWebsite }),
-      ...(googlePlacesEnrichResult?.address && !candidate.address && { address: googlePlacesEnrichResult.address }),
-      ...(googlePlacesEnrichResult?.description && !candidate.description && { description: googlePlacesEnrichResult.description }),
-      ...(exaEnrichResult?.description && !candidate.description && { description: exaEnrichResult.description }),
-      ...(linkedInUrl && !candidate.linkedInUrl && { linkedInUrl }),
-      rawData: {
-        ...(candidate.rawData as object || {}),
+      enrichedAt: contactUpdate?.enrichedAt || new Date(),
+      email:
+        contactUpdate?.email ||
+        foundEmail ||
+        companyEmail ||
+        exaEnrichResult?.email ||
+        candidate.email ||
+        null,
+      phone:
+        contactUpdate?.phone ||
+        foundPhone ||
+        companyPhone ||
+        googlePlacesEnrichResult?.phone ||
+        candidate.phone ||
+        null,
+      website: contactUpdate?.website || workingWebsite || candidate.website || null,
+      address:
+        contactUpdate?.address ||
+        googlePlacesEnrichResult?.address ||
+        candidate.address ||
+        null,
+      description:
+        candidate.description ||
+        googlePlacesEnrichResult?.description ||
+        exaEnrichResult?.description ||
+        null,
+      linkedInUrl: contactUpdate?.linkedInUrl || linkedInUrl || candidate.linkedInUrl || null,
+      industry: contactUpdate?.industry || candidate.industry || null,
+      rawData: mergeRadarCandidateRawData(candidate.rawData, {
         ...(googlePlacesEnrichResult?.rawSnapshot || {}),
         ...(exaEnrichResult?.rawSnapshot || {}),
-        intelligence,
-      } as object,
+        ...(Object.keys(intelligence).length > 0 ? { intelligence } : {}),
+        ...(contactSnapshot ? { contactEnrichment: contactSnapshot } : {}),
+      }),
     };
-    
+
     await prisma.radarCandidate.update({
       where: { id: candidateId },
       data: updateData,
@@ -804,7 +860,7 @@ export async function enrichCandidateIntelligence(
 
   return {
     candidateId,
-    success: Object.keys(intelligence).length > 0 || hasBaseEnrichment,
+    success: Object.keys(intelligence).length > 0 || hasBaseEnrichment || hasContactEnrichment,
     data: intelligence,
     errors,
   };
@@ -870,7 +926,7 @@ export async function enrichWithSignalScore(candidateId: string) {
     // 获取候选当前状态
     const candidate = await prisma.radarCandidate.findUnique({
       where: { id: candidateId },
-      select: { email: true, phone: true }
+      select: { email: true, phone: true, rawData: true }
     });
 
     const aiRelevancePayload = {
@@ -886,6 +942,9 @@ export async function enrichWithSignalScore(candidateId: string) {
         ...(foundEmail && !candidate?.email && { email: foundEmail }),
         ...(foundPhone && !candidate?.phone && { phone: foundPhone }),
         aiRelevance: aiRelevancePayload,
+        rawData: mergeRadarCandidateRawData(candidate?.rawData, {
+          signalScores: signals,
+        }),
       },
     });
   }

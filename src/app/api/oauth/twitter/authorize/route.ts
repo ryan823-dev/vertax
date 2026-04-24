@@ -1,20 +1,18 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { getAppUrl, resolveAppOrigin } from "@/lib/app-origin";
 import { generatePKCE, generateState, getAuthUrl } from "@/lib/services/twitter.service";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
+  const appOrigin = resolveAppOrigin(req);
 
   if (isDemoMode) {
-    return NextResponse.redirect(
-      new URL("/zh-CN/social/accounts?error=demo_mode", process.env.NEXT_PUBLIC_APP_URL!)
-    );
+    return NextResponse.redirect(getAppUrl("/customer/social/accounts?error=demo_mode", req));
   }
 
   if (!process.env.TWITTER_CLIENT_ID || !process.env.TWITTER_CLIENT_SECRET) {
-    return NextResponse.redirect(
-      new URL("/zh-CN/social/accounts?error=not_configured", process.env.NEXT_PUBLIC_APP_URL!)
-    );
+    return NextResponse.redirect(getAppUrl("/customer/social/accounts?error=not_configured", req));
   }
 
   const state = generateState();
@@ -38,6 +36,6 @@ export async function GET() {
     path: "/",
   });
 
-  const authUrl = getAuthUrl(state, codeChallenge);
+  const authUrl = getAuthUrl(state, codeChallenge, appOrigin);
   return NextResponse.redirect(authUrl);
 }

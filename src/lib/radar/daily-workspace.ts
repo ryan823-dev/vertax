@@ -1,5 +1,11 @@
 import { prisma } from '@/lib/prisma';
 import type { Prisma, ProspectCompany, ProspectContact } from '@prisma/client';
+import {
+  getProspectCompanyOutreachContactProfile,
+  getProspectOutreachVersions,
+  mergeProspectContactsWithSnapshot,
+  type ProspectOutreachContact,
+} from './prospect-outreach-state';
 
 const RADAR_TIMEZONE = 'Asia/Shanghai';
 const RADAR_UTC_OFFSET = '+08:00';
@@ -69,6 +75,9 @@ export interface DailyWorkspaceContact {
   email: string | null;
   phone: string | null;
   linkedInUrl: string | null;
+  source: ProspectOutreachContact['source'];
+  isPersisted: boolean;
+  note: string | null;
 }
 
 export interface DailyWorkspaceItem {
@@ -83,8 +92,10 @@ export interface DailyWorkspaceItem {
   contactReadyScore: number;
   bucket: WorkspaceBucket;
   recommendedChannel: 'phone' | 'email' | 'research';
+  recommendedChannelLabel: string | null;
   recommendedContact: DailyWorkspaceContact | null;
   fallbackContact: DailyWorkspaceContact | null;
+  complianceNote: string | null;
   contactCount: number;
   readyLabel: 'Hot' | 'Ready' | 'Build';
   freshnessDays: number;
@@ -335,7 +346,7 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
 
-function toWorkspaceContact(contact: ProspectContact): DailyWorkspaceContact {
+function toWorkspaceContact(contact: ProspectOutreachContact): DailyWorkspaceContact {
   return {
     id: contact.id,
     name: contact.name,
@@ -344,7 +355,34 @@ function toWorkspaceContact(contact: ProspectContact): DailyWorkspaceContact {
     email: contact.email,
     phone: contact.phone,
     linkedInUrl: contact.linkedInUrl,
+    source: contact.source,
+    isPersisted: contact.isPersisted,
+    note: contact.note,
   };
+}
+
+function normalizeEmail(value: string | null | undefined) {
+  return value?.trim().toLowerCase() || null;
+}
+
+function normalizePhone(value: string | null | undefined) {
+  return value?.replace(/[^\d+]/g, '') || null;
+}
+
+function matchesPreferredContact(
+  contact: ProspectOutreachContact,
+  channel: 'phone' | 'email',
+  preferredValue?: string,
+) {
+  if (!preferredValue) {
+    return false;
+  }
+
+  if (channel === 'email') {
+    return normalizeEmail(contact.email) === normalizeEmail(preferredValue);
+  }
+
+  return normalizePhone(contact.phone) === normalizePhone(preferredValue);
 }
 
 async function loadWorkspaceProspects(tenantId: string) {
@@ -517,13 +555,15 @@ async function loadFeedbackMap(
 }
 
 function scoreContact(
-  contact: ProspectContact,
+  contact: ProspectOutreachContact,
   channel: 'phone' | 'email',
   feedback: CompanyFeedbackSummary | undefined,
+  preferredValue?: string,
 ) {
   const availabilityBoost = channel === 'phone'
     ? (contact.phone ? 28 : -100)
     : (contact.email ? 24 : -100);
+  const preferredMatchBoost = matchesPreferredContact(contact, channel, preferredValue) ? 16 : 0;
 
   const idAdjustment = feedback?.contactAdjustmentsById.get(contact.id) || 0;
   const emailAdjustment =
@@ -535,32 +575,57 @@ function scoreContact(
       ? feedback?.phoneAdjustments.get(contact.phone) || 0
       : 0;
 
-  return availabilityBoost + getSeniorityBoost(contact.seniority) + (contact.linkedInUrl ? 4 : 0) + idAdjustment + emailAdjustment + phoneAdjustment;
+  return availabilityBoost
+    + getSeniorityBoost(contact.seniority)
+    + (contact.linkedInUrl ? 4 : 0)
+    + preferredMatchBoost
+    + idAdjustment
+    + emailAdjustment
+    + phoneAdjustment;
 }
 
 function chooseBestContact(
-  contacts: ProspectContact[],
+  contacts: ProspectOutreachContact[],
   channel: 'phone' | 'email',
   feedback: CompanyFeedbackSummary | undefined,
-): ProspectContact | null {
+  preferredValue?: string,
+): ProspectOutreachContact | null {
   const sorted = [...contacts].sort(
-    (left, right) => scoreContact(right, channel, feedback) - scoreContact(left, channel, feedback),
+    (left, right) =>
+      scoreContact(right, channel, feedback, preferredValue)
+      - scoreContact(left, channel, feedback, preferredValue),
   );
   const top = sorted[0];
   if (!top) return null;
   if (channel === 'phone' && !top.phone) return null;
   if (channel === 'email' && !top.email) return null;
-  if (scoreContact(top, channel, feedback) < 0) return null;
+  if (scoreContact(top, channel, feedback, preferredValue) < 0) return null;
   return top;
 }
 
 function buildQuickNote(
   company: ProspectCompanyWithContacts,
-  primary: ProspectContact | null,
+  primary: ProspectOutreachContact | null,
   bucket: WorkspaceBucket,
   feedback: CompanyFeedbackSummary | undefined,
+  options: {
+    preferredChannelType: string | null;
+    recommendedChannelLabel: string | null;
+  },
 ) {
   const feedbackNote = feedback?.notes[0];
+
+  if (
+    options.recommendedChannelLabel
+    && (options.preferredChannelType === 'linkedin' || options.preferredChannelType === 'form')
+  ) {
+    if (bucket === 'pending') {
+      return feedbackNote || `优先沿用 ${options.recommendedChannelLabel}，当前先继续补全可执行联系人。`;
+    }
+
+    return feedbackNote
+      || `推荐渠道为 ${options.recommendedChannelLabel}，当前工作台同步保留可直接执行的${bucket === 'phone' ? '电话' : '邮箱'}备选。`;
+  }
 
   if (bucket === 'pending') {
     return feedbackNote || '缺少可直接外联的电话或邮箱，优先继续联系人富化。';
@@ -602,24 +667,62 @@ function buildWorkspaceItem(
     return null;
   }
 
-  const contacts = company.contacts;
-  const bestPhone = chooseBestContact(contacts, 'phone', feedback);
-  const bestEmail = chooseBestContact(contacts, 'email', feedback);
-  const bucket: WorkspaceBucket = bestPhone ? 'phone' : bestEmail ? 'email' : 'pending';
+  const contacts = mergeProspectContactsWithSnapshot(company, company.contacts);
+  const contactProfile = getProspectCompanyOutreachContactProfile(company);
+  const preferredChannelType = contactProfile.recommendedContact?.type ?? null;
+  const preferredPhoneValue = preferredChannelType === 'phone'
+    ? contactProfile.recommendedContact?.value
+    : undefined;
+  const preferredEmailValue = preferredChannelType === 'email'
+    ? contactProfile.recommendedContact?.value
+    : undefined;
+  const bestPhone = chooseBestContact(contacts, 'phone', feedback, preferredPhoneValue);
+  const bestEmail = chooseBestContact(contacts, 'email', feedback, preferredEmailValue);
+  const bucket: WorkspaceBucket =
+    preferredChannelType === 'phone' && bestPhone
+      ? 'phone'
+      : preferredChannelType === 'email' && bestEmail
+        ? 'email'
+        : bestPhone
+          ? 'phone'
+          : bestEmail
+            ? 'email'
+            : 'pending';
   const recommendedContact = bucket === 'phone' ? bestPhone : bucket === 'email' ? bestEmail : null;
   const fallbackContact = bucket === 'phone' ? bestEmail : bestPhone;
+  const hasOutreachPack = getProspectOutreachVersions(company.outreachArtifacts).length > 0;
+  const recommendedChannel =
+    preferredChannelType === 'phone' && bestPhone
+      ? 'phone'
+      : preferredChannelType === 'email' && bestEmail
+        ? 'email'
+        : contactProfile.recommendedContact
+          ? 'research'
+          : bucket === 'phone'
+            ? 'phone'
+            : bucket === 'email'
+              ? 'email'
+              : 'research';
 
   const companyBaseScore =
     getTierBoost(company.tier) +
     getFreshnessBoost(company.createdAt) +
     (company.approachAngle ? 6 : 0) +
-    (company.outreachArtifacts ? 6 : 0) +
+    (hasOutreachPack ? 6 : 0) +
     (company.status === 'contacted' ? -10 : 0) +
     (company.lastContactedAt ? -6 : 0) +
     (feedback?.companyScoreAdjustment || 0);
 
   const contactScore = recommendedContact
-    ? Math.max(scoreContact(recommendedContact, bucket === 'phone' ? 'phone' : 'email', feedback), 0)
+    ? Math.max(
+        scoreContact(
+          recommendedContact,
+          bucket === 'phone' ? 'phone' : 'email',
+          feedback,
+          bucket === 'phone' ? preferredPhoneValue : preferredEmailValue,
+        ),
+        0,
+      )
     : 0;
 
   const contactReadyScore = Math.max(0, Math.min(100, companyBaseScore + contactScore));
@@ -636,9 +739,11 @@ function buildWorkspaceItem(
     enrichmentStatus: company.enrichmentStatus,
     contactReadyScore,
     bucket,
-    recommendedChannel: bucket === 'phone' ? 'phone' : bucket === 'email' ? 'email' : 'research',
+    recommendedChannel,
+    recommendedChannelLabel: contactProfile.recommendedContact?.label || null,
     recommendedContact: recommendedContact ? toWorkspaceContact(recommendedContact) : null,
     fallbackContact: fallbackContact ? toWorkspaceContact(fallbackContact) : null,
+    complianceNote: contactProfile.complianceNote,
     contactCount: contacts.length,
     readyLabel,
     freshnessDays: getDaysSince(company.createdAt),
@@ -646,8 +751,11 @@ function buildWorkspaceItem(
     createdAt: company.createdAt.toISOString(),
     recommendedAngle: buildRecommendedAngle(company),
     matchReasons: normalizeMatchReasons(company.matchReasons),
-    outreachPackReady: Boolean(company.outreachArtifacts),
-    quickNote: buildQuickNote(company, recommendedContact, bucket, feedback),
+    outreachPackReady: hasOutreachPack,
+    quickNote: buildQuickNote(company, recommendedContact, bucket, feedback, {
+      preferredChannelType,
+      recommendedChannelLabel: contactProfile.recommendedContact?.label || null,
+    }),
     feedbackSignals: feedback?.notes || [],
   };
 }

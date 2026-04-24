@@ -6,6 +6,10 @@
 
 import { db } from "@/lib/db";
 import { sendEmail } from "@/lib/email/resend-client";
+import {
+  formatCandidateContactHint,
+  getCandidateOutreachContactProfile,
+} from "@/lib/radar/contact-enrichment";
 import type { EmailSequence } from "@/lib/research/email-sequence";
 
 // ==================== 类型 ====================
@@ -39,7 +43,7 @@ export async function batchSendToCandidates(
   // 获取所有候选人
   const candidates = await db.radarCandidate.findMany({
     where: { id: { in: candidateIds }, tenantId },
-    select: { id: true, displayName: true, email: true },
+    select: { id: true, displayName: true, email: true, phone: true, rawData: true },
   });
 
   if (candidates.length === 0) {
@@ -48,23 +52,35 @@ export async function batchSendToCandidates(
   }
 
   // 过滤有邮箱的候选人
-  const validCandidates = candidates.filter(
-    (c) => c.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c.email)
+  const candidatesWithProfiles = candidates.map((candidate) => ({
+    candidate,
+    contactProfile: getCandidateOutreachContactProfile(candidate),
+  }));
+  const validCandidates = candidatesWithProfiles.filter(
+    ({ contactProfile }) =>
+      Boolean(contactProfile.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactProfile.email))
   );
 
   if (validCandidates.length === 0) {
-    result.errors.push("候选人均无有效邮箱");
+    result.errors.push(
+      candidatesWithProfiles
+        .map(({ candidate, contactProfile }) =>
+          `${candidate.displayName}: ${formatCandidateContactHint(contactProfile) || "无有效邮箱"}`
+        )
+        .join(" | ")
+    );
     return result;
   }
 
   // 发送邮件
-  for (const candidate of validCandidates) {
+  for (const { candidate, contactProfile } of validCandidates) {
     try {
       const subject = options?.subject || "与您探讨合作机会";
       const body = options?.body || generateDefaultEmail(candidate.displayName);
+      const targetEmail = contactProfile.email!;
 
       const sendResult = await sendEmail({
-        to: candidate.email!,
+        to: targetEmail,
         tenantId,
         subject,
         html: body,
@@ -75,13 +91,18 @@ export async function batchSendToCandidates(
           data: {
             tenantId,
             candidateId: candidate.id,
-            toEmail: candidate.email!,
+            toEmail: targetEmail,
             toName: candidate.displayName,
             subject,
             bodyText: body,
             messageId: sendResult.messageId,
             status: "sent",
             sentAt: new Date(),
+            metadata: {
+              recommendedContact: contactProfile.recommendedContact?.label || null,
+              primaryEmail: contactProfile.primaryEmail?.value || null,
+              complianceNote: contactProfile.complianceNote || null,
+            },
           },
         });
 
@@ -125,11 +146,18 @@ export async function sendWithSequence(
       try {
         const candidate = await db.radarCandidate.findUnique({
           where: { id: candidateId },
-          select: { id: true, displayName: true, email: true },
+          select: { id: true, displayName: true, email: true, phone: true, rawData: true },
         });
 
-        if (!candidate?.email) {
-          result.errors.push(`候选人 ${candidateId}: 无邮箱`);
+        const contactProfile = candidate ? getCandidateOutreachContactProfile(candidate) : null;
+        const targetEmail = contactProfile?.email;
+
+        if (!candidate || !targetEmail) {
+          result.errors.push(
+            `候选人 ${candidateId}: ${
+              contactProfile ? formatCandidateContactHint(contactProfile) || "无邮箱" : "无邮箱"
+            }`
+          );
           continue;
         }
 
@@ -137,7 +165,7 @@ export async function sendWithSequence(
         const body = renderTemplate(email.body, { name: candidate.displayName });
 
         const sendResult = await sendEmail({
-          to: candidate.email,
+          to: targetEmail,
           tenantId,
           subject,
           html: body,
@@ -148,13 +176,18 @@ export async function sendWithSequence(
             data: {
               tenantId,
               candidateId: candidate.id,
-              toEmail: candidate.email,
+              toEmail: targetEmail,
               toName: candidate.displayName,
               subject,
               bodyText: body,
               messageId: sendResult.messageId,
               status: "sent",
               sentAt: new Date(),
+              metadata: {
+                recommendedContact: contactProfile?.recommendedContact?.label || null,
+                primaryEmail: contactProfile?.primaryEmail?.value || null,
+                complianceNote: contactProfile?.complianceNote || null,
+              },
             },
           });
 
@@ -187,18 +220,24 @@ export async function sendFollowUp(
   try {
     const candidate = await db.radarCandidate.findUnique({
       where: { id: candidateId },
-      select: { id: true, displayName: true, email: true },
+      select: { id: true, displayName: true, email: true, phone: true, rawData: true },
     });
 
-    if (!candidate?.email) {
-      return { success: false, error: "无有效邮箱" };
+    const contactProfile = candidate ? getCandidateOutreachContactProfile(candidate) : null;
+    const targetEmail = contactProfile?.email;
+
+    if (!candidate || !targetEmail) {
+      return {
+        success: false,
+        error: contactProfile ? formatCandidateContactHint(contactProfile) || "无有效邮箱" : "无有效邮箱",
+      };
     }
 
     const subject = renderTemplate(followUpEmail.subject, { name: candidate.displayName });
     const body = renderTemplate(followUpEmail.body, { name: candidate.displayName });
 
     const sendResult = await sendEmail({
-      to: candidate.email,
+      to: targetEmail,
       tenantId,
       subject,
       html: body,
@@ -209,13 +248,18 @@ export async function sendFollowUp(
         data: {
           tenantId,
           candidateId: candidate.id,
-          toEmail: candidate.email,
+          toEmail: targetEmail,
           toName: candidate.displayName,
           subject,
           bodyText: body,
           messageId: sendResult.messageId,
           status: "sent",
           sentAt: new Date(),
+          metadata: {
+            recommendedContact: contactProfile?.recommendedContact?.label || null,
+            primaryEmail: contactProfile?.primaryEmail?.value || null,
+            complianceNote: contactProfile?.complianceNote || null,
+          },
         },
       });
 

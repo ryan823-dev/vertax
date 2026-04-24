@@ -1,22 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { getAppUrl, resolveAppOrigin } from "@/lib/app-origin";
 import { generateState, getAuthUrl } from "@/lib/services/youtube.service";
 
 export async function GET(req: NextRequest) {
   const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
-  const origin = new URL(req.url).origin;
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || origin;
+  const appUrl = resolveAppOrigin(req);
 
   if (isDemoMode) {
-    return NextResponse.redirect(
-      new URL("/customer/social/accounts?error=demo_mode", appUrl)
-    );
+    return NextResponse.redirect(getAppUrl("/customer/social/accounts?error=demo_mode", req));
   }
 
   if (!process.env.YOUTUBE_CLIENT_ID || !process.env.YOUTUBE_CLIENT_SECRET) {
-    return NextResponse.redirect(
-      new URL("/customer/social/accounts?error=not_configured", appUrl)
-    );
+    return NextResponse.redirect(getAppUrl("/customer/social/accounts?error=not_configured", req));
   }
 
   const state = generateState();
@@ -30,6 +26,6 @@ export async function GET(req: NextRequest) {
     path: "/",
   });
 
-  const authUrl = getAuthUrl(state);
+  const authUrl = getAuthUrl(state, appUrl);
   return NextResponse.redirect(authUrl);
 }

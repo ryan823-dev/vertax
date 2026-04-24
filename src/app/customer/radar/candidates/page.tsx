@@ -64,6 +64,12 @@ import type { RadarPipelineStatus } from '@/lib/radar/pipeline';
 import type { RadarCandidate, RadarSource } from '@prisma/client';
 import type { CandidateStatus } from '@prisma/client';
 import { RadarHeader } from '@/components/radar/radar-header';
+import {
+  formatContactSources,
+  getCandidateContactEnrichment,
+  getCandidateOutreachContactProfile,
+  type CandidateContactEnrichmentSnapshot,
+} from '@/lib/radar/contact-enrichment';
 import { toast } from 'sonner';
 
 // ==================== 类型 ====================
@@ -111,6 +117,7 @@ interface CandidateIntelligence {
 interface CandidateRadarData {
   intelligence?: CandidateIntelligence;
   signalScores?: SignalScores;
+  contactEnrichment?: CandidateContactEnrichmentSnapshot;
 }
 
 interface ResearchData {
@@ -1147,6 +1154,59 @@ export default function RadarCandidatesPage() {
                       {selectedCandidate.description}
                     </div>
                   ) : null}
+                  {(() => {
+                    const contactSnapshot = getCandidateContactEnrichment(selectedCandidate);
+                    if (!contactSnapshot) return null;
+
+                    return (
+                      <div className="mt-4 rounded-2xl border border-[#E8E0D0] bg-[#FFFCF7] p-4">
+                        <div className="flex items-center gap-2">
+                          <Shield size={14} className="text-[#D4AF37]" />
+                          <div className="text-sm font-bold text-[#0B1B2B]">联系方式补全</div>
+                          <div className="ml-auto text-[10px] text-slate-400">
+                            {new Date(contactSnapshot.enrichedAt).toLocaleDateString('zh-CN')}
+                          </div>
+                        </div>
+
+                        <div className="mt-3 grid gap-3 md:grid-cols-2">
+                          <ContactEvidenceCard
+                            label="主邮箱"
+                            value={contactSnapshot.primaryEmail?.value || '邮箱待补全'}
+                            href={contactSnapshot.primaryEmail?.value ? `mailto:${contactSnapshot.primaryEmail.value}` : undefined}
+                            confidence={contactSnapshot.primaryEmail?.confidence}
+                            sources={contactSnapshot.primaryEmail?.sources}
+                          />
+                          <ContactEvidenceCard
+                            label="主电话"
+                            value={contactSnapshot.primaryPhone?.value || '电话待补全'}
+                            href={contactSnapshot.primaryPhone?.value ? buildPhoneHref(contactSnapshot.primaryPhone.value) : undefined}
+                            confidence={contactSnapshot.primaryPhone?.confidence}
+                            sources={contactSnapshot.primaryPhone?.sources}
+                          />
+                        </div>
+
+                        <div className="mt-3 grid gap-3 md:grid-cols-2">
+                          <div className="rounded-2xl border border-[#E8E0D0] bg-[#FCFAF4] px-3 py-3">
+                            <div className="text-[11px] uppercase tracking-[0.16em] text-slate-400">推荐联系渠道</div>
+                            <div className="mt-2 text-sm font-medium text-[#0B1B2B]">
+                              {contactSnapshot.recommendedContact || '待评估'}
+                            </div>
+                            {contactSnapshot.recommendedChannels.length > 1 ? (
+                              <div className="mt-2 text-[11px] leading-5 text-slate-500">
+                                备选：{contactSnapshot.recommendedChannels.slice(1, 3).map((channel) => `${channel.type}: ${channel.value}`).join(' / ')}
+                              </div>
+                            ) : null}
+                          </div>
+                          <div className="rounded-2xl border border-[#E8E0D0] bg-[#FCFAF4] px-3 py-3">
+                            <div className="text-[11px] uppercase tracking-[0.16em] text-slate-400">合规说明</div>
+                            <div className="mt-2 text-xs leading-5 text-slate-600">
+                              {contactSnapshot.complianceNote || '仅使用公开商务联系方式'}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {/* Match Reasons */}
@@ -1823,36 +1883,82 @@ function DetailItem({
   );
 }
 
+function ContactEvidenceCard({
+  label,
+  value,
+  href,
+  confidence,
+  sources,
+}: {
+  label: string;
+  value: string;
+  href?: string;
+  confidence?: number;
+  sources?: string[];
+}) {
+  const content = href ? (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center gap-1 truncate font-medium text-[#0B1B2B] hover:text-[#9A7A1C]"
+    >
+      <span className="truncate">{value}</span>
+      <ExternalLink size={12} className="shrink-0" />
+    </a>
+  ) : (
+    <span className="truncate font-medium text-[#0B1B2B]">{value}</span>
+  );
+
+  return (
+    <div className="rounded-2xl border border-[#E8E0D0] bg-[#FCFAF4] px-3 py-3">
+      <div className="text-[11px] uppercase tracking-[0.16em] text-slate-400">{label}</div>
+      <div className="mt-2 text-sm">{content}</div>
+      <div className="mt-2 flex items-center gap-2 text-[11px] text-slate-500">
+        {typeof confidence === 'number' ? (
+          <span className="rounded-full bg-white px-2 py-0.5 text-[#9A7A1C]">{confidence}%</span>
+        ) : null}
+        <span className="truncate">{formatContactSources(sources)}</span>
+      </div>
+    </div>
+  );
+}
+
 function buildPhoneHref(phone: string) {
   return `tel:${phone.replace(/[^\d+]/g, '')}`;
 }
 
 function getCandidatePhone(candidate: CandidateWithSource) {
-  if (candidate.phone) {
-    return { label: candidate.phone, href: buildPhoneHref(candidate.phone) };
+  const contactProfile = getCandidateOutreachContactProfile(candidate);
+  if (contactProfile.phone) {
+    return { label: contactProfile.phone, href: buildPhoneHref(contactProfile.phone) };
   }
 
   return { label: '电话待补全', href: undefined };
 }
 
 function getCandidateEmail(candidate: CandidateWithSource) {
-  if (candidate.email) {
-    return { label: candidate.email, href: `mailto:${candidate.email}` };
+  const contactProfile = getCandidateOutreachContactProfile(candidate);
+  if (contactProfile.email) {
+    return { label: contactProfile.email, href: `mailto:${contactProfile.email}` };
   }
 
   return { label: '邮箱待补全', href: undefined };
 }
 
 function getCandidateLinkedIn(candidate: CandidateWithSource) {
-  if (candidate.linkedInUrl) {
-    return { label: '已找到公司主页', href: candidate.linkedInUrl };
+  const contactSnapshot = getCandidateContactEnrichment(candidate);
+  const linkedInUrl = contactSnapshot?.identity.linkedinUrl || candidate.linkedInUrl;
+  if (linkedInUrl) {
+    return { label: '已找到公司主页', href: linkedInUrl };
   }
 
   return { label: 'LinkedIn 待补全', href: undefined };
 }
 
 function getCandidateWebsite(candidate: CandidateWithSource) {
-  const rawValue = candidate.website;
+  const contactSnapshot = getCandidateContactEnrichment(candidate);
+  const rawValue = contactSnapshot?.identity.officialUrl || candidate.website;
   if (!rawValue) {
     return { label: '网站待补全', href: undefined };
   }
@@ -1935,6 +2041,7 @@ function getReachableDecisionMakerCount(candidate: CandidateWithSource) {
 function getContactCoverage(candidate: CandidateWithSource) {
   const decisionMakers = getDecisionMakers(candidate);
   const reachableCount = getReachableDecisionMakerCount(candidate);
+  const contactProfile = getCandidateOutreachContactProfile(candidate);
 
   if (reachableCount > 0) {
     return {
@@ -1950,7 +2057,7 @@ function getContactCoverage(candidate: CandidateWithSource) {
     };
   }
 
-  if (candidate.email || candidate.phone) {
+  if (contactProfile.email || contactProfile.phone) {
     return {
       label: '已有公司级联系方式',
       tone: 'success' as const,
@@ -1971,12 +2078,14 @@ function getContactCoverage(candidate: CandidateWithSource) {
 }
 
 function getEnrichmentStatus(candidate: CandidateWithSource) {
+  const contactSnapshot = getCandidateContactEnrichment(candidate);
   if (candidate.status === 'ENRICHING') {
     return '自动补全中';
   }
 
-  if (candidate.enrichedAt) {
-    return `已补全 · ${new Date(candidate.enrichedAt).toLocaleDateString('zh-CN')}`;
+  const enrichedAt = contactSnapshot?.enrichedAt || (candidate.enrichedAt ? new Date(candidate.enrichedAt).toISOString() : null);
+  if (enrichedAt) {
+    return `已补全 · ${new Date(enrichedAt).toLocaleDateString('zh-CN')}`;
   }
 
   if (candidate.aiSummary || candidate.matchScore !== null) {
