@@ -3,6 +3,7 @@ import type {
   CRMContactOutput,
   ContactEnrichmentResult,
   ContactSourceType,
+  IdentityResolution,
   RecommendedChannel,
 } from '@/lib/osint/contact-enrichment';
 
@@ -45,6 +46,8 @@ export interface PersistedRecommendedChannel {
   priority: number;
 }
 
+export interface PersistedIdentityResolution extends IdentityResolution {}
+
 export interface CandidateContactEnrichmentSnapshot {
   version: 1;
   updatedAt: string;
@@ -62,6 +65,7 @@ export interface CandidateContactEnrichmentSnapshot {
     identityConfidence: number;
     duplicateRisk: string;
     duplicateWarnings?: string[];
+    resolution: PersistedIdentityResolution;
   };
   phones: PersistedContactPoint[];
   emails: PersistedContactPoint[];
@@ -116,6 +120,97 @@ function isJsonRecord(value: unknown): value is JsonRecord {
 
 export function getRadarCandidateRawData(rawData: unknown): RadarCandidateRawData {
   return isJsonRecord(rawData) ? { ...rawData } : {};
+}
+
+function normalizeIdentityName(value?: string): string {
+  return (value || '')
+    .toLowerCase()
+    .replace(/\b(inc|llc|corp|corporation|co|ltd|limited|gmbh|sa|bv|plc)\b/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function buildFallbackIdentityResolution(
+  identity: CandidateContactEnrichmentSnapshot['identity']
+): PersistedIdentityResolution {
+  const confidence = typeof identity.identityConfidence === 'number' ? identity.identityConfidence : 0;
+  const hasAnchor = Boolean(identity.domain || identity.officialUrl);
+  const strongEvidenceCount = hasAnchor ? 1 : 0;
+  const blockingIssues =
+    identity.duplicateRisk === 'high' || identity.duplicateRisk === 'medium'
+      ? [...(identity.duplicateWarnings || [])]
+      : [];
+  const verdict: PersistedIdentityResolution['verdict'] =
+    blockingIssues.length > 0
+      ? 'ambiguous'
+      : confidence >= 75 && hasAnchor
+        ? 'verified'
+        : confidence >= 55 && hasAnchor
+          ? 'probable'
+          : confidence >= 35
+            ? 'ambiguous'
+            : 'unverified';
+
+  return {
+    canonicalName: identity.displayName || identity.legalName || identity.inputName,
+    normalizedName: normalizeIdentityName(
+      identity.displayName || identity.legalName || identity.inputName
+    ),
+    officialDomain: identity.domain,
+    confidence,
+    verdict,
+    writebackAllowed:
+      blockingIssues.length === 0 && hasAnchor && (verdict === 'verified' || verdict === 'probable'),
+    strongEvidenceCount,
+    evidence: [],
+    blockingIssues,
+  };
+}
+
+function normalizePersistedIdentityResolution(
+  identity: CandidateContactEnrichmentSnapshot['identity']
+): PersistedIdentityResolution {
+  const resolution = isJsonRecord(identity.resolution)
+    ? (identity.resolution as PersistedIdentityResolution)
+    : null;
+
+  if (!resolution) {
+    return buildFallbackIdentityResolution(identity);
+  }
+
+  return {
+    canonicalName:
+      typeof resolution.canonicalName === 'string' && resolution.canonicalName.trim()
+        ? resolution.canonicalName
+        : identity.displayName || identity.legalName || identity.inputName,
+    normalizedName:
+      typeof resolution.normalizedName === 'string' && resolution.normalizedName.trim()
+        ? resolution.normalizedName
+        : normalizeIdentityName(identity.displayName || identity.legalName || identity.inputName),
+    officialDomain:
+      typeof resolution.officialDomain === 'string' && resolution.officialDomain.trim()
+        ? resolution.officialDomain
+        : identity.domain,
+    confidence: typeof resolution.confidence === 'number' ? resolution.confidence : identity.identityConfidence,
+    verdict:
+      resolution.verdict === 'verified' ||
+      resolution.verdict === 'probable' ||
+      resolution.verdict === 'ambiguous' ||
+      resolution.verdict === 'unverified'
+        ? resolution.verdict
+        : buildFallbackIdentityResolution(identity).verdict,
+    writebackAllowed:
+      typeof resolution.writebackAllowed === 'boolean'
+        ? resolution.writebackAllowed
+        : buildFallbackIdentityResolution(identity).writebackAllowed,
+    strongEvidenceCount:
+      typeof resolution.strongEvidenceCount === 'number'
+        ? resolution.strongEvidenceCount
+        : buildFallbackIdentityResolution(identity).strongEvidenceCount,
+    evidence: Array.isArray(resolution.evidence) ? resolution.evidence.map((item) => ({ ...item })) : [],
+    blockingIssues: Array.isArray(resolution.blockingIssues) ? [...resolution.blockingIssues] : [],
+  };
 }
 
 export function mergeRadarCandidateRawData(
@@ -211,6 +306,11 @@ export function buildCandidateContactEnrichmentSnapshot(
       duplicateWarnings: result.identity.duplicateWarnings
         ? [...result.identity.duplicateWarnings]
         : undefined,
+      resolution: {
+        ...result.identity.resolution,
+        evidence: result.identity.resolution.evidence.map((item) => ({ ...item })),
+        blockingIssues: [...result.identity.resolution.blockingIssues],
+      },
     },
     phones: result.phones.map(toPersistedContactPoint),
     emails: result.emails.map(toPersistedContactPoint),
@@ -259,6 +359,10 @@ export function getCandidateContactEnrichment(
 
   return {
     ...normalized,
+    identity: {
+      ...normalized.identity,
+      resolution: normalizePersistedIdentityResolution(normalized.identity),
+    },
     phones: Array.isArray(normalized.phones) ? normalized.phones : [],
     emails: Array.isArray(normalized.emails) ? normalized.emails : [],
     addresses: Array.isArray(normalized.addresses) ? normalized.addresses : [],
@@ -272,18 +376,40 @@ export function getCandidateContactEnrichment(
   };
 }
 
+export function canWriteCandidateIdentity(
+  snapshot: CandidateContactEnrichmentSnapshot | null | undefined
+): boolean {
+  if (!snapshot) {
+    return false;
+  }
+
+  const resolution = snapshot.identity.resolution;
+  return Boolean(
+    resolution.writebackAllowed &&
+      resolution.blockingIssues.length === 0 &&
+      resolution.strongEvidenceCount >= 1 &&
+      (resolution.verdict === 'verified' || resolution.verdict === 'probable')
+  );
+}
+
 export function buildCandidateContactEnrichmentUpdate(
   candidate: CandidateContactFields,
   snapshot: CandidateContactEnrichmentSnapshot
 ) {
+  const allowWriteback = canWriteCandidateIdentity(snapshot);
+
   return {
     enrichedAt: new Date(snapshot.enrichedAt),
-    email: snapshot.primaryEmail?.value ?? candidate.email ?? null,
-    phone: snapshot.primaryPhone?.value ?? candidate.phone ?? null,
-    address: snapshot.addresses[0]?.value ?? candidate.address ?? null,
-    website: snapshot.identity.officialUrl ?? candidate.website ?? null,
-    linkedInUrl: snapshot.identity.linkedinUrl ?? candidate.linkedInUrl ?? null,
-    industry: candidate.industry ?? snapshot.identity.industry ?? null,
+    email: allowWriteback ? (snapshot.primaryEmail?.value ?? candidate.email ?? null) : candidate.email ?? null,
+    phone: allowWriteback ? (snapshot.primaryPhone?.value ?? candidate.phone ?? null) : candidate.phone ?? null,
+    address: allowWriteback ? (snapshot.addresses[0]?.value ?? candidate.address ?? null) : candidate.address ?? null,
+    website: allowWriteback ? (snapshot.identity.officialUrl ?? candidate.website ?? null) : candidate.website ?? null,
+    linkedInUrl: allowWriteback
+      ? (snapshot.identity.linkedinUrl ?? candidate.linkedInUrl ?? null)
+      : candidate.linkedInUrl ?? null,
+    industry: allowWriteback
+      ? (candidate.industry ?? snapshot.identity.industry ?? null)
+      : candidate.industry ?? null,
     rawData: mergeRadarCandidateRawData(candidate.rawData, {
       contactEnrichment: snapshot,
     }),

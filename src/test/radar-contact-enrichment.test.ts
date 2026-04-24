@@ -6,6 +6,7 @@ import type {
 import {
   buildCandidateContactEnrichmentSnapshot,
   buildCandidateContactEnrichmentUpdate,
+  canWriteCandidateIdentity,
   getCandidateOutreachContactProfile,
 } from "@/lib/radar/contact-enrichment";
 
@@ -20,6 +21,32 @@ function buildFixture() {
       identityConfidence: 92,
       duplicateRisk: "low",
       duplicateWarnings: [],
+      resolution: {
+        canonicalName: "Acme Automation",
+        normalizedName: "acme automation",
+        officialDomain: "acme.example",
+        confidence: 92,
+        verdict: "verified",
+        writebackAllowed: true,
+        strongEvidenceCount: 2,
+        evidence: [
+          {
+            type: "input_domain",
+            strength: "strong",
+            source: "input",
+            value: "acme.example",
+            scoreDelta: 45,
+          },
+          {
+            type: "official_website_signal",
+            strength: "strong",
+            source: "website",
+            value: "https://www.acme.example",
+            scoreDelta: 18,
+          },
+        ],
+        blockingIssues: [],
+      },
     },
     phones: [
       {
@@ -174,5 +201,53 @@ describe("radar contact enrichment helpers", () => {
     expect(update.website).toBe("https://www.acme.example");
     expect((update.rawData as Record<string, unknown>).contactEnrichment).toBeTruthy();
     expect((update.rawData as Record<string, unknown>).intelligence).toBeTruthy();
+  });
+
+  it("blocks candidate writeback when identity resolution is ambiguous", () => {
+    const { result, crmOutput } = buildFixture();
+    result.identity.identityConfidence = 42;
+    result.identity.duplicateRisk = "high";
+    result.identity.duplicateWarnings = ["Lookalike: Acme Automation GmbH"];
+    result.identity.resolution = {
+      canonicalName: "Acme Automation",
+      normalizedName: "acme automation",
+      officialDomain: "acme.example",
+      confidence: 42,
+      verdict: "ambiguous",
+      writebackAllowed: false,
+      strongEvidenceCount: 0,
+      evidence: [
+        {
+          type: "duplicate_conflict",
+          strength: "conflict",
+          source: "search",
+          value: "Lookalike: Acme Automation GmbH",
+          scoreDelta: -20,
+        },
+      ],
+      blockingIssues: ["Lookalike: Acme Automation GmbH"],
+    };
+
+    const snapshot = buildCandidateContactEnrichmentSnapshot(result, crmOutput);
+    expect(canWriteCandidateIdentity(snapshot)).toBe(false);
+
+    const update = buildCandidateContactEnrichmentUpdate(
+      {
+        email: "existing@acme.example",
+        phone: "legacy-phone",
+        address: "legacy-address",
+        website: "https://legacy.example",
+        linkedInUrl: "https://linkedin.com/company/legacy-acme",
+        industry: "Legacy Industry",
+        rawData: {},
+      },
+      snapshot
+    );
+
+    expect(update.email).toBe("existing@acme.example");
+    expect(update.phone).toBe("legacy-phone");
+    expect(update.website).toBe("https://legacy.example");
+    expect(update.linkedInUrl).toBe("https://linkedin.com/company/legacy-acme");
+    expect((update.rawData as Record<string, unknown>).contactEnrichment).toBeTruthy();
   });
 });

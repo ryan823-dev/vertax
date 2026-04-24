@@ -20,6 +20,25 @@ function buildSnapshot(): CandidateContactEnrichmentSnapshot {
       identityConfidence: 92,
       duplicateRisk: 'low',
       duplicateWarnings: [],
+      resolution: {
+        canonicalName: 'Acme Automation',
+        normalizedName: 'acme automation',
+        officialDomain: 'acme.example',
+        confidence: 92,
+        verdict: 'verified',
+        writebackAllowed: true,
+        strongEvidenceCount: 2,
+        evidence: [
+          {
+            type: 'input_domain',
+            strength: 'strong',
+            source: 'input',
+            value: 'acme.example',
+            scoreDelta: 45,
+          },
+        ],
+        blockingIssues: [],
+      },
     },
     phones: [
       {

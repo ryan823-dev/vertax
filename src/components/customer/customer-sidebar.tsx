@@ -107,7 +107,7 @@ export function CustomerSidebar({
     <>
       <button
         onClick={() => setMobileOpen(true)}
-        className="fixed left-3 top-3 z-50 rounded-2xl border border-[rgba(79,141,246,0.25)] bg-[rgba(15,23,38,0.92)] p-2.5 text-white shadow-[0_18px_32px_-18px_rgba(15,23,38,0.9)] lg:hidden"
+        className="fixed left-3 top-3 z-50 rounded-2xl border border-[rgba(79,141,246,0.2)] bg-[rgba(28,40,58,0.88)] p-2.5 text-white shadow-[0_18px_32px_-18px_rgba(15,23,38,0.56)] lg:hidden"
         aria-label="打开导航菜单"
       >
         <Menu size={18} />
@@ -115,7 +115,7 @@ export function CustomerSidebar({
 
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-40 bg-[rgba(15,23,38,0.45)] backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-40 bg-[rgba(15,23,38,0.34)] backdrop-blur-sm lg:hidden"
           onClick={() => setMobileOpen(false)}
         />
       )}
@@ -127,7 +127,7 @@ export function CustomerSidebar({
           mobileOpen ? "!fixed !inset-y-0 !left-0 !z-50 !flex shadow-2xl" : ""
         }`}
       >
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-[radial-gradient(circle_at_top_left,rgba(79,141,246,0.22),transparent_42%)] opacity-80" />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-[radial-gradient(circle_at_top_left,rgba(79,141,246,0.16),transparent_44%),radial-gradient(circle_at_top_right,rgba(255,255,255,0.06),transparent_36%)] opacity-90" />
         {mobileOpen && (
           <button
             onClick={() => setMobileOpen(false)}
@@ -140,7 +140,7 @@ export function CustomerSidebar({
 
         <div className={`${collapsed ? "px-4 py-5" : "px-5 py-5"} relative border-b border-[var(--ci-sidebar-border)]`}>
           <div
-            className={`rounded-[28px] border border-[rgba(148,163,184,0.14)] bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.025))] p-4 shadow-[0_22px_36px_-32px_rgba(2,6,23,0.95)] ${
+            className={`rounded-[28px] border border-[rgba(148,163,184,0.18)] bg-[linear-gradient(180deg,rgba(255,255,255,0.09),rgba(255,255,255,0.05))] p-4 shadow-[0_20px_34px_-30px_rgba(15,23,38,0.54)] ${
               collapsed ? "flex justify-center" : ""
             }`}
           >
@@ -199,7 +199,7 @@ export function CustomerSidebar({
 
         <div className={`${collapsed ? "px-3" : "px-4"} border-t border-[var(--ci-sidebar-border)] py-4`}>
           {!collapsed && (
-            <div className="mb-3 rounded-[24px] border border-[rgba(148,163,184,0.14)] bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] p-3.5 shadow-[0_20px_30px_-28px_rgba(2,6,23,0.96)]">
+            <div className="mb-3 rounded-[24px] border border-[rgba(148,163,184,0.18)] bg-[linear-gradient(180deg,rgba(255,255,255,0.09),rgba(255,255,255,0.05))] p-3.5 shadow-[0_18px_28px_-26px_rgba(15,23,38,0.52)]">
               <div className="flex items-start gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[rgba(79,141,246,0.12)] text-[var(--ci-accent)]">
                   <Sparkles size={16} />
@@ -265,7 +265,7 @@ function NavItemRow({
             collapsed ? "justify-center px-2 py-3" : "px-3 py-3"
           } ${
             isActive
-              ? "border border-[rgba(79,141,246,0.2)] bg-[linear-gradient(135deg,rgba(79,141,246,0.2),rgba(255,255,255,0.05))] text-white shadow-[0_18px_32px_-24px_rgba(79,141,246,0.58)]"
+              ? "border border-[rgba(79,141,246,0.18)] bg-[linear-gradient(135deg,rgba(79,141,246,0.16),rgba(255,255,255,0.08))] text-white shadow-[0_18px_32px_-24px_rgba(79,141,246,0.34)]"
               : "border border-transparent text-[var(--ci-sidebar-text)] hover:bg-[var(--ci-sidebar-hover)] hover:text-white"
           }`}
         >

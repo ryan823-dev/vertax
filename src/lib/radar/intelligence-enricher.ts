@@ -17,6 +17,7 @@ import { PeopleDataLabsAdapter } from './adapters/pdl';
 import {
   buildCandidateContactEnrichmentSnapshot,
   buildCandidateContactEnrichmentUpdate,
+  canWriteCandidateIdentity,
   mergeRadarCandidateRawData,
   type CandidateContactEnrichmentSnapshot,
 } from './contact-enrichment';
@@ -814,36 +815,62 @@ export async function enrichCandidateIntelligence(
     const contactUpdate = contactSnapshot
       ? buildCandidateContactEnrichmentUpdate(candidate, contactSnapshot)
       : null;
+    const allowContactWriteback = canWriteCandidateIdentity(contactSnapshot);
+    const allowGooglePlacesWriteback = Boolean(googlePlacesEnrichResult?.placeId);
 
     const updateData: Record<string, unknown> = {
       enrichedAt: contactUpdate?.enrichedAt || new Date(),
       email:
-        contactUpdate?.email ||
-        foundEmail ||
-        companyEmail ||
-        exaEnrichResult?.email ||
-        candidate.email ||
-        null,
+        allowContactWriteback
+          ? (
+              contactUpdate?.email ||
+              foundEmail ||
+              companyEmail ||
+              exaEnrichResult?.email ||
+              candidate.email ||
+              null
+            )
+          : candidate.email || null,
       phone:
-        contactUpdate?.phone ||
-        foundPhone ||
-        companyPhone ||
-        googlePlacesEnrichResult?.phone ||
-        candidate.phone ||
-        null,
-      website: contactUpdate?.website || workingWebsite || candidate.website || null,
+        allowContactWriteback
+          ? (
+              contactUpdate?.phone ||
+              foundPhone ||
+              companyPhone ||
+              googlePlacesEnrichResult?.phone ||
+              candidate.phone ||
+              null
+            )
+          : (allowGooglePlacesWriteback
+              ? (googlePlacesEnrichResult?.phone || candidate.phone || null)
+              : candidate.phone || null),
+      website: allowContactWriteback
+        ? (contactUpdate?.website || workingWebsite || candidate.website || null)
+        : (allowGooglePlacesWriteback
+            ? (googlePlacesEnrichResult?.website || candidate.website || null)
+            : candidate.website || null),
       address:
-        contactUpdate?.address ||
-        googlePlacesEnrichResult?.address ||
-        candidate.address ||
-        null,
+        allowContactWriteback
+          ? (
+              contactUpdate?.address ||
+              googlePlacesEnrichResult?.address ||
+              candidate.address ||
+              null
+            )
+          : (allowGooglePlacesWriteback
+              ? (googlePlacesEnrichResult?.address || candidate.address || null)
+              : candidate.address || null),
       description:
         candidate.description ||
         googlePlacesEnrichResult?.description ||
         exaEnrichResult?.description ||
         null,
-      linkedInUrl: contactUpdate?.linkedInUrl || linkedInUrl || candidate.linkedInUrl || null,
-      industry: contactUpdate?.industry || candidate.industry || null,
+      linkedInUrl: allowContactWriteback
+        ? (contactUpdate?.linkedInUrl || linkedInUrl || candidate.linkedInUrl || null)
+        : candidate.linkedInUrl || null,
+      industry: allowContactWriteback
+        ? (contactUpdate?.industry || candidate.industry || null)
+        : candidate.industry || null,
       rawData: mergeRadarCandidateRawData(candidate.rawData, {
         ...(googlePlacesEnrichResult?.rawSnapshot || {}),
         ...(exaEnrichResult?.rawSnapshot || {}),

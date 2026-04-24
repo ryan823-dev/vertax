@@ -5,6 +5,8 @@ import type {
   ContactEnrichmentQuery,
   ContactEnrichmentResult,
   CompanyIdentity,
+  IdentityResolution,
+  IdentityResolutionEvidence,
   PhoneContact,
   EmailContact,
   AddressContact,
@@ -17,6 +19,7 @@ import type {
   ComplianceResult,
   CRMContactOutput,
 } from './types';
+import { load } from 'cheerio';
 import { IndustryDirectorySearcher } from './industry-directory';
 import {
   ConfidenceScorer,
@@ -24,6 +27,27 @@ import {
   InformationGapAnalyzer,
   ComplianceChecker,
 } from './scoring';
+
+interface SearchResultCandidate {
+  url: string;
+  title: string;
+  snippet: string;
+  domain?: string;
+}
+
+interface PageFormSignal {
+  action?: string;
+  descriptors: string[];
+  fieldNames: string[];
+}
+
+interface PageDomSignals {
+  textContent: string;
+  telLinks: string[];
+  mailtoLinks: string[];
+  addressBlocks: string[];
+  forms: PageFormSignal[];
+}
 
 // ==================== 第1步：身份归一化 ====================
 
@@ -36,25 +60,85 @@ export class CompanyIdentityNormalizer {
    * 归一化企业身份
    */
   async normalize(query: ContactEnrichmentQuery): Promise<CompanyIdentity> {
+    const searchedDomain = await this.searchOfficialDomain(query.companyName);
     const identity: CompanyIdentity = {
       inputName: query.companyName,
       displayName: query.companyName,
-      domain: query.domain,
+      domain: this.extractDomain(query.domain) || searchedDomain,
       country: query.country,
       state: query.state,
       city: query.city,
       industry: query.industry,
-      identityConfidence: 50,
+      identityConfidence: 0,
       duplicateRisk: 'none',
       duplicateWarnings: [],
+      resolution: this.createEmptyResolution(query.companyName),
     };
 
     // 1. 搜索企业官网确认身份
-    if (!query.domain) {
-      const foundDomain = await this.searchOfficialDomain(query.companyName);
-      if (foundDomain) {
-        identity.domain = foundDomain;
-        identity.identityConfidence += 20;
+    if (query.domain) {
+      const providedDomain = this.extractDomain(query.domain);
+      if (providedDomain) {
+        identity.domain = providedDomain;
+        identity.officialUrl = this.toOfficialUrl(providedDomain);
+        this.pushEvidence(identity.resolution, {
+          type: 'input_domain',
+          strength: 'strong',
+          source: 'input',
+          value: providedDomain,
+          scoreDelta: 45,
+          note: 'Provided directly with the query',
+        });
+      }
+    }
+
+    if (!query.domain && searchedDomain) {
+      identity.domain = searchedDomain;
+      identity.officialUrl = this.toOfficialUrl(searchedDomain);
+      this.pushEvidence(identity.resolution, {
+        type: 'official_domain_search',
+        strength: 'strong',
+        source: 'search',
+        value: searchedDomain,
+        scoreDelta: 30,
+        note: 'Discovered from official-site search',
+      });
+    }
+
+    if (identity.domain && this.domainMatchesCompany(identity.domain, query.companyName)) {
+      this.pushEvidence(identity.resolution, {
+        type: 'official_domain_match',
+        strength: 'supporting',
+        source: query.domain ? 'input' : 'search',
+        value: identity.domain,
+        scoreDelta: 12,
+        note: 'Domain tokens align with the company name',
+      });
+    }
+
+    if (query.domain && searchedDomain) {
+      const providedDomain = this.extractDomain(query.domain);
+      if (providedDomain && !this.sameDomainFamily(providedDomain, searchedDomain)) {
+        this.pushEvidence(identity.resolution, {
+          type: 'domain_conflict',
+          strength: 'conflict',
+          source: 'search',
+          value: `${providedDomain} != ${searchedDomain}`,
+          scoreDelta: -30,
+          note: 'Provided domain disagrees with search-discovered official domain',
+        });
+        identity.resolution.blockingIssues.push(
+          `Provided domain ${providedDomain} conflicts with search result ${searchedDomain}`
+        );
+      } else if (providedDomain) {
+        this.pushEvidence(identity.resolution, {
+          type: 'official_domain_search',
+          strength: 'supporting',
+          source: 'search',
+          value: searchedDomain,
+          scoreDelta: 10,
+          note: 'Search corroborates the provided domain',
+        });
       }
     }
 
@@ -65,7 +149,28 @@ export class CompanyIdentityNormalizer {
       identity.legalName = linkedinInfo.legalName || identity.legalName;
       identity.industry = linkedinInfo.industry || identity.industry;
       identity.city = linkedinInfo.headquarters || identity.city;
-      identity.identityConfidence += 15;
+      if (linkedinInfo.url) {
+        this.pushEvidence(identity.resolution, {
+          type: 'linkedin_company_page',
+          strength: 'supporting',
+          source: 'linkedin',
+          value: linkedinInfo.url,
+          scoreDelta: 18,
+          note: 'Found a public LinkedIn company page',
+        });
+
+        const linkedinSlug = this.extractLinkedInCompanySlug(linkedinInfo.url);
+        if (linkedinSlug && this.linkedinSlugMatchesCompany(linkedinSlug, query.companyName)) {
+          this.pushEvidence(identity.resolution, {
+            type: 'linkedin_slug_match',
+            strength: 'supporting',
+            source: 'linkedin',
+            value: linkedinInfo.url,
+            scoreDelta: 10,
+            note: 'LinkedIn company slug aligns with the company name',
+          });
+        }
+      }
     }
 
     // 3. 检查混淆风险
@@ -73,15 +178,125 @@ export class CompanyIdentityNormalizer {
     if (duplicates.length > 0) {
       identity.duplicateRisk = duplicates.length > 2 ? 'high' : duplicates.length > 1 ? 'medium' : 'low';
       identity.duplicateWarnings = duplicates;
+      this.pushEvidence(identity.resolution, {
+        type: 'duplicate_conflict',
+        strength: 'conflict',
+        source: 'search',
+        value: duplicates[0],
+        scoreDelta: identity.duplicateRisk === 'high' ? -35 : identity.duplicateRisk === 'medium' ? -20 : -10,
+        note: 'Search surfaced likely lookalike entities',
+      });
+      if (identity.duplicateRisk === 'high' || identity.duplicateRisk === 'medium') {
+        identity.resolution.blockingIssues.push(...duplicates.slice(0, 2));
+      }
     }
 
     // 4. 归一化域名（清理）
     if (identity.domain) {
-      identity.officialUrl = this.normalizeDomain(identity.domain);
-      identity.identityConfidence += 15;
+      identity.officialUrl = this.toOfficialUrl(identity.domain);
+      identity.resolution.officialDomain = identity.domain;
     }
 
+    this.finalizeResolution(identity);
     return identity;
+  }
+
+  refine(
+    identity: CompanyIdentity,
+    signals: {
+      hasOfficialWebsiteSignals?: boolean;
+      locationMatch?: boolean;
+      industryMatch?: boolean;
+      emailDomainMatch?: boolean;
+      conflictingEmailDomains?: string[];
+      linkedinSlugMatch?: boolean;
+    }
+  ): CompanyIdentity {
+    const nextIdentity: CompanyIdentity = {
+      ...identity,
+      duplicateWarnings: identity.duplicateWarnings ? [...identity.duplicateWarnings] : [],
+      resolution: {
+        ...identity.resolution,
+        evidence: [...identity.resolution.evidence],
+        blockingIssues: [...identity.resolution.blockingIssues],
+      },
+    };
+
+    if (signals.hasOfficialWebsiteSignals && nextIdentity.officialUrl) {
+      this.pushEvidence(nextIdentity.resolution, {
+        type: 'official_website_signal',
+        strength: 'strong',
+        source: 'website',
+        value: nextIdentity.officialUrl,
+        scoreDelta: 18,
+        note: 'Official website yielded contact or capability signals',
+      });
+    }
+
+    if (signals.locationMatch) {
+      this.pushEvidence(nextIdentity.resolution, {
+        type: 'location_match',
+        strength: 'supporting',
+        source: 'website',
+        value: `${nextIdentity.city || ''} ${nextIdentity.country || ''}`.trim() || nextIdentity.inputName,
+        scoreDelta: 8,
+        note: 'Location signals are consistent across inputs and extracted data',
+      });
+    }
+
+    if (signals.industryMatch) {
+      this.pushEvidence(nextIdentity.resolution, {
+        type: 'industry_match',
+        strength: 'supporting',
+        source: 'directory',
+        value: nextIdentity.industry || nextIdentity.inputName,
+        scoreDelta: 6,
+        note: 'Industry signals align across sources',
+      });
+    }
+
+    if (signals.emailDomainMatch && nextIdentity.domain) {
+      this.pushEvidence(nextIdentity.resolution, {
+        type: 'contact_domain_match',
+        strength: 'strong',
+        source: 'website',
+        value: nextIdentity.domain,
+        scoreDelta: 14,
+        note: 'Official contact emails use the same domain family as the locked entity',
+      });
+    }
+
+    if (signals.conflictingEmailDomains?.length) {
+      const uniqueDomains = [...new Set(signals.conflictingEmailDomains)];
+      this.pushEvidence(nextIdentity.resolution, {
+        type: 'contact_domain_conflict',
+        strength: 'conflict',
+        source: 'website',
+        value: uniqueDomains.join(', '),
+        scoreDelta: signals.emailDomainMatch ? -8 : -18,
+        note: 'Official-page contact emails disagree with the locked entity domain',
+      });
+
+      if (!signals.emailDomainMatch) {
+        nextIdentity.resolution.blockingIssues.push(
+          `Conflicting official contact domains: ${uniqueDomains.join(', ')}`
+        );
+      }
+    }
+
+    if (signals.linkedinSlugMatch && nextIdentity.linkedinUrl) {
+      this.pushEvidence(nextIdentity.resolution, {
+        type: 'linkedin_slug_match',
+        strength: 'supporting',
+        source: 'linkedin',
+        value: nextIdentity.linkedinUrl,
+        scoreDelta: 10,
+        note: 'LinkedIn company slug aligns with the locked entity name',
+      });
+    }
+
+    this.finalizeResolution(nextIdentity);
+    return nextIdentity;
   }
 
   /**
@@ -90,6 +305,19 @@ export class CompanyIdentityNormalizer {
   private async searchOfficialDomain(companyName: string): Promise<string | undefined> {
     const searchQuery = `${companyName} official website`;
     const searchUrl = `https://duckduckgo.com/html/?q=${encodeURIComponent(searchQuery)}`;
+    const excludeDomains = [
+      'duckduckgo.com',
+      'google.com',
+      'bing.com',
+      'yahoo.com',
+      'linkedin.com',
+      'facebook.com',
+      'twitter.com',
+      'youtube.com',
+      'wikipedia.org',
+      'crunchbase.com',
+      'zoominfo.com',
+    ];
 
     try {
       const response = await fetch(searchUrl, {
@@ -100,6 +328,28 @@ export class CompanyIdentityNormalizer {
       if (!response.ok) return undefined;
 
       const html = await response.text();
+      const parsedResults = this.parseDuckDuckGoResults(html);
+      const parsedDomain = parsedResults.find(result => {
+        const domain = result.domain || this.extractDomain(result.url);
+        if (!domain) {
+          return false;
+        }
+        if (excludeDomains.some(ex => domain.includes(ex))) {
+          return false;
+        }
+
+        const looksOfficial = /official|home|contact|about/i.test(
+          `${result.title} ${result.snippet}`
+        );
+        return (
+          this.resultMentionsCompany(result, companyName) &&
+          (looksOfficial || this.domainMatchesCompany(domain, companyName))
+        );
+      });
+
+      if (parsedDomain?.domain) {
+        return parsedDomain.domain;
+      }
 
       // 提取第一个非广告、非搜索引擎的域名
       const domainPatterns = [
@@ -156,6 +406,21 @@ export class CompanyIdentityNormalizer {
       if (!response.ok) return null;
 
       const html = await response.text();
+      const parsedResults = this.parseDuckDuckGoResults(html).filter(result =>
+        /linkedin\.com\/company\//i.test(result.url)
+      );
+      const bestMatch =
+        parsedResults.find(result => {
+          const slug = this.extractLinkedInCompanySlug(result.url);
+          return slug ? this.linkedinSlugMatchesCompany(slug, companyName) : false;
+        }) || parsedResults[0];
+
+      if (bestMatch) {
+        return {
+          url: bestMatch.url,
+          legalName: this.extractLikelyEntityName(bestMatch.title),
+        };
+      }
 
       // 提取LinkedIn URL
       const linkedinPattern = /href="https?:\/\/(?:www\.)?linkedin\.com\/company\/([a-zA-Z0-9-]+)/gi;
@@ -191,16 +456,51 @@ export class CompanyIdentityNormalizer {
       if (!response.ok) return warnings;
 
       const html = await response.text();
+      const normalizedInput = this.normalizeCompanyName(identity.inputName);
+      const parsedLookalikes = this.parseDuckDuckGoResults(html)
+        .map(result => ({
+          title: this.extractLikelyEntityName(result.title),
+          domain: result.domain || this.extractDomain(result.url),
+        }))
+        .filter(result => {
+          const normalizedCandidate = this.normalizeCompanyName(result.title);
+          if (!normalizedCandidate || normalizedCandidate === normalizedInput) {
+            return false;
+          }
+
+          if (identity.domain && result.domain && this.sameDomainFamily(identity.domain, result.domain)) {
+            return false;
+          }
+
+          return this.countTokenOverlap(normalizedInput, normalizedCandidate) >= 1;
+        })
+        .map(result => result.title);
+
+      const parsedUniqueMatches = [...new Set(parsedLookalikes)];
+      if (parsedUniqueMatches.length > 1) {
+        warnings.push(`Found ${parsedUniqueMatches.length} lookalike company names`);
+        warnings.push(...parsedUniqueMatches.slice(0, 3).map(m => `Lookalike: ${m}`));
+        return warnings;
+      }
 
       // 检查是否有多个同名或相似名公司
       const companyPattern = new RegExp(`${identity.inputName.split(/\s+/)[0]}[^<]{0,50}(?:Inc|LLC|Corp|Ltd|Co|GmbH|SA|BV)`, 'gi');
       const matches = html.match(companyPattern) || [];
 
+      /*
       if (matches.length > 1) {
         const uniqueMatches = [...new Set(matches.map(m => m.trim()))];
         if (uniqueMatches.length > 1) {
           warnings.push(`发现${uniqueMatches.length}个可能混淆的相似公司名`);
           warnings.push(...uniqueMatches.slice(0, 3).map(m => `相似名: ${m}`));
+        }
+      }
+      */
+      if (matches.length > 1) {
+        const uniqueMatches = [...new Set(matches.map(m => m.trim()))];
+        if (uniqueMatches.length > 1) {
+          warnings.push(`Found ${uniqueMatches.length} lookalike company names`);
+          warnings.push(...uniqueMatches.slice(0, 3).map(m => `Lookalike: ${m}`));
         }
       }
     } catch {
@@ -221,6 +521,258 @@ export class CompanyIdentityNormalizer {
     cleanDomain = cleanDomain.replace(/^www\./, '');
 
     return `https://www.${cleanDomain}`;
+  }
+
+  private toOfficialUrl(domain: string): string {
+    const cleanDomain = this.extractDomain(domain);
+    return cleanDomain ? `https://www.${cleanDomain}` : domain;
+  }
+
+  private parseDuckDuckGoResults(html: string): SearchResultCandidate[] {
+    const $ = load(html);
+    const results: SearchResultCandidate[] = [];
+    const seen = new Set<string>();
+    const pushResult = (
+      href: string | undefined,
+      title: string | undefined,
+      snippet: string | undefined,
+      domainText?: string
+    ) => {
+      const url = this.normalizeSearchResultUrl(href);
+      if (!url) {
+        return;
+      }
+
+      const normalizedTitle = (title || '').replace(/\s+/g, ' ').trim();
+      const normalizedSnippet = (snippet || '').replace(/\s+/g, ' ').trim();
+      const key = `${url}|${normalizedTitle}`;
+      if (seen.has(key)) {
+        return;
+      }
+
+      seen.add(key);
+      results.push({
+        url,
+        title: normalizedTitle,
+        snippet: normalizedSnippet,
+        domain: this.extractDomain(domainText || url),
+      });
+    };
+
+    $('.result').each((_, element) => {
+      const container = $(element);
+      const link = container.find('a.result__a, h2 a[href], a[href]').first();
+      pushResult(
+        link.attr('href'),
+        link.text(),
+        container.find('.result__snippet, .result__body, .result__extras__snippet').first().text(),
+        container.find('.result__url, .result__extras__url').first().text()
+      );
+    });
+
+    if (!results.length) {
+      $('a[href]').each((_, element) => {
+        const link = $(element);
+        pushResult(link.attr('href'), link.text(), link.parent().text());
+      });
+    }
+
+    return results;
+  }
+
+  private normalizeSearchResultUrl(rawUrl?: string): string | undefined {
+    if (!rawUrl) {
+      return undefined;
+    }
+
+    const candidate = rawUrl.trim();
+    if (!candidate) {
+      return undefined;
+    }
+
+    try {
+      const normalizedCandidate = candidate.startsWith('//') ? `https:${candidate}` : candidate;
+      const parsed = new URL(normalizedCandidate, 'https://duckduckgo.com');
+      const redirected = parsed.searchParams.get('uddg');
+      if (redirected) {
+        return decodeURIComponent(redirected);
+      }
+
+      if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+        return parsed.toString();
+      }
+    } catch {
+      if (/^https?:\/\//i.test(candidate)) {
+        return candidate;
+      }
+    }
+
+    return undefined;
+  }
+
+  private extractDomain(domain?: string): string | undefined {
+    if (!domain) return undefined;
+
+    const candidate = domain.trim();
+    if (!candidate) return undefined;
+
+    try {
+      const url = new URL(candidate.startsWith('http') ? candidate : `https://${candidate}`);
+      return url.hostname.replace(/^www\./, '').toLowerCase();
+    } catch {
+      return candidate
+        .replace(/^https?:\/\//, '')
+        .replace(/^www\./, '')
+        .replace(/\/.*$/, '')
+        .toLowerCase();
+    }
+  }
+
+  private normalizeCompanyName(name: string): string {
+    return name
+      .toLowerCase()
+      .replace(/\b(inc|llc|corp|corporation|co|ltd|limited|gmbh|sa|bv|plc)\b/g, '')
+      .replace(/[^a-z0-9]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  private resultMentionsCompany(result: SearchResultCandidate, companyName: string): boolean {
+    const normalizedCompany = this.normalizeCompanyName(companyName);
+    const haystack = `${result.title} ${result.snippet} ${result.domain || ''}`.toLowerCase();
+    return normalizedCompany
+      .split(' ')
+      .filter(token => token.length >= 3)
+      .some(token => haystack.includes(token));
+  }
+
+  private domainMatchesCompany(domain: string, companyName: string): boolean {
+    const normalizedName = this.normalizeCompanyName(companyName);
+    const domainToken = this.extractDomain(domain)?.split('.')[0] || '';
+    const nameTokens = normalizedName.split(' ').filter(token => token.length >= 4);
+
+    return nameTokens.some(token => domainToken.includes(token) || token.includes(domainToken));
+  }
+
+  private sameDomainFamily(left: string, right: string): boolean {
+    const leftDomain = this.extractDomain(left);
+    const rightDomain = this.extractDomain(right);
+    if (!leftDomain || !rightDomain) return false;
+
+    const leftParts = leftDomain.split('.');
+    const rightParts = rightDomain.split('.');
+    return leftParts.slice(-2).join('.') === rightParts.slice(-2).join('.');
+  }
+
+  private extractLikelyEntityName(title: string): string {
+    const segments = title
+      .replace(/\s+/g, ' ')
+      .split(/\s+[|:-]\s+/)
+      .map(segment => segment.trim())
+      .filter(Boolean);
+    return segments[0] || title.trim();
+  }
+
+  private countTokenOverlap(left: string, right: string): number {
+    const leftTokens = new Set(left.split(' ').filter(token => token.length >= 3));
+    const rightTokens = new Set(right.split(' ').filter(token => token.length >= 3));
+    let overlap = 0;
+
+    for (const token of leftTokens) {
+      if (rightTokens.has(token)) {
+        overlap += 1;
+      }
+    }
+
+    return overlap;
+  }
+
+  private extractLinkedInCompanySlug(url?: string): string | undefined {
+    if (!url) {
+      return undefined;
+    }
+
+    const match = url.match(/linkedin\.com\/company\/([^/?#]+)/i);
+    return match?.[1]?.toLowerCase();
+  }
+
+  private linkedinSlugMatchesCompany(slug: string, companyName: string): boolean {
+    const normalizedSlug = slug.replace(/-/g, ' ');
+    const normalizedCompany = this.normalizeCompanyName(companyName);
+    return this.countTokenOverlap(normalizedSlug, normalizedCompany) >= 1;
+  }
+
+  private createEmptyResolution(companyName: string): IdentityResolution {
+    return {
+      canonicalName: companyName,
+      normalizedName: this.normalizeCompanyName(companyName),
+      officialUrl: undefined,
+      linkedinSlug: undefined,
+      country: undefined,
+      city: undefined,
+      confidence: 0,
+      verdict: 'unverified',
+      writebackAllowed: false,
+      strongEvidenceCount: 0,
+      evidence: [],
+      blockingIssues: [],
+    };
+  }
+
+  private pushEvidence(
+    resolution: IdentityResolution,
+    evidence: IdentityResolutionEvidence
+  ): void {
+    const exists = resolution.evidence.some(
+      item => item.type === evidence.type && item.value === evidence.value
+    );
+    if (!exists) {
+      resolution.evidence.push(evidence);
+    }
+  }
+
+  private finalizeResolution(identity: CompanyIdentity): void {
+    const totalScore = identity.resolution.evidence.reduce(
+      (sum, item) => sum + item.scoreDelta,
+      0
+    );
+    const normalizedConfidence = Math.max(0, Math.min(100, totalScore));
+    const strongEvidenceCount = identity.resolution.evidence.filter(
+      item => item.strength === 'strong' && item.scoreDelta > 0
+    ).length;
+    const hasBlockingIssues =
+      identity.duplicateRisk === 'high' || identity.resolution.blockingIssues.length > 0;
+    const hasOfficialAnchor = Boolean(identity.domain || identity.officialUrl);
+
+    let verdict: IdentityResolution['verdict'] = 'unverified';
+    if (!hasBlockingIssues && normalizedConfidence >= 75 && strongEvidenceCount >= 1) {
+      verdict = 'verified';
+    } else if (!hasBlockingIssues && normalizedConfidence >= 55 && hasOfficialAnchor) {
+      verdict = 'probable';
+    } else if (normalizedConfidence >= 35) {
+      verdict = 'ambiguous';
+    }
+
+    identity.resolution = {
+      ...identity.resolution,
+      canonicalName: identity.displayName || identity.legalName || identity.inputName,
+      normalizedName: this.normalizeCompanyName(
+        identity.displayName || identity.legalName || identity.inputName
+      ),
+      officialDomain: identity.domain,
+      officialUrl: identity.officialUrl,
+      linkedinSlug: this.extractLinkedInCompanySlug(identity.linkedinUrl),
+      country: identity.country,
+      city: identity.city,
+      confidence: normalizedConfidence,
+      verdict,
+      writebackAllowed:
+        !hasBlockingIssues &&
+        (verdict === 'verified' || (verdict === 'probable' && strongEvidenceCount >= 1)),
+      strongEvidenceCount,
+      blockingIssues: [...new Set(identity.resolution.blockingIssues)],
+    };
+    identity.identityConfidence = identity.resolution.confidence;
   }
 }
 
@@ -321,7 +873,8 @@ export class WebsiteContactScraper {
       const html = await response.text();
 
       // 提取电话
-      const phones = this.extractPhones(html);
+      const domSignals = this.buildPageDomSignals(html);
+      const phones = this.extractPhones(html, domSignals);
       for (const phone of phones) {
         result.phones.push({
           value: phone,
@@ -333,7 +886,7 @@ export class WebsiteContactScraper {
       }
 
       // 提取邮箱
-      const emails = this.extractEmails(html);
+      const emails = this.extractEmails(html, domSignals);
       for (const email of emails) {
         const isRoleBased = this.isRoleBasedEmail(email);
         result.emails.push({
@@ -347,7 +900,7 @@ export class WebsiteContactScraper {
       }
 
       // 提取地址
-      const addresses = this.extractAddresses(html);
+      const addresses = this.extractAddresses(html, domSignals);
       for (const addr of addresses) {
         result.addresses.push({
           value: addr.full,
@@ -365,14 +918,7 @@ export class WebsiteContactScraper {
       }
 
       // 检测联系表单
-      if (this.hasContactForm(html)) {
-        result.forms.push({
-          url: url,
-          type: this.inferFormType(url),
-          fields: this.detectFormFields(html),
-          source: sourceType,
-        });
-      }
+      result.forms.push(...this.extractForms(url, sourceType, html, domSignals));
 
       return result;
     } catch {
@@ -383,8 +929,91 @@ export class WebsiteContactScraper {
   /**
    * 提取电话号码
    */
-  private extractPhones(html: string): string[] {
-    const phones: string[] = [];
+  private buildPageDomSignals(html: string): PageDomSignals {
+    const $ = load(html);
+    $('script, style, noscript').remove();
+
+    const textContent = $('body').text().replace(/\s+/g, ' ').trim();
+    const telLinks = $('a[href^="tel:"]')
+      .map((_, element) => ($(element).attr('href') || '').replace(/^tel:/i, '').trim())
+      .get()
+      .filter(Boolean);
+    const mailtoLinks = $('a[href^="mailto:"]')
+      .map((_, element) =>
+        ($(element).attr('href') || '')
+          .replace(/^mailto:/i, '')
+          .replace(/\?.*$/, '')
+          .trim()
+      )
+      .get()
+      .filter(Boolean);
+    const addressBlocks = $('address, [class], [id], [data-address]')
+      .map((_, element) => {
+        const node = $(element);
+        const className = node.attr('class') || '';
+        const id = node.attr('id') || '';
+        const hasAddressSignal =
+          element.tagName === 'address' ||
+          /address|location|headquarter|head-office|office/i.test(`${className} ${id}`) ||
+          node.attr('data-address') !== undefined;
+        if (!hasAddressSignal) {
+          return '';
+        }
+
+        return node.text().replace(/\s+/g, ' ').trim();
+      })
+      .get()
+      .filter(Boolean);
+    const forms = $('form')
+      .map((_, element) => {
+        const form = $(element);
+        const fieldNames = form
+          .find('input, textarea, select')
+          .map((__, field) => {
+            const input = $(field);
+            return (
+              input.attr('name') ||
+              input.attr('id') ||
+              input.attr('type') ||
+              input.attr('aria-label') ||
+              ''
+            )
+              .trim()
+              .toLowerCase();
+          })
+          .get()
+          .filter(Boolean);
+
+        return {
+          action: form.attr('action')?.trim(),
+          descriptors: [
+            form.attr('id'),
+            form.attr('class'),
+            form.attr('name'),
+            form.attr('action'),
+            form.attr('aria-label'),
+          ]
+            .filter((value): value is string => typeof value === 'string' && Boolean(value.trim()))
+            .map(value => value.trim().toLowerCase()),
+          fieldNames,
+        };
+      })
+      .get();
+
+    return {
+      textContent,
+      telLinks,
+      mailtoLinks,
+      addressBlocks,
+      forms,
+    };
+  }
+
+  private extractPhones(html: string, domSignals?: PageDomSignals): string[] {
+    const phones = [...(domSignals?.telLinks || [])];
+    const searchSpaces = [domSignals?.textContent, html].filter(
+      (value): value is string => typeof value === 'string' && Boolean(value)
+    );
 
     // 严格北美电话格式（必须有分隔符）
     const strictPatterns = [
@@ -393,27 +1022,37 @@ export class WebsiteContactScraper {
       /\+1[\s]*\(?\d{3}\)?[\s]*\d{3}[-.\s]\d{4}/g,
     ];
 
-    for (const pattern of strictPatterns) {
-      const matches = html.match(pattern) || [];
-      for (const match of matches) {
-        const phone = match.trim();
-        const digits = phone.replace(/[^\d]/g, '');
-        if ((digits.length === 10 || digits.length === 11) && 
-            (phone.includes('-') || phone.includes('.') || phone.includes('('))) {
-          phones.push(phone);
+    for (const searchSpace of searchSpaces) {
+      for (const pattern of strictPatterns) {
+        const matches = searchSpace.match(pattern) || [];
+        for (const match of matches) {
+          const phone = match.trim();
+          const digits = phone.replace(/[^\d]/g, '');
+          if (
+            (digits.length === 10 || digits.length === 11) &&
+            (phone.includes('-') || phone.includes('.') || phone.includes('(') || phone.startsWith('+'))
+          ) {
+            phones.push(phone);
+          }
         }
       }
     }
 
-    return [...new Set(phones)].filter(p => !p.match(/^\d+$/) && !p.match(/\d{4}[-]\d{2}[-]\d{2}/));
+    return [...new Set(phones)]
+      .map(phone => phone.replace(/\s+/g, ' ').trim())
+      .filter(phone => !phone.match(/^\d+$/) && !phone.match(/\d{4}-\d{2}-\d{2}/));
   }
 
   /**
    * 提取邮箱地址
    */
-  private extractEmails(html: string): string[] {
+  private extractEmails(html: string, domSignals?: PageDomSignals): string[] {
     const emailPattern = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
-    const matches = html.match(emailPattern) || [];
+    const matches = [
+      ...(domSignals?.mailtoLinks || []),
+      ...((domSignals?.textContent || html).match(emailPattern) || []),
+      ...(html.match(emailPattern) || []),
+    ];
 
     // 过滤无关邮箱
     const excludePatterns = [
@@ -442,8 +1081,8 @@ export class WebsiteContactScraper {
       /sales@twmetals/i,  // 排除相似公司的邮箱
     ];
 
-    return matches.filter(email =>
-      !excludePatterns.some(p => p.test(email))
+    return [...new Set(matches.map(email => email.toLowerCase()))].filter(
+      email => !excludePatterns.some(p => p.test(email))
     );
   }
 
@@ -488,7 +1127,7 @@ export class WebsiteContactScraper {
   /**
    * 提取地址
    */
-  private extractAddresses(html: string): Array<{
+  private extractAddresses(html: string, domSignals?: PageDomSignals): Array<{
     full: string;
     type: 'headquarters' | 'office' | 'warehouse' | 'service' | 'manufacturing' | 'unknown';
     street?: string;
@@ -506,6 +1145,39 @@ export class WebsiteContactScraper {
       country?: string;
       postalCode?: string;
     }> = [];
+    const seen = new Set<string>();
+    const pushAddress = (rawValue: string) => {
+      const normalized = rawValue.replace(/\s+/g, ' ').replace(/\s+,/g, ',').trim();
+      if (!normalized || seen.has(normalized.toLowerCase())) {
+        return;
+      }
+
+      if (
+        normalized.includes('post type') ||
+        normalized.includes('status-publish') ||
+        !normalized.match(/\d{5}/)
+      ) {
+        return;
+      }
+
+      seen.add(normalized.toLowerCase());
+      const match = normalized.match(
+        /^(.+?),\s*([^,]+),\s*([A-Z]{2})\s+(\d{5}(?:-\d{4})?)(?:,\s*(.+))?$/i
+      );
+      addresses.push({
+        full: normalized,
+        type: this.inferAddressType(normalized),
+        street: match?.[1]?.trim(),
+        city: match?.[2]?.trim(),
+        state: match?.[3]?.trim(),
+        postalCode: match?.[4]?.trim(),
+        country: match?.[5]?.trim(),
+      });
+    };
+
+    for (const addressBlock of domSignals?.addressBlocks || []) {
+      pushAddress(addressBlock);
+    }
 
     // 美国地址模式（严格要求有邮编）
     const strictPatterns = [
@@ -517,6 +1189,7 @@ export class WebsiteContactScraper {
       const matches = html.match(pattern) || [];
       for (const match of matches) {
         const addr = match.trim();
+        pushAddress(addr);
         // 排除WordPress CSS类名
         if (!addr.includes('post type') && !addr.includes('status-publish') && addr.match(/\d{5}/)) {
           addresses.push({
@@ -533,6 +1206,55 @@ export class WebsiteContactScraper {
   /**
    * 检测是否有联系表单
    */
+  private extractForms(
+    url: string,
+    sourceType: ContactSourceType,
+    html: string,
+    domSignals?: PageDomSignals
+  ): ContactForm[] {
+    const forms: ContactForm[] = [];
+    const domForms = domSignals?.forms || [];
+
+    for (const form of domForms) {
+      const context = [url, ...form.descriptors, form.action || ''].join(' ');
+      const fieldNames = [...new Set(form.fieldNames)];
+      if (fieldNames.length === 0 && !/contact|quote|rfq|inquiry|support|sales/i.test(context)) {
+        continue;
+      }
+
+      forms.push({
+        url,
+        type: this.inferFormType(context),
+        fields: fieldNames,
+        requiresLogin: /login|signin|account/.test(context),
+        source: sourceType,
+      });
+    }
+
+    if (!forms.length && this.hasContactForm(html)) {
+      forms.push({
+        url,
+        type: this.inferFormType(url),
+        fields: this.detectFormFields(html),
+        source: sourceType,
+      });
+    }
+
+    return forms;
+  }
+
+  private inferAddressType(
+    value: string
+  ): 'headquarters' | 'office' | 'warehouse' | 'service' | 'manufacturing' | 'unknown' {
+    const normalized = value.toLowerCase();
+    if (normalized.includes('headquarter') || normalized.includes('hq')) return 'headquarters';
+    if (normalized.includes('warehouse')) return 'warehouse';
+    if (normalized.includes('service')) return 'service';
+    if (normalized.includes('manufacturing') || normalized.includes('plant')) return 'manufacturing';
+    if (normalized.includes('office')) return 'office';
+    return 'unknown';
+  }
+
   private hasContactForm(html: string): boolean {
     const formPatterns = [
       /<form[^>]*action[^>]*contact/i,
@@ -920,7 +1642,7 @@ export class ContactEnrichmentEngine {
     const startedAt = Date.now();
     const query = this.buildQuery(companyName, domain, overrides);
 
-    const identity = await this.identityNormalizer.normalize(query);
+    let identity = await this.identityNormalizer.normalize(query);
 
     const websiteData = identity.officialUrl
       ? await this.websiteScraper.scrapeWebsite(identity.officialUrl)
@@ -957,6 +1679,22 @@ export class ContactEnrichmentEngine {
     if (!identity.industry && typeof directoryData.additionalInfo.industry === 'string') {
       identity.industry = directoryData.additionalInfo.industry;
     }
+
+    const emailDomainConsistency = this.evaluateEmailDomainConsistency(websiteData.emails, identity);
+
+    identity = this.identityNormalizer.refine(identity, {
+      hasOfficialWebsiteSignals:
+        websiteData.phones.length > 0 ||
+        websiteData.emails.length > 0 ||
+        websiteData.addresses.length > 0 ||
+        websiteData.forms.length > 0 ||
+        Boolean(websiteData.capabilities?.keywords?.length),
+      locationMatch: this.hasLocationMatch(query, addresses, identity),
+      industryMatch: this.hasIndustryMatch(query, capabilities, identity),
+      emailDomainMatch: emailDomainConsistency.match,
+      conflictingEmailDomains: emailDomainConsistency.conflictingDomains,
+      linkedinSlugMatch: this.hasLinkedInSlugMatch(identity),
+    });
 
     const recommendedChannels = this.channelGenerator.generateRecommendedChannels(
       phones,
@@ -1106,6 +1844,146 @@ export class ContactEnrichmentEngine {
         ...overrides.options,
       },
     };
+  }
+
+  private hasLocationMatch(
+    query: ContactEnrichmentQuery,
+    addresses: AddressContact[],
+    identity: CompanyIdentity
+  ): boolean {
+    const locationTokens = [
+      query.country,
+      query.state,
+      query.city,
+      identity.country,
+      identity.state,
+      identity.city,
+    ]
+      .filter((value): value is string => typeof value === 'string' && Boolean(value.trim()))
+      .map(value => value.trim().toLowerCase());
+
+    if (locationTokens.length === 0 || addresses.length === 0) {
+      return false;
+    }
+
+    return addresses.some(address =>
+      locationTokens.some(token =>
+        [address.country, address.state, address.city]
+          .filter((value): value is string => typeof value === 'string' && Boolean(value.trim()))
+          .some(value => value.trim().toLowerCase().includes(token) || token.includes(value.trim().toLowerCase()))
+      )
+    );
+  }
+
+  private hasIndustryMatch(
+    query: ContactEnrichmentQuery,
+    capabilities: Capabilities | null,
+    identity: CompanyIdentity
+  ): boolean {
+    const signals = [
+      query.industry,
+      identity.industry,
+      ...(capabilities?.keywords || []),
+      ...(capabilities?.descriptions || []),
+    ]
+      .filter((value): value is string => typeof value === 'string' && Boolean(value.trim()))
+      .map(value => value.trim().toLowerCase());
+
+    if (signals.length < 2) {
+      return false;
+    }
+
+    const anchors = signals.slice(0, 2);
+    return anchors.some(anchor =>
+      signals.slice(2).some(signal => signal.includes(anchor) || anchor.includes(signal))
+    );
+  }
+
+  private evaluateEmailDomainConsistency(
+    emails: EmailContact[],
+    identity: CompanyIdentity
+  ): { match: boolean; conflictingDomains: string[] } {
+    if (!identity.domain) {
+      return { match: false, conflictingDomains: [] };
+    }
+
+    const domains = [...new Set(
+      emails
+        .map(email => email.value.split('@')[1]?.toLowerCase())
+        .filter((value): value is string => typeof value === 'string' && Boolean(value))
+        .filter(domain => !this.isConsumerEmailDomain(domain))
+    )];
+
+    const match = domains.some(domain => this.sameDomainFamily(domain, identity.domain!));
+    const conflictingDomains = domains.filter(domain => !this.sameDomainFamily(domain, identity.domain!));
+    return { match, conflictingDomains };
+  }
+
+  private hasLinkedInSlugMatch(identity: CompanyIdentity): boolean {
+    if (!identity.linkedinUrl) {
+      return false;
+    }
+
+    const slugMatch = identity.linkedinUrl.match(/linkedin\.com\/company\/([^/?#]+)/i);
+    if (!slugMatch?.[1]) {
+      return false;
+    }
+
+    const normalizedSlug = slugMatch[1].toLowerCase().replace(/-/g, ' ');
+    const normalizedCompany = this.normalizeCompanyName(identity.displayName || identity.legalName || identity.inputName);
+    return this.countTokenOverlap(normalizedSlug, normalizedCompany) >= 1;
+  }
+
+  private isConsumerEmailDomain(domain: string): boolean {
+    return [
+      'gmail.com',
+      'outlook.com',
+      'hotmail.com',
+      'yahoo.com',
+      'icloud.com',
+      'aol.com',
+    ].includes(domain.toLowerCase());
+  }
+
+  private normalizeCompanyName(name: string): string {
+    return name
+      .toLowerCase()
+      .replace(/\b(inc|llc|corp|corporation|co|ltd|limited|gmbh|sa|bv|plc)\b/g, '')
+      .replace(/[^a-z0-9]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  private countTokenOverlap(left: string, right: string): number {
+    const leftTokens = new Set(left.split(' ').filter(token => token.length >= 3));
+    const rightTokens = new Set(right.split(' ').filter(token => token.length >= 3));
+    let overlap = 0;
+
+    for (const token of leftTokens) {
+      if (rightTokens.has(token)) {
+        overlap += 1;
+      }
+    }
+
+    return overlap;
+  }
+
+  private sameDomainFamily(left: string, right: string): boolean {
+    const normalize = (value: string) =>
+      value
+        .replace(/^https?:\/\//, '')
+        .replace(/^www\./, '')
+        .replace(/\/.*$/, '')
+        .toLowerCase();
+    const leftDomain = normalize(left);
+    const rightDomain = normalize(right);
+    const leftParts = leftDomain.split('.');
+    const rightParts = rightDomain.split('.');
+    if (leftParts.length < 2 || rightParts.length < 2) {
+      return false;
+    }
+
+    return leftParts.slice(-2).join('.') === rightParts.slice(-2).join('.');
   }
 
   private buildDirectoryCapabilities(additionalInfo: Record<string, unknown>): Capabilities | null {

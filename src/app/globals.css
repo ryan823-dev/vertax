@@ -817,19 +817,19 @@
   --ci-text-muted: #7f92a8;
   --ci-sidebar-shell: linear-gradient(
     180deg,
-    #121c2c 0%,
-    #0f1726 52%,
-    #0c1421 100%
+    #1d283b 0%,
+    #172234 54%,
+    #131d2d 100%
   );
-  --ci-sidebar-border: rgba(148, 163, 184, 0.14);
+  --ci-sidebar-border: rgba(148, 163, 184, 0.18);
   --ci-sidebar-hover: linear-gradient(
     180deg,
-    rgba(255, 255, 255, 0.05) 0%,
-    rgba(255, 255, 255, 0.025) 100%
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(255, 255, 255, 0.045) 100%
   );
-  --ci-sidebar-active: rgba(79, 141, 246, 0.16);
-  --ci-sidebar-text: rgba(226, 232, 240, 0.82);
-  --ci-sidebar-muted: rgba(148, 163, 184, 0.62);
+  --ci-sidebar-active: rgba(79, 141, 246, 0.14);
+  --ci-sidebar-text: rgba(226, 232, 240, 0.86);
+  --ci-sidebar-muted: rgba(148, 163, 184, 0.7);
   --ci-accent: #4f8df6;
   --ci-accent-strong: #1d4ed8;
   --ci-accent-soft: rgba(79, 141, 246, 0.12);
@@ -851,8 +851,8 @@
 .ci-sidebar-shell {
   background: var(--ci-sidebar-shell);
   box-shadow:
-    inset -1px 0 0 rgba(255, 255, 255, 0.02),
-    16px 0 48px -40px rgba(2, 6, 23, 0.92);
+    inset -1px 0 0 rgba(255, 255, 255, 0.04),
+    16px 0 48px -40px rgba(15, 23, 38, 0.56);
 }
 
 .ci-grid {
