@@ -175,10 +175,10 @@ export default function LoginPage() {
 
             <div className="mt-8 hidden max-w-xl lg:block">
               <h2 className="text-5xl font-semibold leading-[1.06] tracking-tight text-[var(--ci-text)]">
-                欢迎回来。
+                让增长持续推进
               </h2>
               <p className="mt-5 text-lg leading-8 text-[var(--ci-text-secondary)]">
-                登录后继续你的工作内容与 AI 协作。
+                登录后继续处理内容、线索、决策与 AI 协作
               </p>
             </div>
           </section>
