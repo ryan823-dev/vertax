@@ -1,313 +1,355 @@
 import { Metadata } from 'next';
-import React from 'react';
 import {
-  Target,
-  TrendingUp,
-  Send,
+  ArrowRight,
+  BarChart3,
   Brain,
+  CheckCircle2,
+  Gauge,
   Layers,
   Megaphone,
   Radar,
-  Gauge,
-  Zap,
+  Rocket,
+  Send,
   Shield,
-  BarChart3,
-  CheckCircle2,
-  ArrowRight,
+  Target,
+  TrendingUp,
+  Workflow,
+  Zap,
 } from 'lucide-react';
 import { BreadcrumbSchema, breadcrumbPaths } from '@/components/seo/breadcrumb-schema';
 import { OrganizationSchema } from '@/components/seo/organization-schema';
+import {
+  GoldBadge,
+  GoldButton,
+  MarketingPageWrapper,
+  MetricBand,
+  OutlineButton,
+  SectionHeader,
+  SurfacePanel,
+} from '@/components/marketing/design-system';
 import { colors } from '@/lib/design-tokens';
-import { MarketingNav, MarketingFooter, SectionHeader, Card, GoldButton, OutlineButton, GoldBadge } from '@/components/marketing/design-system';
 
 export const metadata: Metadata = {
-  title: '功能特性 - VertaX 六大核心模块 | VertaX',
-  description: 'VertaX 六大核心模块：决策中心、知识引擎、获客雷达、增长系统、声量枢纽、推进中台。帮助制造业、工业品、技术服务型企业建立完整的全球增长闭环。',
-  keywords: ['VertaX功能', '决策中心', '知识引擎', '获客雷达', '增长系统', '声量枢纽', '推进中台'],
+  title: '功能特色 - VertaX 核心模块 | VertaX',
+  description:
+    'VertaX 通过知识引擎、增长引擎、机会雷达、品牌分发、协同工作台和管理视图，帮助工业 B2B 企业建立更完整的全球增长闭环。',
+  keywords: ['VertaX 功能', '知识引擎', '获客雷达', '增长引擎', '品牌分发', '协同工作台'],
   openGraph: {
-    title: '功能特性 - VertaX 六大核心模块',
-    description: 'VertaX 六大核心模块，帮助制造业、工业品、技术服务型企业建立完整的全球增长闭环。',
+    title: '功能特色 - VertaX 核心模块',
+    description: '不是一组零散工具，而是一套更完整的增长工作系统。',
     type: 'website',
   },
 };
 
-const features = [
+const coreCapabilities = [
   {
     icon: Target,
     tag: 'ICP Intelligence',
-    title: '目标计算',
-    description: '把该找谁变成可量化画像与优先级。',
+    title: '目标识别',
+    description: '把该找谁、先找谁、为什么找，变成持续更新的客户上下文。',
     details: [
-      '知识引擎驱动的客户画像分析',
-      '多维度 segmentation（firmographic, technographic, geographic）',
-      '智能信号评分与优先级排序',
+      '基于知识引擎的客户画像分析',
+      '按行业、国家、技术栈和组织阶段分层',
+      '机会信号评分与优先级排序',
       '动态更新的目标客户数据库',
     ],
   },
   {
     icon: TrendingUp,
-    tag: 'Inbound Growth Engine',
+    tag: 'Growth Engine',
     title: '增长生产',
-    description: '多语言 SEO 内容资产，持续吸引高意向客户。',
+    description: '把内容、搜索、品牌叙事和站点更新组织成同一条增长生产线。',
     details: [
-      'AI 驱动的 SEO/GEO 内容生成',
-      '关键词研究 → 内容规划 → 自动发布',
-      '多语言内容自动分发',
-      '社交媒体矩阵协同运营',
+      'AI 驱动的 SEO / GEO 内容生成',
+      '关键词研究、内容规划与发布协同',
+      '多语言内容与渠道分发',
+      '面向 AI 搜索的知识引用结构优化',
     ],
   },
   {
     icon: Send,
-    tag: 'Outbound Execution Layer',
+    tag: 'Execution Layer',
     title: '精准触达',
-    description: '公司发现 → 穿透 → 联系人 → 建联推进。',
+    description: '从线索发现到联系动作，不再依赖群发和人工拼接流程。',
     details: [
-      '获客雷达：ICP → 公司 → 穿透 → 联系人',
-      'Hunter.io 集成：自动发现决策者邮箱',
-      'AI 外联邮件生成与发送',
-      '全流程跟进与协作管理',
+      '围绕 ICP 持续发现目标公司与联系人',
+      'AI 生成更贴近业务场景的触达内容',
+      '跟进动作、反馈与下一步建议联动',
+      '把执行节奏沉淀成可复用方法',
     ],
   },
 ];
 
-const capabilities = [
+const systemSurfaces = [
   {
     icon: Brain,
-    title: 'Knowledge Engine · 知识引擎',
-    description: '产品 / 资质 / 竞品 / 市场结构化沉淀',
+    title: 'Knowledge Engine',
+    description: '产品、案例、竞品、行业问题和客户话术的统一知识层。',
   },
   {
     icon: Layers,
-    title: 'GTM Copilot · 决策中心',
-    description: '趋势简报 / 阶段汇报 / 动作建议',
+    title: 'Assistant Workspace',
+    description: '让对话式 AI 真正成为界面中的工作层，而不是一个附属按钮。',
   },
   {
     icon: Megaphone,
-    title: 'Brand Station · 声量枢纽',
-    description: '社媒矩阵 / PR 协同 / 声量运营',
+    title: 'Brand Station',
+    description: '把品牌表达、内容分发与市场信号连接起来，形成长期可见度。',
   },
   {
     icon: Radar,
-    title: 'Acquisition Radar · 获客雷达',
-    description: 'ICP → 公司 → 穿透 → 联系人',
+    title: 'Acquisition Radar',
+    description: '持续识别高价值线索，并把目标判断标准沉淀到系统里。',
   },
   {
+    icon: Workflow,
+    title: 'Collaboration Layer',
+    description: '内容、机会、审批和执行动作在同一个工作流里协同推进。',
+  },
+  {
+    icon: BarChart3,
+    title: 'Management View',
+    description: '管理层看到的不是装饰性看板，而是可解释、可追踪的增长状态。',
+  },
+];
+
+const flywheel = ['Knowledge', 'ICP', 'Content', 'Traffic', 'Signals', 'Outreach', 'Pipeline', 'Feedback'];
+
+const aiWorkspacePoints = [
+  {
     icon: Gauge,
-    title: 'Opportunity Accelerator · 协作审批',
-    description: '审批 / 待办 / 跟进 / 协作 / 复盘',
+    title: '把问题和动作放在同一表面',
+    description: '先问、再看、再执行，而不是在多个页面里跳转找功能。',
   },
   {
     icon: Shield,
-    title: 'Pipeline Discipline · 推进中台',
-    description: '商机推进纪律与可审计性',
+    title: '让组织经验成为系统能力',
+    description: '每一次内容产出、机会判断和跟进节奏都会沉淀为下一次工作的基础。',
+  },
+  {
+    icon: Rocket,
+    title: '让系统真的参与工作',
+    description: 'AI 不再只是写一段文案，而是参与判断、整理、提醒与协同。',
+  },
+];
+
+const summaryMetrics = [
+  {
+    label: 'System model',
+    value: '3 大核心能力',
+    detail: '识别、生产、执行，不再由彼此割裂的模块承担。',
+  },
+  {
+    label: 'Operating surface',
+    value: '6 个统一表面',
+    detail: '从知识到管理视图共用同一套层级和交互语言。',
+  },
+  {
+    label: 'Working style',
+    value: '1 条连续闭环',
+    detail: '知识、内容、线索、动作与反馈在同一系统内流动。',
   },
 ];
 
 export default function FeaturesPage() {
-  // SoftwareApplication Schema for VertaX
   const softwareSchema = {
-    "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
-    "name": "VertaX",
-    "applicationCategory": "BusinessApplication",
-    "operatingSystem": "Web",
-    "description": "VertaX 是 AI 驱动的出海获客智能体，帮助中大型 B2B 企业搭建 24 小时运营的海外增长系统。包含知识引擎、获客雷达、增长系统、决策驾驶舱、外联智能体、社交媒体管理六大核心模块。",
-    "offers": {
-      "@type": "Offer",
-      "price": "0",
-      "priceCurrency": "CNY",
-      "description": "预约演示获取报价"
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: 'VertaX',
+    applicationCategory: 'BusinessApplication',
+    operatingSystem: 'Web',
+    description:
+      'VertaX 是 AI 驱动的出海增长工作系统，通过知识引擎、增长引擎、机会雷达与协同工作台，帮助企业建立更完整的全球增长闭环。',
+    offers: {
+      '@type': 'Offer',
+      price: '0',
+      priceCurrency: 'CNY',
+      description: '预约演示获取报价',
     },
-    "aggregateRating": {
-      "@type": "AggregateRating",
-      "ratingValue": "4.8",
-      "ratingCount": "50",
-      "bestRating": "5"
+    provider: {
+      '@type': 'Organization',
+      name: 'VERTAX LIMITED',
+      url: 'https://vertax.top',
     },
-    "featureList": [
-      "知识引擎 - 企业私有知识库沉淀",
-      "获客雷达 - AI 驱动的客户发现与背调",
-      "增长系统 - SEO/GEO 内容生产与分发",
-      "决策驾驶舱 - GTM 数据看板与简报",
-      "外联智能体 - 自动化客户触达",
-      "社交媒体管理 - 多平台协同运营"
-    ],
-    "provider": {
-      "@type": "Organization",
-      "name": "VERTAX LIMITED",
-      "url": "https://vertax.top"
-    }
   };
 
   return (
     <>
       <BreadcrumbSchema items={breadcrumbPaths.features} />
       <OrganizationSchema />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareSchema) }}
-      />
-      <div className="min-h-screen" style={{ background: colors.bg.primary, fontFamily: '-apple-system, "PingFang SC", "Microsoft YaHei", sans-serif' }}>
-        <MarketingNav />
+      <script dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareSchema) }} type="application/ld+json" />
 
-        {/* Hero Section */}
-        <section
-          className="pt-16 pb-20 px-4 sm:px-6"
-          style={{ background: 'linear-gradient(180deg, #0B1220 0%, #0D1526 50%, #F7F3EA 100%)' }}
-        >
-          <div className="max-w-4xl mx-auto text-center">
-            <GoldBadge icon={<Zap className="w-3.5 h-3.5" />}>
-              GTM Intelligence OS
-            </GoldBadge>
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight mb-6 text-white mt-6">
-              完整的<span style={{ color: colors.brand.gold }}>GTM 增长操作系统</span>
+      <MarketingPageWrapper>
+        <section className="px-4 pb-16 pt-16 sm:px-6 sm:pb-20" style={{ background: colors.bg.heroGradient }}>
+          <div className="mx-auto max-w-5xl text-center">
+            <GoldBadge icon={<Zap className="h-3.5 w-3.5" />}>GTM Intelligence System</GoldBadge>
+            <h1 className="mt-6 text-4xl font-bold leading-tight text-white sm:text-5xl">
+              一套更像工作系统的
+              <br />
+              出海增长界面
             </h1>
-            <p className="text-lg md:text-xl text-gray-400 mb-8 max-w-2xl mx-auto">
-              不是工具集合，是工业出海获客的操作系统。把海外获客做成「可计算、可复制、可审计」的增长系统。
+            <p className="mx-auto mt-5 max-w-3xl text-base leading-8 text-slate-300 sm:text-lg">
+              不是把工具堆在一起，而是把知识、内容、线索、动作和管理视图组织成一套可持续工作的 AI-native 产品。
             </p>
+          </div>
+
+          <div className="mx-auto mt-12 max-w-5xl">
+            <MetricBand dark items={summaryMetrics} />
           </div>
         </section>
 
-        {/* Three Core Capabilities */}
-        <section className="py-16 sm:py-20 px-4 sm:px-6" style={{ background: colors.bg.primary }}>
-          <div className="max-w-6xl mx-auto">
+        <section className="px-4 py-16 sm:px-6 sm:py-20" style={{ background: colors.bg.primary }}>
+          <div className="mx-auto max-w-6xl">
             <SectionHeader
-              badge="核心能力"
+              badge="Core capabilities"
+              subtitle="三类能力分别负责识别、生产和执行，但它们不会彼此断开。"
               title="三大核心能力"
-              align="center"
             />
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {features.map((feature) => (
-                <Card key={feature.title} className="hover:-translate-y-1">
-                  <feature.icon className="w-8 h-8 mb-4" style={{ color: colors.brand.gold }} />
-                  <p className="text-xs font-medium tracking-wide mb-1" style={{ color: colors.brand.gold }}>{feature.tag}</p>
-                  <h3 className="text-lg font-bold mb-2" style={{ color: colors.text.primary }}>{feature.title}</h3>
-                  <p className="text-sm leading-relaxed mb-4" style={{ color: colors.text.secondary }}>{feature.description}</p>
-                  <ul className="space-y-2">
-                    {feature.details.map((detail) => (
-                      <li key={detail} className="flex items-start gap-2 text-xs" style={{ color: colors.text.muted }}>
-                        <CheckCircle2 className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: colors.brand.gold }} />
-                        <span>{detail}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </Card>
+            <div className="space-y-4">
+              {coreCapabilities.map((feature) => (
+                <SurfacePanel key={feature.title}>
+                  <div className="grid gap-5 xl:grid-cols-[220px_1fr_1.1fr]">
+                    <div>
+                      <div
+                        className="flex h-12 w-12 items-center justify-center rounded-2xl"
+                        style={{
+                          background: colors.border.glow,
+                          border: `1px solid ${colors.border.brand}`,
+                        }}
+                      >
+                        <feature.icon className="h-5 w-5" style={{ color: colors.brand.primary }} />
+                      </div>
+                      <p className="mt-5 text-xs font-semibold uppercase tracking-[0.18em]" style={{ color: colors.text.muted }}>
+                        {feature.tag}
+                      </p>
+                      <h3 className="mt-3 text-xl font-semibold" style={{ color: colors.text.primary }}>
+                        {feature.title}
+                      </h3>
+                    </div>
+
+                    <div>
+                      <p className="text-sm leading-7" style={{ color: colors.text.secondary }}>
+                        {feature.description}
+                      </p>
+                    </div>
+
+                    <div className="grid gap-3 md:grid-cols-2">
+                      {feature.details.map((detail) => (
+                        <div className="flex items-start gap-2 text-sm leading-7" key={detail} style={{ color: colors.text.secondary }}>
+                          <CheckCircle2 className="mt-1 h-4 w-4 shrink-0" style={{ color: colors.brand.primary }} />
+                          <span>{detail}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </SurfacePanel>
               ))}
             </div>
           </div>
         </section>
 
-        {/* GTM Flywheel */}
-        <section className="py-16 sm:py-20 px-4 sm:px-6" style={{ background: colors.bg.secondary }}>
-          <div className="max-w-6xl mx-auto">
+        <section className="px-4 py-16 sm:px-6 sm:py-20" style={{ background: colors.bg.tertiary }}>
+          <div className="mx-auto max-w-6xl">
             <SectionHeader
-              badge="增长飞轮"
-              title="GTM 增长飞轮（闭环）"
-              subtitle="Knowledge → ICP → Content → Traffic → Leads → Outreach → Pipeline → Feedback"
-              align="center"
+              badge="Growth loop"
+              subtitle="系统不是静态模块集合，而是一条会持续回流、更新和变强的工作循环。"
+              title="增长飞轮"
             />
 
-            {/* Flywheel visual */}
-            <div className="flex flex-wrap justify-center gap-2 mb-12">
-              {['Knowledge', 'ICP', 'Content', 'Traffic', 'Leads', 'Outreach', 'Pipeline', 'Feedback'].map((step, i) => (
-                <React.Fragment key={step}>
-                  <span
-                    className="rounded-md px-3 py-1.5 text-xs font-medium"
+            <div className="flex flex-wrap justify-center gap-2">
+              {flywheel.map((step) => (
+                <span
+                  className="rounded-full px-4 py-2 text-sm font-medium"
+                  key={step}
+                  style={{
+                    background: colors.bg.secondary,
+                    border: `1px solid ${colors.border.light}`,
+                    color: colors.text.primary,
+                  }}
+                >
+                  {step}
+                </span>
+              ))}
+            </div>
+
+            <SurfacePanel className="mt-10">
+              <div className="grid gap-3 md:grid-cols-2">
+                {systemSurfaces.map((surface, index) => (
+                  <div
+                    className="rounded-[22px] border px-5 py-5"
+                    key={surface.title}
                     style={{
-                      background: `rgba(${colors.brand.goldRgb},0.1)`,
-                      color: colors.brand.gold,
-                      border: `1px solid rgba(${colors.brand.goldRgb},0.15)`,
+                      background: index === 1 ? colors.border.glow : colors.bg.secondary,
+                      borderColor: index === 1 ? colors.border.brand : colors.border.light,
                     }}
                   >
-                    {step}
-                  </span>
-                  {i < 7 && <ArrowRight className="w-4 h-4 self-center" style={{ color: colors.text.muted }} />}
-                </React.Fragment>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {capabilities.map((cap) => (
-                <div
-                  key={cap.title}
-                  className="flex items-start gap-3 rounded-lg p-4"
-                  style={{
-                    background: colors.bg.primary,
-                    border: `1px solid ${colors.border.light}`,
-                  }}
-                >
-                  <cap.icon className="w-5 h-5 mt-0.5 shrink-0" style={{ color: colors.brand.gold }} />
-                  <div>
-                    <p className="text-sm font-semibold" style={{ color: colors.text.primary }}>{cap.title}</p>
-                    <p className="text-xs" style={{ color: colors.text.muted }}>{cap.description}</p>
+                    <div className="flex items-center gap-2">
+                      <surface.icon className="h-4 w-4" style={{ color: colors.brand.primary }} />
+                      <p className="text-sm font-semibold" style={{ color: colors.text.primary }}>
+                        {surface.title}
+                      </p>
+                    </div>
+                    <p className="mt-3 text-sm leading-7" style={{ color: colors.text.secondary }}>
+                      {surface.description}
+                    </p>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            </SurfacePanel>
           </div>
         </section>
 
-        {/* Decision Cockpit */}
-        <section
-          className="py-16 sm:py-20 px-4 sm:px-6"
-          style={{ background: colors.bg.darkGradient }}
-        >
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-10">
-              <span className="text-xs font-bold uppercase tracking-widest mb-3 inline-block" style={{ color: colors.brand.gold }}>
-                决策中心
-              </span>
-              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">
-                Decision Cockpit｜<span style={{ color: colors.brand.gold }}>一屏看清</span>
-              </h2>
-              <p className="text-gray-500 text-sm">投入、节奏、结果</p>
-            </div>
-
-            <div className="space-y-4">
-              {[
-                { icon: BarChart3, text: '新增有效线索、行业热度、关键客户名单' },
-                { icon: Gauge, text: '团队进度与瓶颈：谁在卡、卡在哪' },
-                { icon: Megaphone, text: '一键生成：周报 / 月报 / 战略简报（可直接发群）' },
-              ].map(({ icon: Icon, text }) => (
-                <div
-                  key={text}
-                  className="flex items-center gap-4 rounded-lg p-4"
-                  style={{
-                    background: 'rgba(255,255,255,0.03)',
-                    border: '1px solid rgba(255,255,255,0.06)',
-                  }}
-                >
-                  <Icon className="w-5 h-5 shrink-0" style={{ color: colors.brand.gold }} />
-                  <p className="text-sm text-white">{text}</p>
-                </div>
-              ))}
-            </div>
-            <p className="text-center text-xs mt-6" style={{ color: colors.text.muted }}>老板要的不是功能，是可控感。</p>
+        <section className="px-4 py-16 sm:px-6 sm:py-20" style={{ background: colors.bg.darkGradient }}>
+          <div className="mx-auto max-w-5xl">
+            <SectionHeader
+              badge="AI workspace"
+              dark
+              subtitle="这不是驾驶舱式的陈列，而是更像一个会持续协助团队工作的界面。"
+              title="为什么它更像 AI 工作台，而不是传统看板"
+            />
+            <SurfacePanel dark>
+              <div className="space-y-4">
+                {aiWorkspacePoints.map((item) => (
+                  <div
+                    className="grid gap-4 rounded-[22px] border px-4 py-4 md:grid-cols-[240px_1fr]"
+                    key={item.title}
+                    style={{
+                      background: 'rgba(248, 251, 255, 0.04)',
+                      borderColor: 'rgba(248, 251, 255, 0.1)',
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <item.icon className="h-4 w-4" style={{ color: colors.brand.secondary }} />
+                      <p className="text-sm font-semibold text-white">{item.title}</p>
+                    </div>
+                    <p className="text-sm leading-7 text-slate-300">{item.description}</p>
+                  </div>
+                ))}
+              </div>
+            </SurfacePanel>
           </div>
         </section>
 
-        {/* CTA Section */}
-        <section className="py-20 sm:py-24 px-4 sm:px-6" style={{ background: colors.bg.primary }}>
-          <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-2xl sm:text-3xl font-bold mb-4" style={{ color: colors.text.primary }}>
-              让出海获客从项目制升级为系统工程。
+        <section className="px-4 py-20 sm:px-6 sm:py-24" style={{ background: colors.bg.primary }}>
+          <div className="mx-auto max-w-3xl text-center">
+            <GoldBadge icon={<Layers className="h-3.5 w-3.5" />}>See the system in action</GoldBadge>
+            <h2 className="mt-6 text-3xl font-bold sm:text-4xl" style={{ color: colors.text.primary }}>
+              如果你们想看到这套系统如何真正参与工作
             </h2>
-            <p className="mb-8" style={{ color: colors.text.secondary }}>
-              预约演示，拿到你行业的 GTM 路径样板与 ICP 示例。
+            <p className="mt-4 text-base leading-8" style={{ color: colors.text.secondary }}>
+              预约演示，我们会结合你们的行业背景展示知识引擎、机会识别和协同工作台如何连成一套闭环。
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <GoldButton href="/contact" size="large" icon={<ArrowRight className="w-4 h-4" />}>
+            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <GoldButton href="/contact" icon={<ArrowRight className="h-4 w-4" />} size="large">
                 预约演示
               </GoldButton>
-              <OutlineButton href="/about/what-is-vertax" dark={false}>
+              <OutlineButton dark={false} href="/about/what-is-vertax">
                 了解更多
               </OutlineButton>
             </div>
           </div>
         </section>
-
-        <MarketingFooter />
-      </div>
+      </MarketingPageWrapper>
     </>
   );
 }

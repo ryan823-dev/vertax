@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { Plus } from "lucide-react";
+import { createTenantWithAdmin } from "@/actions/admin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,17 +23,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus } from "lucide-react";
-import { createTenantWithAdmin } from "@/actions/admin";
 
 function generateSlug(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9\u4e00-\u9fff]+/g, "-")
-    .replace(/[\u4e00-\u9fff]/g, "")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "")
-    || "";
+  return (
+    name
+      .toLowerCase()
+      .replace(/[^a-z0-9\u4e00-\u9fff]+/g, "-")
+      .replace(/[\u4e00-\u9fff]/g, "")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "") || ""
+  );
 }
 
 export function CreateTenantDialog() {
@@ -39,7 +40,10 @@ export function CreateTenantDialog() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [slugManual, setSlugManual] = useState(false);
-  const [successData, setSuccessData] = useState<{ loginUrl: string; email: string } | null>(null);
+  const [successData, setSuccessData] = useState<{
+    loginUrl: string;
+    email: string;
+  } | null>(null);
 
   const [companyName, setCompanyName] = useState("");
   const [slug, setSlug] = useState("");
@@ -72,29 +76,33 @@ export function CreateTenantDialog() {
     e.preventDefault();
     setError("");
 
-    // Client-side validation
     if (!companyName.trim() || companyName.trim().length < 2) {
       setError("公司名称至少 2 个字符");
       return;
     }
+
     if (!slug.trim() || !/^[a-z0-9-]+$/.test(slug)) {
-      setError("标识只能包含小写字母、数字和连字符");
+      setError("租户标识只能包含小写字母、数字和连字符");
       return;
     }
+
     if (!adminName.trim()) {
       setError("请输入管理员姓名");
       return;
     }
+
     if (!adminEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(adminEmail)) {
       setError("请输入有效的邮箱地址");
       return;
     }
+
     if (password.length < 8) {
       setError("密码至少 8 个字符");
       return;
     }
 
     setLoading(true);
+
     try {
       const result = await createTenantWithAdmin({
         companyName: companyName.trim(),
@@ -109,19 +117,23 @@ export function CreateTenantDialog() {
       if (result.success) {
         toast.success("租户创建成功");
         if (result.loginUrl) {
-          setSuccessData({ loginUrl: result.loginUrl, email: adminEmail.trim().toLowerCase() });
+          setSuccessData({
+            loginUrl: result.loginUrl,
+            email: adminEmail.trim().toLowerCase(),
+          });
         } else {
           setOpen(false);
           resetForm();
         }
-      } else {
-        const errorMessages: Record<string, string> = {
-          emailExists: "该邮箱已被使用",
-          slugExists: "该标识已被使用",
-          roleNotFound: "系统角色未找到",
-        };
-        setError(errorMessages[result.error || ""] || "创建失败");
+        return;
       }
+
+      const errorMessages: Record<string, string> = {
+        emailExists: "该邮箱已被使用",
+        slugExists: "该租户标识已被使用",
+        roleNotFound: "系统管理员角色未找到",
+      };
+      setError(errorMessages[result.error || ""] || "创建失败");
     } catch {
       setError("创建失败");
     } finally {
@@ -130,7 +142,15 @@ export function CreateTenantDialog() {
   }
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
+    <Dialog
+      open={open}
+      onOpenChange={(value) => {
+        setOpen(value);
+        if (!value) {
+          resetForm();
+        }
+      }}
+    >
       <DialogTrigger asChild>
         <Button>
           <Plus className="mr-2 h-4 w-4" />
@@ -140,14 +160,16 @@ export function CreateTenantDialog() {
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>创建租户</DialogTitle>
-          <DialogDescription>创建新的租户账户并设置管理员</DialogDescription>
+          <DialogDescription>
+            创建新的租户账户并设置管理员。
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
+          {error ? (
             <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
               {error}
             </div>
-          )}
+          ) : null}
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
@@ -167,7 +189,9 @@ export function CreateTenantDialog() {
                 value={slug}
                 onChange={(e) => {
                   setSlugManual(true);
-                  setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""));
+                  setSlug(
+                    e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "")
+                  );
                 }}
                 placeholder="company-name"
                 required
@@ -176,7 +200,7 @@ export function CreateTenantDialog() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="plan">租户套餐</Label>
+            <Label htmlFor="plan">套餐</Label>
             <Select value={plan} onValueChange={setPlan}>
               <SelectTrigger id="plan">
                 <SelectValue />
@@ -190,18 +214,24 @@ export function CreateTenantDialog() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="domain">外贸网站域名（可选）</Label>
+            <Label htmlFor="domain">外贸网站域名，可选</Label>
             <Input
               id="domain"
               value={domain}
-              onChange={(e) => setDomain(e.target.value.toLowerCase().replace(/[^a-z0-9.-]/g, ""))}
+              onChange={(e) =>
+                setDomain(
+                  e.target.value.toLowerCase().replace(/[^a-z0-9.-]/g, "")
+                )
+              }
               placeholder="example.com"
             />
-            <p className="text-xs text-muted-foreground">客户的海外官网域名，用于邮件发送等</p>
+            <p className="text-xs text-muted-foreground">
+              用于记录客户官网配置以及后续站点接入。
+            </p>
           </div>
 
           <div className="border-t pt-4">
-            <p className="text-sm font-medium text-muted-foreground mb-3">
+            <p className="mb-3 text-sm font-medium text-muted-foreground">
               管理员信息
             </p>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -226,14 +256,14 @@ export function CreateTenantDialog() {
                 />
               </div>
             </div>
-            <div className="space-y-2 mt-4">
+            <div className="mt-4 space-y-2">
               <Label htmlFor="password">初始密码</Label>
               <Input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder="至少 8 位"
                 minLength={8}
                 required
               />
@@ -243,14 +273,32 @@ export function CreateTenantDialog() {
           <DialogFooter>
             {successData ? (
               <>
-                <div className="flex-1 p-3 rounded-lg bg-green-50 border border-green-200">
-                  <p className="text-sm font-medium text-green-800 mb-2">✓ 客户账户已创建</p>
+                <div className="flex-1 rounded-lg border border-green-200 bg-green-50 p-3">
+                  <p className="mb-2 text-sm font-medium text-green-800">
+                    客户账户已创建
+                  </p>
                   <div className="space-y-1 text-sm text-green-700">
-                    <p>登录地址：<a href={successData.loginUrl} target="_blank" rel="noopener" className="underline font-medium">{successData.loginUrl}</a></p>
+                    <p>
+                      登录地址：
+                      <a
+                        href={successData.loginUrl}
+                        target="_blank"
+                        rel="noopener"
+                        className="font-medium underline"
+                      >
+                        {successData.loginUrl}
+                      </a>
+                    </p>
                     <p>管理员邮箱：{successData.email}</p>
                   </div>
                 </div>
-                <Button type="button" onClick={() => { setOpen(false); resetForm(); }}>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    setOpen(false);
+                    resetForm();
+                  }}
+                >
                   完成
                 </Button>
               </>

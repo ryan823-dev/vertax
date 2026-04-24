@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useParams } from "next/navigation";
+import { Building2, Eye, Users } from "lucide-react";
+import { getTenantStats, getTenants } from "@/actions/admin";
 import { PageHeader } from "@/components/common/page-header";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CreateTenantDialog } from "@/components/admin/create-tenant-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useParams } from "next/navigation";
-import { Building2, Users, Eye } from "lucide-react";
-import { CreateTenantDialog } from "@/components/admin/create-tenant-dialog";
-import { getTenantStats, getTenants } from "@/actions/admin";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type TenantWithCount = {
   id: string;
@@ -44,11 +44,12 @@ export default function AdminPage() {
         setStats(statsData);
         setTenants(tenantsData as TenantWithCount[]);
       } catch {
-        // User may not be admin - data will stay empty
+        // User may not be admin.
       } finally {
         setLoading(false);
       }
     }
+
     loadData();
   }, []);
 
@@ -58,12 +59,10 @@ export default function AdminPage() {
         <CreateTenantDialog />
       </PageHeader>
 
-      <div className="grid gap-4 md:grid-cols-2 mb-6">
+      <div className="mb-6 grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              租户总数
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">租户总数</CardTitle>
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -74,9 +73,7 @@ export default function AdminPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              用户总数
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">用户总数</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -93,11 +90,11 @@ export default function AdminPage() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="text-sm text-muted-foreground py-4 text-center">
+            <div className="py-4 text-center text-sm text-muted-foreground">
               加载中...
             </div>
           ) : tenants.length === 0 ? (
-            <div className="text-sm text-muted-foreground py-4 text-center">
+            <div className="py-4 text-center text-sm text-muted-foreground">
               暂无租户
             </div>
           ) : (
@@ -113,28 +110,30 @@ export default function AdminPage() {
                       {tenant.slug}
                     </p>
                   </div>
-                  <div className="flex items-center gap-3 ml-4">
+                  <div className="ml-4 flex items-center gap-3">
                     <span className="text-sm text-muted-foreground">
                       {tenant._count.users} 用户
                     </span>
                     <Badge variant={planBadgeVariant[tenant.plan] || "outline"}>
-                      {tenant.plan === "free" ? "免费版" : tenant.plan === "pro" ? "专业版" : "企业版"}
+                      {tenant.plan === "free"
+                        ? "免费版"
+                        : tenant.plan === "pro"
+                          ? "专业版"
+                          : "企业版"}
                     </Badge>
                     <Badge
                       variant="outline"
                       className={
                         tenant.status === "active"
-                          ? "text-green-600 border-green-200"
-                          : "text-red-600 border-red-200"
+                          ? "border-green-200 text-green-600"
+                          : "border-red-200 text-red-600"
                       }
                     >
-                      {tenant.status === "active"
-                        ? "正常"
-                        : "已暂停"}
+                      {tenant.status === "active" ? "正常" : "已暂停"}
                     </Badge>
                     <Link href={`/${locale}/admin/tenants/${tenant.id}`}>
                       <Button variant="ghost" size="sm">
-                        <Eye className="h-4 w-4 mr-1" />
+                        <Eye className="mr-1 h-4 w-4" />
                         查看详情
                       </Button>
                     </Link>

@@ -140,7 +140,7 @@ export default function SolutionsPage() {
         {/* Hero Section */}
         <section
           className="pt-16 pb-20 px-4 sm:px-6"
-          style={{ background: 'linear-gradient(180deg, #0B1220 0%, #0D1526 50%, #F7F3EA 100%)' }}
+          style={{ background: colors.bg.heroGradient }}
         >
           <div className="max-w-4xl mx-auto text-center">
             <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight mb-6 text-white">

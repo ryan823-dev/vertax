@@ -8,7 +8,22 @@ import { getTenantCanonicalRedirectUrl, resolveTenant } from "@/lib/tenant-resol
 
 const { auth } = NextAuth(authConfig);
 
-const publicPaths = ["/login", "/register", "/api/auth", "/api/inquiry"];
+const publicPaths = [
+  "/login",
+  "/register",
+  "/api/auth",
+  "/api/inquiry",
+  "/about",
+  "/blog",
+  "/cases",
+  "/contact",
+  "/en",
+  "/faq",
+  "/features",
+  "/pricing",
+  "/resources",
+  "/solutions",
+];
 const CRON_ROUTES = ["/api/cron/"];
 
 const BASE_DOMAIN = process.env.NEXT_PUBLIC_BASE_DOMAIN || "vertax.top";

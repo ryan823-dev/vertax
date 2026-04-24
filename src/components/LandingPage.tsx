@@ -1,868 +1,437 @@
 'use client';
 
-import Image from 'next/image';
-import Link from 'next/link';
-import React, { useState } from 'react';
 import {
-  ArrowRight, X, Target, TrendingUp, Send,
-  Brain, Megaphone, Radar,
-  Shield, BarChart3,
-  Building2, CheckCircle2, Users,
-  Search, MessageCircle, Database,
-  BarChart, Globe, AlertTriangle, Menu, Sparkles
+  ArrowRight,
+  BarChart3,
+  Brain,
+  CheckCircle2,
+  Compass,
+  FileStack,
+  Layers,
+  Radar,
+  Sparkles,
+  Workflow,
 } from 'lucide-react';
-import { colors, shadows, gradients } from '@/lib/design-tokens';
+import {
+  AnimatedBackground,
+  GoldBadge,
+  GoldButton,
+  MarketingPageWrapper,
+  MetricBand,
+  OutlineButton,
+  SectionHeader,
+  SurfacePanel,
+  TrustIndicators,
+  colors,
+} from '@/components/marketing/design-system';
 
-/* ── Modal ── */
-function DemoModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const [submitted, setSubmitted] = useState(false);
-  if (!open) return null;
+const operatingSurfaces = [
+  {
+    icon: Brain,
+    title: '知识底座',
+    summary: '统一产品、行业、案例与客户问题的语义层，让 AI 真正理解企业上下文。',
+  },
+  {
+    icon: Radar,
+    title: '机会雷达',
+    summary: '围绕 ICP、市场信号和采购窗口持续识别高价值目标，而不是临时搜名单。',
+  },
+  {
+    icon: Workflow,
+    title: '协同工作台',
+    summary: '把内容、线索、动作和复盘组织在同一个表面里，减少跨工具跳转。',
+  },
+  {
+    icon: BarChart3,
+    title: '管理视图',
+    summary: '管理层看到的是一条连续的增长状态，而不是一堆孤立看板和截图。',
+  },
+];
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4" onClick={onClose}>
-      <div
-        className="rounded-2xl w-full max-w-md p-8 relative"
-        style={{
-          background: colors.bg.secondary,
-          border: `1px solid ${colors.border.brand}`,
-          boxShadow: shadows.xl,
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-white">
-          <X className="w-5 h-5" />
-        </button>
+const painPoints = [
+  {
+    title: '知识不在系统里',
+    description: '内容、案例、客户问题和团队经验散落在不同工具中，AI 只能生成表面输出，无法形成企业记忆。',
+  },
+  {
+    title: '动作很多，闭环很弱',
+    description: '搜索、群发、展会和手工跟进做了不少，但信息没有沉淀成可复用的方法，下一轮还得重来。',
+  },
+  {
+    title: '视图割裂，判断靠感觉',
+    description: '市场、销售和管理层各自看自己的页面，无法在 5 秒内对齐现状、优先级和下一步动作。',
+  },
+];
 
-        {submitted ? (
-          <div className="text-center py-8">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ background: colors.border.glow }}>
-              <CheckCircle2 className="w-8 h-8" style={{ color: colors.data.positive }} />
-            </div>
-            <h3 className="text-xl font-bold text-white mb-2">提交成功</h3>
-            <p className="text-gray-400 text-sm">我们会在 1 个工作日内联系您。</p>
-          </div>
-        ) : (
-          <>
-            <h3 className="text-xl font-bold text-white mb-1">预约演示</h3>
-            <p className="text-gray-400 text-sm mb-6">留下信息，获取您行业的 GTM 路径样板。</p>
-            <form
-              onSubmit={(e) => { e.preventDefault(); setSubmitted(true); }}
-              className="space-y-4"
-            >
-              <input
-                required placeholder="姓名" type="text"
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-sm text-white placeholder:text-gray-500 focus:outline-none"
-              />
-              <input
-                required placeholder="公司名称" type="text"
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-sm text-white placeholder:text-gray-500 focus:outline-none"
-              />
-              <input
-                required placeholder="邮箱" type="email"
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-sm text-white placeholder:text-gray-500 focus:outline-none"
-              />
-              <textarea
-                placeholder="简述需求（选填）" rows={3}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-sm text-white placeholder:text-gray-500 focus:outline-none resize-none"
-              />
-              <button
-                type="submit"
-                className="w-full font-semibold py-3 rounded-lg transition-all text-sm hover:scale-[1.02]"
-                style={{
-                  background: colors.brand.gradient,
-                  color: colors.text.inverse,
-                }}
-              >
-                提交预约
-              </button>
-            </form>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
+const workflowSteps = [
+  {
+    title: '沉淀企业上下文',
+    description: '先把产品、行业、客户问题、竞品与品牌表达整理成一套可调用的知识结构。',
+  },
+  {
+    title: '持续识别机会',
+    description: '围绕 ICP 和市场信号筛选值得优先推进的公司与联系人，而不是一次性导表。',
+  },
+  {
+    title: '在同一界面里执行',
+    description: '从内容、触达、跟进到复盘都在同一个工作台中协同完成，减少切换成本。',
+  },
+];
 
-/* ── Main Page ── */
+const proofStats = [
+  {
+    label: 'Interface style',
+    value: 'AI-native',
+    detail: '更像工作界面，而不是传统深色展示页。',
+  },
+  {
+    label: 'System logic',
+    value: 'Knowledge first',
+    detail: '先建立上下文，再做内容、机会识别和执行动作。',
+  },
+  {
+    label: 'Team outcome',
+    value: 'Systemic',
+    detail: '把增长方法沉淀为长期资产，而不是一次性项目。',
+  },
+];
+
+const opportunitySignals = [
+  '德国包装设备集成商，采购窗口 30 天内',
+  '波兰汽车零部件工厂，自动化升级需求明确',
+  '西班牙系统集成商，正在评估替代供应商',
+];
+
 export default function LandingPage() {
-  const [modalOpen, setModalOpen] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const openModal = () => setModalOpen(true);
-
   return (
-    <div className="min-h-screen" style={{ background: colors.bg.primary, fontFamily: '-apple-system, "PingFang SC", "Microsoft YaHei", sans-serif' }}>
-      <DemoModal open={modalOpen} onClose={() => setModalOpen(false)} />
-
-      {/* ── Navigation ── */}
-      <nav
-        className="sticky top-0 z-50"
-        style={{
-          background: 'rgba(10,10,10,0.95)',
-          backdropFilter: 'blur(20px)',
-          borderBottom: `1px solid ${colors.border.brand}`,
-        }}
-      >
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-3">
-            <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black"
-              style={{
-                background: colors.brand.gradient,
-                color: colors.text.inverse,
-                boxShadow: shadows.glow,
-              }}
-            >
-              V
-            </div>
-            <div>
-              <span className="text-lg font-bold text-white tracking-tight">VertaX</span>
-              <span className="hidden sm:inline text-[9px] ml-2 px-2 py-0.5 rounded font-bold uppercase tracking-widest" style={{ color: colors.brand.primary, background: colors.border.glow }}>
-                Intelligence OS
-              </span>
-            </div>
-          </Link>
-
-          {/* Desktop Nav */}
-          <div className="hidden md:flex items-center gap-8 text-sm">
-            <a href="/features" className="text-gray-300 hover:text-white transition-colors">产品功能</a>
-            <a href="/solutions" className="text-gray-300 hover:text-white transition-colors">解决方案</a>
-            <a href="/cases" className="text-gray-300 hover:text-white transition-colors">客户案例</a>
-            <a href="/about/what-is-vertax" className="text-gray-300 hover:text-white transition-colors">关于我们</a>
-            <a href="/faq" className="text-gray-300 hover:text-white transition-colors">FAQ</a>
-          </div>
-
-          {/* CTA Buttons */}
-          <div className="flex items-center gap-3">
-            <a
-              href="/en"
-              className="hidden sm:flex items-center gap-1.5 text-gray-400 hover:text-white transition-colors text-sm px-3 py-1.5"
-            >
-              <Globe className="w-4 h-4" /> EN
-            </a>
-            <button
-              onClick={openModal}
-              className="font-semibold px-5 py-2 rounded-lg transition-all text-sm hover:scale-105"
-              style={{
-                background: colors.brand.gradient,
-                color: colors.text.inverse,
-              }}
-            >
-              预约演示
-            </button>
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden text-white p-2"
-              aria-label="菜单"
-            >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile Menu */}
-        {mobileMenuOpen && (
-          <div className="md:hidden border-t border-white/5 px-4 py-4 space-y-1" style={{ background: colors.bg.primary }}>
-            <a href="/features" className="block text-sm text-gray-300 hover:text-white py-3 px-3 rounded-lg hover:bg-white/5">产品功能</a>
-            <a href="/solutions" className="block text-sm text-gray-300 hover:text-white py-3 px-3 rounded-lg hover:bg-white/5">解决方案</a>
-            <a href="/cases" className="block text-sm text-gray-300 hover:text-white py-3 px-3 rounded-lg hover:bg-white/5">客户案例</a>
-            <a href="/about/what-is-vertax" className="block text-sm text-gray-300 hover:text-white py-3 px-3 rounded-lg hover:bg-white/5">关于我们</a>
-            <a href="/faq" className="block text-sm text-gray-300 hover:text-white py-3 px-3 rounded-lg hover:bg-white/5">FAQ</a>
-            <div className="pt-3 border-t border-white/5 mt-3">
-              <a href="/en" className="block text-sm text-gray-400 py-3 px-3 rounded-lg hover:bg-white/5 flex items-center gap-2">
-                <Globe className="w-4 h-4" /> English Version
-              </a>
-            </div>
-          </div>
-        )}
-      </nav>
-
-      {/* ── Hero Section ── */}
+    <MarketingPageWrapper>
       <section
-        className="py-16 md:py-24 px-4 sm:px-6 relative overflow-hidden"
+        className="relative overflow-hidden px-4 pb-20 pt-14 sm:px-6 sm:pb-24 sm:pt-18"
         style={{ background: colors.bg.heroGradient }}
       >
-        {/* Animated Background */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ background: gradients.mesh }}>
-          <div className="absolute inset-0" style={{ background: gradients.grid, backgroundSize: '60px 60px' }} />
-        </div>
-
-        <div className="max-w-4xl mx-auto text-center relative z-10">
-          {/* Badge */}
-          <div
-            className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-medium mb-8"
-            style={{
-              background: colors.border.glow,
-              border: `1px solid ${colors.border.brand}`,
-              color: colors.brand.primary,
-            }}
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Intelligence OS for Global Growth</span>
-          </div>
-
-          {/* Headline */}
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6 text-white">
-            让每一家中国企业
-            <br />
-            <span style={{ background: colors.brand.gradient, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>拥有自主进化的全球增长大脑</span>
-          </h1>
-
-          {/* Subheadline */}
-          <p className="text-base sm:text-lg md:text-xl text-gray-400 mb-8 max-w-2xl mx-auto px-4 leading-relaxed">
-            以知识引擎、内容增长、商机挖掘与协同推进能力，
-            帮助企业构建可持续、可进化的全球增长体系。
-          </p>
-
-          {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
-            <button
-              onClick={openModal}
-              className="w-full sm:w-auto font-semibold px-8 py-4 rounded-xl transition-all inline-flex items-center justify-center gap-2 text-base hover:scale-105"
-              style={{
-                background: colors.brand.gradient,
-                color: colors.text.inverse,
-                boxShadow: shadows.glowLg,
-              }}
-            >
-              预约演示 <ArrowRight className="w-4 h-4" />
-            </button>
-            <button
-              onClick={openModal}
-              className="w-full sm:w-auto border px-8 py-4 rounded-xl transition-colors font-medium text-base text-white hover:bg-white/5"
-              style={{ borderColor: colors.border.strong }}
-            >
-              获取行业方案
-            </button>
-          </div>
-
-          {/* Trust Indicators */}
-          <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-gray-500">
-            <span className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4" style={{ color: colors.data.positive }} />
-              面向制造业、工业品企业
-            </span>
-            <span className="flex items-center gap-2">
-              <Shield className="w-4 h-4" style={{ color: colors.brand.accent }} />
-              数据安全合规
-            </span>
-            <span className="flex items-center gap-2">
-              <Users className="w-4 h-4" style={{ color: colors.brand.primary }} />
-              100+ 企业信赖
-            </span>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Value Proposition Banner ── */}
-      <section
-        className="py-12 px-4 sm:px-6"
-        style={{ background: 'linear-gradient(180deg, #F7F3EA 0%, #FFFFFF 100%)' }}
-      >
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-3" style={{ color: '#0B1B2B' }}>
-            方法论与系统缺位，才是出海获客的瓶颈。
-          </h2>
-          <p className="text-base sm:text-lg" style={{ color: '#334155' }}>
-            VertaX 提供从0到1的出海辅导，让获客从靠人变成靠系统。
-          </p>
-        </div>
-      </section>
-
-      {/* ── Target Customers ── */}
-      <section className="py-16 sm:py-20 px-4 sm:px-6" style={{ background: colors.bg.primary }}>
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-12">
-            <span
-              className="text-xs font-bold uppercase tracking-widest mb-3 inline-block"
-              style={{ color: colors.brand.primary }}
-            >
-              目标客户
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-bold" style={{ color: colors.text.primary }}>
-              VertaX 服务这样的企业
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              {
-                icon: Building2,
-                title: '产品具有核心竞争力',
-                desc: '拥有优质产品或技术，希望在海外市场扩大影响力、获取订单的企业。'
-              },
-              {
-                icon: Globe,
-                title: '在海外有潜在的市场需求',
-                desc: '目标市场对产品或服务存在明确需求，等待被系统化开发和转化的企业。'
-              },
-              {
-                icon: Target,
-                title: '暂不具备专业的出海能力和团队',
-                desc: '需要借助专业平台和系统化的方法，以更低成本实现出海增长的企业。'
-              }
-            ].map(({ icon: Icon, title, desc }) => (
-              <div
-                key={title}
-                className="rounded-2xl p-6 transition-all hover:-translate-y-1"
-                style={{
-                  background: colors.bg.secondary,
-                  border: `1px solid ${colors.border.light}`,
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
-                }}
-              >
-                <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
-                  style={{ background: colors.border.glow }}
-                >
-                  <Icon className="w-6 h-6" style={{ color: colors.brand.primary }} />
-                </div>
-                <h3 className="text-lg font-bold mb-2" style={{ color: colors.text.primary }}>{title}</h3>
-                <p className="text-sm leading-relaxed" style={{ color: colors.text.secondary }}>{desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Pain Points ── */}
-      <section className="py-16 sm:py-20 px-4 sm:px-6" style={{ background: '#FFFFFF' }}>
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-12">
-            <span
-              className="text-xs font-bold uppercase tracking-widest mb-3 inline-block"
-              style={{ color: colors.brand.primary }}
-            >
-              行业痛点
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-bold" style={{ color: colors.text.primary }}>
-              出海企业面临的八大挑战
-            </h2>
-          </div>
-
-          {/* 第一部分：内部准备不足 */}
-          <div className="mb-10">
-            <div className="text-center mb-6">
-              <h3 className="text-lg font-bold" style={{ color: colors.text.primary }}>
-                第一部分：内部准备不足
-              </h3>
-              <p className="text-sm mt-1" style={{ color: colors.text.muted }}>
-                企业还没真正具备出海起步能力
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
-              {[
-                { icon: AlertTriangle, num: '1', title: '路径不清', desc: '不知道该做 B2B 还是 B2C，不清楚先做哪个市场、哪个渠道、哪种出海模式，缺乏明确方向。' },
-                { icon: Database, num: '2', title: '资料不全', desc: '企业介绍、产品资料、案例内容、技术说明等准备不足，无法支撑海外市场启动。' },
-                { icon: MessageCircle, num: '3', title: '表达不专业', desc: '缺少面向海外客户的专业表达，企业价值、产品优势、服务能力说不清，难以建立第一轮信任。' },
-                { icon: Shield, num: '4', title: '配套缺失', desc: '在认证、资质、进出口、关务、海外仓、海外收款等环节上缺少经验和资源，出海落地困难。' }
-              ].map(({ icon: Icon, num, title, desc }) => (
-                <div
-                  key={title}
-                  className="rounded-xl p-5 flex gap-4"
-                  style={{
-                    background: colors.bg.primary,
-                    border: `1px solid ${colors.border.light}`,
-                  }}
-                >
-                  <div className="flex-shrink-0">
-                    <Icon className="w-6 h-6" style={{ color: colors.data.neutral }} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <span className="text-xs font-bold px-2 py-0.5 rounded" style={{ background: colors.border.medium, color: colors.brand.primary }}>{num}</span>
-                      <h3 className="font-bold" style={{ color: colors.text.primary }}>{title}</h3>
-                    </div>
-                    <p className="text-sm leading-relaxed" style={{ color: colors.text.secondary }}>{desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* 第二部分：外部启动困难 */}
-          <div className="mb-10">
-            <div className="text-center mb-6">
-              <h3 className="text-lg font-bold" style={{ color: colors.text.primary }}>
-                第二部分：外部启动困难
-              </h3>
-              <p className="text-sm mt-1" style={{ color: colors.text.muted }}>
-                市场还没有真正跑起来
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {[
-                { icon: Search, num: '5', title: '获客无从下手', desc: '不知道该从 SEO、广告、社媒、展会、平台还是主动开发切入，渠道选择混乱，启动效率低。' },
-                { icon: BarChart, num: '6', title: '投入门槛高', desc: '建团队、跑展会、买平台、做推广都需要持续投入，前期成本高，试错压力大。' },
-                { icon: Target, num: '7', title: '冷启动困难', desc: '没有稳定渠道，没有品牌基础，也缺乏海外客户触达能力，第一批客户难启动。' },
-                { icon: Users, num: '8', title: '人员依赖', desc: '过度依赖业务员个人能力和经验，一旦换人，客户沟通、资源积累和推进能力都容易中断。' }
-              ].map(({ icon: Icon, num, title, desc }) => (
-                <div
-                  key={title}
-                  className="rounded-xl p-5 flex gap-4"
-                  style={{
-                    background: colors.bg.primary,
-                    border: `1px solid ${colors.border.light}`,
-                  }}
-                >
-                  <div className="flex-shrink-0">
-                    <Icon className="w-6 h-6" style={{ color: colors.data.neutral }} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <span className="text-xs font-bold px-2 py-0.5 rounded" style={{ background: colors.border.medium, color: colors.brand.primary }}>{num}</span>
-                      <h3 className="font-bold" style={{ color: colors.text.primary }}>{title}</h3>
-                    </div>
-                    <p className="text-sm leading-relaxed" style={{ color: colors.text.secondary }}>{desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Solution Highlight */}
-          <div
-            className="rounded-2xl p-6 text-center"
-            style={{
-              background: colors.border.glow,
-              border: `1px solid ${colors.border.medium}`,
-            }}
-          >
-            <p className="text-lg font-medium" style={{ color: colors.brand.primary }}>
-              这些挑战不是靠招人就能解决的，需要专业的判断、指导和系统化的机制。
+        <AnimatedBackground />
+        <div className="relative z-10 mx-auto max-w-6xl">
+          <div className="mx-auto max-w-4xl text-center">
+            <GoldBadge icon={<Sparkles className="h-3.5 w-3.5" />}>
+              Calm Intelligence for industrial global growth
+            </GoldBadge>
+            <h1 className="mt-7 text-4xl font-bold leading-tight text-white sm:text-5xl lg:text-[4rem]">
+              把出海增长从零散动作
+              <br />
+              变成持续运行的智能系统
+            </h1>
+            <p className="mx-auto mt-6 max-w-3xl text-base leading-8 text-slate-300 sm:text-lg">
+              VertaX 不是把 AI 贴在旧流程上，而是把知识、内容、机会发现、跟进动作和管理视图组织成同一个
+              AI-native 工作界面。
             </p>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Core Value / Three Pillars ── */}
-      <section
-        className="py-16 sm:py-20 px-4 sm:px-6"
-        style={{
-          background: 'linear-gradient(180deg, #0B1220 0%, #0D1526 100%)',
-        }}
-      >
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-16">
-            <span
-              className="text-xs font-bold uppercase tracking-widest mb-3 inline-block"
-              style={{ color: colors.brand.primary }}
-            >
-              核心价值
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4">
-              把一家想出海的企业，变成一家能出海的企业
-            </h2>
-          </div>
-
-          {/* Pillar 1: 专业化表达 */}
-          <div className="mb-12">
-            <div className="text-center mb-6">
-              <h3 className="text-xl font-bold text-white">专业化表达</h3>
-              <p className="text-sm mt-1" style={{ color: colors.brand.primary }}>让专业，被客户一眼看见</p>
-              <p className="text-sm mt-2" style={{ color: colors.text.muted }}>
-                把企业、产品与服务能力，转化为清晰、专业、可信的海外表达。
-              </p>
+            <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <GoldButton href="/contact" icon={<ArrowRight className="h-4 w-4" />} size="large">
+                预约演示
+              </GoldButton>
+              <OutlineButton dark href="/features">
+                查看产品能力
+              </OutlineButton>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div className="rounded-xl p-5" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                <Brain className="w-7 h-7 mb-3" style={{ color: colors.brand.primary }} />
-                <h4 className="font-bold text-white mb-2">知识引擎</h4>
-                <p className="text-sm text-gray-400">沉淀企业、产品、资质、行业认知，形成统一表达基础。</p>
-              </div>
-              <div className="rounded-xl p-5" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                <Megaphone className="w-7 h-7 mb-3" style={{ color: colors.brand.primary }} />
-                <h4 className="font-bold text-white mb-2">声量枢纽</h4>
-                <p className="text-sm text-gray-400">把专业内容持续输出到目标市场，建立品牌声量与信任感。</p>
-              </div>
+            <div className="mt-10">
+              <TrustIndicators />
             </div>
           </div>
 
-          {/* Pillar 2: 体系化启动 */}
-          <div className="mb-12">
-            <div className="text-center mb-6">
-              <h3 className="text-xl font-bold text-white">体系化启动</h3>
-              <p className="text-sm mt-1" style={{ color: colors.brand.secondary }}>让出海营销与获客真正启动</p>
-              <p className="text-sm mt-2" style={{ color: colors.text.muted }}>
-                围绕内容、渠道与客户触达，推动出海动作从想法走向执行。
-              </p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div className="rounded-xl p-5" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                <TrendingUp className="w-7 h-7 mb-3" style={{ color: colors.brand.secondary }} />
-                <h4 className="font-bold text-white mb-2">增长系统</h4>
-                <p className="text-sm text-gray-400">持续做多语言内容与 SEO 布局，形成长期获客入口。</p>
-              </div>
-              <div className="rounded-xl p-5" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                <Radar className="w-7 h-7 mb-3" style={{ color: colors.brand.secondary }} />
-                <h4 className="font-bold text-white mb-2">获客雷达</h4>
-                <p className="text-sm text-gray-400">识别目标客户，发现线索并推动主动触达。</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Pillar 3: 组织化沉淀 */}
-          <div>
-            <div className="text-center mb-6">
-              <h3 className="text-xl font-bold text-white">组织化沉淀</h3>
-              <p className="text-sm mt-1" style={{ color: colors.brand.accent }}>让每一次动作都成为能力</p>
-              <p className="text-sm mt-2" style={{ color: colors.text.muted }}>
-                把资料、反馈、协同与结果沉淀为可复用的组织资产。
-              </p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div className="rounded-xl p-5" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                <Send className="w-7 h-7 mb-3" style={{ color: colors.brand.accent }} />
-                <h4 className="font-bold text-white mb-2">推进中台</h4>
-                <p className="text-sm text-gray-400">承接企业与系统之间的协同互动，对内容进行校正和补充，推动产出真正符合行业与企业实际。</p>
-              </div>
-              <div className="rounded-xl p-5" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                <BarChart3 className="w-7 h-7 mb-3" style={{ color: colors.brand.accent }} />
-                <h4 className="font-bold text-white mb-2">决策中心</h4>
-                <p className="text-sm text-gray-400">统一呈现投入、节奏、产出与结果，让每一步都更清晰、更可判断。</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Comparison ── */}
-      <section className="py-16 sm:py-20 px-4 sm:px-6" style={{ background: colors.bg.primary }}>
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-12">
-            <span
-              className="text-xs font-bold uppercase tracking-widest mb-3 inline-block"
-              style={{ color: colors.brand.primary }}
-            >
-              方案对比
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-bold" style={{ color: colors.text.primary }}>
-              VertaX vs 传统方案
-            </h2>
-          </div>
-
-          {/* Mobile Cards */}
-          <div className="md:hidden space-y-3">
-            {[
-              { dim: '获客方式', traditional: '散点式投放、展会、平台', vertax: '系统化增长飞轮' },
-              { dim: '知识管理', traditional: '散落在个人电脑或表格', vertax: '结构化知识引擎' },
-              { dim: '内容生产', traditional: '外包或临时创作', vertax: '持续 SEO 内容资产' },
-              { dim: '客户识别', traditional: '靠经验判断，无标准', vertax: 'ICP + 分层判断模型' },
-              { dim: '协同方式', traditional: '微信群 + 表格', vertax: '系统化推进流程' },
-              { dim: '效果评估', traditional: '模糊，难归因', vertax: '全链路数据，可追溯' },
-              { dim: '资产沉淀', traditional: '人员离职即归零', vertax: '组织知识，可持续复用' }
-            ].map(({ dim, traditional, vertax }) => (
-              <div
-                key={dim}
-                className="rounded-xl p-4"
-                style={{
-                  background: colors.bg.secondary,
-                  border: `1px solid ${colors.border.light}`,
-                }}
-              >
-                <p className="font-bold mb-3" style={{ color: colors.text.primary }}>{dim}</p>
-                <div className="space-y-2">
-                  <div className="flex items-start gap-2">
-                    <span className="text-xs px-1.5 py-0.5 rounded shrink-0" style={{ background: 'rgba(107,114,128,0.1)', color: colors.text.muted }}>传统</span>
-                    <span className="text-sm" style={{ color: colors.text.secondary }}>{traditional}</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span className="text-xs px-1.5 py-0.5 rounded shrink-0 font-medium" style={{ background: colors.border.glow, color: colors.brand.primary }}>VertaX</span>
-                    <span className="text-sm font-medium" style={{ color: colors.brand.primary }}>{vertax}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Desktop Table */}
-          <div className="hidden md:block overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr style={{ borderBottom: `1px solid ${colors.border.light}` }}>
-                  <th className="text-left py-4 px-4 font-bold" style={{ color: colors.text.primary }}>维度</th>
-                  <th className="text-center py-4 px-4 font-bold" style={{ color: colors.text.muted }}>传统方案</th>
-                  <th className="text-center py-4 px-4 font-bold" style={{ color: colors.brand.primary }}>VertaX</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[
-                  ['获客方式', '散点式投放、展会、平台', '系统化增长飞轮'],
-                  ['知识管理', '散落在个人电脑或表格', '结构化知识引擎'],
-                  ['内容生产', '外包或临时创作', '持续 SEO 内容资产'],
-                  ['客户识别', '靠经验判断，无标准', 'ICP + 分层判断模型'],
-                  ['协同方式', '微信群 + 表格', '系统化推进流程'],
-                  ['效果评估', '模糊，难归因', '全链路数据，可追溯'],
-                  ['资产沉淀', '人员离职即归零', '组织知识，可持续复用']
-                ].map(([dim, traditional, vertax]) => (
-                  <tr key={dim} style={{ borderBottom: `1px solid ${colors.border.light}` }}>
-                    <td className="py-4 px-4 font-medium" style={{ color: colors.text.primary }}>{dim}</td>
-                    <td className="py-4 px-4 text-center" style={{ color: colors.text.muted }}>{traditional}</td>
-                    <td className="py-4 px-4 text-center font-medium" style={{ color: colors.brand.primary }}>{vertax}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Social Proof ── */}
-      <section className="py-16 sm:py-20 px-4 sm:px-6" style={{ background: '#FFFFFF' }}>
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-12">
-            <span
-              className="text-xs font-bold uppercase tracking-widest mb-3 inline-block"
-              style={{ color: colors.brand.primary }}
-            >
-              实力验证
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-bold" style={{ color: colors.text.primary }}>
-              数字背后的实力
-            </h2>
-          </div>
-
-          {/* Stats Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
-            {[
-              { value: '11', unit: '个', label: '全球市场区域覆盖' },
-              { value: '6', unit: '大模块', label: '一站式增长闭环' },
-              { value: '7×24', unit: 'h', label: 'AI 智能体在线' },
-              { value: '<1', unit: 'min', label: '从资料到画像' },
-            ].map((s, i) => (
-              <div
-                key={i}
-                className="text-center p-5 rounded-2xl"
-                style={{
-                  background: colors.bg.primary,
-                  border: `1px solid ${colors.border.light}`,
-                }}
-              >
-                <div className="text-3xl font-bold mb-1" style={{ color: colors.brand.primary }}>
-                  {s.value}<span className="text-base text-gray-400 ml-0.5">{s.unit}</span>
-                </div>
-                <p className="text-xs font-medium" style={{ color: colors.text.primary }}>{s.label}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Industry Coverage */}
-          <div
-            className="rounded-2xl p-6 mb-10"
-            style={{
-              background: colors.bg.primary,
-              border: `1px solid ${colors.border.light}`,
-            }}
+          <SurfacePanel
+            className="mt-14 backdrop-blur-[16px]"
+            dark
+            padding="compact"
           >
-            <p className="font-semibold mb-4" style={{ color: colors.text.primary }}>已覆盖行业</p>
-            <div className="flex flex-wrap gap-2">
-              {['工业自动化', '机械装备', '新能源', '电子元器件', '医疗器械', '化工新材料',
-                '汽车零部件', '建筑建材', '物流装备', 'IoT 智能硬件', 'SaaS 技术服务', '环保设备'].map((ind) => (
-                <span
-                  key={ind}
-                  className="px-3 py-1.5 text-xs rounded-lg"
+            <div className="grid gap-4 lg:grid-cols-[1.3fr_0.92fr]">
+              <div
+                className="rounded-[26px] border p-5"
+                style={{
+                  background: '#F8FBFF',
+                  borderColor: colors.border.light,
+                }}
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <span
+                    className="rounded-full px-3 py-1 text-[11px] font-medium"
+                    style={{
+                      background: colors.border.glow,
+                      color: colors.brand.primary,
+                    }}
+                  >
+                    AI workspace
+                  </span>
+                  <span
+                    className="rounded-full px-3 py-1 text-[11px] font-medium"
+                    style={{
+                      background: 'rgba(15, 23, 42, 0.06)',
+                      color: colors.text.secondary,
+                    }}
+                  >
+                    ICP / 内容 / 线索 / 动作
+                  </span>
+                </div>
+
+                <div
+                  className="mt-4 rounded-[22px] border px-4 py-4"
                   style={{
                     background: colors.bg.secondary,
-                    border: `1px solid ${colors.border.light}`,
-                    color: colors.text.secondary,
+                    borderColor: colors.border.light,
                   }}
                 >
-                  {ind}
-                </span>
+                  <p className="text-xs uppercase tracking-[0.18em]" style={{ color: colors.text.muted }}>
+                    Quick ask
+                  </p>
+                  <p className="mt-2 text-sm font-medium leading-7" style={{ color: colors.text.primary }}>
+                    本周欧洲市场里，哪些工业自动化买家最值得优先跟进？
+                  </p>
+                </div>
+
+                <div className="mt-4 space-y-3">
+                  <div
+                    className="rounded-[22px] border px-4 py-4"
+                    style={{
+                      background: colors.bg.elevated,
+                      borderColor: colors.border.light,
+                    }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Brain className="h-4 w-4" style={{ color: colors.brand.primary }} />
+                      <p className="text-sm font-semibold" style={{ color: colors.text.primary }}>
+                        知识引擎摘要
+                      </p>
+                    </div>
+                    <p className="mt-3 text-sm leading-7" style={{ color: colors.text.secondary }}>
+                      系统已识别 3 个高意向主题：自动化改造、节拍提升、替代欧洲本地供应商。
+                    </p>
+                  </div>
+
+                  <div
+                    className="overflow-hidden rounded-[22px] border"
+                    style={{
+                      background: colors.bg.elevated,
+                      borderColor: colors.border.light,
+                    }}
+                  >
+                    <div
+                      className="px-4 py-3 text-sm font-semibold"
+                      style={{
+                        background: 'rgba(15, 23, 42, 0.04)',
+                        color: colors.text.primary,
+                      }}
+                    >
+                      机会列表
+                    </div>
+                    {opportunitySignals.map((item, index) => (
+                      <div
+                        className="flex items-start gap-3 px-4 py-3"
+                        key={item}
+                        style={{
+                          borderTop: index === 0 ? undefined : `1px solid ${colors.border.light}`,
+                        }}
+                      >
+                        <Radar className="mt-0.5 h-4 w-4 shrink-0" style={{ color: colors.brand.secondary }} />
+                        <p className="text-sm leading-7" style={{ color: colors.text.secondary }}>
+                          {item}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-4">
+                <div
+                  className="rounded-[26px] border px-5 py-5"
+                  style={{
+                    background: 'rgba(248, 251, 255, 0.08)',
+                    borderColor: colors.border.brand,
+                  }}
+                >
+                  <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Assistant layer</p>
+                  <h3 className="mt-3 text-xl font-semibold text-white">
+                    像 ChatGPT 一样可对话，像 Notion 一样可组织
+                  </h3>
+                  <p className="mt-3 text-sm leading-7 text-slate-300">
+                    AI 不再是一个悬浮按钮，而是贯穿在界面里的原生工作层。
+                  </p>
+                </div>
+
+                <div
+                  className="overflow-hidden rounded-[26px] border"
+                  style={{
+                    background: colors.bg.elevated,
+                    borderColor: colors.border.light,
+                  }}
+                >
+                  <div className="px-5 py-4">
+                    <div className="flex items-center gap-2">
+                      <Layers className="h-4 w-4" style={{ color: colors.brand.primary }} />
+                      <p className="text-sm font-semibold" style={{ color: colors.text.primary }}>
+                        统一表面语言
+                      </p>
+                    </div>
+                  </div>
+                  {[
+                    '每个模块都有一致的层级、边框、状态和动作语言。',
+                    '信息扫描更快，管理层和执行层都能在 5 秒内读懂页面。',
+                    '品牌金只做点缀，不再承担主交互角色。',
+                  ].map((item) => (
+                    <div
+                      className="flex items-start gap-3 px-5 py-4"
+                      key={item}
+                      style={{
+                        borderTop: `1px solid ${colors.border.light}`,
+                      }}
+                    >
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" style={{ color: colors.data.positive }} />
+                      <p className="text-sm leading-7" style={{ color: colors.text.secondary }}>
+                        {item}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </SurfacePanel>
+        </div>
+      </section>
+
+      <section className="px-4 py-16 sm:px-6 sm:py-20" style={{ background: colors.bg.primary }}>
+        <div className="mx-auto max-w-6xl">
+          <MetricBand items={proofStats} />
+        </div>
+      </section>
+
+      <section className="px-4 py-16 sm:px-6 sm:py-20" style={{ background: colors.bg.tertiary }}>
+        <div className="mx-auto max-w-6xl">
+          <SectionHeader
+            align="left"
+            badge="Why It Breaks"
+            subtitle="很多团队的问题不是不努力，而是增长动作仍然停留在碎片化阶段。"
+            title="旧流程为什么越来越难支撑出海增长"
+          />
+          <SurfacePanel>
+            <div className="divide-y" style={{ borderColor: colors.border.light }}>
+              {painPoints.map((item, index) => (
+                <div className="grid gap-4 py-5 md:grid-cols-[100px_1fr]" key={item.title}>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em]" style={{ color: colors.text.muted }}>
+                      0{index + 1}
+                    </p>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
+                      {item.title}
+                    </h3>
+                    <p className="mt-2 text-sm leading-7" style={{ color: colors.text.secondary }}>
+                      {item.description}
+                    </p>
+                  </div>
+                </div>
               ))}
             </div>
-          </div>
-
-          {/* Testimonials */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {[
-              {
-                quote: '以前找客户靠展会和老关系，现在系统每周自动推送精准线索，我们只需要做筛选和跟进。',
-                role: '某自动化设备企业',
-                person: '海外事业部负责人',
-              },
-              {
-                quote: '最意外的是知识引擎——把我们十几年的产品资料吃透了，生成的客户画像比我们自己写的还准。',
-                role: '某新能源装备企业',
-                person: '市场总监',
-              },
-              {
-                quote: '终于有一个系统能让我看到整个出海获客链路的全貌，而不是各个岗位各报各的。',
-                role: '某工业集团',
-                person: '副总裁',
-              },
-            ].map((t, i) => (
-              <div
-                key={i}
-                className="rounded-2xl p-6"
-                style={{
-                  background: colors.bg.primary,
-                  border: `1px solid ${colors.border.light}`,
-                }}
-              >
-                <p className="text-sm leading-relaxed mb-4" style={{ color: colors.text.primary }}>
-                  &ldquo;{t.quote}&rdquo;
-                </p>
-                <div>
-                  <p className="text-xs font-medium" style={{ color: colors.text.primary }}>{t.person}</p>
-                  <p className="text-xs" style={{ color: colors.text.muted }}>{t.role}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+          </SurfacePanel>
         </div>
       </section>
 
-      {/* ── CTA Section ── */}
-      <section
-        className="py-20 sm:py-28 px-4 sm:px-6"
-        style={{
-          background: 'linear-gradient(180deg, #0B1220 0%, #0D1526 100%)',
-        }}
-      >
-        <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4">
-            预约演示，拿到你行业的 GTM 路径样板
+      <section className="px-4 py-16 sm:px-6 sm:py-20" style={{ background: colors.bg.primary }}>
+        <div className="mx-auto max-w-6xl">
+          <SectionHeader
+            align="left"
+            badge="Operating Surfaces"
+            subtitle="VertaX 把增长拆成几块可复用、可协同、可持续优化的系统表面。"
+            title="一套更像产品，而不是工具拼盘的增长界面"
+          />
+          <SurfacePanel>
+            <div className="grid gap-3 md:grid-cols-2">
+              {operatingSurfaces.map((surface, index) => (
+                <div
+                  className="rounded-[22px] border px-5 py-5"
+                  key={surface.title}
+                  style={{
+                    background: index === 0 ? colors.border.glow : colors.bg.secondary,
+                    borderColor: index === 0 ? colors.border.brand : colors.border.light,
+                  }}
+                >
+                  <div className="flex items-start gap-4">
+                    <div
+                      className="flex h-11 w-11 items-center justify-center rounded-2xl"
+                      style={{
+                        background: colors.border.glow,
+                        border: `1px solid ${colors.border.brand}`,
+                      }}
+                    >
+                      <surface.icon className="h-5 w-5" style={{ color: colors.brand.primary }} />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
+                        {surface.title}
+                      </h3>
+                      <p className="mt-2 text-sm leading-7" style={{ color: colors.text.secondary }}>
+                        {surface.summary}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </SurfacePanel>
+        </div>
+      </section>
+
+      <section className="px-4 py-16 sm:px-6 sm:py-20" style={{ background: colors.bg.darkGradient }}>
+        <div className="mx-auto max-w-5xl">
+          <SectionHeader
+            badge="How It Works"
+            dark
+            subtitle="从上下文、识别到执行，让每一步都在同一个系统中衔接。"
+            title="VertaX 的工作方式更像一个智能循环"
+          />
+          <SurfacePanel dark>
+            <div className="space-y-4">
+              {workflowSteps.map((item, index) => (
+                <div
+                  className="grid gap-4 rounded-[22px] px-4 py-4 md:grid-cols-[120px_1fr]"
+                  key={item.title}
+                  style={{
+                    background: 'rgba(248, 251, 255, 0.04)',
+                    border: '1px solid rgba(248, 251, 255, 0.08)',
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <Compass className="h-4 w-4" style={{ color: colors.brand.secondary }} />
+                    <span className="text-sm font-semibold text-white">0{index + 1}</span>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">{item.title}</h3>
+                    <p className="mt-2 text-sm leading-7 text-slate-300">{item.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </SurfacePanel>
+        </div>
+      </section>
+
+      <section className="px-4 py-20 sm:px-6 sm:py-24" style={{ background: colors.bg.primary }}>
+        <div className="mx-auto max-w-4xl text-center">
+          <GoldBadge icon={<FileStack className="h-3.5 w-3.5" />}>Ready to review</GoldBadge>
+          <h2 className="mt-6 text-3xl font-bold sm:text-4xl" style={{ color: colors.text.primary }}>
+            如果你们要的是一套更像科技产品的出海系统
           </h2>
-          <p className="text-gray-400 mb-8 text-sm sm:text-base">
-            我们会根据你的行业、产品和目标市场，提供针对性的增长建议。
+          <p className="mx-auto mt-4 max-w-2xl text-base leading-8" style={{ color: colors.text.secondary }}>
+            我们就不再把页面做成传统企业展示站，而是把它做成一个能让董事会和执行团队都感到“这套东西真的在工作”的产品界面。
           </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <button
-              onClick={openModal}
-              className="w-full sm:w-auto font-semibold px-8 py-4 rounded-xl transition-all inline-flex items-center justify-center gap-2 text-base hover:scale-105"
-              style={{
-                background: colors.brand.gradient,
-                color: colors.text.inverse,
-                boxShadow: shadows.glowLg,
-              }}
-            >
-              预约演示 <ArrowRight className="w-4 h-4" />
-            </button>
-            <button
-              onClick={openModal}
-              className="w-full sm:w-auto border px-8 py-4 rounded-xl transition-colors font-medium text-base text-white hover:bg-white/5"
-              style={{ borderColor: colors.border.strong }}
-            >
-              获取行业方案
-            </button>
+          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <GoldButton href="/contact" icon={<ArrowRight className="h-4 w-4" />} size="large">
+              预约演示
+            </GoldButton>
+            <OutlineButton dark={false} href="/pricing">
+              查看合作方式
+            </OutlineButton>
           </div>
         </div>
       </section>
-
-      {/* ── Footer ── */}
-      <footer
-        className="py-12 px-4 sm:px-6"
-        style={{
-          background: colors.bg.dark,
-          borderTop: `1px solid ${colors.border.brand}`,
-        }}
-      >
-        <div className="max-w-6xl mx-auto">
-          {/* Desktop Layout */}
-          <div className="hidden md:flex items-start justify-between gap-8">
-            {/* Logo & Copyright */}
-            <div className="flex flex-col gap-4">
-              <Link href="/" className="flex items-center gap-3">
-                <div
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-black"
-                  style={{
-                    background: colors.brand.gradient,
-                    color: colors.text.inverse,
-                  }}
-                >
-                  V
-                </div>
-                <span className="text-base font-bold text-white">VertaX</span>
-              </Link>
-              <p className="text-xs text-gray-600">&copy; {new Date().getFullYear()} VERTAX LIMITED</p>
-            </div>
-
-            {/* Navigation */}
-            <div className="flex gap-12 text-sm">
-              <div className="flex flex-col gap-3">
-                <span className="text-xs font-bold uppercase tracking-wider" style={{ color: colors.brand.primary }}>产品</span>
-                <a href="/features" className="text-gray-400 hover:text-white transition-colors">产品功能</a>
-                <a href="/features/modules" className="text-gray-400 hover:text-white transition-colors">六大模块</a>
-                <a href="/pricing" className="text-gray-400 hover:text-white transition-colors">价格</a>
-              </div>
-              <div className="flex flex-col gap-3">
-                <span className="text-xs font-bold uppercase tracking-wider" style={{ color: colors.brand.primary }}>解决方案</span>
-                <a href="/solutions" className="text-gray-400 hover:text-white transition-colors">解决方案</a>
-                <a href="/cases" className="text-gray-400 hover:text-white transition-colors">客户案例</a>
-              </div>
-              <div className="flex flex-col gap-3">
-                <span className="text-xs font-bold uppercase tracking-wider" style={{ color: colors.brand.primary }}>关于</span>
-                <a href="/about/what-is-vertax" className="text-gray-400 hover:text-white transition-colors">关于我们</a>
-                <a href="/faq" className="text-gray-400 hover:text-white transition-colors">常见问题</a>
-              </div>
-              <div className="flex flex-col gap-3">
-                <span className="text-xs font-bold uppercase tracking-wider" style={{ color: colors.brand.primary }}>联系</span>
-                <span className="text-gray-500">contact@vertax.top</span>
-                <a href="/en" className="text-gray-400 hover:text-white transition-colors">English</a>
-              </div>
-            </div>
-
-            {/* QR Codes */}
-            <div className="flex items-center gap-4">
-              <div className="flex flex-col items-center gap-1">
-                <Image src="/wechat-qr.jpg" alt="微信公众号" width={64} height={64} className="w-16 h-16 rounded-lg" />
-                <span className="text-[10px] text-gray-600">微信公众号</span>
-              </div>
-              <div className="flex flex-col items-center gap-1">
-                <Image src="/contact-wechat.jpg" alt="业务联系人微信" width={64} height={64} className="w-16 h-16 rounded-lg" />
-                <span className="text-[10px] text-gray-600">业务联系</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Mobile Layout */}
-          <div className="md:hidden space-y-6">
-            <div className="flex items-center justify-between">
-              <Link href="/" className="flex items-center gap-2">
-                <div
-                  className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black"
-                  style={{
-                    background: colors.brand.gradient,
-                    color: colors.text.inverse,
-                  }}
-                >
-                  V
-                </div>
-                <span className="text-sm font-bold text-white">VertaX</span>
-              </Link>
-              <span className="text-xs text-gray-600">&copy; {new Date().getFullYear()} VERTAX LIMITED</span>
-            </div>
-
-            {/* Quick Links */}
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <a href="/features" className="text-gray-400 py-2">产品功能</a>
-              <a href="/solutions" className="text-gray-400 py-2">解决方案</a>
-              <a href="/cases" className="text-gray-400 py-2">客户案例</a>
-              <a href="/pricing" className="text-gray-400 py-2">价格</a>
-              <a href="/about/what-is-vertax" className="text-gray-400 py-2">关于我们</a>
-              <a href="/faq" className="text-gray-400 py-2">常见问题</a>
-            </div>
-
-            {/* Contact & QR */}
-            <div className="flex items-center justify-between pt-4 border-t border-white/5">
-              <span className="text-xs text-gray-500">contact@vertax.top</span>
-              <div className="flex items-center gap-3">
-                <div className="flex flex-col items-center gap-1">
-                  <Image src="/wechat-qr.jpg" alt="微信公众号" width={48} height={48} className="w-12 h-12 rounded" />
-                  <span className="text-[10px] text-gray-600">公众号</span>
-                </div>
-                <div className="flex flex-col items-center gap-1">
-                  <Image src="/contact-wechat.jpg" alt="业务联系人微信" width={48} height={48} className="w-12 h-12 rounded" />
-                  <span className="text-[10px] text-gray-600">业务联系</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </footer>
-    </div>
+    </MarketingPageWrapper>
   );
 }

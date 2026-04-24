@@ -148,7 +148,7 @@ export default function FaqPage() {
         {/* Hero Section */}
         <section
           className="pt-16 pb-12 px-4 sm:px-6"
-          style={{ background: 'linear-gradient(180deg, #0B1220 0%, #0D1526 50%, #F7F3EA 100%)' }}
+          style={{ background: colors.bg.heroGradient }}
         >
           <div className="max-w-3xl mx-auto">
             <GoldBadge icon={<MessageSquare className="w-3.5 h-3.5" />}>

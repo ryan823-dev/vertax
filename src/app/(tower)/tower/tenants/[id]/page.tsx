@@ -6,15 +6,18 @@ import { toast } from "sonner";
 import {
   ArrowLeft,
   ExternalLink,
-  Package,
   FileText,
+  Package,
   Share2,
   UserSearch,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { getTenantDetail, updateTenantStatus } from "@/actions/admin";
+import {
+  getTenantEmailConfig,
+  updateTenantEmailConfig,
+} from "@/actions/admin-email-config";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -24,11 +27,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { getTenantDetail, updateTenantStatus } from "@/actions/admin";
-import {
-  updateTenantEmailConfig,
-  getTenantEmailConfig,
-} from "@/actions/admin-email-config";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 type TenantDetail = {
   id: string;
@@ -53,10 +53,24 @@ type TenantDetail = {
   };
 };
 
-const PLAN_LABELS: Record<string, string> = {
-  free: "免费版",
-  pro: "专业版",
-  enterprise: "企业版",
+type EmailConfigState = {
+  website: string;
+  resendApiKey: string;
+  fromEmail: string;
+  replyToEmail: string;
+  hasResendApiKey: boolean;
+  resendApiKeyPrefix: string;
+  usePlatformKey: boolean;
+};
+
+const emptyEmailConfig: EmailConfigState = {
+  website: "",
+  resendApiKey: "",
+  fromEmail: "",
+  replyToEmail: "",
+  hasResendApiKey: false,
+  resendApiKeyPrefix: "",
+  usePlatformKey: true,
 };
 
 export default function TenantDetailPage() {
@@ -67,28 +81,23 @@ export default function TenantDetailPage() {
   const [tenant, setTenant] = useState<TenantDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [statusLoading, setStatusLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<"info" | "email" | "users">("info");
-
-  // Email config state
-  const [emailConfig, setEmailConfig] = useState({
-    website: "",
-    resendApiKey: "",
-    fromEmail: "",
-    replyToEmail: "",
-    hasResendApiKey: false,
-    resendApiKeyPrefix: "",
-    usePlatformKey: true,
-  });
+  const [activeTab, setActiveTab] = useState<"info" | "email" | "users">(
+    "info"
+  );
+  const [emailConfig, setEmailConfig] =
+    useState<EmailConfigState>(emptyEmailConfig);
   const [configSaving, setConfigSaving] = useState(false);
 
   useEffect(() => {
     async function load() {
       try {
-        const [data, emailResult] = await Promise.all([
+        const [tenantData, emailResult] = await Promise.all([
           getTenantDetail(tenantId),
           getTenantEmailConfig(tenantId),
         ]);
-        setTenant(data as TenantDetail | null);
+
+        setTenant(tenantData as TenantDetail | null);
+
         if (emailResult.success && emailResult.config) {
           setEmailConfig({
             website: emailResult.config.website || "",
@@ -101,23 +110,30 @@ export default function TenantDetailPage() {
           });
         }
       } catch {
-        // error
+        // Ignore and show fallback state.
       } finally {
         setLoading(false);
       }
     }
+
     load();
   }, [tenantId]);
 
   async function handleToggleStatus() {
-    if (!tenant) return;
+    if (!tenant) {
+      return;
+    }
+
     setStatusLoading(true);
     const newStatus = tenant.status === "active" ? "suspended" : "active";
+
     try {
       const result = await updateTenantStatus(tenant.id, newStatus);
       if (result.success) {
         setTenant({ ...tenant, status: newStatus });
-        toast.success(newStatus === "active" ? "已激活租户" : "已暂停租户");
+        toast.success(newStatus === "active" ? "租户已激活" : "租户已暂停");
+      } else {
+        toast.error("操作失败");
       }
     } catch {
       toast.error("操作失败");
@@ -128,6 +144,7 @@ export default function TenantDetailPage() {
 
   async function handleSaveEmail() {
     setConfigSaving(true);
+
     try {
       const result = await updateTenantEmailConfig(tenantId, {
         website: emailConfig.website || undefined,
@@ -135,20 +152,22 @@ export default function TenantDetailPage() {
         fromEmail: emailConfig.fromEmail || undefined,
         replyToEmail: emailConfig.replyToEmail || undefined,
       });
-      if (result.success) {
-        toast.success("邮件配置已保存");
-        const reload = await getTenantEmailConfig(tenantId);
-        if (reload.success && reload.config) {
-          setEmailConfig((prev) => ({
-            ...prev,
-            resendApiKey: "",
-            hasResendApiKey: reload.config!.hasResendApiKey,
-            resendApiKeyPrefix: reload.config!.resendApiKeyPrefix || "",
-            usePlatformKey: reload.config!.usePlatformKey,
-          }));
-        }
-      } else {
+
+      if (!result.success) {
         toast.error(result.error || "保存失败");
+        return;
+      }
+
+      toast.success("邮件配置已保存");
+      const reload = await getTenantEmailConfig(tenantId);
+      if (reload.success && reload.config) {
+        setEmailConfig((prev) => ({
+          ...prev,
+          resendApiKey: "",
+          hasResendApiKey: reload.config?.hasResendApiKey ?? false,
+          resendApiKeyPrefix: reload.config?.resendApiKeyPrefix || "",
+          usePlatformKey: reload.config?.usePlatformKey ?? true,
+        }));
       }
     } catch {
       toast.error("保存失败");
@@ -172,7 +191,7 @@ export default function TenantDetailPage() {
           className="mt-4"
           onClick={() => router.push("/tower")}
         >
-          返回概览
+          返回总览
         </Button>
       </div>
     );
@@ -180,7 +199,6 @@ export default function TenantDetailPage() {
 
   const isActive = tenant.status === "active";
   const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || "vertax.top";
-
   const tabs = [
     { key: "info" as const, label: "基本信息" },
     { key: "email" as const, label: "邮件配置" },
@@ -189,48 +207,48 @@ export default function TenantDetailPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button
             onClick={() => router.push("/tower")}
-            className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+            className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
             aria-label="返回"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="h-5 w-5" />
           </button>
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-xl font-bold text-gray-900">{tenant.name}</h1>
               <span
-                className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium ${
+                className={`inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-xs font-medium ${
                   isActive
                     ? "bg-green-50 text-green-600"
                     : "bg-red-50 text-red-500"
                 }`}
               >
                 <span
-                  className={`w-1.5 h-1.5 rounded-full ${
+                  className={`h-1.5 w-1.5 rounded-full ${
                     isActive ? "bg-green-500" : "bg-red-400"
                   }`}
                 />
                 {isActive ? "正常" : "已暂停"}
               </span>
             </div>
-            <p className="text-sm text-gray-400 mt-0.5">
-              {tenant.slug}.{baseDomain} · {PLAN_LABELS[tenant.plan] || tenant.plan} ·
-              创建于 {new Date(tenant.createdAt).toLocaleDateString("zh-CN")}
+            <p className="mt-0.5 text-sm text-gray-400">
+              {tenant.slug}.{baseDomain} · 创建于{" "}
+              {new Date(tenant.createdAt).toLocaleDateString("zh-CN")}
             </p>
           </div>
         </div>
+
         <div className="flex items-center gap-2">
           <a
             href={`https://${tenant.slug}.${baseDomain}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900"
           >
-            <ExternalLink className="w-3.5 h-3.5" />
+            <ExternalLink className="h-3.5 w-3.5" />
             访问工作台
           </a>
           <Dialog>
@@ -239,20 +257,20 @@ export default function TenantDetailPage() {
                 variant={isActive ? "outline" : "default"}
                 size="sm"
                 disabled={statusLoading}
-                className={isActive ? "text-red-600 border-red-200 hover:bg-red-50" : ""}
+                className={
+                  isActive ? "border-red-200 text-red-600 hover:bg-red-50" : ""
+                }
               >
                 {isActive ? "暂停" : "激活"}
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>
-                  {isActive ? "暂停租户" : "激活租户"}
-                </DialogTitle>
+                <DialogTitle>{isActive ? "暂停租户" : "激活租户"}</DialogTitle>
                 <DialogDescription>
                   {isActive
-                    ? "暂停后该租户下所有用户将无法访问系统。"
-                    : "激活后该租户将恢复正常访问。"}
+                    ? "暂停后，该租户下的所有用户都将无法继续访问系统。"
+                    : "激活后，该租户将恢复正常访问。"}
                 </DialogDescription>
               </DialogHeader>
               <DialogFooter>
@@ -269,63 +287,64 @@ export default function TenantDetailPage() {
         </div>
       </div>
 
-      {/* Usage Stats Row */}
       <div className="grid grid-cols-4 gap-4">
         {[
           { icon: Package, label: "产品", value: tenant._count.products },
           { icon: FileText, label: "内容", value: tenant._count.seoContents },
           { icon: Share2, label: "社媒", value: tenant._count.socialPosts },
           { icon: UserSearch, label: "线索", value: tenant._count.leads },
-        ].map((s) => (
+        ].map((item) => (
           <div
-            key={s.label}
-            className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3"
+            key={item.label}
+            className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-4"
           >
-            <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400">
-              <s.icon className="w-4 h-4" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-50 text-gray-400">
+              <item.icon className="h-4 w-4" />
             </div>
             <div>
-              <p className="text-lg font-semibold text-gray-900">{s.value}</p>
-              <p className="text-xs text-gray-400">{s.label}</p>
+              <p className="text-lg font-semibold text-gray-900">{item.value}</p>
+              <p className="text-xs text-gray-400">{item.label}</p>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Tabs */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+      <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
         <div className="flex border-b border-gray-100">
           {tabs.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`px-5 py-3 text-sm font-medium transition-colors relative ${
+              className={`relative px-5 py-3 text-sm font-medium transition-colors ${
                 activeTab === tab.key
                   ? "text-gray-900"
                   : "text-gray-400 hover:text-gray-600"
               }`}
             >
               {tab.label}
-              {activeTab === tab.key && (
+              {activeTab === tab.key ? (
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#D4AF37]" />
-              )}
+              ) : null}
             </button>
           ))}
         </div>
 
         <div className="p-5">
-          {activeTab === "info" && (
-            <div className="grid gap-4 sm:grid-cols-2 max-w-2xl">
+          {activeTab === "info" ? (
+            <div className="grid max-w-2xl gap-4 sm:grid-cols-2">
               <InfoRow label="租户名称" value={tenant.name} />
               <InfoRow label="租户标识" value={tenant.slug} />
               <InfoRow
-                label="套餐"
-                value={PLAN_LABELS[tenant.plan] || tenant.plan}
+                label="租户套餐"
+                value={
+                  tenant.plan === "free"
+                    ? "免费版"
+                    : tenant.plan === "pro"
+                      ? "专业版"
+                      : "企业版"
+                }
               />
-              <InfoRow
-                label="外贸域名"
-                value={tenant.domain || "未设置"}
-              />
+              <InfoRow label="外贸域名" value={tenant.domain || "未设置"} />
               <InfoRow
                 label="创建日期"
                 value={new Date(tenant.createdAt).toLocaleDateString("zh-CN")}
@@ -334,10 +353,11 @@ export default function TenantDetailPage() {
                 label="登录地址"
                 value={`${tenant.slug}.${baseDomain}`}
               />
+              <InfoRow label="租户状态" value={isActive ? "正常" : "已暂停"} />
             </div>
-          )}
+          ) : null}
 
-          {activeTab === "email" && (
+          {activeTab === "email" ? (
             <div className="max-w-2xl space-y-5">
               <div className="grid gap-5 sm:grid-cols-2">
                 <div className="space-y-2">
@@ -404,15 +424,16 @@ export default function TenantDetailPage() {
                   />
                 </div>
               </div>
+
               <div className="flex justify-end">
                 <Button onClick={handleSaveEmail} disabled={configSaving}>
                   {configSaving ? "保存中..." : "保存配置"}
                 </Button>
               </div>
             </div>
-          )}
+          ) : null}
 
-          {activeTab === "users" && (
+          {activeTab === "users" ? (
             <div className="overflow-x-auto">
               {tenant.users.length === 0 ? (
                 <div className="py-12 text-center text-sm text-gray-400">
@@ -421,7 +442,7 @@ export default function TenantDetailPage() {
               ) : (
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-left text-xs text-gray-500 border-b border-gray-100">
+                    <tr className="border-b border-gray-100 text-left text-xs text-gray-500">
                       <th className="pb-3 font-medium">姓名</th>
                       <th className="pb-3 font-medium">邮箱</th>
                       <th className="pb-3 font-medium">角色</th>
@@ -432,7 +453,7 @@ export default function TenantDetailPage() {
                     {tenant.users.map((user) => (
                       <tr key={user.id}>
                         <td className="py-3 font-medium text-gray-900">
-                          {user.name || "—"}
+                          {user.name || "-"}
                         </td>
                         <td className="py-3 text-gray-600">{user.email}</td>
                         <td className="py-3">
@@ -440,7 +461,7 @@ export default function TenantDetailPage() {
                             {user.role.displayName}
                           </Badge>
                         </td>
-                        <td className="py-3 text-gray-400 text-xs">
+                        <td className="py-3 text-xs text-gray-400">
                           {user.lastLoginAt
                             ? new Date(user.lastLoginAt).toLocaleDateString(
                                 "zh-CN"
@@ -453,7 +474,7 @@ export default function TenantDetailPage() {
                 </table>
               )}
             </div>
-          )}
+          ) : null}
         </div>
       </div>
     </div>
