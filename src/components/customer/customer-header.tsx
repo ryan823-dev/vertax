@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { LogOut, Shield } from "lucide-react";
+import { Activity, LogOut, Shield } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { NotificationBell } from "./notification-bell";
 
@@ -22,84 +22,61 @@ export function CustomerHeader({
   };
 
   return (
-    <header
-      className="z-20 flex h-14 shrink-0 items-center justify-between border-b border-[#E2E8F0] pl-14 pr-4 sm:px-5"
-      style={{
-        background: "#FFFFFF",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-      }}
-    >
-      <div className="flex min-w-0 items-center gap-2">
-        <div
-          className="flex min-w-0 items-center gap-2 rounded-lg border border-[#E2E8F0] px-3 py-1.5 text-sm"
-          style={{
-            background: "#F8FAFC",
-          }}
-        >
-          <span className="text-[10px] font-bold uppercase tracking-widest text-[#94A3B8]">
-            项目
-          </span>
-          <span
-            className="max-w-[11rem] truncate text-[13px] font-semibold text-[#0F172A]"
-            title={tenantName}
-          >
-            {tenantName}
-          </span>
-          <span
-            className="hidden rounded px-1.5 py-0.5 font-mono text-[10px] md:inline-flex"
-            style={{
-              background: "rgba(59,130,246,0.08)",
-              color: "#3B82F6",
-              border: "1px solid rgba(59,130,246,0.15)",
-            }}
-          >
-            {tenantSlug}.vertax.top
-          </span>
-        </div>
-
-        <div
-          className="hidden items-center gap-1.5 rounded-lg border border-[rgba(16,185,129,0.15)] px-2.5 py-1 sm:flex"
-          style={{ background: "rgba(16,185,129,0.06)" }}
-        >
-          <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#10B981]" />
-          <span className="text-[10px] font-medium text-[#10B981]">
-            引擎运行中
-          </span>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-2.5">
-        <NotificationBell />
-
-        <div
-          className="hidden select-none items-center gap-2 rounded-xl border border-[rgba(212,175,55,0.2)] pl-1.5 pr-3 py-1 sm:flex"
-          style={{
-            background: "rgba(212,175,55,0.05)",
-          }}
-        >
-          <div
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[10px] font-bold"
-            style={{ background: "#D4AF37", color: "#FFFFFF" }}
-          >
-            决
+    <header className="sticky top-0 z-20 shrink-0 border-b border-[var(--ci-border)] bg-[var(--ci-header-bg)] backdrop-blur-xl">
+      <div className="flex h-16 items-center justify-between gap-3 pl-14 pr-4 sm:px-6">
+        <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+          <div className="ci-panel flex min-w-0 items-center gap-3 rounded-2xl px-3 py-2 sm:px-4">
+            <div className="flex min-w-0 flex-col">
+              <span className="ci-kicker">Workspace</span>
+              <div className="flex min-w-0 items-center gap-2.5">
+                <span
+                  className="max-w-[9rem] truncate text-sm font-semibold text-[var(--ci-text)] sm:max-w-[13rem]"
+                  title={tenantName}
+                >
+                  {tenantName}
+                </span>
+                <span className="hidden rounded-full border border-[rgba(79,141,246,0.18)] bg-[rgba(79,141,246,0.1)] px-2 py-0.5 font-mono text-[11px] text-[var(--ci-accent-strong)] md:inline-flex">
+                  {tenantSlug}.vertax.top
+                </span>
+              </div>
+            </div>
           </div>
-          <div className="hidden items-center gap-1 md:flex">
-            <Shield size={9} style={{ color: "#D4AF37" }} />
-            <span className="text-[11px] font-bold text-[#D4AF37]">
-              决策者
+
+          <div className="hidden items-center gap-2 rounded-full border border-[rgba(15,159,110,0.15)] bg-[rgba(15,159,110,0.08)] px-3 py-2 md:flex">
+            <Activity size={14} className="text-[var(--ci-success)]" />
+            <span className="text-xs font-medium text-[var(--ci-success)]">
+              引擎在线
             </span>
           </div>
         </div>
 
-        <button
-          onClick={handleSignOut}
-          disabled={isSigningOut}
-          className="flex items-center gap-1.5 rounded-lg border border-[#E2E8F0] px-3 py-1.5 text-sm text-[#475569] transition-all hover:bg-[#F1F5F9] disabled:opacity-50"
-          title="退出登录"
-        >
-          <LogOut size={14} />
-          <span className="hidden text-xs font-medium sm:inline">退出</span>
-        </button>
+        <div className="flex items-center gap-2.5">
+          <NotificationBell />
+
+          <div className="ci-panel hidden select-none items-center gap-2 rounded-full px-2 py-1.5 sm:flex">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[rgba(79,141,246,0.14)] text-xs font-semibold text-[var(--ci-accent-strong)]">
+              决
+            </div>
+            <div className="hidden items-center gap-1.5 pr-1 md:flex">
+              <Shield size={12} className="text-[var(--ci-accent-strong)]" />
+              <span className="text-xs font-semibold text-[var(--ci-text-secondary)]">
+                决策者
+              </span>
+            </div>
+          </div>
+
+          <button
+            onClick={handleSignOut}
+            disabled={isSigningOut}
+            className="inline-flex items-center gap-1.5 rounded-full border border-[var(--ci-border)] bg-white/70 px-3.5 py-2 text-sm text-[var(--ci-text-secondary)] transition-all hover:border-[var(--ci-border-strong)] hover:bg-white disabled:opacity-50"
+            title="退出登录"
+          >
+            <LogOut size={14} />
+            <span className="hidden text-xs font-medium sm:inline">
+              {isSigningOut ? "退出中..." : "退出"}
+            </span>
+          </button>
+        </div>
       </div>
     </header>
   );

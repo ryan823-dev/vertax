@@ -784,3 +784,150 @@
 
 @keyframes gold-glow-pulse { 0%,100% { text-shadow: 0 0 8px rgba(212,175,55,0.3); } 50% { text-shadow: 0 0 16px rgba(212,175,55,0.6); } }
 .animate-gold-glow { animation: gold-glow-pulse 2.5s ease-in-out infinite; }
+
+.customer-theme {
+  --ci-bg: #edf4fa;
+  --ci-bg-soft: #f8fbfe;
+  --ci-bg-deep: #e4edf6;
+  --ci-surface: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.76) 0%,
+    rgba(247, 250, 252, 0.94) 100%
+  );
+  --ci-surface-strong: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.93) 0%,
+    rgba(249, 251, 254, 0.98) 100%
+  );
+  --ci-surface-muted: #f6f9fc;
+  --ci-surface-focus: linear-gradient(
+    180deg,
+    rgba(234, 241, 250, 0.96) 0%,
+    rgba(225, 235, 246, 0.94) 100%
+  );
+  --ci-surface-focus-strong: linear-gradient(
+    180deg,
+    rgba(223, 233, 245, 0.98) 0%,
+    rgba(214, 226, 240, 0.95) 100%
+  );
+  --ci-border: rgba(123, 145, 173, 0.22);
+  --ci-border-strong: rgba(88, 111, 140, 0.28);
+  --ci-text: #112033;
+  --ci-text-secondary: #4e6279;
+  --ci-text-muted: #7f92a8;
+  --ci-sidebar-shell: linear-gradient(
+    180deg,
+    #121c2c 0%,
+    #0f1726 52%,
+    #0c1421 100%
+  );
+  --ci-sidebar-border: rgba(148, 163, 184, 0.14);
+  --ci-sidebar-hover: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.05) 0%,
+    rgba(255, 255, 255, 0.025) 100%
+  );
+  --ci-sidebar-active: rgba(79, 141, 246, 0.16);
+  --ci-sidebar-text: rgba(226, 232, 240, 0.82);
+  --ci-sidebar-muted: rgba(148, 163, 184, 0.62);
+  --ci-accent: #4f8df6;
+  --ci-accent-strong: #1d4ed8;
+  --ci-accent-soft: rgba(79, 141, 246, 0.12);
+  --ci-success: #0f9f6e;
+  --ci-warning: #d97706;
+  --ci-danger: #dc2626;
+  --ci-header-bg: rgba(246, 249, 253, 0.84);
+  --ci-shadow-soft: 0 20px 40px -32px rgba(15, 23, 38, 0.18);
+  --ci-shadow-strong: 0 30px 80px -42px rgba(15, 23, 38, 0.22);
+}
+
+.ci-shell-bg {
+  background:
+    radial-gradient(circle at top left, rgba(79, 141, 246, 0.14), transparent 26%),
+    radial-gradient(circle at 82% 0%, rgba(15, 159, 110, 0.08), transparent 24%),
+    linear-gradient(180deg, var(--ci-bg) 0%, var(--ci-bg-soft) 38%, #eef5fb 100%);
+}
+
+.ci-sidebar-shell {
+  background: var(--ci-sidebar-shell);
+  box-shadow:
+    inset -1px 0 0 rgba(255, 255, 255, 0.02),
+    16px 0 48px -40px rgba(2, 6, 23, 0.92);
+}
+
+.ci-grid {
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+.ci-panel {
+  background: var(--ci-surface);
+  border: 1px solid var(--ci-border);
+  box-shadow: var(--ci-shadow-soft);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+.ci-panel-strong {
+  background: var(--ci-surface-strong);
+  border: 1px solid var(--ci-border);
+  box-shadow: var(--ci-shadow-strong);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+.ci-focus-panel {
+  background: var(--ci-surface-focus);
+  border: 1px solid rgba(123, 145, 173, 0.22);
+  box-shadow: 0 28px 70px -48px rgba(79, 141, 246, 0.34);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.ci-focus-panel-strong {
+  background: var(--ci-surface-focus-strong);
+  border: 1px solid rgba(123, 145, 173, 0.22);
+  box-shadow: 0 28px 70px -42px rgba(79, 141, 246, 0.42);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+}
+
+.ci-dark-panel {
+  background: linear-gradient(
+    180deg,
+    rgba(33, 47, 67, 0.95) 0%,
+    rgba(18, 28, 40, 0.97) 100%
+  );
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  box-shadow: 0 24px 70px -40px rgba(2, 6, 23, 0.88);
+}
+
+.ci-kicker {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ci-text-muted);
+}
+
+.ci-stat-card {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.9) 0%,
+    rgba(247, 250, 252, 0.98) 100%
+  );
+  border: 1px solid var(--ci-border);
+  box-shadow: var(--ci-shadow-soft);
+}
+
+.ci-stat-card::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 3px;
+  background: linear-gradient(90deg, rgba(79, 141, 246, 0.82), rgba(79, 141, 246, 0.08));
+}
