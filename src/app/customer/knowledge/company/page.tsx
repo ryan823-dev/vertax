@@ -149,7 +149,11 @@ export default function CompanyKnowledgePage() {
       try {
         const status = await getKnowledgePipelineStatus();
         setPipelineStatus(status);
-        if (status.currentStep > initialStep || status.currentStep >= status.steps.length - 1) {
+        if (
+          status.currentStep > initialStep ||
+          status.currentStep >= status.steps.length - 1 ||
+          status.counts.companyProfileHasContent
+        ) {
           clearInterval(interval);
           loadData();
         }
@@ -172,9 +176,34 @@ export default function CompanyKnowledgePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ assetIds: idsToAnalyze }),
       });
-      const data = await res.json() as { ok?: boolean; profile?: CompanyProfileData; error?: string };
+      const data = await res.json() as {
+        ok?: boolean;
+        profile?: CompanyProfileData;
+        error?: string;
+        selection?: {
+          mode?: 'requested' | 'all-ready-assets';
+          consideredCount?: number;
+          selectedCount?: number;
+          selectedChunkCount?: number;
+          selectedEvidenceCount?: number;
+          evidenceSeedCount?: number;
+          reusedEvidenceCount?: number;
+          generatedEvidenceCount?: number;
+        };
+      };
       if (!res.ok) throw new Error(data.error || 'AI分析失败');
       if (data.profile) setProfile(data.profile as CompanyProfileData);
+      if (data.selection?.consideredCount) {
+        toast.success(
+          `已综合 ${data.selection.consideredCount} 个素材，并自动提炼关键片段进行分析`,
+        );
+      }
+      if ((data.selection?.generatedEvidenceCount ?? 0) + (data.selection?.reusedEvidenceCount ?? 0) > 0) {
+        toast.dismiss();
+        toast.success(
+          `已综合 ${data.selection?.consideredCount ?? 0} 个素材，沉淀 ${data.selection?.generatedEvidenceCount ?? 0} 条新证据并复用 ${data.selection?.reusedEvidenceCount ?? 0} 条证据后完成分析`,
+        );
+      }
       setSelectedAssetIds([]);
       // 立即刷新一次，然后启动轮询持续跟踪后台进度
       loadPipelineStatus();
@@ -322,12 +351,19 @@ export default function CompanyKnowledgePage() {
     const canGenerate = counts.assetsParsed >= 1 || counts.evidenceCount >= 1;
     
     if (!profile || !profile.companyName) {
+      const hint =
+        counts.assetsParsed > 1
+          ? '系统会综合全部已解析素材，并自动提炼高价值片段进行分析'
+          : counts.evidenceCount < 3
+          ? '建议先补齐证据(≥3)以获得更好效果'
+          : undefined;
+
       return {
         label: '一键生成企业档案',
         onClick: handleAnalyze,
         disabled: !canGenerate,
         loading: isAnalyzing,
-        hint: counts.evidenceCount < 3 ? '建议先补齐证据(≥3)以获得更好效果' : undefined,
+        hint,
       };
     }
     
@@ -458,6 +494,11 @@ export default function CompanyKnowledgePage() {
                     建议先补齐证据(≥3条)以获得更好的分析效果
                   </p>
                 )}
+                {pipelineStatus?.counts.assetsParsed ? (
+                  <p className="text-xs text-slate-400 mb-4">
+                    未手动选择素材时，系统会综合全部 {pipelineStatus.counts.assetsParsed} 个已解析素材，并自动提炼高价值片段生成企业档案。
+                  </p>
+                ) : null}
                 <button
                   onClick={handleAnalyze}
                   disabled={isAnalyzing}

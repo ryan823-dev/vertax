@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { isPlatformAdminRoleName } from "@/lib/permissions";
+import { isLocalDevelopmentHostname, normalizeHostname } from "@/lib/tenant-resolver";
 import {
   Card,
   CardContent,
@@ -19,11 +20,11 @@ const BASE_DOMAIN = process.env.NEXT_PUBLIC_BASE_DOMAIN || "vertax.top";
 function isValidVertaxRedirect(url: string): boolean {
   try {
     const parsed = new URL(url);
-    const hostname = parsed.hostname;
+    const hostname = normalizeHostname(parsed.hostname);
     if (hostname.endsWith(`.${BASE_DOMAIN}`) && !hostname.startsWith("tower.")) {
       return true;
     }
-    if (hostname === "localhost" || hostname.startsWith("127.0.0.1")) {
+    if (isLocalDevelopmentHostname(hostname)) {
       return true;
     }
     return false;
@@ -35,7 +36,7 @@ function isValidVertaxRedirect(url: string): boolean {
 function getTenantSlugFromUrl(url: string): string | null {
   try {
     const parsed = new URL(url);
-    const hostname = parsed.hostname;
+    const hostname = normalizeHostname(parsed.hostname);
     if (hostname.endsWith(`.${BASE_DOMAIN}`)) {
       const subdomain = hostname.slice(0, -(BASE_DOMAIN.length + 1));
       if (subdomain && subdomain !== "tower" && subdomain !== "www") {

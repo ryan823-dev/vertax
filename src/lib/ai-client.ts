@@ -43,6 +43,8 @@ interface ChatCompletionResponse {
   };
 }
 
+type JsonRepairFn = (rawContent: string) => Promise<string>;
+
 /**
  * 解析 SSE (Server-Sent Events) 流式响应，拼接为完整内容
  */
@@ -253,6 +255,200 @@ export const aiClient = {
     },
   },
 };
+
+function stripCodeFences(content: string): string {
+  return content
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
+}
+
+function extractBalancedJsonBlock(content: string): string | null {
+  const text = content.trim();
+  const objectStart = text.indexOf("{");
+  const arrayStart = text.indexOf("[");
+
+  let startIndex = -1;
+  if (objectStart >= 0 && arrayStart >= 0) {
+    startIndex = Math.min(objectStart, arrayStart);
+  } else {
+    startIndex = Math.max(objectStart, arrayStart);
+  }
+
+  if (startIndex < 0) {
+    return null;
+  }
+
+  const stack: string[] = [];
+  let inString = false;
+  let escaped = false;
+
+  for (let i = startIndex; i < text.length; i += 1) {
+    const char = text[i];
+
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+
+    if (char === "\\") {
+      escaped = true;
+      continue;
+    }
+
+    if (char === "\"") {
+      inString = !inString;
+      continue;
+    }
+
+    if (inString) {
+      continue;
+    }
+
+    if (char === "{") {
+      stack.push("}");
+      continue;
+    }
+
+    if (char === "[") {
+      stack.push("]");
+      continue;
+    }
+
+    if (char === "}" || char === "]") {
+      if (stack.length === 0) {
+        return null;
+      }
+
+      const expected = stack.pop();
+      if (expected !== char) {
+        return null;
+      }
+
+      if (stack.length === 0) {
+        return text.slice(startIndex, i + 1);
+      }
+    }
+  }
+
+  return null;
+}
+
+function collectJsonCandidates(content: string): string[] {
+  const candidates = new Set<string>();
+  const stripped = stripCodeFences(content);
+  if (stripped) {
+    candidates.add(stripped);
+  }
+
+  const extracted = extractBalancedJsonBlock(content);
+  if (extracted) {
+    candidates.add(extracted);
+  }
+
+  return [...candidates];
+}
+
+async function repairJsonPayload(rawContent: string): Promise<string> {
+  const truncatedRaw =
+    rawContent.length > 12000
+      ? `${rawContent.slice(0, 12000)}\n...(内容已截断)`
+      : rawContent;
+
+  const response = await chatCompletion(
+    [
+      {
+        role: "system",
+        content:
+          "你是一个 JSON 修复器。请把用户提供的内容整理成严格合法的 JSON，不要输出 markdown、代码块、解释或额外文字。保留原有字段语义；无法确定的字段使用原内容中已有的空数组、空对象或空字符串风格，不要编造新事实。",
+      },
+      {
+        role: "user",
+        content: `请将下面内容修复为严格 JSON，只输出 JSON：\n\n${truncatedRaw}`,
+      },
+    ],
+    {
+      model: "qwen-plus",
+      temperature: 0,
+      maxTokens: 4096,
+    }
+  );
+
+  return response.content;
+}
+
+export async function parseCompanyProfileAnalysisResponse(
+  content: string,
+  repairJson: JsonRepairFn = repairJsonPayload
+): Promise<Record<string, unknown>> {
+  const parseErrors: string[] = [];
+
+  for (const candidate of collectJsonCandidates(content)) {
+    try {
+      return JSON.parse(candidate) as Record<string, unknown>;
+    } catch (error) {
+      parseErrors.push(
+        `initial parse failed: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  }
+
+  const repairedContent = await repairJson(content);
+
+  for (const candidate of collectJsonCandidates(repairedContent)) {
+    try {
+      return JSON.parse(candidate) as Record<string, unknown>;
+    } catch (error) {
+      parseErrors.push(
+        `repair parse failed: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  }
+
+  console.error(
+    "[parseAIResponse] unable to parse company profile JSON:",
+    parseErrors,
+    content.slice(0, 600)
+  );
+  throw new Error("AI 返回的分析结果格式异常，请重试");
+}
+
+export async function parseStructuredJsonObjectResponse(
+  content: string,
+  repairJson: JsonRepairFn = repairJsonPayload,
+): Promise<Record<string, unknown>> {
+  const parseErrors: string[] = [];
+
+  for (const candidate of collectJsonCandidates(content)) {
+    try {
+      return JSON.parse(candidate) as Record<string, unknown>;
+    } catch (error) {
+      parseErrors.push(
+        `initial parse failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  const repairedContent = await repairJson(content);
+
+  for (const candidate of collectJsonCandidates(repairedContent)) {
+    try {
+      return JSON.parse(candidate) as Record<string, unknown>;
+    } catch (error) {
+      parseErrors.push(
+        `repair parse failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  console.error(
+    "[parseStructuredJsonObjectResponse] unable to parse JSON:",
+    parseErrors,
+    content.slice(0, 600),
+  );
+  throw new Error("AI returned invalid JSON");
+}
 
 // ==================== Streaming Support ====================
 
@@ -544,13 +740,7 @@ export async function analyzeCompanyProfile(
     jsonStr = jsonStr.replace(/^```(?:json)?\s*/, "").replace(/\s*```$/, "");
   }
 
-  let analysis: Record<string, unknown>;
-  try {
-    analysis = JSON.parse(jsonStr);
-  } catch (error) {
-    console.error("[parseAIResponse] JSON parse error:", error);
-    throw new Error("AI 返回的分析结果格式异常，请重试");
-  }
+  const analysis = await parseCompanyProfileAnalysisResponse(jsonStr);
 
   return {
     analysis,

@@ -114,3 +114,52 @@ export function normalizeTargetRegions(value: unknown): string[] {
 
   return Array.from(new Set(names));
 }
+
+export function normalizeTargetRegionRecords(value: unknown): TargetRegionRecord[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const records: TargetRegionRecord[] = [];
+  const seen = new Set<string>();
+
+  for (const item of value) {
+    const regionName = getTargetRegionName(item as TargetRegionInput);
+    if (!regionName || isChinaRegion(regionName)) {
+      continue;
+    }
+
+    const dedupeKey = regionName.toLowerCase();
+    if (seen.has(dedupeKey)) {
+      continue;
+    }
+    seen.add(dedupeKey);
+
+    if (typeof item === "string") {
+      records.push({ region: regionName });
+      continue;
+    }
+
+    if (item && typeof item === "object") {
+      const candidate = item as Partial<TargetRegionRecord>;
+      records.push({
+        region: regionName,
+        countries: Array.isArray(candidate.countries)
+          ? candidate.countries
+              .map((country) =>
+                typeof country === "string" ? country.trim() : "",
+              )
+              .filter((country): country is string => country.length > 0)
+          : [],
+        rationale:
+          typeof candidate.rationale === "string" &&
+          candidate.rationale.trim().length > 0
+            ? candidate.rationale.trim()
+            : undefined,
+      });
+      continue;
+    }
+  }
+
+  return records;
+}

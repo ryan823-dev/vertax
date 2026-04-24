@@ -4,7 +4,7 @@ import { authConfig } from "@/lib/auth.config";
 import { ensureCronAuthorized } from "@/lib/cron-auth";
 import { isDebugEnabled } from "@/lib/debug-guard";
 import { isPlatformAdmin } from "@/lib/permissions";
-import { resolveTenant } from "@/lib/tenant-resolver";
+import { getTenantCanonicalRedirectUrl, resolveTenant } from "@/lib/tenant-resolver";
 
 const { auth } = NextAuth(authConfig);
 
@@ -76,6 +76,9 @@ function shouldBlockApiRequest(
 
 const proxy = auth((req) => {
   const { pathname } = req.nextUrl;
+  const forwardedRequestHeaders = new Headers(req.headers);
+  forwardedRequestHeaders.set("x-vertax-current-path", pathname);
+  forwardedRequestHeaders.set("x-vertax-current-search", req.nextUrl.search);
 
   if (pathname.startsWith("/api/")) {
     const blockedResponse = shouldBlockApiRequest(pathname, req);
@@ -92,11 +95,21 @@ const proxy = auth((req) => {
   // Resolve tenant and view mode from domain
   const tenantInfo = resolveTenant(hostname);
   const isCustomerView = tenantInfo.viewMode === "customer";
+  const isPlatformAdminUser = isPlatformAdmin({
+    permissions: (req.auth?.user?.permissions as string[]) ?? [],
+    roleName: (req.auth?.user?.roleName as string) ?? "",
+  });
 
   // Helper to create redirect URL preserving the original host
   const createRedirectUrl = (path: string) => {
     return new URL(path, req.nextUrl.origin);
   };
+  const continueWithRequestContext = () =>
+    NextResponse.next({
+      request: {
+        headers: forwardedRequestHeaders,
+      },
+    });
 
   // Allow API auth routes
   if (pathname.startsWith("/api/auth")) {
@@ -116,11 +129,26 @@ const proxy = auth((req) => {
     
     // Root domain shows landing page, no redirect
     if (isRootDomain) {
-      return NextResponse.next();
+      return continueWithRequestContext();
     }
     
     // Subdomain: always redirect to login
     return NextResponse.redirect(createRedirectUrl("/login"));
+  }
+
+  const canonicalTenantUrl =
+    req.auth && !isPlatformAdminUser
+      ? getTenantCanonicalRedirectUrl({
+          currentUrl: req.nextUrl,
+          sessionTenantSlug: req.auth.user?.tenantSlug as string | undefined,
+        })
+      : null;
+
+  if (canonicalTenantUrl) {
+    console.warn(
+      `[tenant-host-mismatch] Redirecting authenticated tenant user from ${hostname} to ${canonicalTenantUrl}`,
+    );
+    return NextResponse.redirect(new URL(canonicalTenantUrl));
   }
   
   // For customer domains, redirect /dashboard to /customer/home
@@ -141,10 +169,7 @@ const proxy = auth((req) => {
   if (
     req.auth &&
     pathname.startsWith("/tower") &&
-    !isPlatformAdmin({
-      permissions: (req.auth.user?.permissions as string[]) ?? [],
-      roleName: (req.auth.user?.roleName as string) ?? "",
-    })
+    !isPlatformAdminUser
   ) {
     const fallbackPath = req.auth.user?.tenantId ? "/customer/home" : "/login";
     return NextResponse.redirect(createRedirectUrl(fallbackPath));
@@ -156,7 +181,7 @@ const proxy = auth((req) => {
     return NextResponse.redirect(createRedirectUrl(targetPath));
   }
 
-  return NextResponse.next();
+  return continueWithRequestContext();
 });
 
 export { proxy };

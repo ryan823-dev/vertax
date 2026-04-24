@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { analyzeCompanyProfile } from "@/lib/ai-client";
-import { extractTextFromAsset } from "@/lib/utils/text-extract";
+import { normalizeTargetRegionRecords } from "@/lib/regions";
+import {
+  buildCompanyProfileAnalysisContext,
+  getCompanyProfileAnalysisAssets,
+} from "@/lib/knowledge/company-profile-analysis";
 
 // Pro plan: OSS download + AI analysis can take 60s+
 export const maxDuration = 60;
@@ -19,94 +23,48 @@ export async function POST(request: NextRequest) {
     }
 
     const tenantId = session.user.tenantId as string;
-    const { assetIds } = (await request.json()) as { assetIds: string[] };
-
-    if (!assetIds || assetIds.length === 0) {
-      return NextResponse.json(
-        { error: "请选择至少一个素材进行分析" },
-        { status: 400 }
-      );
-    }
-
-    if (assetIds.length > 10) {
-      return NextResponse.json(
-        { error: "单次最多分析 10 个素材" },
-        { status: 400 }
-      );
-    }
+    const body = (await request.json()) as { assetIds?: string[] };
+    const requestedAssetIds = Array.isArray(body.assetIds) ? body.assetIds : [];
 
     console.log(`[analyze-assets] execPath=${process.execPath}, cwd=${process.cwd()}, node=${process.version}`);
-    console.log(`[analyze-assets] step 1: query assets, ids=${assetIds.length}`);
+    console.log(
+      `[analyze-assets] step 1: resolve assets, requested=${requestedAssetIds.length}`,
+    );
 
-    // 优先使用已解析的 AssetChunk（避免重复 OSS 下载+解析），回退到原始提取
-    const assets = await db.asset.findMany({
-      where: { id: { in: assetIds }, tenantId, status: "active" },
-      select: { id: true, originalName: true, storageKey: true, mimeType: true },
+    const selection = await getCompanyProfileAnalysisAssets({
+      tenantId,
+      assetIds: requestedAssetIds,
     });
+    const assets = selection.selected;
+    const selectedAssetIds = assets.map((asset) => asset.id);
 
-    console.log(`[analyze-assets] step 2: found ${assets.length} assets`);
+    console.log(
+      `[analyze-assets] step 2: resolved ${selectedAssetIds.length} assets (mode=${selection.mode}, available=${selection.availableCount})`,
+    );
 
     if (assets.length === 0) {
       return NextResponse.json({ error: "未找到可分析的素材" }, { status: 400 });
     }
 
-    // 先尝试从 AssetChunk 读取已解析文本
-    const chunks = await db.assetChunk.findMany({
-      where: { assetId: { in: assetIds }, tenantId },
-      orderBy: [{ assetId: "asc" }, { chunkIndex: "asc" }],
-      select: { assetId: true, content: true },
+    const context = await buildCompanyProfileAnalysisContext({
+      tenantId,
+      assets,
+      userId: session.user.id,
     });
 
-    console.log(`[analyze-assets] step 3: found ${chunks.length} chunks`);
-
-    const textResults: string[] = [];
-
-    if (chunks.length > 0) {
-      // Group chunks by assetId
-      const chunkMap = new Map<string, string[]>();
-      for (const chunk of chunks) {
-        if (!chunkMap.has(chunk.assetId)) chunkMap.set(chunk.assetId, []);
-        chunkMap.get(chunk.assetId)!.push(chunk.content);
-      }
-      for (const asset of assets) {
-        const parts = chunkMap.get(asset.id);
-        if (parts && parts.length > 0) {
-          textResults.push(`## ${asset.originalName}\n\n${parts.join("\n\n").substring(0, 15000)}`);
-        }
-      }
-    }
-
-    // Fallback: extract from OSS only for small assets with no chunks (<5MB)
-    const coveredIds = new Set(chunks.map((c) => c.assetId));
-    for (const asset of assets) {
-      if (coveredIds.has(asset.id)) continue;
-      // Skip large files to avoid timeout
-      const assetWithSize = await db.asset.findUnique({
-        where: { id: asset.id },
-        select: { fileSize: true },
-      });
-      if (assetWithSize && Number(assetWithSize.fileSize) > 5 * 1024 * 1024) {
-        console.warn(`[analyze-assets] Skipping large file without chunks: ${asset.originalName}`);
-        continue;
-      }
-      try {
-        const text = await extractTextFromAsset(asset.storageKey, asset.mimeType);
-        if (text && text.length > 10) {
-          textResults.push(`## ${asset.originalName}\n\n${text.substring(0, 15000)}`);
-        }
-      } catch (error) {
-        console.warn(`[analyze-assets] Failed to extract text from ${asset.originalName}:`, error);
-      }
-    }
-
-    if (textResults.length === 0) {
+    if (context.sections.length === 0) {
       return NextResponse.json(
         { error: "所有素材的文本提取均失败，请确认素材格式" },
         { status: 400 }
       );
     }
 
-    console.log(`[analyze-assets] Sending ${textResults.length} texts (total ${textResults.join('').length} chars) to AI...`);
+    console.log(
+      `[analyze-assets] step 3: built corpus from ${context.stats.assetCount} assets, ` +
+        `${context.stats.rawChunkCount} raw chunks, ${context.stats.selectedChunkCount} selected chunks, ` +
+        `${context.stats.selectedEvidenceCount} selected evidences (${context.stats.generatedEvidenceCount} generated / ${context.stats.reusedEvidenceCount} reused), ` +
+        `${context.stats.contextChars} chars`,
+    );
 
     // 读取已探索区域，用于指导 AI 推荐新市场
     const existingProfile = await db.companyProfile.findUnique({
@@ -123,13 +81,15 @@ export async function POST(request: NextRequest) {
 
     // 调用 AI 分析（将已探索信息追加到第一个文本块末尾）
     const { analysis, model } = await analyzeCompanyProfile(
-      textResults.map((t, i) => i === 0 ? t + exploredContext : t)
+      context.sections.map((section, index) =>
+        index === 0 ? section + exploredContext : section,
+      )
     );
 
     console.log(`[analyze-assets] AI analysis completed, model: ${model}`);
 
     // 合并区域探索记录：将本次新推荐的区域追加到已探索列表
-    const newRegions = (analysis.targetRegions as Array<{ region: string; countries: string[]; rationale: string }>) || [];
+    const newRegions = normalizeTargetRegionRecords(analysis.targetRegions);
     const now = new Date().toISOString();
     const updatedExplored = [...exploredRegions];
     for (const nr of newRegions) {
@@ -150,14 +110,15 @@ export async function POST(request: NextRequest) {
         scenarios: (analysis.scenarios as object) || [],
         differentiators: (analysis.differentiators as object) || [],
         targetIndustries: (analysis.targetIndustries as object) || [],
-        targetRegions: (analysis.targetRegions as object) || [],
+        targetRegions: newRegions,
         buyerPersonas: (analysis.buyerPersonas as object) || [],
         painPoints: (analysis.painPoints as object) || [],
         buyingTriggers: (analysis.buyingTriggers as object) || [],
         exploredRegions: updatedExplored,
         lastAnalyzedAt: new Date(),
-        analysisSource: assetIds,
+        analysisSource: selectedAssetIds,
         aiModel: model,
+        rawAnalysis: JSON.stringify(analysis),
       },
       update: {
         companyName: (analysis.companyName as string) || null,
@@ -167,19 +128,34 @@ export async function POST(request: NextRequest) {
         scenarios: (analysis.scenarios as object) || [],
         differentiators: (analysis.differentiators as object) || [],
         targetIndustries: (analysis.targetIndustries as object) || [],
-        targetRegions: (analysis.targetRegions as object) || [],
+        targetRegions: newRegions,
         buyerPersonas: (analysis.buyerPersonas as object) || [],
         painPoints: (analysis.painPoints as object) || [],
         buyingTriggers: (analysis.buyingTriggers as object) || [],
         exploredRegions: updatedExplored,
         lastAnalyzedAt: new Date(),
-        analysisSource: assetIds,
+        analysisSource: selectedAssetIds,
         aiModel: model,
+        rawAnalysis: JSON.stringify(analysis),
       },
     });
 
     return NextResponse.json({
       ok: true,
+      selection: {
+        mode: selection.mode,
+        requestedCount: selection.requestedCount,
+        availableCount: selection.availableCount,
+        selectedCount: selectedAssetIds.length,
+        selectedAssetIds,
+        consideredCount: context.stats.assetCount,
+        selectedChunkCount: context.stats.selectedChunkCount,
+        selectedEvidenceCount: context.stats.selectedEvidenceCount,
+        evidenceSeedCount: context.stats.evidenceSeedCount,
+        reusedEvidenceCount: context.stats.reusedEvidenceCount,
+        generatedEvidenceCount: context.stats.generatedEvidenceCount,
+        contextChars: context.stats.contextChars,
+      },
       profile: {
         id: profile.id,
         companyName: profile.companyName,

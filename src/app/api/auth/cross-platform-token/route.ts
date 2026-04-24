@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { generateCrossPlatformJWT, TowerUser } from "@/lib/jwt-bridge";
+import { isLocalDevelopmentHostname, normalizeHostname } from "@/lib/tenant-resolver";
 
 // Base domain for validation
 const BASE_DOMAIN = process.env.NEXT_PUBLIC_BASE_DOMAIN || "vertax.top";
@@ -11,7 +12,7 @@ const BASE_DOMAIN = process.env.NEXT_PUBLIC_BASE_DOMAIN || "vertax.top";
 function isValidTargetUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
-    const hostname = parsed.hostname;
+    const hostname = normalizeHostname(parsed.hostname);
     
     // Allow subdomains of the base domain (but not tower.*)
     if (hostname.endsWith(`.${BASE_DOMAIN}`) && !hostname.startsWith("tower.")) {
@@ -19,7 +20,7 @@ function isValidTargetUrl(url: string): boolean {
     }
     
     // Allow localhost for development
-    if (hostname === "localhost" || hostname.startsWith("127.0.0.1")) {
+    if (isLocalDevelopmentHostname(hostname)) {
       return true;
     }
     

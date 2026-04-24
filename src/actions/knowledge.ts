@@ -4,8 +4,11 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { analyzeCompanyProfile } from "@/lib/ai-client";
-import { extractTextFromAsset } from "@/lib/utils/text-extract";
-import { normalizeTargetRegions } from "@/lib/regions";
+import { normalizeTargetRegionRecords } from "@/lib/regions";
+import {
+  buildCompanyProfileAnalysisContext,
+  getCompanyProfileAnalysisAssets,
+} from "@/lib/knowledge/company-profile-analysis";
 
 // ==================== 认证辅助 ====================
 
@@ -143,56 +146,56 @@ export async function analyzeAssets(
   assetIds: string[]
 ): Promise<CompanyProfileData> {
   const session = await getSession();
-
-  if (assetIds.length === 0) {
-    throw new Error("请选择至少一个素材进行分析");
-  }
-
-  if (assetIds.length > 10) {
-    throw new Error("单次最多分析 10 个素材");
-  }
-
-  // 获取素材信息
-  const assets = await db.asset.findMany({
-    where: {
-      id: { in: assetIds },
-      tenantId: session.user.tenantId,
-      status: "active",
-    },
-    select: {
-      id: true,
-      originalName: true,
-      storageKey: true,
-      mimeType: true,
-    },
+  const selection = await getCompanyProfileAnalysisAssets({
+    tenantId: session.user.tenantId,
+    assetIds,
   });
+  const assets = selection.selected;
 
   if (assets.length === 0) {
     throw new Error("未找到可分析的素材");
   }
 
-  // 提取文本
-  const textResults: string[] = [];
-  for (const asset of assets) {
-    try {
-      const text = await extractTextFromAsset(
-        asset.storageKey,
-        asset.mimeType
-      );
-      if (text && text.length > 10) {
-        textResults.push(`## ${asset.originalName}\n\n${text}`);
-      }
-    } catch (error) {
-      console.warn(`Failed to extract text from ${asset.originalName}:`, error);
-    }
-  }
+  const context = await buildCompanyProfileAnalysisContext({
+    tenantId: session.user.tenantId,
+    assets,
+    userId: session.user.id,
+  });
 
-  if (textResults.length === 0) {
+  if (context.sections.length === 0) {
     throw new Error("所有素材的文本提取均失败，请确认素材格式");
   }
 
   // 调用 AI 分析
-  const { analysis, model } = await analyzeCompanyProfile(textResults);
+  const existingProfile = await db.companyProfile.findUnique({
+    where: { tenantId: session.user.tenantId },
+    select: { exploredRegions: true },
+  });
+  const exploredRegions =
+    (existingProfile?.exploredRegions as Array<{
+      region: string;
+      countries?: string[];
+      rationale?: string;
+      exploredAt?: string;
+    }>) || [];
+  const exploredContext =
+    exploredRegions.length > 0
+      ? `\n\n【已探索过的海外市场】\n以下区域已在之前的分析中推荐过，请优先探索其他未覆盖的海外区域和国家。如果确实没有更多适合的新区域，可以在已探索区域内推荐新的具体国家。\n已探索：${exploredRegions.map((item) => item.region).join("、")}\n`
+      : "";
+
+  const { analysis, model } = await analyzeCompanyProfile(
+    context.sections.map((section, index) =>
+      index === 0 ? section + exploredContext : section,
+    ),
+  );
+  const targetRegions = normalizeTargetRegionRecords(analysis.targetRegions);
+  const now = new Date().toISOString();
+  const updatedExplored = [...exploredRegions];
+  for (const region of targetRegions) {
+    if (!updatedExplored.some((item) => item.region === region.region)) {
+      updatedExplored.push({ ...region, exploredAt: now });
+    }
+  }
 
   // 保存/更新企业画像
   const profile = await db.companyProfile.upsert({
@@ -206,14 +209,15 @@ export async function analyzeAssets(
       scenarios: (analysis.scenarios as object) || [],
       differentiators: (analysis.differentiators as object) || [],
       targetIndustries: (analysis.targetIndustries as object) || [],
-      // v2.0: 强制排除中国境内区域 - 出海获客系统只服务海外市场
-      targetRegions: normalizeTargetRegions(analysis.targetRegions) || [],
+      targetRegions,
       buyerPersonas: (analysis.buyerPersonas as object) || [],
       painPoints: (analysis.painPoints as object) || [],
       buyingTriggers: (analysis.buyingTriggers as object) || [],
+      exploredRegions: updatedExplored,
       lastAnalyzedAt: new Date(),
-      analysisSource: assetIds,
+      analysisSource: assets.map((asset) => asset.id),
       aiModel: model,
+      rawAnalysis: JSON.stringify(analysis),
     },
     update: {
       companyName: (analysis.companyName as string) || null,
@@ -223,18 +227,20 @@ export async function analyzeAssets(
       scenarios: (analysis.scenarios as object) || [],
       differentiators: (analysis.differentiators as object) || [],
       targetIndustries: (analysis.targetIndustries as object) || [],
-      // v2.0: 强制排除中国境内区域 - 出海获客系统只服务海外市场
-      targetRegions: normalizeTargetRegions(analysis.targetRegions) || [],
+      targetRegions,
       buyerPersonas: (analysis.buyerPersonas as object) || [],
       painPoints: (analysis.painPoints as object) || [],
       buyingTriggers: (analysis.buyingTriggers as object) || [],
+      exploredRegions: updatedExplored,
       lastAnalyzedAt: new Date(),
-      analysisSource: assetIds,
+      analysisSource: assets.map((asset) => asset.id),
       aiModel: model,
+      rawAnalysis: JSON.stringify(analysis),
     },
   });
 
   revalidatePath("/customer/knowledge/company");
+  revalidatePath("/dashboard/knowledge");
   return {
     id: profile.id,
     companyName: profile.companyName,

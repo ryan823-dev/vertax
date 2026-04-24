@@ -399,10 +399,6 @@ export default function KnowledgePage() {
       if (next.has(id)) {
         next.delete(id);
       } else {
-        if (next.size >= 10) {
-          toast.warning("单次最多选择 10 个素材");
-          return prev;
-        }
         next.add(id);
       }
       return next;
@@ -411,22 +407,27 @@ export default function KnowledgePage() {
 
   // 全选
   const selectAll = () => {
-    const allIds = assets.slice(0, 10).map((a) => a.id);
+    const allIds = assets.map((a) => a.id);
     setSelectedAssetIds(new Set(allIds));
   };
 
   // AI 分析
   const handleAnalyze = async () => {
-    if (selectedAssetIds.size === 0) {
-      toast.error("请选择至少一个素材");
+    if (assets.length === 0) {
+      toast.error("暂无可分析素材");
       return;
     }
 
+    const usingAutoSelection = selectedAssetIds.size === 0;
     setAnalyzing(true);
     try {
-      const result = await analyzeAssets(Array.from(selectedAssetIds));
+      const result = await analyzeAssets(
+        usingAutoSelection ? assets.map((asset) => asset.id) : Array.from(selectedAssetIds)
+      );
       setProfile(result);
-      toast.success("企业能力画像已生成");
+      toast.success(
+        `企业能力画像已生成，已综合 ${usingAutoSelection ? assets.length : selectedAssetIds.size} 个素材`,
+      );
     } catch (error: unknown) {
       const message =
         error instanceof Error ? error.message : "分析失败，请重试";
@@ -502,7 +503,7 @@ export default function KnowledgePage() {
             </p>
             {assets.length > 0 && (
               <Button variant="ghost" size="sm" onClick={selectAll}>
-                全选 (最多10个)
+                全选
               </Button>
             )}
           </div>
@@ -516,11 +517,13 @@ export default function KnowledgePage() {
           {/* 分析按钮 */}
           <div className="flex items-center justify-between pt-2">
             <p className="text-sm text-muted-foreground">
-              已选择 {selectedAssetIds.size} 个素材
+              {selectedAssetIds.size > 0
+                ? `已选择 ${selectedAssetIds.size} 个素材`
+                : `未手动选择时，系统会综合全部素材，并自动提炼高价值片段`}
             </p>
             <Button
               onClick={handleAnalyze}
-              disabled={analyzing || selectedAssetIds.size === 0}
+              disabled={analyzing || assets.length === 0}
             >
               {analyzing ? (
                 <>

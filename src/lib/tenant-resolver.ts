@@ -18,11 +18,44 @@ const TOWER_DOMAINS = ['tower.vertax.top', 'tower.vertax.cn'];
 const BASE_DOMAIN = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'vertax.top';
 
 /**
+ * Normalize a hostname by trimming whitespace, lowercasing it, and stripping
+ * the port when the input comes from a raw Host header.
+ */
+export function normalizeHostname(hostname: string): string {
+  const normalized = hostname.trim().toLowerCase();
+
+  if (normalized.startsWith('[')) {
+    const closingBracketIndex = normalized.indexOf(']');
+    return closingBracketIndex >= 0
+      ? normalized.slice(0, closingBracketIndex + 1)
+      : normalized;
+  }
+
+  return normalized.split(':')[0];
+}
+
+/**
+ * Localhost traffic should stay on localhost during development instead of
+ * being canonicalized to production tenant domains.
+ */
+export function isLocalDevelopmentHostname(hostname: string): boolean {
+  const normalized = normalizeHostname(hostname);
+
+  return (
+    normalized === 'localhost' ||
+    normalized === '127.0.0.1' ||
+    normalized === '::1' ||
+    normalized === '[::1]' ||
+    normalized.endsWith('.localhost')
+  );
+}
+
+/**
  * Resolve tenant and view mode from hostname
  */
 export function resolveTenant(hostname: string): TenantInfo {
   // Remove port if present
-  const domain = hostname.split(':')[0];
+  const domain = normalizeHostname(hostname);
   
   // Check if it's tower (operations view)
   if (TOWER_DOMAINS.includes(domain)) {
@@ -44,7 +77,7 @@ export function resolveTenant(hostname: string): TenantInfo {
   }
   
   // Localhost or unknown domain - use env or default to operations
-  if (domain === 'localhost' || domain === '127.0.0.1') {
+  if (isLocalDevelopmentHostname(domain)) {
     const viewMode = (process.env.NEXT_PUBLIC_VIEW_MODE as ViewMode) || 'operations';
     const tenantSlug = process.env.NEXT_PUBLIC_TENANT_SLUG || null;
     return {
@@ -60,6 +93,61 @@ export function resolveTenant(hostname: string): TenantInfo {
     tenantSlug: null,
     domain,
   };
+}
+
+/**
+ * Build the canonical hostname for a tenant workspace.
+ */
+export function getTenantHostname(
+  tenantSlug: string,
+  baseDomain: string = BASE_DOMAIN,
+): string {
+  return `${tenantSlug}.${baseDomain}`;
+}
+
+/**
+ * Redirect authenticated tenant users back to their canonical subdomain when
+ * they land on the wrong customer host.
+ */
+export function getTenantCanonicalRedirectUrl({
+  currentUrl,
+  sessionTenantSlug,
+  baseDomain = BASE_DOMAIN,
+}: {
+  currentUrl: string | URL;
+  sessionTenantSlug?: string | null;
+  baseDomain?: string;
+}): string | null {
+  const normalizedTenantSlug = sessionTenantSlug?.trim();
+  if (!normalizedTenantSlug) {
+    return null;
+  }
+
+  const url = currentUrl instanceof URL ? new URL(currentUrl.toString()) : new URL(currentUrl);
+  const currentHostname = normalizeHostname(url.hostname);
+  const expectedHostname = getTenantHostname(normalizedTenantSlug, baseDomain);
+
+  if (currentHostname === expectedHostname) {
+    return null;
+  }
+
+  if (isLocalDevelopmentHostname(currentHostname)) {
+    return null;
+  }
+
+  const tenantInfo = resolveTenant(currentHostname);
+  const shouldEnforceCanonicalHost =
+    tenantInfo.viewMode === 'customer' ||
+    url.pathname.startsWith('/customer') ||
+    url.pathname === '/login' ||
+    url.pathname === '/register';
+
+  if (!shouldEnforceCanonicalHost) {
+    return null;
+  }
+
+  url.hostname = expectedHostname;
+  return url.toString();
 }
 
 /**
