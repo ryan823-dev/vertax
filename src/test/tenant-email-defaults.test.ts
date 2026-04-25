@@ -11,6 +11,7 @@ describe('tenant email defaults', () => {
     });
     expect(getTenantEmailDefaults({ slug: 'machrio' })).toEqual({
       replyToEmail: 'sales@machrio.com',
+      fromEmail: 'VertaX <noreply@mail.machrio.com>',
     });
   });
 

@@ -39,7 +39,7 @@ export async function GET() {
       usePlatformKey: config?.usePlatformKey ?? true,
       hasCustomApiKey: !!config?.customApiKey,
       customFromDomain: config?.customFromDomain || null,
-      fromEmail: config?.fromEmail || 'VertaX <noreply@vertax.top>',
+      fromEmail: config?.fromEmail || tenantDefaults.fromEmail || 'VertaX <noreply@vertax.top>',
       replyToEmail: config?.replyToEmail || tenantDefaults.replyToEmail || null,
       verifiedDomain: config?.verifiedDomain || null,
     };
@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
           usePlatformKey: usePlatformKey ?? currentConfig.usePlatformKey,
           customApiKey: customApiKey !== undefined ? customApiKey : currentConfig.customApiKey,
           customFromDomain: customFromDomain || currentConfig.customFromDomain,
-          fromEmail: fromEmail || currentConfig.fromEmail,
+          fromEmail: fromEmail || currentConfig.fromEmail || tenantDefaults.fromEmail,
           replyToEmail: replyToEmail || currentConfig.replyToEmail || tenantDefaults.replyToEmail,
         };
 

@@ -67,7 +67,7 @@ export async function getTenantClient(tenantId: string): Promise<{
     const tenantDefaults = getTenantEmailDefaults(tenant);
     const defaultConfig: TenantEmailConfig = {
       usePlatformKey: true,
-      fromEmail: getDefaultFromEmail(),
+      fromEmail: tenantDefaults.fromEmail || getDefaultFromEmail(),
       replyToEmail: tenantDefaults.replyToEmail ?? null,
     };
 
