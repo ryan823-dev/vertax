@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth';
 import { isPlatformAdmin } from '@/lib/permissions';
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
+import { getTenantEmailDefaults } from '@/lib/email/tenant-email-defaults';
 
 /**
  * 更新租户邮件配置
@@ -36,10 +37,11 @@ export async function updateTenantEmailConfig(
     // 获取当前配置
     const tenant = await prisma.tenant.findUnique({
       where: { id: tenantId },
-      select: { emailConfig: true },
+      select: { emailConfig: true, slug: true },
     });
 
     const currentConfig = (tenant?.emailConfig as Record<string, unknown>) || {};
+    const tenantDefaults = getTenantEmailDefaults(tenant);
 
     // 合并配置
     const newConfig = {
@@ -47,7 +49,7 @@ export async function updateTenantEmailConfig(
       website: config.website || currentConfig.website,
       customApiKey: config.resendApiKey || currentConfig.customApiKey,
       fromEmail: config.fromEmail || currentConfig.fromEmail,
-      replyToEmail: config.replyToEmail || currentConfig.replyToEmail,
+      replyToEmail: config.replyToEmail || currentConfig.replyToEmail || tenantDefaults.replyToEmail,
       usePlatformKey: !config.resendApiKey, // 如果提供了自定义Key，则不使用平台Key
       customFromDomain: config.fromEmail?.match(/@([^>]+)/)?.[1] || currentConfig.customFromDomain,
     };
@@ -98,10 +100,11 @@ export async function getTenantEmailConfig(tenantId: string): Promise<{
 
     const tenant = await prisma.tenant.findUnique({
       where: { id: tenantId },
-      select: { emailConfig: true },
+      select: { emailConfig: true, slug: true },
     });
 
     const config = tenant?.emailConfig as Record<string, unknown> | null;
+    const tenantDefaults = getTenantEmailDefaults(tenant);
 
     return {
       success: true,
@@ -112,7 +115,7 @@ export async function getTenantEmailConfig(tenantId: string): Promise<{
           ? `${(config.customApiKey as string).slice(0, 7)}...` 
           : undefined,
         fromEmail: config?.fromEmail as string | undefined,
-        replyToEmail: config?.replyToEmail as string | undefined,
+        replyToEmail: (config?.replyToEmail as string | undefined) || tenantDefaults.replyToEmail,
         usePlatformKey: config?.usePlatformKey as boolean ?? true,
       },
     };

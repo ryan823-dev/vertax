@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     const emailConfig = {
       usePlatformKey: true,  // 使用平台 API Key
       fromEmail: '涂豆科技 <noreply@tdpaint.com>',
-      replyToEmail: 'sales@tdpaint.com',
+      replyToEmail: 'engineering@tdpaint.com',
       customFromDomain: 'tdpaint.com',
       verifiedDomain: 'tdpaint.com', // 需在 Resend 后台验证
     };

@@ -3,6 +3,7 @@
 
 import { Resend } from 'resend';
 import { prisma } from '@/lib/prisma';
+import { getTenantEmailDefaults } from '@/lib/email/tenant-email-defaults';
 
 // 平台级客户端（单例）
 let platformClient: Resend | null = null;
@@ -49,17 +50,12 @@ export async function getTenantClient(tenantId: string): Promise<{
   config: TenantEmailConfig;
 }> {
   // 默认配置：使用平台 Key
-  const defaultConfig: TenantEmailConfig = {
-    usePlatformKey: true,
-    fromEmail: getDefaultFromEmail(),
-    replyToEmail: null,
-  };
-
   try {
     // 查询租户邮件配置
     const tenant = await prisma.tenant.findUnique({
       where: { id: tenantId },
       select: {
+        slug: true,
         emailConfig: true,
         companyProfile: {
           select: { companyName: true },
@@ -68,6 +64,12 @@ export async function getTenantClient(tenantId: string): Promise<{
     });
 
     const savedConfig = tenant?.emailConfig as TenantEmailConfig | null;
+    const tenantDefaults = getTenantEmailDefaults(tenant);
+    const defaultConfig: TenantEmailConfig = {
+      usePlatformKey: true,
+      fromEmail: getDefaultFromEmail(),
+      replyToEmail: tenantDefaults.replyToEmail ?? null,
+    };
 
     if (!savedConfig || savedConfig.usePlatformKey) {
       // 使用平台 Key
@@ -77,6 +79,7 @@ export async function getTenantClient(tenantId: string): Promise<{
           ...defaultConfig,
           ...savedConfig,
           fromEmail: savedConfig?.fromEmail || defaultConfig.fromEmail,
+          replyToEmail: savedConfig?.replyToEmail || defaultConfig.replyToEmail,
         },
       };
     }
@@ -87,7 +90,10 @@ export async function getTenantClient(tenantId: string): Promise<{
       if (tenantClients.has(tenantId)) {
         return {
           client: tenantClients.get(tenantId)!,
-          config: savedConfig,
+          config: {
+            ...savedConfig,
+            replyToEmail: savedConfig.replyToEmail || tenantDefaults.replyToEmail || null,
+          },
         };
       }
 
@@ -95,13 +101,26 @@ export async function getTenantClient(tenantId: string): Promise<{
       const client = new Resend(savedConfig.customApiKey);
       tenantClients.set(tenantId, client);
 
-      return { client, config: savedConfig };
+      return {
+        client,
+        config: {
+          ...savedConfig,
+          replyToEmail: savedConfig.replyToEmail || tenantDefaults.replyToEmail || null,
+        },
+      };
     }
 
     return { client: getPlatformClient(), config: defaultConfig };
   } catch (error) {
     console.error('[getTenantClient] Error:', error);
-    return { client: getPlatformClient(), config: defaultConfig };
+    return {
+      client: getPlatformClient(),
+      config: {
+        usePlatformKey: true,
+        fromEmail: getDefaultFromEmail(),
+        replyToEmail: null,
+      },
+    };
   }
 }
 

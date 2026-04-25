@@ -23,7 +23,7 @@ const TENANT_EMAIL_CONFIGS: Record<string, {
   tdpaint: {
     customApiKey: process.env.TENANT_TDPaint_API_KEY || process.env.RESEND_API_KEY || '',
     fromEmail: process.env.TENANT_TDPaint_FROM_EMAIL || '涂豆科技 <noreply@tdpaint.com>',
-    replyToEmail: process.env.TENANT_TDPaint_REPLY_TO || 'sales@tdpaint.com',
+    replyToEmail: process.env.TENANT_TDPaint_REPLY_TO || 'engineering@tdpaint.com',
     customFromDomain: process.env.TENANT_TDPaint_DOMAIN || 'tdpaint.com',
     usePlatformKey: !process.env.TENANT_TDPaint_API_KEY,
   },

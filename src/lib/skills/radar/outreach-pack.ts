@@ -9,6 +9,11 @@ const inputSchema = z.object({
   persona: z.record(z.string(), z.unknown()).describe('买家 Persona'),
   messagingMatrix: z.record(z.string(), z.unknown()).optional().describe('消息矩阵'),
   tier: z.enum(['A', 'B', 'C']).optional().describe('目标客户层级'),
+  prospectDossier: z.record(z.string(), z.unknown()).nullable().optional(),
+  contacts: z.array(z.record(z.string(), z.unknown())).optional(),
+  contactProfile: z.record(z.string(), z.unknown()).nullable().optional(),
+  matchReasons: z.array(z.string()).optional(),
+  approachAngle: z.string().nullable().optional(),
 });
 
 const playbookEntrySchema = z.object({
@@ -66,6 +71,9 @@ export const outreachPackSkill: SkillDefinition<typeof inputSchema, typeof outpu
   
   systemPrompt: `你是B2B出海获客文案与合规官。基于Persona、Messaging Matrix、Evidence、BrandGuideline，为每个Tier输出外联包。
 
+When a Prospect Dossier is provided, treat it as the primary source for personalization. Use its decision-maker analysis, business opportunities, intelligence summary, match analysis, risks, talking points, and avoid-topics before falling back to generic persona assumptions.
+Use source labels D1-D7 for dossier-backed claims, and C1 for contact execution context, when no injected Evidence [E1] labels are available. Do not invent funding, news, production scale, role, or buying intent that is not present in the provided context.
+
 要求：
 1. Opening lines 3-5条（短、具体、包含为何找你 + 1条证据 + 轻量下一步）
 2. Email 2封（首封+跟进）
@@ -91,16 +99,52 @@ export const outreachPackSkill: SkillDefinition<typeof inputSchema, typeof outpu
       prompt += formatEvidenceForPrompt(evidences);
     }
     
+    const dossier = input.prospectDossier;
+    const contacts = input.contacts;
+    const contactProfile = input.contactProfile;
+    const matchReasons = input.matchReasons;
+    const approachAngle = input.approachAngle;
+
     prompt += `
 === Persona ===
 ${JSON.stringify(input.persona, null, 2)}
 
 ${input.messagingMatrix ? `=== Messaging Matrix ===\n${JSON.stringify(input.messagingMatrix, null, 2)}` : ''}
 
+${dossier ? `=== Prospect Dossier (primary personalization source) ===
+Use these stable source labels when citing dossier-backed details:
+- D1: companyOverview
+- D2: decisionMakerAnalysis
+- D3: businessOpportunities
+- D4: intelligenceSummary
+- D5: matchAnalysis
+- D6: recommendedApproach
+- D7: riskAlerts
+${JSON.stringify(dossier, null, 2)}` : ''}
+
+${Array.isArray(contacts) && contacts.length > 0 ? `=== Contact Execution Context (C1) ===
+${JSON.stringify({
+  contacts,
+  contactProfile: contactProfile || null,
+}, null, 2)}` : ''}
+
+${Array.isArray(matchReasons) && matchReasons.length > 0 ? `=== Match Reasons ===
+${JSON.stringify(matchReasons, null, 2)}` : ''}
+
+${typeof approachAngle === 'string' && approachAngle.trim() ? `=== Existing Approach Angle ===
+${approachAngle}` : ''}
+
 目标层级：${input.tier || 'A'}
 
 === 任务要求 ===
-请生成外联包，包含开场白、邮件模板、WhatsApp消息和跟进剧本。所有核心主张必须引用证据。`;
+请生成外联包，包含开场白、邮件模板、WhatsApp消息和跟进剧本。所有核心主张必须引用证据。
+
+Additional requirements:
+1. Email and WhatsApp copy must reference at least one concrete dossier-backed detail when Prospect Dossier is provided.
+2. Use decision-maker approach angles and talking points from D2/D6 where available.
+3. Respect avoid-topics and risk alerts from D6/D7; mention these boundaries in warnings.
+4. When choosing channel language, use C1 recommended contact, compliance note, and available email/phone/LinkedIn context.
+5. Fill nested evidenceIds with D1-D7/C1 labels when the detail came from dossier/contact context.`;
     
     return prompt;
   },

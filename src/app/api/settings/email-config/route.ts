@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { verifyDomain } from '@/lib/email/resend-client';
+import { getTenantEmailDefaults } from '@/lib/email/tenant-email-defaults';
 
 export async function GET() {
   try {
@@ -22,6 +23,7 @@ export async function GET() {
       select: {
         id: true,
         name: true,
+        slug: true,
         emailConfig: true,
       },
     });
@@ -32,12 +34,13 @@ export async function GET() {
 
     // 脱敏：不返回完整的 API Key
     const config = tenant.emailConfig as Record<string, unknown> | null;
+    const tenantDefaults = getTenantEmailDefaults(tenant);
     const safeConfig = {
       usePlatformKey: config?.usePlatformKey ?? true,
       hasCustomApiKey: !!config?.customApiKey,
       customFromDomain: config?.customFromDomain || null,
       fromEmail: config?.fromEmail || 'VertaX <noreply@vertax.top>',
-      replyToEmail: config?.replyToEmail || null,
+      replyToEmail: config?.replyToEmail || tenantDefaults.replyToEmail || null,
       verifiedDomain: config?.verifiedDomain || null,
     };
 
@@ -75,12 +78,13 @@ export async function POST(req: NextRequest) {
     // 获取当前配置
     const tenant = await prisma.tenant.findUnique({
       where: { id: session.user.tenantId },
-      select: { emailConfig: true },
+      select: { emailConfig: true, slug: true },
     });
 
     const currentConfig = (tenant?.emailConfig as Record<string, unknown>) || {
       usePlatformKey: true,
     };
+    const tenantDefaults = getTenantEmailDefaults(tenant);
 
     switch (action) {
       case 'update': {
@@ -92,7 +96,7 @@ export async function POST(req: NextRequest) {
           customApiKey: customApiKey !== undefined ? customApiKey : currentConfig.customApiKey,
           customFromDomain: customFromDomain || currentConfig.customFromDomain,
           fromEmail: fromEmail || currentConfig.fromEmail,
-          replyToEmail: replyToEmail || currentConfig.replyToEmail,
+          replyToEmail: replyToEmail || currentConfig.replyToEmail || tenantDefaults.replyToEmail,
         };
 
         await prisma.tenant.update({

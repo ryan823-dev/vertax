@@ -939,6 +939,35 @@ export default function RadarProspectsPage() {
     setActiveTab('outreach');
     
     try {
+      const latestDossier =
+        selectedCompanyId === company.id && dossierData?.content
+          ? dossierData
+          : await getLatestProspectDossier(company.id).catch(() => null);
+      if (latestDossier && selectedCompanyId === company.id && !dossierData) {
+        setDossierData(latestDossier);
+      }
+
+      const persistedContacts =
+        selectedCompanyId === company.id && contacts.length > 0
+          ? contacts
+          : await getProspectContacts(company.id).catch(() => []);
+      if (selectedCompanyId === company.id && contacts.length === 0 && persistedContacts.length > 0) {
+        setContacts(persistedContacts);
+      }
+
+      const companyContactContext = {
+        id: company.id,
+        name: company.name,
+        email: company.email,
+        phone: company.phone,
+        outreachArtifacts: company.outreachState,
+      };
+      const mergedContacts = mergeProspectContactsWithSnapshot(
+        companyContactContext,
+        persistedContacts
+      );
+      const contactProfile = getProspectCompanyOutreachContactProfile(companyContactContext);
+
       const result = await executeSkill(
         SKILL_NAMES.RADAR_GENERATE_OUTREACH_PACK,
         {
@@ -951,6 +980,31 @@ export default function RadarProspectsPage() {
               website: company.website || '',
             },
             tier: (company.tier as 'A' | 'B' | 'C') || 'B',
+            prospectDossier: latestDossier?.content ?? null,
+            contacts: mergedContacts.map((contact) => ({
+              name: contact.name,
+              role: contact.role,
+              seniority: contact.seniority,
+              email: contact.email,
+              phone: contact.phone,
+              linkedInUrl: contact.linkedInUrl,
+              source: contact.source,
+              note: contact.note,
+            })),
+            contactProfile: {
+              email: contactProfile.email,
+              phone: contactProfile.phone,
+              recommendedContact: contactProfile.recommendedContact,
+              complianceNote: contactProfile.complianceNote,
+              primaryEmail: contactProfile.primaryEmail ?? null,
+              primaryPhone: contactProfile.primaryPhone ?? null,
+              completenessScore: contactProfile.snapshot?.completenessScore ?? null,
+              leadQualityScore: contactProfile.snapshot?.leadQualityScore ?? null,
+              informationGaps: contactProfile.snapshot?.informationGaps ?? [],
+              dataSources: contactProfile.snapshot?.dataSources ?? [],
+            },
+            matchReasons: company.matchReasons || [],
+            approachAngle: company.approachAngle || null,
           },
           entityType: 'OutreachPack',
           entityId: company.id,
@@ -2500,7 +2554,7 @@ export default function RadarProspectsPage() {
                       <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
                         <div className="flex items-center gap-2 mb-4">
                           <MessageCircle size={18} className="text-[#25D366]" />
-                          <h4 className="font-bold text-[#0B1B2B]">WhatsApp 消息</h4>
+                          <h4 className="font-bold text-[#0B1B2B]">WhatsApp 手动消息</h4>
                           <span className="text-xs text-slate-400 ml-auto">
                             {outreachPack.outreachPack.whatsapps.length} 条
                           </span>
@@ -2530,7 +2584,8 @@ export default function RadarProspectsPage() {
                                 <button
                                   onClick={() => handleCopy(wa.text, `wa-${idx}`)}
                                   className="p-1.5 text-slate-500 hover:text-slate-700 transition-colors"
-                                  title="复制消息"
+                                  title="复制 WhatsApp 消息"
+                                  aria-label="复制 WhatsApp 消息"
                                 >
                                   {copiedId === `wa-${idx}` ? (
                                     <Check size={14} className="text-emerald-600" />
@@ -2546,7 +2601,8 @@ export default function RadarProspectsPage() {
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="p-1.5 text-[#25D366] hover:text-[#128C7E] transition-colors"
-                                    title="打开 WhatsApp"
+                                    title="打开 WhatsApp 并预填消息"
+                                    aria-label="打开 WhatsApp 并预填消息"
                                   >
                                     <ExternalLink size={14} />
                                   </a>
@@ -2574,7 +2630,8 @@ export default function RadarProspectsPage() {
                                   }}
                                   disabled={isSendingManual === `wa-${idx}`}
                                   className="p-1.5 text-slate-400 hover:text-emerald-600 transition-colors disabled:opacity-50"
-                                  title="标记为已发送"
+                                  title="标记为已手动发送"
+                                  aria-label="标记为已手动发送"
                                 >
                                   {copiedId === `wa-sent-${idx}` ? (
                                     <Check size={14} className="text-emerald-600" />
@@ -2718,7 +2775,7 @@ export default function RadarProspectsPage() {
                                     ) : (
                                       <Copy size={12} />
                                     )}
-                                    {linkedInCopied ? '已复制' : '复制并发送'}
+                                    {linkedInCopied ? '已复制' : '复制并标记'}
                                   </button>
                                   <a
                                     href={selectedLinkedInContact.linkedInUrl || ''}
@@ -2955,7 +3012,7 @@ export default function RadarProspectsPage() {
                                       record.status === 'opened' ? 'bg-blue-100 text-blue-700' :
                                       'bg-slate-100 text-slate-600'
                                     }`}>
-                                      {record.status === 'manual_sent' ? '已发送' :
+                                      {record.status === 'manual_sent' ? '已手动发送' :
                                        record.status === 'draft_copied' ? '已复制' :
                                        record.status}
                                     </span>
