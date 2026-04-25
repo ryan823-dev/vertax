@@ -1,147 +1,296 @@
 #!/usr/bin/env tsx
-// ==================== 真实外网Enrichment冒烟测试 ====================
-// 用 TW Automation 作为目标，验证整个补全流程
 
-import { createContactEnrichmentEngine } from '../lib/osint/contact-enrichment';
+import {
+  createContactEnrichmentEngine,
+  type ContactEnrichmentResult,
+  type CRMContactOutput,
+  type ContactSourceType,
+} from '../lib/osint/contact-enrichment';
+import { buildRadarContactEnrichmentOverrides } from '../lib/radar/contact-enrichment-strategy';
 
-async function smokeTest() {
-  console.log('='.repeat(60));
-  console.log('联系方式补全模块 - 真实外网冒烟测试');
-  console.log('='.repeat(60));
-  console.log('');
+type ScenarioExpectation = {
+  officialEmail?: boolean;
+  inferredEmail?: boolean;
+  bestChannel?: 'form' | 'email' | 'phone' | 'linkedin';
+  minContactForms?: number;
+};
 
-  const engine = createContactEnrichmentEngine();
-
-  // 测试目标：TW Automation
-  const target = {
-    companyName: 'TW Automation',
-    domain: 'tw-automation.com',
-    country: 'US',
+type SmokeScenario = {
+  key: string;
+  description: string;
+  target: {
+    companyName: string;
+    domain: string;
+    country?: string;
+    city?: string;
+    industry?: string;
   };
+  expectation: ScenarioExpectation;
+};
 
-  console.log(`测试目标: ${target.companyName}`);
-  console.log(`已知域名: ${target.domain}`);
+const DEFAULT_SCENARIOS: SmokeScenario[] = [
+  {
+    key: 'official-email',
+    description: 'Official site is expected to expose a directly sourced business email.',
+    target: {
+      companyName: 'KUKA',
+      domain: 'kuka.com',
+      country: 'DE',
+      industry: 'Industrial Automation',
+    },
+    expectation: {
+      officialEmail: true,
+      minContactForms: 1,
+    },
+  },
+  {
+    key: 'form-priority',
+    description: 'Official forms should win as the safest outreach channel when public email is scarce.',
+    target: {
+      companyName: 'FANUC America',
+      domain: 'fanucamerica.com',
+      country: 'US',
+      industry: 'Industrial Automation',
+    },
+    expectation: {
+      bestChannel: 'form',
+      minContactForms: 1,
+    },
+  },
+  {
+    key: 'inferred-fallback',
+    description: 'When no reliable public email is found, inferred role mailboxes should be considered.',
+    target: {
+      companyName: 'Yaskawa',
+      domain: 'yaskawa.com',
+      country: 'JP',
+      industry: 'Industrial Automation',
+    },
+    expectation: {
+      inferredEmail: true,
+    },
+  },
+];
+
+function parseArgs(argv: string[]) {
+  const selectedScenarioKeys: string[] = [];
+  let json = false;
+
+  for (let index = 0; index < argv.length; index += 1) {
+    const token = argv[index];
+    if (token === '--scenario') {
+      const key = argv[index + 1];
+      if (!key) {
+        throw new Error('Missing value after --scenario');
+      }
+      selectedScenarioKeys.push(key);
+      index += 1;
+      continue;
+    }
+
+    if (token === '--json') {
+      json = true;
+      continue;
+    }
+
+    if (token === '--help') {
+      printUsage();
+      process.exit(0);
+    }
+
+    throw new Error(`Unknown argument: ${token}`);
+  }
+
+  return {
+    selectedScenarioKeys,
+    json,
+  };
+}
+
+function printUsage() {
+  console.log('Usage: npx tsx src/scripts/smoke-test-enrichment.ts [--scenario <key>] [--json]');
   console.log('');
-
-  try {
-    console.log('开始执行深度补全...');
-    const startTime = Date.now();
-
-    const result = await engine.deepEnrich(
-      target.companyName,
-      target.domain,
-      { country: target.country }
-    );
-
-    const duration = Date.now() - startTime;
-
-    console.log(`补全耗时: ${duration}ms`);
-    console.log('');
-
-    // 生成CRM输出
-    const crmOutput = engine.generateCRMOutput(result);
-
-    // 输出关键结果
-    console.log('-'.repeat(40));
-    console.log('补全结果摘要');
-    console.log('-'.repeat(40));
-
-    console.log(`\n企业身份:`);
-    console.log(`  - 名称: ${crmOutput.company}`);
-    console.log(`  - 官网: ${crmOutput.official_website}`);
-    console.log(`  - 行业: ${crmOutput.industry || '未确定'}`);
-
-    console.log(`\n联系方式:`);
-    if (crmOutput.primary_phone) {
-      console.log(`  - 主电话: ${crmOutput.primary_phone.value}`);
-      console.log(`  - 置信度: ${crmOutput.primary_phone.confidence}%`);
-      console.log(`  - 来源: ${crmOutput.primary_phone.sources.join(', ')}`);
-    } else {
-      console.log(`  - 电话: 未找到`);
-    }
-
-    if (crmOutput.primary_email) {
-      console.log(`  - 主邮箱: ${crmOutput.primary_email.value}`);
-      console.log(`  - 置信度: ${crmOutput.primary_email.confidence}%`);
-      console.log(`  - 来源: ${crmOutput.primary_email.sources.join(', ')}`);
-    } else {
-      console.log(`  - 邮箱: 未找到`);
-    }
-
-    console.log(`\n地址信息:`);
-    if (crmOutput.addresses && crmOutput.addresses.length > 0) {
-      for (const addr of crmOutput.addresses) {
-        console.log(`  - ${addr.value}`);
-        console.log(`    置信度: ${addr.confidence}%`);
-        if (addr.note) console.log(`    备注: ${addr.note}`);
-      }
-    } else {
-      console.log(`  - 地址: 未找到`);
-    }
-
-    console.log(`\n能力关键词:`);
-    if (crmOutput.capabilities && crmOutput.capabilities.length > 0) {
-      console.log(`  - ${crmOutput.capabilities.join(', ')}`);
-    } else {
-      console.log(`  - 未找到`);
-    }
-
-    console.log(`\n评分:`);
-    console.log(`  - 线索质量评分: ${crmOutput.lead_quality_score}/100`);
-    console.log(`  - 完整性评分: ${result.completenessScore}/100`);
-
-    console.log(`\n推荐联系渠道:`);
-    console.log(`  - ${crmOutput.recommended_contact}`);
-
-    console.log(`\n数据来源:`);
-    console.log(`  - ${crmOutput.data_sources.join(', ')}`);
-
-    console.log(`\n合规标注:`);
-    console.log(`  - ${crmOutput.compliance_note}`);
-
-    console.log(`\n信息缺口:`);
-    if (crmOutput.information_gaps && crmOutput.information_gaps.length > 0) {
-      for (const gap of crmOutput.information_gaps) {
-        console.log(`  - ${gap}`);
-      }
-    } else {
-      console.log(`  - 无明显缺口`);
-    }
-
-    console.log('');
-    console.log('-'.repeat(40));
-    console.log('完整CRM输出 (JSON)');
-    console.log('-'.repeat(40));
-    console.log(JSON.stringify(crmOutput, null, 2));
-
-    // 测试结论
-    console.log('');
-    console.log('='.repeat(60));
-    console.log('冒烟测试结论');
-    console.log('='.repeat(60));
-
-    const hasPhone = crmOutput.primary_phone !== undefined;
-    const hasEmail = crmOutput.primary_email !== undefined;
-    const hasAddress = crmOutput.addresses && crmOutput.addresses.length > 0;
-    const hasCapabilities = crmOutput.capabilities && crmOutput.capabilities.length > 0;
-
-    console.log(`✓ 电话补全: ${hasPhone ? '成功' : '失败'}`);
-    console.log(`✓ 邮箱补全: ${hasEmail ? '成功' : '失败'}`);
-    console.log(`✓ 地址补全: ${hasAddress ? '成功' : '失败'}`);
-    console.log(`✓ 能力补全: ${hasCapabilities ? '成功' : '失败'}`);
-    console.log(`✓ CRM输出: 格式正确`);
-
-    if (hasPhone || hasEmail) {
-      console.log('\n✅ 冒烟测试通过：核心补全功能正常');
-    } else {
-      console.log('\n⚠️ 冒烟测试部分通过：无联系方式补全成功');
-    }
-
-  } catch (error) {
-    console.error('冒烟测试失败:', error);
-    process.exit(1);
+  console.log('Available scenarios:');
+  for (const scenario of DEFAULT_SCENARIOS) {
+    console.log(`  - ${scenario.key}: ${scenario.description}`);
   }
 }
 
-// 执行测试
-smokeTest();
+function selectScenarios(keys: string[]): SmokeScenario[] {
+  if (!keys.length) {
+    return DEFAULT_SCENARIOS;
+  }
+
+  const selected = keys.map(key => DEFAULT_SCENARIOS.find(scenario => scenario.key === key)).filter(Boolean);
+  if (selected.length !== keys.length) {
+    const missing = keys.filter(key => !DEFAULT_SCENARIOS.some(scenario => scenario.key === key));
+    throw new Error(`Unknown scenario key(s): ${missing.join(', ')}`);
+  }
+
+  return selected as SmokeScenario[];
+}
+
+function isOfficialSource(source: ContactSourceType): boolean {
+  return source.startsWith('official_');
+}
+
+function summarizeResult(result: ContactEnrichmentResult, crmOutput: CRMContactOutput) {
+  const bestChannel = result.recommendedChannels[0] || null;
+  const officialEmails = result.emails.filter(email => email.sources.some(isOfficialSource));
+  const inferredEmails = result.emails.filter(email => email.sources.includes('email_format_inferred'));
+
+  return {
+    company: crmOutput.company,
+    website: crmOutput.official_website,
+    primaryEmail: crmOutput.primary_email?.value || null,
+    primaryEmailSources: crmOutput.primary_email?.sources || [],
+    primaryPhone: crmOutput.primary_phone?.value || null,
+    bestChannelType: bestChannel?.type || null,
+    bestChannelValue: bestChannel?.value || null,
+    contactForms: result.contactForms.length,
+    officialEmailCount: officialEmails.length,
+    inferredEmailCount: inferredEmails.length,
+    allEmailValues: result.emails.map(email => ({
+      value: email.value,
+      confidence: email.confidence,
+      sources: email.sources,
+      mxValid: Boolean(email.mxValid),
+    })),
+    complianceNote: crmOutput.compliance_note,
+    durationMs: result.duration,
+  };
+}
+
+function evaluateScenario(
+  scenario: SmokeScenario,
+  result: ContactEnrichmentResult
+) {
+  const failures: string[] = [];
+  const bestChannel = result.recommendedChannels[0] || null;
+  const hasOfficialEmail = result.emails.some(email => email.sources.some(isOfficialSource));
+  const hasInferredEmail = result.emails.some(email => email.sources.includes('email_format_inferred'));
+
+  if (scenario.expectation.officialEmail && !hasOfficialEmail) {
+    failures.push('Expected at least one official-source email.');
+  }
+
+  if (scenario.expectation.inferredEmail && !hasInferredEmail) {
+    failures.push('Expected at least one inferred role-mailbox email.');
+  }
+
+  if (
+    scenario.expectation.bestChannel &&
+    bestChannel?.type !== scenario.expectation.bestChannel
+  ) {
+    failures.push(
+      `Expected best channel ${scenario.expectation.bestChannel}, received ${bestChannel?.type || 'none'}.`
+    );
+  }
+
+  if (
+    typeof scenario.expectation.minContactForms === 'number' &&
+    result.contactForms.length < scenario.expectation.minContactForms
+  ) {
+    failures.push(
+      `Expected at least ${scenario.expectation.minContactForms} contact forms, received ${result.contactForms.length}.`
+    );
+  }
+
+  return {
+    ok: failures.length === 0,
+    failures,
+  };
+}
+
+async function runScenario(
+  scenario: SmokeScenario,
+  index: number,
+  total: number
+) {
+  const engine = createContactEnrichmentEngine();
+  const overrides = buildRadarContactEnrichmentOverrides({
+    country: scenario.target.country,
+    city: scenario.target.city,
+    industry: scenario.target.industry,
+    workingWebsite: scenario.target.domain,
+  });
+
+  console.log(`[${index}/${total}] ${scenario.key}`);
+  console.log(`  Target: ${scenario.target.companyName} (${scenario.target.domain})`);
+  console.log(`  Goal:   ${scenario.description}`);
+
+  const result = await engine.deepEnrich(
+    scenario.target.companyName,
+    scenario.target.domain,
+    overrides
+  );
+  const crmOutput = engine.generateCRMOutput(result);
+  const evaluation = evaluateScenario(scenario, result);
+  const summary = summarizeResult(result, crmOutput);
+
+  console.log(`  Status: ${evaluation.ok ? 'PASS' : 'FAIL'}`);
+  console.log(`  Best:   ${summary.bestChannelType || 'none'} -> ${summary.bestChannelValue || 'n/a'}`);
+  console.log(`  Email:  ${summary.primaryEmail || 'none'} (${summary.primaryEmailSources.join(', ') || 'n/a'})`);
+  console.log(`  Forms:  ${summary.contactForms}`);
+  console.log(`  Flags:  officialEmail=${summary.officialEmailCount} inferredEmail=${summary.inferredEmailCount}`);
+  console.log(`  Time:   ${summary.durationMs}ms`);
+
+  if (!evaluation.ok) {
+    for (const failure of evaluation.failures) {
+      console.log(`  Issue:  ${failure}`);
+    }
+  }
+
+  console.log('');
+
+  return {
+    scenario: scenario.key,
+    ok: evaluation.ok,
+    evaluation,
+    summary,
+  };
+}
+
+async function main() {
+  const args = parseArgs(process.argv.slice(2));
+  const scenarios = selectScenarios(args.selectedScenarioKeys);
+
+  console.log('Contact enrichment smoke matrix');
+  console.log('='.repeat(60));
+  console.log('');
+
+  const results = [];
+  for (let index = 0; index < scenarios.length; index += 1) {
+    results.push(await runScenario(scenarios[index], index + 1, scenarios.length));
+  }
+
+  const failed = results.filter(result => !result.ok);
+
+  console.log('Summary');
+  console.log('='.repeat(60));
+  console.log(`Scenarios: ${results.length}`);
+  console.log(`Passed:    ${results.length - failed.length}`);
+  console.log(`Failed:    ${failed.length}`);
+
+  if (failed.length) {
+    console.log('');
+    console.log('Failures');
+    for (const failure of failed) {
+      console.log(`- ${failure.scenario}: ${failure.evaluation.failures.join(' | ')}`);
+    }
+  }
+
+  if (args.json) {
+    console.log('');
+    console.log(JSON.stringify(results, null, 2));
+  }
+
+  if (failed.length) {
+    process.exitCode = 1;
+  }
+}
+
+main().catch(error => {
+  console.error('Smoke run failed:', error);
+  process.exit(1);
+});

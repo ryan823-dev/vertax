@@ -21,6 +21,7 @@ import type {
   AdapterConfig,
 } from '@/lib/radar/adapters/types';
 import { resolveApiKey } from '@/lib/services/api-key-resolver';
+import { getCountryDisplayName, normalizeCountryCode } from '../country-utils';
 
 // 数据源类型标注
 export const EXA_SOURCE_TYPE = 'OFFICIAL_API' as const;
@@ -55,6 +56,7 @@ interface ExaSearchRequest {
   useAutoprompt?: boolean;
   type?: 'keyword' | 'neural' | 'auto';
   category?: 'company' | 'research paper' | 'news' | 'github' | 'tweet' | 'movie' | 'song' | 'personal site' | 'pdf';
+  userLocation?: string;
   numResults?: number;
   contents?: {
     text?: boolean;
@@ -114,7 +116,12 @@ export class ExaAdapter implements RadarAdapter {
       throw new Error('Exa API key not configured');
     }
 
-    const searchQuery = query.keywords?.join(' ') || '';
+    const locationIso = normalizeCountryCode(query.countries?.[0]);
+    const locationName = getCountryDisplayName(locationIso);
+    const searchQuery = [query.keywords?.join(' ') || '', locationName]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
 
     if (!searchQuery) {
       return {
@@ -142,6 +149,10 @@ export class ExaAdapter implements RadarAdapter {
         summary: true,
       },
     };
+
+    if (locationIso) {
+      requestBody.userLocation = locationIso;
+    }
 
     // 分类过滤
     if (query.targetIndustries?.length) {

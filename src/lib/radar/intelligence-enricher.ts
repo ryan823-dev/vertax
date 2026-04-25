@@ -21,9 +21,19 @@ import {
   mergeRadarCandidateRawData,
   type CandidateContactEnrichmentSnapshot,
 } from './contact-enrichment';
+import { buildRadarContactEnrichmentOverrides } from './contact-enrichment-strategy';
+import {
+  isRadarSearchEngineEnabled,
+  runRadarOsintCheckpoint,
+} from './enrichment-policy';
 import { enrichCandidateWithExa } from './exa-enrich';
 import { safeFetch } from '@/lib/ssrf';
 import { resolveApiKey } from '@/lib/services/api-key-resolver';
+import {
+  getCountryDisplayName,
+  normalizeCountryCode,
+  toTavilyCountryName,
+} from './country-utils';
 
 // ==================== 类型定义 ====================
 
@@ -145,15 +155,20 @@ interface GooglePlacesIdentityEnrichment {
 async function unifiedSearch(
   query: string, 
   type: 'news' | 'auto' = 'auto', 
-  numResults: number = 10
+  numResults: number = 10,
+  country?: string | null,
 ): Promise<SearchResult[]> {
   // 1. 尝试 Exa
-  let results = await exaSearch(query, type, numResults);
+  let results = await exaSearch(query, type, numResults, country);
   
   // 2. 如果 Exa 没结果且有 Tavily Key，尝试 Tavily
-  if (results.length === 0 && (await resolveApiKey('tavily'))) {
+  if (
+    results.length === 0 &&
+    isRadarSearchEngineEnabled('tavily') &&
+    (await resolveApiKey('tavily'))
+  ) {
     console.log(`[RadarEnrich] Exa returned no results for "${query}", trying Tavily...`);
-    results = await tavilySearch(query, numResults);
+    results = await tavilySearch(query, numResults, country);
   }
   
   return results;
@@ -165,11 +180,28 @@ async function unifiedSearch(
 async function exaSearch(
   query: string,
   type: 'news' | 'auto' = 'auto',
-  numResults: number = 10
+  numResults: number = 10,
+  country?: string | null
 ): Promise<SearchResult[]> {
   try {
     const apiKey = await resolveApiKey('exa');
     if (!apiKey) return [];
+
+    const locationIso = normalizeCountryCode(country);
+    const locationName = getCountryDisplayName(locationIso);
+    const queryWithCountry = [query, locationName].filter(Boolean).join(' ').trim();
+
+    const body: Record<string, unknown> = {
+      query: queryWithCountry,
+      numResults,
+      type: type === 'news' ? 'news' : 'auto',
+      category: type === 'news' ? undefined : 'company',
+      contents: { text: true, summary: true },
+    };
+
+    if (locationIso) {
+      body.userLocation = locationIso;
+    }
 
     const response = await fetch('https://api.exa.ai/search', {
       method: 'POST',
@@ -177,13 +209,7 @@ async function exaSearch(
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({
-        query,
-        numResults,
-        type: type === 'news' ? 'news' : 'auto',
-        category: type === 'news' ? undefined : 'company',
-        contents: { text: true, summary: true },
-      }),
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) return [];
@@ -203,10 +229,27 @@ async function exaSearch(
 /**
  * Tavily 搜索实现
  */
-async function tavilySearch(query: string, numResults: number = 5): Promise<SearchResult[]> {
+async function tavilySearch(
+  query: string,
+  numResults: number = 5,
+  country?: string | null
+): Promise<SearchResult[]> {
   try {
     const apiKey = await resolveApiKey('tavily');
     if (!apiKey) return [];
+
+    const locationName = getCountryDisplayName(country);
+    const queryWithCountry = [query, locationName].filter(Boolean).join(' ').trim();
+    const body: Record<string, unknown> = {
+      query: queryWithCountry,
+      max_results: numResults,
+      search_depth: "advanced",
+    };
+
+    const tavilyCountry = toTavilyCountryName(country);
+    if (tavilyCountry) {
+      body.country = tavilyCountry;
+    }
 
     const response = await fetch('https://api.tavily.com/search', {
       method: 'POST',
@@ -214,11 +257,7 @@ async function tavilySearch(query: string, numResults: number = 5): Promise<Sear
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({
-        query,
-        max_results: numResults,
-        search_depth: "advanced",
-      }),
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) return [];
@@ -536,9 +575,12 @@ async function scanWebsiteContactPoints(website: string): Promise<WebsiteContact
 /**
  * 获取融资信息
  */
-async function searchFunding(companyName: string): Promise<IntelligenceData['funding']> {
+async function searchFunding(
+  companyName: string,
+  country?: string | null
+): Promise<IntelligenceData['funding']> {
   const query = `"${companyName}" funding raised investment round`;
-  const searchResults = await unifiedSearch(query, 'news', 10);
+  const searchResults = await unifiedSearch(query, 'news', 10, country);
 
   if (searchResults.length === 0) return undefined;
 
@@ -576,9 +618,12 @@ async function searchFunding(companyName: string): Promise<IntelligenceData['fun
 /**
  * 获取新闻动态
  */
-async function searchNews(companyName: string): Promise<IntelligenceData['news']> {
+async function searchNews(
+  companyName: string,
+  country?: string | null
+): Promise<IntelligenceData['news']> {
   const query = `"${companyName}" latest business news developments`;
-  const searchResults = await unifiedSearch(query, 'news', 10);
+  const searchResults = await unifiedSearch(query, 'news', 10, country);
 
   if (searchResults.length === 0) return undefined;
 
@@ -618,12 +663,17 @@ function extractPhone(text: string): string | null {
 /**
  * 获取联系人并尝试补全邮箱和电话
  */
-async function searchContacts(companyName: string, domain?: string): Promise<IntelligenceData['contacts']> {
+async function searchContacts(
+  companyName: string,
+  domain?: string,
+  country?: string | null,
+  allowPaidContactEnrichment: boolean = true,
+): Promise<IntelligenceData['contacts']> {
   const query = `"${companyName}" decision makers leadership "LinkedIn" contact information`;
-  const searchResults = await unifiedSearch(query, 'auto', 10);
+  const searchResults = await unifiedSearch(query, 'auto', 10, country);
   const normalizedDomain = normalizeCompanyDomain(domain);
   let pdlContacts: DecisionMakerContact[] = [];
-  if (normalizedDomain) {
+  if (allowPaidContactEnrichment && normalizedDomain) {
     pdlContacts = await searchContactsWithPDL(normalizedDomain);
   }
 
@@ -650,7 +700,7 @@ async function searchContacts(companyName: string, domain?: string): Promise<Int
     }
 
     // 如果有域名，尝试用 Hunter.io 查找邮箱
-    if (normalizedDomain && makers.length > 0) {
+    if (allowPaidContactEnrichment && normalizedDomain && makers.length > 0) {
       console.log(`[RadarEnrich] Finding emails for ${makers.length} contacts of ${companyName} via Hunter.io...`);
       for (const person of makers) {
         // 只查找还没有邮箱的联系人
@@ -730,24 +780,39 @@ export async function enrichCandidateIntelligence(
     }
   }
 
-  const workingWebsite =
+  const discoveredWebsite =
     candidate.website ||
     googlePlacesEnrichResult?.website ||
     exaEnrichResult?.website ||
     undefined;
-  const domain = normalizeCompanyDomain(workingWebsite) || undefined;
+  const discoveredDomain = normalizeCompanyDomain(discoveredWebsite) || undefined;
+  const osintCheckpoint = await runRadarOsintCheckpoint({
+    companyName,
+    domain: discoveredDomain,
+    country: candidate.country || null,
+  });
+  const workingWebsite = discoveredWebsite || osintCheckpoint.websiteUrl || undefined;
+  const domain =
+    normalizeCompanyDomain(workingWebsite) ||
+    osintCheckpoint.resolvedDomain ||
+    undefined;
   let contactSnapshot: CandidateContactEnrichmentSnapshot | null = null;
 
   const tasks: Promise<unknown>[] = [];
 
   if (options?.includeFunding !== false) {
-    tasks.push(searchFunding(companyName).then(d => { if (d) intelligence.funding = d; }).catch(e => errors.push(`Funding: ${e.message}`)));
+    tasks.push(searchFunding(companyName, candidate.country).then(d => { if (d) intelligence.funding = d; }).catch(e => errors.push(`Funding: ${e.message}`)));
   }
   if (options?.includeNews !== false) {
-    tasks.push(searchNews(companyName).then(d => { if (d) intelligence.news = d; }).catch(e => errors.push(`News: ${e.message}`)));
+    tasks.push(searchNews(companyName, candidate.country).then(d => { if (d) intelligence.news = d; }).catch(e => errors.push(`News: ${e.message}`)));
   }
   if (options?.includeContacts !== false) {
-    tasks.push(searchContacts(companyName, domain).then(d => { if (d) intelligence.contacts = d; }).catch(e => errors.push(`Contacts: ${e.message}`)));
+    tasks.push(searchContacts(
+      companyName,
+      domain,
+      candidate.country,
+      osintCheckpoint.allowPaidEnrichment,
+    ).then(d => { if (d) intelligence.contacts = d; }).catch(e => errors.push(`Contacts: ${e.message}`)));
     if (workingWebsite) {
       tasks.push(
         scanWebsiteContactPoints(workingWebsite)
@@ -765,16 +830,13 @@ export async function enrichCandidateIntelligence(
   if (options?.includeContacts !== false) {
     try {
       const contactEnrichmentEngine = createContactEnrichmentEngine();
-      const contactResult = await contactEnrichmentEngine.deepEnrich(
-        companyName,
-        domain,
-        {
-          country: candidate.country || undefined,
-          city: candidate.city || undefined,
-          industry: candidate.industry || undefined,
-          depth: workingWebsite ? 'standard' : 'deep',
-        }
-      );
+      const contactOverrides = buildRadarContactEnrichmentOverrides({
+        country: candidate.country,
+        city: candidate.city,
+        industry: candidate.industry,
+        workingWebsite,
+      });
+      const contactResult = await contactEnrichmentEngine.deepEnrich(companyName, domain, contactOverrides);
       const contactCrmOutput = contactEnrichmentEngine.generateCRMOutput(contactResult);
       contactSnapshot = buildCandidateContactEnrichmentSnapshot(contactResult, contactCrmOutput);
     } catch (error) {
@@ -815,8 +877,11 @@ export async function enrichCandidateIntelligence(
     const contactUpdate = contactSnapshot
       ? buildCandidateContactEnrichmentUpdate(candidate, contactSnapshot)
       : null;
-    const allowContactWriteback = canWriteCandidateIdentity(contactSnapshot);
-    const allowGooglePlacesWriteback = Boolean(googlePlacesEnrichResult?.placeId);
+    const allowCheckpointWriteback = osintCheckpoint.allowPrimaryWriteback;
+    const allowContactWriteback =
+      allowCheckpointWriteback && canWriteCandidateIdentity(contactSnapshot);
+    const allowGooglePlacesWriteback =
+      allowCheckpointWriteback && Boolean(googlePlacesEnrichResult?.placeId);
 
     const updateData: Record<string, unknown> = {
       enrichedAt: contactUpdate?.enrichedAt || new Date(),
@@ -860,11 +925,14 @@ export async function enrichCandidateIntelligence(
           : (allowGooglePlacesWriteback
               ? (googlePlacesEnrichResult?.address || candidate.address || null)
               : candidate.address || null),
-      description:
-        candidate.description ||
-        googlePlacesEnrichResult?.description ||
-        exaEnrichResult?.description ||
-        null,
+      description: allowCheckpointWriteback
+        ? (
+            candidate.description ||
+            googlePlacesEnrichResult?.description ||
+            exaEnrichResult?.description ||
+            null
+          )
+        : candidate.description || null,
       linkedInUrl: allowContactWriteback
         ? (contactUpdate?.linkedInUrl || linkedInUrl || candidate.linkedInUrl || null)
         : candidate.linkedInUrl || null,
@@ -876,6 +944,7 @@ export async function enrichCandidateIntelligence(
         ...(exaEnrichResult?.rawSnapshot || {}),
         ...(Object.keys(intelligence).length > 0 ? { intelligence } : {}),
         ...(contactSnapshot ? { contactEnrichment: contactSnapshot } : {}),
+        osintCheckpoint,
       }),
     };
 

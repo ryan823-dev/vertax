@@ -8,6 +8,7 @@
  */
 
 import { resolveApiKey } from '@/lib/services/api-key-resolver';
+import { getCountryDisplayName, normalizeCountryCode } from './country-utils';
 
 const EXA_API_URL = "https://api.exa.ai/search";
 
@@ -35,9 +36,29 @@ interface EnrichResult {
   rawSnapshot?: Record<string, unknown>;
 }
 
-async function exaSearch(query: string, numResults = 3): Promise<ExaSearchResult[]> {
+async function exaSearch(
+  query: string,
+  numResults = 3,
+  country?: string | null
+): Promise<ExaSearchResult[]> {
   const apiKey = await resolveApiKey('exa');
   if (!apiKey) throw new Error("EXA_API_KEY not set");
+
+  const locationIso = normalizeCountryCode(country);
+  const locationName = getCountryDisplayName(locationIso);
+  const queryWithCountry = [query, locationName].filter(Boolean).join(' ').trim();
+
+  const body: Record<string, unknown> = {
+    query: queryWithCountry,
+    numResults,
+    type: "neural",
+    useAutoprompt: true,
+    contents: { text: { maxCharacters: 800 } },
+  };
+
+  if (locationIso) {
+    body.userLocation = locationIso;
+  }
 
   const res = await fetch(EXA_API_URL, {
     method: "POST",
@@ -45,13 +66,7 @@ async function exaSearch(query: string, numResults = 3): Promise<ExaSearchResult
       "Content-Type": "application/json",
       "x-api-key": apiKey,
     },
-    body: JSON.stringify({
-      query,
-      numResults,
-      type: "neural",
-      useAutoprompt: true,
-      contents: { text: { maxCharacters: 800 } },
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!res.ok) {
@@ -119,7 +134,7 @@ export async function enrichCandidateWithExa(
   country?: string | null,
   industry?: string | null
 ): Promise<EnrichResult> {
-  const locationHint = country ? ` ${country}` : "";
+  const locationHint = getCountryDisplayName(country) ? ` ${getCountryDisplayName(country)}` : "";
   const industryHint = industry ? ` ${industry}` : "";
 
   // 搜索1：官网 + 联系方式
@@ -128,8 +143,8 @@ export async function enrichCandidateWithExa(
   const linkedInQuery = `site:linkedin.com/company ${companyName}${locationHint}`;
 
   const [contactResults, linkedInResults] = await Promise.allSettled([
-    exaSearch(contactQuery, 5),
-    exaSearch(linkedInQuery, 3),
+    exaSearch(contactQuery, 5, country),
+    exaSearch(linkedInQuery, 3, country),
   ]);
 
   const contacts = contactResults.status === "fulfilled" ? contactResults.value : [];

@@ -14,6 +14,8 @@ import { BraveSearchAdapter } from './brave-search';
 import { ExaAdapter } from './exa';
 import { TavilyAdapter } from './tavily';
 import { GooglePlacesAdapter } from './google-places';
+import { getCountryMatchPriority } from '../country-utils';
+import { isRadarSearchEngineEnabled, type RadarPolicyControlledSearchEngine } from '../enrichment-policy';
 
 // ==================== 搜索引擎配置 ====================
 
@@ -23,6 +25,7 @@ interface SearchEngineConfig {
   weight: number;           // 结果权重
   maxResults: number;       // 最大返回结果数
   enabled: boolean;
+  policyKey?: RadarPolicyControlledSearchEngine;
 }
 
 const SEARCH_ENGINES: SearchEngineConfig[] = [
@@ -46,6 +49,7 @@ const SEARCH_ENGINES: SearchEngineConfig[] = [
     weight: 1.1,
     maxResults: 20,
     enabled: true,
+    policyKey: 'tavily',
   },
   {
     name: 'Google Places',
@@ -107,10 +111,15 @@ export class MultiSourceSearchAdapter implements RadarAdapter {
 
   constructor(config: AdapterConfig & { engines?: string[] } = {}) {
     // 根据配置启用/禁用引擎
-    const enabledEngines = config.engines || SEARCH_ENGINES.filter(e => e.enabled).map(e => e.name);
+    const requestedEngines = new Set(
+      config.engines || SEARCH_ENGINES.filter((engine) => engine.enabled).map((engine) => engine.name)
+    );
 
     for (const engineConfig of SEARCH_ENGINES) {
-      if (enabledEngines.includes(engineConfig.name)) {
+      const allowedByPolicy =
+        !engineConfig.policyKey || isRadarSearchEngineEnabled(engineConfig.policyKey);
+
+      if (engineConfig.enabled && requestedEngines.has(engineConfig.name) && allowedByPolicy) {
         try {
           const adapter = new engineConfig.adapter(config);
           this.engines.set(engineConfig.name, {
@@ -174,7 +183,17 @@ export class MultiSourceSearchAdapter implements RadarAdapter {
     }
 
     // 按分数排序
-    allCandidates.sort((a, b) => (b.matchScore ?? 0) - (a.matchScore ?? 0));
+    allCandidates.sort((a, b) => {
+      const countryPriorityDiff =
+        getCountryMatchPriority(a.country, query.countries) -
+        getCountryMatchPriority(b.country, query.countries);
+
+      if (countryPriorityDiff !== 0) {
+        return countryPriorityDiff;
+      }
+
+      return (b.matchScore ?? 0) - (a.matchScore ?? 0);
+    });
 
     // 限制总结果数
     const maxTotal = query.maxResults || this.supportedFeatures.maxResultsPerQuery!;

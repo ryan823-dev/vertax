@@ -291,6 +291,7 @@ export const COMPLIANCE_BOUNDARY = {
     "chamber_of_commerce",
     "bbb",
     "partner_page",
+    "mx_validated",
   ] as ContactSourceType[],
 
   borderlineSources: [

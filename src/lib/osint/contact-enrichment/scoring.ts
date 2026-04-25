@@ -234,7 +234,25 @@ export class RecommendedChannelGenerator {
       }
     }
 
-    // 4. LinkedIn（补充）
+    // 4. MX 验证过的推断角色邮箱（兜底）
+    for (const email of emails) {
+      if (
+        email.type === 'role' &&
+        email.confidence >= 45 &&
+        email.mxValid &&
+        email.sources.includes('email_format_inferred')
+      ) {
+        channels.push({
+          type: 'email',
+          value: email.value,
+          confidence: email.confidence,
+          reason: `${email.roleType || 'business'} email inferred from the official domain and MX-validated`,
+          priority: priority++,
+        });
+      }
+    }
+
+    // 5. LinkedIn（补充）
     if (linkedinUrl) {
       channels.push({
         type: 'linkedin',
@@ -446,6 +464,7 @@ export class ComplianceChecker {
       'trade_show_exhibitor',
       'bbb',
       'partner_page',
+      'mx_validated',
     ];
 
     const borderlineSources: ContactSourceType[] = [

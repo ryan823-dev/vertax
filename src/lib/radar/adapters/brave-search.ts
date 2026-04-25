@@ -11,6 +11,7 @@ import type {
   AdapterConfig,
 } from './types';
 import { chatCompletion } from '@/lib/ai-client';
+import { getCountryDisplayName } from '../country-utils';
 
 // ==================== Brave Search API 类型 ====================
 
@@ -162,7 +163,8 @@ export class BraveSearchAdapter implements RadarAdapter {
     
     // 行业 + 地区查询
     if (industries.length && countries.length) {
-      queries.push(`${industries[0]} companies in ${countries[0]}`);
+      const countryName = getCountryDisplayName(countries[0]) || countries[0];
+      queries.push(`${industries[0]} companies in ${countryName}`);
     }
     
     // B2B 目录查询
@@ -239,7 +241,7 @@ export class BraveSearchAdapter implements RadarAdapter {
       "website": "https://...",
       "description": "公司简介",
       "industry": "行业",
-      "country": "国家",
+      "country": "ISO 3166-1 alpha-2 country code if known, otherwise empty string",
       "city": "城市",
       "sourceUrl": "信息来源URL",
       "confidence": 0.8,
@@ -296,7 +298,7 @@ ${JSON.stringify(results.slice(0, 20).map(r => ({
       
       website: company.website,
       description: company.description,
-      country: company.country,
+      country: getCountryDisplayName(company.country) || company.country,
       city: company.city,
       industry: company.industry,
       

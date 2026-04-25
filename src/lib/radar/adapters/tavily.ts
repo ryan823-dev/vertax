@@ -21,6 +21,7 @@ import type {
   AdapterFeatures,
   AdapterConfig,
 } from '@/lib/radar/adapters/types';
+import { getCountryDisplayName, toTavilyCountryName } from '../country-utils';
 
 // 数据源类型标注
 export const TAVILY_SOURCE_TYPE = 'OFFICIAL_API' as const;
@@ -85,7 +86,11 @@ export class TavilyAdapter implements RadarAdapter {
       throw new Error('Tavily API key not configured');
     }
 
-    const searchQuery = query.keywords?.join(' ') || '';
+    const locationName = getCountryDisplayName(query.countries?.[0]);
+    const searchQuery = [query.keywords?.join(' ') || '', locationName]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
 
     if (!searchQuery) {
       return {
@@ -108,6 +113,11 @@ export class TavilyAdapter implements RadarAdapter {
       include_raw_content: false,
       include_images: false,
     };
+
+    const tavilyCountry = toTavilyCountryName(query.countries?.[0]);
+    if (tavilyCountry) {
+      requestBody.country = tavilyCountry;
+    }
 
     // 搜索深度：basic 或 advanced
     if (query.maxResults && query.maxResults > 5) {

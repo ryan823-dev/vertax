@@ -8,6 +8,7 @@
 import { RadarAdapter, RadarSearchResult, RadarSearchQuery, NormalizedCandidate, AdapterConfig, HealthStatus } from './types';
 import { chatCompletion } from '@/lib/ai-client';
 import { resolveApiKey } from '@/lib/services/api-key-resolver';
+import { getCountryDisplayName, normalizeCountryCode } from '../country-utils';
 
 // ==================== Adapter 实现 ====================
 
@@ -166,9 +167,7 @@ export class CompetitiveDiscoveryAdapter implements RadarAdapter {
 
     // 构建搜索查询
     // TODO: use countryFilter for geo-targeted discovery
-    const _countryFilter = countries && countries.length > 0
-      ? `from ${countries.join(' OR ')}`
-      : '';
+    const targetCountry = countries?.[0];
 
     const queries = [
       `${competitor} customer case study`,
@@ -181,7 +180,7 @@ export class CompetitiveDiscoveryAdapter implements RadarAdapter {
 
     for (const q of queries.slice(0, 2)) {
       try {
-        const results = await this.exaSearch(q, 10);
+        const results = await this.exaSearch(q, 10, targetCountry);
         const companies = await this.parseSearchResults(results, competitor);
         allCompanies.push(...companies);
       } catch (error) {
@@ -343,9 +342,29 @@ export class CompetitiveDiscoveryAdapter implements RadarAdapter {
   /**
    * Exa 搜索
    */
-  private async exaSearch(query: string, numResults: number): Promise<Array<{ title?: string; text?: string; url?: string }>> {
+  private async exaSearch(
+    query: string,
+    numResults: number,
+    country?: string | null
+  ): Promise<Array<{ title?: string; text?: string; url?: string }>> {
     const apiKey = await resolveApiKey('exa');
     if (!apiKey) return [];
+
+    const locationIso = normalizeCountryCode(country);
+    const locationName = getCountryDisplayName(locationIso);
+    const body: Record<string, unknown> = {
+      query: [query, locationName].filter(Boolean).join(' ').trim(),
+      numResults,
+      category: 'company',
+      contents: {
+        text: true,
+        summary: true,
+      },
+    };
+
+    if (locationIso) {
+      body.userLocation = locationIso;
+    }
 
     const response = await fetch('https://api.exa.ai/search', {
       method: 'POST',
@@ -353,15 +372,7 @@ export class CompetitiveDiscoveryAdapter implements RadarAdapter {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({
-        query,
-        numResults,
-        category: 'company',
-        contents: {
-          text: true,
-          summary: true,
-        },
-      }),
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {

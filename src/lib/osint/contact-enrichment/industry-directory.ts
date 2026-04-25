@@ -8,6 +8,7 @@ import type {
   AddressContact,
   CompanyIdentity,
 } from './types';
+import { getCountryDisplayName } from '@/lib/radar/country-utils';
 
 // ==================== 行业目录配置 ====================
 
@@ -130,7 +131,8 @@ export class IndustryDirectorySearcher {
    */
   async searchDirectory(
     companyName: string,
-    directories: string[] = ['the_fabricator', 'thomasnet', 'linkedin']
+    directories: string[] = ['the_fabricator', 'thomasnet', 'linkedin'],
+    country?: string
   ): Promise<{
     phones: PhoneContact[];
     emails: EmailContact[];
@@ -149,7 +151,7 @@ export class IndustryDirectorySearcher {
       if (!config) continue;
 
       try {
-        const searchQuery = this.buildDirectorySearchQuery(companyName, config);
+        const searchQuery = this.buildDirectorySearchQuery(companyName, config, country);
         const searchResults = await this.executeSearch(searchQuery);
 
         for (const item of searchResults) {
@@ -212,9 +214,13 @@ export class IndustryDirectorySearcher {
    */
   private buildDirectorySearchQuery(
     companyName: string,
-    config: IndustryDirectoryConfig
+    config: IndustryDirectoryConfig,
+    country?: string
   ): string {
-    return `${companyName} site:${config.url.replace('https://www.', '')}`;
+    const countryName = getCountryDisplayName(country);
+    return [companyName, countryName, `site:${config.url.replace('https://www.', '')}`]
+      .filter(Boolean)
+      .join(' ');
   }
 
   /**
@@ -257,11 +263,6 @@ export class IndustryDirectorySearcher {
       }
 
       // 提取邮箱
-      const emailPattern = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
-      const emailMatches = html.match(emailPattern) || [];
-      if (emailMatches[0]) {
-        results.push({ email: emailMatches[0] });
-      }
 
       // 提取行业关键词
       const industryKeywords = this.extractIndustryKeywords(html);

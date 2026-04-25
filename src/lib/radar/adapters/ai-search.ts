@@ -11,6 +11,7 @@ import type {
   AdapterConfig,
 } from './types';
 import { chatCompletion } from '@/lib/ai-client';
+import { normalizeCountryCode } from '../country-utils';
 
 // ==================== 类型定义 ====================
 
@@ -194,9 +195,10 @@ export class AISearchAdapter implements RadarAdapter {
    */
   private async executeSearches(
     queries: GeneratedQuery[],
-    _originalQuery: RadarSearchQuery
+    originalQuery: RadarSearchQuery
   ): Promise<Array<{ query: GeneratedQuery; items: WebSearchResult[] }>> {
     const results: Array<{ query: GeneratedQuery; items: WebSearchResult[] }> = [];
+    const targetCountry = normalizeCountryCode(originalQuery.countries?.[0]);
     
     // 限制并发数
     const limitedQueries = queries.slice(0, 3);
@@ -211,8 +213,8 @@ export class AISearchAdapter implements RadarAdapter {
         }
         // 并行调用 SerpAPI（主）+ Brave（补充），合并去重
         const [serpItems, braveItems] = await Promise.allSettled([
-          process.env.SERPAPI_KEY ? this.searchWithSerpAPI(q.query) : Promise.resolve([]),
-          process.env.BRAVE_SEARCH_API_KEY ? this.searchWithBrave(q.query) : Promise.resolve([]),
+          process.env.SERPAPI_KEY ? this.searchWithSerpAPI(q.query, targetCountry) : Promise.resolve([]),
+          process.env.BRAVE_SEARCH_API_KEY ? this.searchWithBrave(q.query, targetCountry) : Promise.resolve([]),
         ]);
         const serpResults = serpItems.status === 'fulfilled' ? serpItems.value : [];
         const braveResults = braveItems.status === 'fulfilled' ? braveItems.value : [];
@@ -236,14 +238,17 @@ export class AISearchAdapter implements RadarAdapter {
   /**
    * 使用 SerpAPI 搜索（主渠道，Google 索引）
    */
-  private async searchWithSerpAPI(query: string): Promise<WebSearchResult[]> {
+  private async searchWithSerpAPI(
+    query: string,
+    country?: string | null
+  ): Promise<WebSearchResult[]> {
     const params = new URLSearchParams({
       q: query,
       api_key: process.env.SERPAPI_KEY!,
       engine: 'google',
       num: '30', // 增加到30条，最大化潜在客户挖掘
       hl: 'en',
-      gl: 'us',
+      gl: (country || 'US').toLowerCase(),
     });
 
     const response = await fetch(
@@ -266,9 +271,21 @@ export class AISearchAdapter implements RadarAdapter {
   /**
    * 使用 Brave Search 搜索（备用渠道）
    */
-  private async searchWithBrave(query: string): Promise<WebSearchResult[]> {
+  private async searchWithBrave(
+    query: string,
+    country?: string | null
+  ): Promise<WebSearchResult[]> {
+    const params = new URLSearchParams({
+      q: query,
+      count: '20',
+    });
+
+    if (country) {
+      params.set('country', country);
+    }
+
     const response = await fetch(
-      `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}&count=20`, // Brave免费版最大20条
+      `https://api.search.brave.com/res/v1/web/search?${params}`,
       {
         headers: {
           'Accept': 'application/json',

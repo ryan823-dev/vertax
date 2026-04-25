@@ -10,6 +10,7 @@ import type {
   AdapterFeatures,
   AdapterConfig,
 } from './types';
+import { getCountryDisplayName } from '../country-utils';
 
 // ==================== Google Places API 类型 ====================
 
@@ -166,6 +167,13 @@ export class GooglePlacesAdapter implements RadarAdapter {
       };
       parts.push(typeMap[query.companyTypes[0]] || query.companyTypes[0]);
     }
+
+    if (query.countries?.length) {
+      const countryName = getCountryDisplayName(query.countries[0]);
+      if (countryName) {
+        parts.push(`in ${countryName}`);
+      }
+    }
     
     return parts.join(' ') || 'industrial company';
   }
@@ -190,7 +198,8 @@ export class GooglePlacesAdapter implements RadarAdapter {
     
     // 添加国家/地区
     if (query.countries?.length === 1) {
-      params.set('region', query.countries[0].toLowerCase());
+      const regionCode = query.countries[0].toLowerCase() === 'gb' ? 'uk' : query.countries[0].toLowerCase();
+      params.set('region', regionCode);
     }
     
     // 只搜索商业场所
@@ -275,7 +284,8 @@ export class GooglePlacesAdapter implements RadarAdapter {
     
     // 从地址提取国家/城市
     const addressParts = place.formatted_address?.split(', ') || [];
-    const country = addressParts.length > 0 ? addressParts[addressParts.length - 1] : undefined;
+    const countryPart = addressParts.length > 0 ? addressParts[addressParts.length - 1] : undefined;
+    const country = getCountryDisplayName(countryPart) || countryPart;
     const city = addressParts.length > 1 ? addressParts[addressParts.length - 2] : undefined;
     
     // 从 types 推断行业

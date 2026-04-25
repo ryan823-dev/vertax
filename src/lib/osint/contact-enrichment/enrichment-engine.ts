@@ -19,6 +19,7 @@ import type {
   ComplianceResult,
   CRMContactOutput,
 } from './types';
+import { resolveMx } from 'node:dns/promises';
 import { load } from 'cheerio';
 import { IndustryDirectorySearcher } from './industry-directory';
 import {
@@ -27,6 +28,10 @@ import {
   InformationGapAnalyzer,
   ComplianceChecker,
 } from './scoring';
+import {
+  doesCountryMatchTargets,
+  getCountryDisplayName,
+} from '@/lib/radar/country-utils';
 
 interface SearchResultCandidate {
   url: string;
@@ -47,6 +52,12 @@ interface PageDomSignals {
   mailtoLinks: string[];
   addressBlocks: string[];
   forms: PageFormSignal[];
+}
+
+interface EmailSearchOptions {
+  maxResults?: number;
+  validateMX?: boolean;
+  language?: string;
 }
 
 // ==================== 第1步：身份归一化 ====================
@@ -143,7 +154,10 @@ export class CompanyIdentityNormalizer {
     }
 
     // 2. 搜索LinkedIn公司页确认
-    const linkedinInfo = await this.searchLinkedInCompany(query.companyName);
+    const linkedinInfo =
+      query.options?.checkSocialMedia === false
+        ? null
+        : await this.searchLinkedInCompany(query.companyName);
     if (linkedinInfo) {
       identity.linkedinUrl = linkedinInfo.url;
       identity.legalName = linkedinInfo.legalName || identity.legalName;
@@ -807,7 +821,10 @@ export class WebsiteContactScraper {
   /**
    * 抓取官网联系方式
    */
-  async scrapeWebsite(officialUrl: string): Promise<{
+  async scrapeWebsite(
+    officialUrl: string,
+    options: { checkForms?: boolean } = {}
+  ): Promise<{
     phones: PhoneContact[];
     emails: EmailContact[];
     addresses: AddressContact[];
@@ -825,13 +842,13 @@ export class WebsiteContactScraper {
     if (!officialUrl) return result;
 
     // 1. 先抓取首页（最高优先级）
-    const homepageData = await this.scrapePage(officialUrl, 'official_homepage');
+    const homepageData = await this.scrapePage(officialUrl, 'official_homepage', options);
     this.mergeContactData(result, homepageData);
 
     // 2. 按优先级抓取其他页面
     for (const { path, sourceType } of this.pagePriority) {
       const pageUrl = `${officialUrl}${path}`;
-      const pageData = await this.scrapePage(pageUrl, sourceType);
+      const pageData = await this.scrapePage(pageUrl, sourceType, options);
 
       // 合并数据，避免重复
       this.mergeContactData(result, pageData);
@@ -849,7 +866,11 @@ export class WebsiteContactScraper {
   /**
    * 抓取单个页面
    */
-  private async scrapePage(url: string, sourceType: ContactSourceType): Promise<{
+  private async scrapePage(
+    url: string,
+    sourceType: ContactSourceType,
+    options: { checkForms?: boolean } = {}
+  ): Promise<{
     phones: PhoneContact[];
     emails: EmailContact[];
     addresses: AddressContact[];
@@ -918,7 +939,9 @@ export class WebsiteContactScraper {
       }
 
       // 检测联系表单
-      result.forms.push(...this.extractForms(url, sourceType, html, domSignals));
+      if (options.checkForms !== false) {
+        result.forms.push(...this.extractForms(url, sourceType, html, domSignals));
+      }
 
       return result;
     } catch {
@@ -1472,16 +1495,25 @@ export class EmailSearcher {
   /**
    * 搜索公开邮箱
    */
-  async searchEmails(companyName: string, domain?: string): Promise<EmailContact[]> {
+  async searchEmails(
+    companyName: string,
+    domain?: string,
+    options: EmailSearchOptions = {}
+  ): Promise<EmailContact[]> {
     const emails: EmailContact[] = [];
+    const maxResults = Math.max(1, Math.min(options.maxResults ?? 10, 20));
 
     // 构建搜索查询
-    const searchQueries = this.buildEmailSearchQueries(companyName, domain);
+    const searchQueries = this.buildEmailSearchQueries(
+      companyName,
+      domain,
+      options.language
+    ).slice(0, Math.min(maxResults, 8));
 
     for (const query of searchQueries) {
       try {
         const searchResults = await this.executeSearch(query);
-        for (const email of searchResults) {
+        for (const email of this.filterEmailCandidates(searchResults, domain)) {
           // 检查是否已存在
           const existing = emails.find(e => e.value === email.value);
           if (existing) {
@@ -1491,27 +1523,44 @@ export class EmailSearcher {
             emails.push(email);
           }
         }
+
+        if (emails.length >= maxResults) {
+          break;
+        }
       } catch {
         continue;
       }
     }
 
-    // 按置信度排序
-    emails.sort((a, b) => b.confidence - a.confidence);
+    const rankedEmails = this.rankEmails(emails).slice(0, maxResults);
 
-    return emails;
+    return options.validateMX
+      ? this.attachMxSignals(rankedEmails)
+      : rankedEmails;
   }
 
   /**
    * 构建邮箱搜索查询
    */
-  private buildEmailSearchQueries(companyName: string, domain?: string): string[] {
+  private buildEmailSearchQueries(
+    companyName: string,
+    domain?: string,
+    language?: string
+  ): string[] {
     const queries: string[] = [];
+    const normalizedLanguage = language?.toLowerCase() || '';
 
     // 基础查询
     queries.push(`"${companyName}" email`);
     queries.push(`"${companyName}" "sales@"`);
     queries.push(`"${companyName}" "info@"`);
+    queries.push(`"${companyName}" "contact" "email"`);
+
+    if (normalizedLanguage.startsWith('zh')) {
+      queries.push(`"${companyName}" 邮箱`);
+      queries.push(`"${companyName}" 联系方式`);
+      queries.push(`"${companyName}" 销售 邮箱`);
+    }
 
     // 基于域名的查询
     if (domain) {
@@ -1520,9 +1569,6 @@ export class EmailSearcher {
       queries.push(`site:${cleanDomain} "@${cleanDomain}"`);
       queries.push(`"@${cleanDomain}"`);
     }
-
-    // 行业目录查询
-    queries.push(`"${companyName}" "contact" "email"`);
 
     return queries;
   }
@@ -1567,6 +1613,44 @@ export class EmailSearcher {
     }
   }
 
+  async inferRoleBasedEmails(
+    domain: string,
+    existingEmails: string[],
+    options: { validateMX?: boolean; formTypes?: string[] } = {}
+  ): Promise<EmailContact[]> {
+    const cleanDomain = this.normalizeDomain(domain);
+    if (!cleanDomain) {
+      return [];
+    }
+
+    const existingSet = new Set(
+      existingEmails.map(email => email.trim().toLowerCase()).filter(Boolean)
+    );
+
+    const rolePrefixes = ['sales', 'info', 'contact'];
+    if (options.formTypes?.some(type => type === 'quote' || type === 'rfq' || type === 'sales')) {
+      rolePrefixes.push('quotes', 'rfq');
+    }
+
+    const inferred = [...new Set(rolePrefixes)]
+      .map(prefix => `${prefix}@${cleanDomain}`)
+      .filter(email => !existingSet.has(email))
+      .map(email => {
+        const roleType = this.inferEmailRole(email);
+        return {
+          value: email,
+          confidence: 35,
+          sources: ['email_format_inferred'] as ContactSourceType[],
+          type: 'role' as const,
+          roleType,
+          isPrimary: false,
+          note: 'Inferred from a common public role-mailbox pattern on the official domain',
+        };
+      });
+
+    return options.validateMX ? this.attachMxSignals(inferred) : inferred;
+  }
+
   private isRoleBasedEmail(email: string): boolean {
     const rolePrefixes = ['sales', 'info', 'contact', 'support', 'service', 'quotes', 'rfq'];
     const prefix = email.split('@')[0]?.toLowerCase();
@@ -1580,6 +1664,160 @@ export class EmailSearcher {
       'support': 'support', 'service': 'service', 'quotes': 'quotes', 'rfq': 'rfq',
     };
     return roleMap[prefix];
+  }
+
+  private filterEmailCandidates(
+    emails: EmailContact[],
+    lockedDomain?: string
+  ): EmailContact[] {
+    return emails.filter(email => this.isUsableBusinessEmail(email.value, lockedDomain));
+  }
+
+  private isUsableBusinessEmail(email: string, lockedDomain?: string): boolean {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail || !normalizedEmail.includes('@')) {
+      return false;
+    }
+
+    const [localPart, emailDomain] = normalizedEmail.split('@');
+    if (!localPart || !emailDomain) {
+      return false;
+    }
+
+    if (
+      this.isConsumerEmailDomain(emailDomain) ||
+      emailDomain === 'example.com' ||
+      emailDomain === 'example.org' ||
+      emailDomain === 'example.net'
+    ) {
+      return false;
+    }
+
+    if (
+      ['noreply', 'no-reply', 'do-not-reply', 'donotreply', 'example'].includes(localPart)
+    ) {
+      return false;
+    }
+
+    if (lockedDomain) {
+      return this.sameDomainFamily(emailDomain, lockedDomain);
+    }
+
+    return true;
+  }
+
+  private rankEmails(emails: EmailContact[]): EmailContact[] {
+    return [...emails].sort((left, right) => {
+      const leftRole = this.isRoleBasedEmail(left.value);
+      const rightRole = this.isRoleBasedEmail(right.value);
+
+      if (Number(rightRole) !== Number(leftRole)) {
+        return Number(rightRole) - Number(leftRole);
+      }
+
+      return right.confidence - left.confidence;
+    });
+  }
+
+  private async attachMxSignals(emails: EmailContact[]): Promise<EmailContact[]> {
+    const mxCache = new Map<string, boolean>();
+    const enriched = await Promise.all(
+      emails.map(async email => {
+        const domain = email.value.split('@')[1]?.toLowerCase();
+        const mxValid = domain ? await this.hasMxRecords(domain, mxCache) : false;
+
+        if (!mxValid) {
+          return email;
+        }
+
+        const boost =
+          email.sources.includes('email_format_inferred')
+            ? 20
+            : email.sources.includes('search_result')
+              ? 8
+              : 5;
+
+        const maxConfidence = email.sources.includes('email_format_inferred') ? 55 : 85;
+
+        return {
+          ...email,
+          mxValid: true,
+          confidence: Math.min(maxConfidence, Math.max(email.confidence + boost, email.confidence)),
+          sources: [...new Set<ContactSourceType>([...email.sources, 'mx_validated'])],
+          note: email.note
+            ? `${email.note}; MX records found for the email domain`
+            : 'MX records found for the email domain',
+        };
+      })
+    );
+
+    return this.rankEmails(enriched);
+  }
+
+  private async hasMxRecords(
+    domain: string,
+    cache: Map<string, boolean>
+  ): Promise<boolean> {
+    if (cache.has(domain)) {
+      return cache.get(domain) ?? false;
+    }
+
+    try {
+      const records = await resolveMx(domain);
+      const hasMx = records.length > 0;
+      cache.set(domain, hasMx);
+      return hasMx;
+    } catch {
+      cache.set(domain, false);
+      return false;
+    }
+  }
+
+  private normalizeDomain(value: string): string | null {
+    try {
+      const normalized = new URL(value.startsWith('http') ? value : `https://${value}`);
+      return normalized.hostname.replace(/^www\./, '').toLowerCase();
+    } catch {
+      return value
+        .replace(/^https?:\/\//, '')
+        .replace(/^www\./, '')
+        .replace(/\/.*$/, '')
+        .trim()
+        .toLowerCase() || null;
+    }
+  }
+
+  private sameDomainFamily(left: string, right: string): boolean {
+    const normalize = (value: string) =>
+      value
+        .replace(/^https?:\/\//, '')
+        .replace(/^www\./, '')
+        .replace(/\/.*$/, '')
+        .toLowerCase();
+    const leftDomain = normalize(left);
+    const rightDomain = normalize(right);
+    const leftParts = leftDomain.split('.');
+    const rightParts = rightDomain.split('.');
+
+    if (leftParts.length < 2 || rightParts.length < 2) {
+      return false;
+    }
+
+    return leftParts.slice(-2).join('.') === rightParts.slice(-2).join('.');
+  }
+
+  private isConsumerEmailDomain(domain: string): boolean {
+    return [
+      'gmail.com',
+      'outlook.com',
+      'hotmail.com',
+      'yahoo.com',
+      'icloud.com',
+      'aol.com',
+      'qq.com',
+      '163.com',
+      '126.com',
+    ].includes(domain.toLowerCase());
   }
 
   /**
@@ -1645,7 +1883,9 @@ export class ContactEnrichmentEngine {
     let identity = await this.identityNormalizer.normalize(query);
 
     const websiteData = identity.officialUrl
-      ? await this.websiteScraper.scrapeWebsite(identity.officialUrl)
+      ? await this.websiteScraper.scrapeWebsite(identity.officialUrl, {
+          checkForms: query.options?.checkForms !== false,
+        })
       : {
           phones: [] as PhoneContact[],
           emails: [] as EmailContact[],
@@ -1663,15 +1903,47 @@ export class ContactEnrichmentEngine {
         }
       : await this.directorySearcher.searchDirectory(
           query.companyName,
-          query.options?.preferredDirectories
+          query.options?.preferredDirectories,
+          query.country,
         );
+
+    const shouldMxValidateFallback =
+      query.options?.validateMX === true &&
+      !this.hasReliableBusinessEmail(
+        [...websiteData.emails, ...directoryData.emails],
+        identity.domain
+      );
 
     const searchEmails = query.enrichTypes && !query.enrichTypes.includes('email')
       ? []
-      : await this.emailSearcher.searchEmails(query.companyName, identity.domain);
+      : await this.emailSearcher.searchEmails(query.companyName, identity.domain, {
+          maxResults: query.options?.maxResults,
+          validateMX: shouldMxValidateFallback,
+          language: query.options?.language,
+        });
+
+    const knownEmails = [...websiteData.emails, ...directoryData.emails, ...searchEmails];
+    const inferredEmails =
+      query.options?.inferEmailFormat &&
+      identity.domain &&
+      !this.hasReliableBusinessEmail(knownEmails, identity.domain)
+        ? await this.emailSearcher.inferRoleBasedEmails(
+            identity.domain,
+            knownEmails.map(email => email.value),
+            {
+              validateMX: shouldMxValidateFallback,
+              formTypes: websiteData.forms.map(form => form.type),
+            }
+          )
+        : [];
 
     const phones = this.mergeContacts(websiteData.phones, directoryData.phones);
-    const emails = this.mergeContacts(websiteData.emails, directoryData.emails, searchEmails);
+    const emails = this.mergeContacts(
+      websiteData.emails,
+      directoryData.emails,
+      searchEmails,
+      inferredEmails
+    );
     const addresses = this.mergeContacts(websiteData.addresses, directoryData.addresses);
     const contactForms = websiteData.forms;
     const capabilities = websiteData.capabilities ?? this.buildDirectoryCapabilities(directoryData.additionalInfo);
@@ -1851,13 +2123,15 @@ export class ContactEnrichmentEngine {
     addresses: AddressContact[],
     identity: CompanyIdentity
   ): boolean {
+    const countryTargets = [query.country, identity.country].filter(
+      (value): value is string => typeof value === 'string' && Boolean(value.trim())
+    );
     const locationTokens = [
-      query.country,
       query.state,
       query.city,
-      identity.country,
       identity.state,
       identity.city,
+      ...countryTargets.map((value) => getCountryDisplayName(value) || value),
     ]
       .filter((value): value is string => typeof value === 'string' && Boolean(value.trim()))
       .map(value => value.trim().toLowerCase());
@@ -1867,6 +2141,7 @@ export class ContactEnrichmentEngine {
     }
 
     return addresses.some(address =>
+      doesCountryMatchTargets(address.country, countryTargets) ||
       locationTokens.some(token =>
         [address.country, address.state, address.city]
           .filter((value): value is string => typeof value === 'string' && Boolean(value.trim()))
@@ -1932,6 +2207,50 @@ export class ContactEnrichmentEngine {
     const normalizedSlug = slugMatch[1].toLowerCase().replace(/-/g, ' ');
     const normalizedCompany = this.normalizeCompanyName(identity.displayName || identity.legalName || identity.inputName);
     return this.countTokenOverlap(normalizedSlug, normalizedCompany) >= 1;
+  }
+
+  private hasReliableBusinessEmail(
+    emails: EmailContact[],
+    lockedDomain?: string
+  ): boolean {
+    return emails.some(
+      email =>
+        email.confidence >= 70 &&
+        this.isUsableBusinessEmail(email.value, lockedDomain)
+    );
+  }
+
+  private isUsableBusinessEmail(email: string, lockedDomain?: string): boolean {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail || !normalizedEmail.includes('@')) {
+      return false;
+    }
+
+    const [localPart, emailDomain] = normalizedEmail.split('@');
+    if (!localPart || !emailDomain) {
+      return false;
+    }
+
+    if (
+      this.isConsumerEmailDomain(emailDomain) ||
+      emailDomain === 'example.com' ||
+      emailDomain === 'example.org' ||
+      emailDomain === 'example.net'
+    ) {
+      return false;
+    }
+
+    if (
+      ['noreply', 'no-reply', 'do-not-reply', 'donotreply', 'example'].includes(localPart)
+    ) {
+      return false;
+    }
+
+    if (lockedDomain) {
+      return this.sameDomainFamily(emailDomain, lockedDomain);
+    }
+
+    return true;
   }
 
   private isConsumerEmailDomain(domain: string): boolean {
@@ -2012,6 +2331,11 @@ export class ContactEnrichmentEngine {
     sources: ContactSourceType[];
     isPrimary?: boolean;
     note?: string;
+    sourceUrls?: string[];
+    mxValid?: boolean;
+    emailVerified?: boolean;
+    roleType?: string;
+    type?: string;
   }>(
     ...groups: T[][]
   ): T[] {
@@ -2035,8 +2359,30 @@ export class ContactEnrichmentEngine {
           existing.isPrimary = item.isPrimary;
         }
 
+        if (item.sourceUrls?.length) {
+          existing.sourceUrls = [
+            ...new Set([...(existing.sourceUrls || []), ...item.sourceUrls]),
+          ];
+        }
+
         if (!existing.note && item.note) {
           existing.note = item.note;
+        }
+
+        if (item.mxValid) {
+          existing.mxValid = true;
+        }
+
+        if (item.emailVerified) {
+          existing.emailVerified = true;
+        }
+
+        if (!existing.roleType && item.roleType) {
+          existing.roleType = item.roleType;
+        }
+
+        if ((existing.type === undefined || existing.type === 'unknown') && item.type) {
+          existing.type = item.type;
         }
       }
     }

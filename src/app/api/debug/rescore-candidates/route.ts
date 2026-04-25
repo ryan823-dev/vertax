@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAdapterRegistration, ensureAdaptersInitialized } from '@/lib/radar/adapters';
+import { doesCountryMatchTargets } from '@/lib/radar/country-utils';
 
 export const maxDuration = 60;
 
@@ -40,11 +41,9 @@ function scoreCandidate(
   if (candidate.phone) score += 1;
   // 国家匹配
   if (candidate.country) {
-    const matched = profile.targetCountries.some(tc =>
-      candidate.country!.toUpperCase().includes(tc.toUpperCase()) ||
-      tc.toUpperCase().includes(candidate.country!.toUpperCase().slice(0, 2))
-    );
-    if (matched) score += 1;
+    if (doesCountryMatchTargets(candidate.country, profile.targetCountries)) {
+      score += 1;
+    }
   }
   // 匹配分数
   if (candidate.matchScore) score += Math.round(candidate.matchScore);

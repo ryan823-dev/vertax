@@ -1,10 +1,10 @@
 ﻿/**
- * Cron: 闆疯揪璇︽儏琛ュ叏 & 鎯呮姤涓板瘜鍖?(Exa + Tavily + Hunter.io)
+ * Cron: 闆疯揪璇︽儏琛ュ叏 & 鎯呮姤涓板瘜鍖?
  * 
  * 姣?6 灏忔椂鎵ц涓€娆?(vercel.json: 0 *\/6 * * *)
  * 瀵?status=ENRICHING 鐨勫€欓€夎繘琛屾繁搴︿赴瀵屻€? * 
  * 2026-04-01 澧炲己锛? * - 缁撳悎鍘熷閫傞厤鍣?getDetails() 涓庨€氱敤鐨?Intelligence Enricher
- * - 寮曞叆 Hunter.io 鏌ユ壘鍐崇瓥鑰呴偖绠? * - 寮曞叆 Tavily 浣滀负澶囩敤鎼滅储
+ * - 寮曞叆鍏紑璇佹嵁 fallback 涓庤仈绯绘柟寮忚ˉ鍏?
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -12,7 +12,6 @@ import { ensureCronAuthorized } from "@/lib/cron-auth";
 import { prisma } from '@/lib/prisma';
 import { getAdapter, ensureAdaptersInitialized } from '@/lib/radar/adapters';
 import { enrichWithSignalScore } from '@/lib/radar/intelligence-enricher';
-import { resolveApiKey } from '@/lib/services/api-key-resolver';
 
 const MAX_RUN_SECONDS = 55; // Vercel Hobby max is 60s, leave buffer
 const MAX_BATCH_SIZE = 10;  // 娣卞害涓板瘜鑰楁椂杈冮暱锛屽噺灏忔壒娆?
@@ -82,13 +81,10 @@ export async function GET(req: NextRequest) {
           console.warn(`[RadarEnrich] Adapter getDetails failed for ${candidate.id}, continuing to intelligence enrich...`);
         }
 
-        // 2. 娣卞害鎯呮姤涓板瘜 (Exa + Tavily + Hunter.io)
-        // 鍙湁閰嶇疆浜?key 鎵嶄細鐪熸鎵ц
-        if ((await resolveApiKey('exa')) || (await resolveApiKey('tavily'))) {
-          const enrichResult = await enrichWithSignalScore(candidate.id);
-          if (enrichResult.enrichment.success) {
-            stats.intelligenceEnriched++;
-          }
+        // 2. 娣卞害鎯呮姤涓板瘜锛氬叕寮€璇佹嵁 + OSINT checkpoint + 鍙€夌殑鍚庣画琛ュ叏
+        const enrichResult = await enrichWithSignalScore(candidate.id);
+        if (enrichResult.enrichment.success) {
+          stats.intelligenceEnriched++;
         }
 
         // 3. 鏍囪涓?QUALIFIED
