@@ -6,6 +6,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ensureCronAuthorized } from "@/lib/cron-auth";
 import { prisma } from '@/lib/prisma';
+import * as tiktokService from "@/lib/services/tiktok.service";
+import type { Prisma } from "@prisma/client";
 
 export const runtime = 'nodejs';
 export const maxDuration = 120;
@@ -68,13 +70,17 @@ export async function GET(req: NextRequest) {
   // 鎵惧嚭 7 澶╁唴鍙戝竷鎴愬姛涓旀湁 platformPostId 鐨?PostVersions
   const versions = await prisma.postVersion.findMany({
     where: {
-      publishedAt: { gte: since },
       platformPostId: { not: null },
+      OR: [
+        { publishedAt: { gte: since } },
+        { platform: "tiktok", publishedAt: null },
+      ],
     },
     select: {
       id: true,
       platform: true,
       platformPostId: true,
+      metrics: true,
       postId: true,
       post: {
         select: {
@@ -92,7 +98,15 @@ export async function GET(req: NextRequest) {
   const tenantIds = [...new Set(versions.map(v => v.post.tenantId))];
   const accounts = await prisma.socialAccount.findMany({
     where: { tenantId: { in: tenantIds }, isActive: true },
-    select: { tenantId: true, platform: true, accessToken: true, metadata: true },
+    select: {
+      id: true,
+      tenantId: true,
+      platform: true,
+      accessToken: true,
+      refreshToken: true,
+      expiresAt: true,
+      metadata: true,
+    },
   });
 
   const accountMap = new Map<string, typeof accounts[0]>();
@@ -120,6 +134,67 @@ export async function GET(req: NextRequest) {
       const meta = acc.metadata as Record<string, string> | null;
       const apiKey = meta?.apiKey ?? process.env.YOUTUBE_API_KEY ?? '';
       metrics = await fetchYouTubeMetrics(version.platformPostId, apiKey);
+    } else if (version.platform === 'tiktok') {
+      try {
+        const refreshed = await tiktokService.refreshTokenIfNeeded(acc);
+        let accessToken = acc.accessToken ?? "";
+        if (refreshed) {
+          await prisma.socialAccount.update({
+            where: { id: acc.id },
+            data: {
+              accessToken: refreshed.accessToken,
+              refreshToken: refreshed.refreshToken,
+              expiresAt: refreshed.expiresAt,
+            },
+          });
+          accessToken = refreshed.accessToken;
+        }
+
+        const publishId = version.platformPostId.replace(/^tiktok:/, "");
+        const status = await tiktokService.fetchPublishStatus({
+          accessToken,
+          publishId,
+        });
+        const nextMetrics = tiktokService.mergeTikTokPublishState(
+          version.metrics,
+          { ...status, publishId }
+        );
+
+        await prisma.postVersion.update({
+          where: { id: version.id },
+          data: {
+            metrics: nextMetrics as Prisma.InputJsonValue,
+            error:
+              status.status === "FAILED"
+                ? status.failReason || "TikTok publish failed"
+                : null,
+            publishedAt:
+              status.status === "PUBLISH_COMPLETE" ? new Date() : undefined,
+          },
+        });
+
+        if (status.status === "PUBLISH_COMPLETE") {
+          const pendingVersions = await prisma.postVersion.count({
+            where: {
+              postId: version.postId,
+              publishedAt: null,
+              error: null,
+            },
+          });
+          if (pendingVersions === 0) {
+            await prisma.socialPost.update({
+              where: { id: version.postId },
+              data: { status: "published", publishedAt: new Date() },
+            }).catch(() => {});
+          }
+        }
+
+        results.push({ id: version.id, success: true, platform: version.platform });
+        continue;
+      } catch {
+        results.push({ id: version.id, success: false, platform: version.platform });
+        continue;
+      }
     }
     // LinkedIn public metrics require special scopes 鈥?skip for now
 

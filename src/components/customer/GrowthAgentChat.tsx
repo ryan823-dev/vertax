@@ -19,11 +19,11 @@ import { cn } from "@/lib/utils";
 import type {
   AssistantAction,
   AssistantReference,
-  ExecutiveAssistantPayload,
-} from "@/lib/executive-assistant/types";
+  GrowthAgentPayload,
+} from "@/lib/growth-agent/types";
 
 export type Reference = AssistantReference;
-export type StructuredResponse = ExecutiveAssistantPayload;
+export type StructuredResponse = GrowthAgentPayload;
 
 export interface ChatMessage {
   id: string;
@@ -39,7 +39,7 @@ export interface QuickPrompt {
   prompt: string;
 }
 
-export interface BigChatProps {
+export interface GrowthAgentChatProps {
   messages: ChatMessage[];
   onSend: (message: string) => Promise<void>;
   onAction?: (action: AssistantAction) => Promise<void> | void;
@@ -59,7 +59,7 @@ export interface BigChatProps {
   quickPromptMode?: "fill" | "send";
 }
 
-export function BigChat({
+export function GrowthAgentChat({
   messages,
   onSend,
   onAction,
@@ -77,7 +77,7 @@ export function BigChat({
   collapsed = false,
   onExpand,
   quickPromptMode = "fill",
-}: BigChatProps) {
+}: GrowthAgentChatProps) {
   const [inputValue, setInputValue] = useState("");
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);

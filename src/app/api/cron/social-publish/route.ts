@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ensureCronAuthorized } from "@/lib/cron-auth";
 import { prisma } from '@/lib/prisma';
-import { publishSocialPost } from '@/actions/social';
+import { publishSocialPostForTenant } from '@/actions/social';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
       status: 'scheduled',
       scheduledAt: { lte: now },
     },
-    select: { id: true, title: true },
+    select: { id: true, title: true, tenantId: true },
   });
 
   if (duePosts.length === 0) {
@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
 
   for (const post of duePosts) {
     try {
-      await publishSocialPost(post.id);
+      await publishSocialPostForTenant(post.id, post.tenantId);
       results.push({ id: post.id, success: true });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);

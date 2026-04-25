@@ -15,12 +15,11 @@ export function CustomerShell({
   return (
     <div className="customer-theme ci-shell-bg min-h-screen text-[var(--ci-text)] lg:flex">
       <CustomerSidebar tenantName={tenantName} tenantSlug={tenantSlug} />
-      <main className="relative min-w-0 flex-1 lg:h-screen lg:min-h-0 lg:overflow-hidden">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(79,141,246,0.12),transparent_28%),radial-gradient(circle_at_78%_0%,rgba(15,159,110,0.08),transparent_22%),linear-gradient(180deg,transparent,rgba(255,255,255,0.12))]" />
+      <main className="ci-work-surface relative min-w-0 flex-1 lg:h-screen lg:min-h-0 lg:overflow-hidden">
         <div className="relative flex min-h-screen flex-col lg:h-full lg:min-h-0">
           <CustomerHeader tenantName={tenantName} tenantSlug={tenantSlug} />
           <section className="flex-1 lg:min-h-0">
-            <div className="px-4 pb-8 pt-5 sm:px-5 lg:scrollbar-hide lg:h-full lg:overflow-y-auto lg:px-7 lg:pb-10">
+            <div className="px-4 pb-8 pt-4 sm:px-5 lg:scrollbar-hide lg:h-full lg:overflow-y-auto lg:px-7 lg:pb-10 lg:pt-6">
               <div className="mx-auto max-w-[1720px]">{children}</div>
             </div>
           </section>

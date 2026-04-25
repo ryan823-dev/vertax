@@ -1,140 +1,58 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { ensureCronAuthorized } from "@/lib/cron-auth";
 import { db } from "@/lib/db";
-import * as facebookService from "@/lib/services/facebook.service";
-import * as twitterService from "@/lib/services/twitter.service";
-import { formatPublishError } from "@/lib/utils/social.utils";
+import { publishSocialPostForTenant } from "@/actions/social";
+
+export const runtime = "nodejs";
+export const maxDuration = 120;
 
 export async function GET(req: NextRequest) {
-  // Verify cron secret
   const unauthorizedResponse = ensureCronAuthorized(req);
   if (unauthorizedResponse) {
     return unauthorizedResponse;
   }
 
   try {
-    // Find all scheduled posts that are due
     const duePosts = await db.socialPost.findMany({
       where: {
         status: "scheduled",
         scheduledAt: { lte: new Date() },
         deletedAt: null,
       },
-      include: { versions: true },
+      select: { id: true, tenantId: true, title: true },
     });
 
-    const results: { postId: string; success: boolean; errors?: string[] }[] = [];
+    const results: { postId: string; success: boolean; error?: string }[] = [];
 
     for (const post of duePosts) {
-      const postErrors: string[] = [];
-      let anySuccess = false;
-
-      for (const version of post.versions) {
-        // Skip already published versions
-        if (version.platformPostId) {
-          anySuccess = true;
-          continue;
-        }
-
-        const account = await db.socialAccount.findFirst({
-          where: {
-            tenantId: post.tenantId,
-            platform: version.platform,
-            isActive: true,
-          },
+      try {
+        const result = await publishSocialPostForTenant(post.id, post.tenantId);
+        results.push({
+          postId: post.id,
+          success: result.success,
+          error: result.success
+            ? undefined
+            : result.results
+                .filter((item) => !item.success)
+                .map((item) => `${item.platform}: ${item.error || "failed"}`)
+                .join("; "),
         });
-
-        if (!account) {
-          const err = `No connected ${version.platform} account`;
-          await db.postVersion.update({
-            where: { id: version.id },
-            data: { error: err, publishAttempts: { increment: 1 } },
-          });
-          postErrors.push(err);
-          continue;
-        }
-
-        try {
-          let platformPostId: string;
-
-          if (version.platform === "facebook") {
-            const refreshed = await facebookService.refreshTokenIfNeeded(account);
-            if (refreshed) {
-              await db.socialAccount.update({
-                where: { id: account.id },
-                data: { accessToken: refreshed.accessToken, expiresAt: refreshed.expiresAt },
-              });
-              account.accessToken = refreshed.accessToken;
-            }
-
-            const metadata = account.metadata as Record<string, string>;
-            const result = await facebookService.publishToPage({
-              pageAccessToken: account.accessToken!,
-              pageId: metadata.pageId || account.accountId,
-              message: version.content,
-            });
-            platformPostId = result.postId;
-          } else if (version.platform === "x") {
-            const refreshed = await twitterService.refreshTokenIfNeeded(account);
-            if (refreshed) {
-              await db.socialAccount.update({
-                where: { id: account.id },
-                data: {
-                  accessToken: refreshed.accessToken,
-                  refreshToken: refreshed.refreshToken,
-                  expiresAt: refreshed.expiresAt,
-                },
-              });
-              account.accessToken = refreshed.accessToken;
-            }
-
-            const result = await twitterService.publishTweet({
-              accessToken: account.accessToken!,
-              text: version.content,
-            });
-            platformPostId = result.tweetId;
-          } else {
-            throw new Error(`Unsupported platform: ${version.platform}`);
-          }
-
-          await db.postVersion.update({
-            where: { id: version.id },
-            data: {
-              platformPostId,
-              publishedAt: new Date(),
-              error: null,
-              publishAttempts: { increment: 1 },
-            },
-          });
-          anySuccess = true;
-        } catch (err) {
-          const errorMsg = formatPublishError(err);
-          await db.postVersion.update({
-            where: { id: version.id },
-            data: { error: errorMsg, publishAttempts: { increment: 1 } },
-          });
-          postErrors.push(`${version.platform}: ${errorMsg}`);
-        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        await db.socialPost
+          .update({
+            where: { id: post.id },
+            data: { status: "failed" },
+          })
+          .catch(() => {});
+        results.push({ postId: post.id, success: false, error: message });
       }
-
-      // Update post status
-      await db.socialPost.update({
-        where: { id: post.id },
-        data: {
-          status: anySuccess ? "published" : "failed",
-          publishedAt: anySuccess ? new Date() : undefined,
-        },
-      });
-
-      results.push({
-        postId: post.id,
-        success: anySuccess && postErrors.length === 0,
-        errors: postErrors.length > 0 ? postErrors : undefined,
-      });
     }
 
     return NextResponse.json({
       processed: duePosts.length,
+      published: results.filter((result) => result.success).length,
+      failed: results.filter((result) => !result.success).length,
       results,
     });
   } catch (error) {
@@ -142,4 +60,3 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
-

@@ -255,7 +255,11 @@ export default function RadarSearchPage() {
 
       <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <section className="rounded-3xl border border-[#E8E0D0] bg-[#FFFCF7] p-6">
-          <SectionHeader eyebrow="A. 本轮搜索依据" title="系统当前会按这份目标客户画像找客户" description="先让用户确认系统按什么执行，而不是重新填写一套检索条件。" />
+<SectionHeader
+  eyebrow="A. 搜索边界"
+  title="先看结果，再决定下一步"
+  description="先把你想赢的对象范围讲清楚：国家、行业、关键词优先级。接下来直接从执行结果里确认是否可推进。"
+/>
           {targetingSpec ? (
             <div className="grid gap-4 md:grid-cols-2">
               <InfoCard title="当前使用的画像" value={targetingSpec.icpName || "未命名画像"} lines={[summarize(segmentation?.firmographic?.industries, "未提炼目标行业"), summarize(segmentation?.firmographic?.countries, "未提炼目标国家 / 区域"), formatCompanySize(segmentation?.firmographic?.companySize)]} />
@@ -331,7 +335,7 @@ export default function RadarSearchPage() {
 
       <section className="rounded-3xl border border-[#E8E0D0] bg-[#FFFCF7] p-6">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <SectionHeader eyebrow="D. 可选补充偏好" title="告诉系统本轮你更想优先看什么" description="这不是重新配置搜索逻辑，只是给本轮执行一点轻量偏好。" compact />
+<SectionHeader eyebrow="D. 可选补充偏好" title="告诉系统你更想看什么" description="给本轮检索加一条人工判断的优先方向，便于更快判断推进顺序。" compact />
           <button onClick={() => setShowPreferences((value) => !value)} className="inline-flex items-center gap-2 self-start rounded-xl border border-[#E8E0D0] bg-[#FCFAF4] px-4 py-2 text-sm font-medium text-[#0B1B2B] transition-colors hover:border-[#D4AF37]/35 hover:bg-[#FFF7E5]">{showPreferences ? "收起偏好" : "补充本轮偏好（可选）"}<ChevronRight className={`h-4 w-4 transition-transform ${showPreferences ? "rotate-90" : ""}`} /></button>
         </div>
         {showPreferences ? (
@@ -350,7 +354,7 @@ export default function RadarSearchPage() {
 
       <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
         <section className="rounded-3xl border border-[#E8E0D0] bg-[#FFFCF7] p-6">
-          <SectionHeader eyebrow="E. 最近活动" title="最近发生了什么" description="帮助用户确认自动搜索的运行节奏，而不是回到配置心智。" />
+<SectionHeader eyebrow="E. 最近活动" title="最近发生了什么" description="帮你确认执行是否在推进：哪些值得继续跟进，哪些可以延后。" />
           {tasks.length ? (
             <div className="space-y-3">
               {tasks.slice(0, 5).map((task) => (
@@ -404,7 +408,7 @@ export default function RadarSearchPage() {
           ) : (
             <EmptyCard title="当前没有持续执行策略" description="这不影响你直接按当前画像启动一轮自动搜索，旧版持续策略会在下一阶段继续收敛。" />
           )}
-          <div className="mt-4 rounded-2xl border border-dashed border-[#D4AF37]/35 bg-[#FFF8E8] px-4 py-3 text-sm text-slate-600">旧版渠道、任务与策略能力已经收敛到本页的执行摘要中。用户不需要再回到多个配置页，主流程保持为“看系统怎么找、启动、审核和推进”。</div>
+<div className="mt-4 rounded-2xl border border-dashed border-[#D4AF37]/35 bg-[#FFF8E8] px-4 py-3 text-sm text-slate-600">旧有渠道与策略已聚合到本页执行摘要。当前你只需要确认结果：是否值得推进、谁先推进、下一步动作是什么。</div>
         </section>
       </div>
     </div>

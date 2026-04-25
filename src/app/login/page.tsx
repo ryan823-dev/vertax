@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ExternalLink, Sparkles, Zap } from "lucide-react";
-import Link from "next/link";
 import { signIn, useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -271,14 +270,10 @@ export default function LoginPage() {
             </form>
 
             <div className="mt-8 border-t border-[var(--ci-border)] pt-5">
-              <p className="text-center text-sm text-[var(--ci-text-secondary)]">
-                还没有账户？{" "}
-                <Link
-                  href="/register"
-                  className="font-semibold text-[var(--ci-accent-strong)] transition-colors hover:text-[var(--ci-accent)]"
-                >
-                  获取使用资格
-                </Link>
+              <p className="text-center text-sm leading-6 text-[var(--ci-text-secondary)]">
+                VertaX 账号由商务签约与交付流程开通。
+                <br />
+                如需访问权限，请联系您的客户成功经理或 VertaX 商务负责人。
               </p>
             </div>
           </section>

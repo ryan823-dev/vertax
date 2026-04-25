@@ -21,8 +21,10 @@ const publicPaths = [
   "/faq",
   "/features",
   "/pricing",
+  "/privacy",
   "/resources",
   "/solutions",
+  "/terms",
 ];
 const CRON_ROUTES = ["/api/cron/"];
 

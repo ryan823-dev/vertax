@@ -25,6 +25,8 @@ import {
   Library,
   CalendarClock,
   Download,
+  Upload,
+  Video,
 } from 'lucide-react';
 import {
   getSocialPosts,
@@ -33,6 +35,7 @@ import {
   createSocialPost,
   deleteSocialPost,
   publishSocialPost,
+  getTikTokCreatorInfo,
 } from '@/actions/social';
 import { exportSocialPostsToCSV } from '@/actions/content-export';
 import { downloadCSV } from '@/lib/utils/download';
@@ -46,7 +49,29 @@ const PLATFORMS = [
   { id: 'x', name: 'Twitter/X', color: 'bg-slate-800', textColor: 'text-slate-800' },
   { id: 'facebook', name: 'Facebook', color: 'bg-blue-500', textColor: 'text-blue-500' },
   { id: 'youtube', name: 'YouTube', color: 'bg-red-600', textColor: 'text-red-600' },
+  { id: 'tiktok', name: 'TikTok', color: 'bg-neutral-950', textColor: 'text-neutral-900' },
 ];
+
+const TIKTOK_PUBLISH_CONFIG_KEY = 'tiktokPublishConfig';
+
+type TikTokCreatorInfo = {
+  creator_username?: string;
+  creator_nickname?: string;
+  privacy_level_options: string[];
+  comment_disabled: boolean;
+  duet_disabled: boolean;
+  stitch_disabled: boolean;
+  max_video_post_duration_sec?: number;
+};
+
+type TikTokMediaState = {
+  assetId: string;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+  durationSec?: number;
+  previewUrl?: string;
+};
 
 type SocialAccount = {
   id: string;
@@ -54,6 +79,7 @@ type SocialAccount = {
   accountName: string;
   accountId: string;
   isActive: boolean;
+  metadata?: Record<string, unknown>;
 };
 
 type PostVersion = {
@@ -62,7 +88,8 @@ type PostVersion = {
   content: string;
   platformPostId: string | null;
   publishedAt: Date | null;
-  metrics: Record<string, number>;
+  media: string[];
+  metrics: Record<string, unknown>;
 };
 
 type SocialPost = {
@@ -94,6 +121,20 @@ export default function SocialPage() {
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishMode, setPublishMode] = useState<'now' | 'scheduled'>('now');
   const [scheduledAt, setScheduledAt] = useState('');
+  const [tiktokCreator, setTikTokCreator] = useState<TikTokCreatorInfo | null>(null);
+  const [isLoadingTikTokCreator, setIsLoadingTikTokCreator] = useState(false);
+  const [tiktokMedia, setTikTokMedia] = useState<TikTokMediaState | null>(null);
+  const [isUploadingTikTok, setIsUploadingTikTok] = useState(false);
+  const [tiktokOptions, setTikTokOptions] = useState({
+    privacyLevel: 'SELF_ONLY',
+    disableComment: false,
+    disableDuet: false,
+    disableStitch: false,
+    brandContentToggle: false,
+    brandOrganicToggle: true,
+    isAigc: false,
+    userConsent: false,
+  });
 
   // 加载数据
   const loadData = useCallback(async () => {
@@ -119,6 +160,7 @@ export default function SocialPage() {
 
   const activeAccounts = accounts.filter(account => account.isActive);
   const hasConnectedAccounts = activeAccounts.length > 0;
+  const hasTikTokAccount = activeAccounts.some(account => account.platform === 'tiktok');
   const isPendingSetup = !hasConnectedAccounts && posts.length === 0;
 
   useEffect(() => {
@@ -126,6 +168,41 @@ export default function SocialPage() {
       setViewMode('list');
     }
   }, [hasConnectedAccounts, viewMode]);
+
+  useEffect(() => {
+    if (!selectedPlatforms.includes('tiktok')) return;
+    if (!hasTikTokAccount) return;
+
+    let cancelled = false;
+    setIsLoadingTikTokCreator(true);
+    getTikTokCreatorInfo()
+      .then((result) => {
+        if (cancelled || !result) return;
+        const info = result.creatorInfo;
+        setTikTokCreator(info);
+        setTikTokOptions(prev => ({
+          ...prev,
+          privacyLevel: info.privacy_level_options.includes(prev.privacyLevel)
+            ? prev.privacyLevel
+            : info.privacy_level_options[0] || 'SELF_ONLY',
+          disableComment: info.comment_disabled || prev.disableComment,
+          disableDuet: info.duet_disabled || prev.disableDuet,
+          disableStitch: info.stitch_disabled || prev.disableStitch,
+        }));
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError('TikTok 创作者信息读取失败，请稍后重试');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingTikTokCreator(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedPlatforms, hasTikTokAccount]);
 
   // 计算统计数据
   const stats = {
@@ -136,7 +213,7 @@ export default function SocialPage() {
     totalEngagement: posts.reduce((sum, post) => {
       return sum + post.versions.reduce((vSum, v) => {
         const metrics = v.metrics || {};
-        return vSum + (metrics.likes || 0) + (metrics.comments || 0) + (metrics.shares || 0);
+        return vSum + getMetricNumber(metrics.likes) + getMetricNumber(metrics.comments) + getMetricNumber(metrics.shares);
       }, 0);
     }, 0),
   };
@@ -157,7 +234,7 @@ export default function SocialPage() {
 
   const handleStartCreate = () => {
     if (!hasConnectedAccounts) {
-      setError('请先完成发布配置，再创建内容。');
+      setError('请先确认至少一个渠道可用，再进入内容创建与发布。');
       return;
     }
     setViewMode('create');
@@ -183,14 +260,116 @@ export default function SocialPage() {
     }
   };
 
+  const handleTikTokVideoUpload = async (file: File | null) => {
+    if (!file) return;
+
+    const supportedTypes = ['video/mp4', 'video/quicktime', 'video/webm'];
+    if (!supportedTypes.includes(file.type)) {
+      setError('仅支持 MP4、MOV、WebM 格式视频。');
+      return;
+    }
+
+    setIsUploadingTikTok(true);
+    setError(null);
+    try {
+      const durationSec = await readVideoDuration(file).catch(() => undefined);
+      const createRes = await fetch('/api/assets/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          files: [
+            {
+              originalName: file.name,
+              mimeType: file.type,
+              fileSize: file.size,
+            },
+          ],
+        }),
+      });
+      const createData = await createRes.json();
+      if (!createRes.ok || !createData?.sessions?.[0]) {
+        throw new Error(createData?.error || '未能创建视频上传会话');
+      }
+
+      const session = createData.sessions[0] as { assetId: string; presignedUrl: string };
+      const uploadRes = await fetch(session.presignedUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': file.type },
+        body: file,
+      });
+      if (!uploadRes.ok) {
+        throw new Error(`视频上传失败：${uploadRes.status}`);
+      }
+
+      const confirmRes = await fetch('/api/assets/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'confirm',
+          assetId: session.assetId,
+          metadata: { durationSec },
+        }),
+      });
+      if (!confirmRes.ok) {
+        const confirmData = await confirmRes.json().catch(() => ({}));
+        throw new Error(confirmData?.error || '未能确认已上传视频');
+      }
+
+      setTikTokMedia({
+        assetId: session.assetId,
+        fileName: file.name,
+        fileSize: file.size,
+        mimeType: file.type,
+        durationSec,
+        previewUrl: URL.createObjectURL(file),
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'TikTok 视频上传失败');
+    } finally {
+      setIsUploadingTikTok(false);
+    }
+  };
+
   // 保存帖子
   const handleSavePost = async (publish: boolean = false) => {
     if (Object.keys(generatedContents).length === 0) return;
+
+    const includesTikTok = Object.keys(generatedContents).includes('tiktok');
+    if (includesTikTok) {
+      if (!hasTikTokAccount) {
+        setError('先接通 TikTok 发布通道，再发起 TikTok 发布。');
+        return;
+      }
+      if (!tiktokMedia) {
+        setError('请先上传一条 TikTok 视频稿件。');
+        return;
+      }
+      if (!tiktokOptions.userConsent) {
+        setError('请先确认并同意 TikTok 视频发布授权。');
+        return;
+      }
+    }
     
     try {
       const versions = Object.entries(generatedContents).map(([platform, content]) => ({
         platform,
         content,
+        media: platform === 'tiktok' && tiktokMedia ? [`asset:${tiktokMedia.assetId}`] : [],
+        metrics: platform === 'tiktok' && tiktokMedia ? {
+          [TIKTOK_PUBLISH_CONFIG_KEY]: {
+            privacyLevel: tiktokOptions.privacyLevel,
+            disableComment: tiktokOptions.disableComment,
+            disableDuet: tiktokOptions.disableDuet,
+            disableStitch: tiktokOptions.disableStitch,
+            brandContentToggle: tiktokOptions.brandContentToggle,
+            brandOrganicToggle: tiktokOptions.brandOrganicToggle,
+            isAigc: tiktokOptions.isAigc,
+            videoDurationSec: tiktokMedia.durationSec,
+            sourceAssetId: tiktokMedia.assetId,
+            sourceFileName: tiktokMedia.fileName,
+            userConsentAt: new Date().toISOString(),
+          },
+        } : {},
       }));
 
       const isScheduling = publishMode === 'scheduled' && scheduledAt;
@@ -211,6 +390,8 @@ export default function SocialPage() {
       setViewMode('list');
       setTopic('');
       setGeneratedContents({});
+      setTikTokMedia(null);
+      setTikTokOptions(prev => ({ ...prev, userConsent: false }));
       setPublishMode('now');
       setScheduledAt('');
       loadData();
@@ -291,7 +472,7 @@ export default function SocialPage() {
           <div className="relative flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-white">声量枢纽</h1>
-              <p className="text-sm text-slate-400 mt-1">新租户待配置：先完成发布配置，再进入内容创建与发布</p>
+              <p className="text-sm text-slate-400 mt-1">先确认发布渠道可用，再进入内容创建与发布动作，减少空跑。</p>
             </div>
             <div className="flex items-center gap-3">
               <Link
@@ -300,7 +481,7 @@ export default function SocialPage() {
                 style={{ background: '#D4AF37', color: '#0B1220', boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)' }}
               >
                 <KeyRound size={16} />
-                完成发布配置
+                去接通发布渠道
               </Link>
               <button
                 onClick={loadData}
@@ -329,15 +510,15 @@ export default function SocialPage() {
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold tracking-[0.18em] text-amber-700 uppercase">
-                    待配置
+                    未就绪
                   </span>
-                  <p className="text-sm font-semibold text-amber-900">发布入口已收紧，避免新租户误操作</p>
+                  <p className="text-sm font-semibold text-amber-900">发布入口已暂停，先打通渠道后再继续</p>
                 </div>
                 <p className="text-sm text-amber-800">
-                  当前还没有可用的发布账号，声量枢纽已自动切换到安全模式，先完成至少 1 个渠道授权，再开放创建与发布动作。
+                  当前还没有可用渠道，声量枢纽先不展示创建入口，请先完成至少一个渠道接入后再继续。
                 </p>
                 <p className="text-xs text-amber-700">
-                  完成配置后，你就可以继续多平台内容生成、定时发布和统一账号管理。
+                  渠道接通后，可直接开启内容生成、预排和发布，推进更快。
                 </p>
               </div>
             </div>
@@ -346,7 +527,7 @@ export default function SocialPage() {
               className="px-4 py-2 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-1.5 shrink-0"
               style={{ background: '#D4AF37', color: '#0B1220', boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)' }}
             >
-              去完成发布配置
+              去接通发布渠道
             </Link>
           </div>
         </div>
@@ -357,16 +538,16 @@ export default function SocialPage() {
             <div className="mt-5 space-y-4">
               {[
                 {
-                  title: '进入发布配置',
-                  desc: '选择 X、Facebook、YouTube 等渠道，先完成至少 1 个账号授权。',
+                  title: '确认可用渠道',
+                  desc: '选择至少 1 个目标平台并完成授权，保证发布路径可用。',
                 },
                 {
-                  title: '验证配置可用',
-                  desc: '测试连接成功后保存，确保后续发布不会因为凭证缺失而失败。',
+                  title: '校验发布通道',
+                  desc: '连通性通过后再提交发布，避免后续因渠道问题中断工作。',
                 },
                 {
-                  title: '返回声量枢纽开始发布',
-                  desc: '配置完成后，这里会自动开放内容创建、预览、立即发布和定时发布。',
+                  title: '返回声量枢纽推进发布',
+                  desc: '完成后可直接进入创建、预览、立即发布或定时发布。',
                 },
               ].map((step, index) => (
                 <div key={step.title} className="flex gap-3 rounded-xl border border-[#E8E0D0] bg-[#FFFCF7] p-4">
@@ -386,7 +567,7 @@ export default function SocialPage() {
             background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)',
             boxShadow: '0 8px 32px -8px rgba(0,0,0,0.45)',
           }}>
-            <p className="text-xs font-semibold tracking-[0.18em] text-[#D4AF37] uppercase">配置后解锁</p>
+            <p className="text-xs font-semibold tracking-[0.18em] text-[#D4AF37] uppercase">接通后即可推进</p>
             <div className="mt-5 space-y-4">
               {[
                 { icon: Sparkles, title: 'AI 多平台内容生成', desc: '按平台生成适配文案，减少重复编辑。' },
@@ -608,6 +789,112 @@ export default function SocialPage() {
                 </div>
               </div>
 
+              {selectedPlatforms.includes('tiktok') && (
+                <div className="rounded-xl border border-[#E8E0D0] bg-[#FFFCF7] p-4 space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <Video size={16} className="text-neutral-900" />
+                      <div>
+                          <p className="text-xs font-semibold text-[#0B1B2B]">TikTok 视频素材</p>
+                        <p className="text-[10px] text-slate-500">发布 TikTok 直发前请先上传 MP4、MOV 或 WebM 视频。</p>
+                      </div>
+                    </div>
+                    {isLoadingTikTokCreator && <Loader2 size={14} className="animate-spin text-slate-400" />}
+                  </div>
+
+                  {!hasTikTokAccount && (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+                      使用 TikTok 前先在发布渠道完成接入配置。
+                    </div>
+                  )}
+
+                  {tiktokCreator && (
+                    <div className="grid grid-cols-2 gap-3">
+                      <label className="text-xs text-slate-500">
+                        Privacy
+                        <select
+                          value={tiktokOptions.privacyLevel}
+                          onChange={(e) => setTikTokOptions(prev => ({ ...prev, privacyLevel: e.target.value }))}
+                          className="mt-1 w-full rounded-lg border border-[#E8E0D0] bg-white px-3 py-2 text-xs text-slate-700"
+                        >
+                          {tiktokCreator.privacy_level_options.map(option => (
+                            <option key={option} value={option}>{formatTikTokPrivacy(option)}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <div className="text-xs text-slate-500">
+                        Account
+                        <p className="mt-1 rounded-lg border border-[#E8E0D0] bg-white px-3 py-2 text-xs text-slate-700">
+                          {tiktokCreator.creator_username || tiktokCreator.creator_nickname || 'TikTok creator'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-[#D4AF37]/60 bg-[#D4AF37]/10 px-4 py-3 text-xs font-medium text-[#0B1220]">
+                    {isUploadingTikTok ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                    {isUploadingTikTok ? '上传中...' : tiktokMedia ? '更换视频' : '上传 TikTok 视频'}
+                    <input
+                      type="file"
+                      accept="video/mp4,video/quicktime,video/webm"
+                      className="hidden"
+                      disabled={isUploadingTikTok}
+                      onChange={(e) => handleTikTokVideoUpload(e.target.files?.[0] || null)}
+                    />
+                  </label>
+
+                  {tiktokMedia && (
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-xs font-medium text-emerald-900">{tiktokMedia.fileName}</p>
+                          <p className="text-[10px] text-emerald-700">
+                            {formatFileSize(tiktokMedia.fileSize)}
+                            {tiktokMedia.durationSec ? ` - ${Math.round(tiktokMedia.durationSec)}s` : ''}
+                            {tiktokCreator?.max_video_post_duration_sec ? ` - max ${tiktokCreator.max_video_post_duration_sec}s` : ''}
+                          </p>
+                        </div>
+                        <CheckCircle2 size={16} className="text-emerald-600" />
+                      </div>
+                      {tiktokMedia.previewUrl && (
+                        <video src={tiktokMedia.previewUrl} controls className="mt-3 max-h-48 w-full rounded-lg bg-black" />
+                      )}
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      ['disableComment', '关闭评论', tiktokCreator?.comment_disabled],
+                      ['disableDuet', '禁止拼接', tiktokCreator?.duet_disabled],
+                      ['disableStitch', '禁止拼接投稿', tiktokCreator?.stitch_disabled],
+                      ['isAigc', '标记为 AI 生成', false],
+                      ['brandOrganicToggle', '品牌自营内容', false],
+                      ['brandContentToggle', '付费合作内容', false],
+                    ].map(([key, label, locked]) => (
+                      <label key={String(key)} className="flex items-center gap-2 rounded-lg border border-[#E8E0D0] bg-white px-3 py-2 text-[11px] text-slate-600">
+                        <input
+                          type="checkbox"
+                          disabled={Boolean(locked)}
+                          checked={Boolean(tiktokOptions[key as keyof typeof tiktokOptions])}
+                          onChange={(e) => setTikTokOptions(prev => ({ ...prev, [String(key)]: e.target.checked }))}
+                        />
+                        {String(label)}
+                      </label>
+                    ))}
+                  </div>
+
+                  <label className="flex items-start gap-2 rounded-lg border border-[#E8E0D0] bg-white px-3 py-2 text-[11px] leading-5 text-slate-600">
+                    <input
+                      type="checkbox"
+                      checked={tiktokOptions.userConsent}
+                      onChange={(e) => setTikTokOptions(prev => ({ ...prev, userConsent: e.target.checked }))}
+                      className="mt-1"
+                    />
+                    我已确认创作者授权该视频用于 TikTok 直发发布。
+                  </label>
+                </div>
+              )}
+
               <button
                 onClick={handleGenerate}
                 disabled={!topic.trim() || selectedPlatforms.length === 0 || isGenerating}
@@ -666,7 +953,7 @@ export default function SocialPage() {
                             className="mt-2 px-3 py-1.5 rounded-lg text-[10px] font-medium flex items-center gap-1 bg-blue-700 text-white hover:bg-blue-800 transition-colors"
                           >
                             <Share2 size={10} />
-                            Share on LinkedIn
+                            去 LinkedIn 分享
                           </button>
                         )}
                       </div>
@@ -871,7 +1158,7 @@ export default function SocialPage() {
                               className="mt-2 px-3 py-1.5 rounded-lg text-[10px] font-medium flex items-center gap-1 bg-blue-700 text-white hover:bg-blue-800 transition-colors"
                             >
                               <Share2 size={10} />
-                              Share on LinkedIn
+                              去 LinkedIn 分享
                             </button>
                           )}
                           {version.platform === 'linkedin' && version.metrics && (version.metrics as unknown as Record<string, string>).shareUrl && (
@@ -882,26 +1169,32 @@ export default function SocialPage() {
                               className="mt-2 px-3 py-1.5 rounded-lg text-[10px] font-medium flex items-center gap-1 bg-blue-700 text-white hover:bg-blue-800 transition-colors"
                             >
                               <Share2 size={10} />
-                              Open LinkedIn Share
+                              打开 LinkedIn 分享页
                             </button>
                           )}
                           
                           {/* Metrics */}
+                          {version.platform === 'tiktok' && getTikTokPublishStatus(version.metrics) && (
+                            <p className="mt-2 rounded-lg bg-amber-50 px-2 py-1 text-[10px] text-amber-700">
+                              TikTok: {getTikTokPublishStatus(version.metrics)}
+                            </p>
+                          )}
+
                           {version.metrics && Object.keys(version.metrics).length > 0 && (
                             <div className="flex gap-3 mt-2 text-[10px] text-slate-500">
-                              {version.metrics.likes !== undefined && (
+                              {getMetricNumber(version.metrics.likes) > 0 && (
                                 <span className="flex items-center gap-1">
-                                  <Heart size={10} /> {version.metrics.likes}
+                                  <Heart size={10} /> {getMetricNumber(version.metrics.likes)}
                                 </span>
                               )}
-                              {version.metrics.comments !== undefined && (
+                              {getMetricNumber(version.metrics.comments) > 0 && (
                                 <span className="flex items-center gap-1">
-                                  <MessageSquare size={10} /> {version.metrics.comments}
+                                  <MessageSquare size={10} /> {getMetricNumber(version.metrics.comments)}
                                 </span>
                               )}
-                              {version.metrics.shares !== undefined && (
+                              {getMetricNumber(version.metrics.shares) > 0 && (
                                 <span className="flex items-center gap-1">
-                                  <Share2 size={10} /> {version.metrics.shares}
+                                  <Share2 size={10} /> {getMetricNumber(version.metrics.shares)}
                                 </span>
                               )}
                             </div>
@@ -971,4 +1264,47 @@ export default function SocialPage() {
       )}
     </div>
   );
+}
+
+function getMetricNumber(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0;
+}
+
+function readVideoDuration(file: File): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const video = document.createElement('video');
+    video.preload = 'metadata';
+    video.onloadedmetadata = () => {
+      URL.revokeObjectURL(url);
+      resolve(video.duration);
+    };
+    video.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('未能读取视频时长'));
+    };
+    video.src = url;
+  });
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatTikTokPrivacy(value: string): string {
+  const labels: Record<string, string> = {
+    PUBLIC_TO_EVERYONE: '公开',
+    MUTUAL_FOLLOW_FRIENDS: '互关可见',
+    FOLLOWER_OF_CREATOR: '仅关注者',
+    SELF_ONLY: '仅自己可见',
+  };
+  return labels[value] || value;
+}
+
+function getTikTokPublishStatus(metrics: Record<string, unknown> | undefined): string | null {
+  const state = metrics?.tiktokPublish;
+  if (!state || typeof state !== 'object' || Array.isArray(state)) return null;
+  const status = (state as Record<string, unknown>).status;
+  return typeof status === 'string' ? status : null;
 }

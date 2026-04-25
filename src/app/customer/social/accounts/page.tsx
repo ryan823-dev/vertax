@@ -49,13 +49,13 @@ const PLATFORMS: PlatformDef[] = [
     textColor: 'text-slate-800',
     available: true,
     fields: [
-      { key: 'apiKey', label: 'API Key (Consumer Key)', placeholder: 'xxxxxxxxxxxxxxxxxxx' },
-      { key: 'apiKeySecret', label: 'API Key Secret', placeholder: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' },
-      { key: 'accessToken', label: 'Access Token', placeholder: 'xxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxx' },
-      { key: 'accessTokenSecret', label: 'Access Token Secret', placeholder: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' },
+      { key: 'apiKey', label: 'API Key（开发者公钥）', placeholder: 'xxxxxxxxxxxxxxxxxxx' },
+      { key: 'apiKeySecret', label: 'API Key Secret（密钥）', placeholder: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' },
+      { key: 'accessToken', label: '访问令牌', placeholder: 'xxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxx' },
+      { key: 'accessTokenSecret', label: '访问令牌 Secret', placeholder: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' },
     ],
     helpUrl: 'https://developer.x.com/en/portal/dashboard',
-    helpText: 'Visit X Developer Portal to create an app and obtain API credentials.',
+    helpText: '前往 X 开发者平台创建应用并获取发布所需凭证。',
   },
   {
     id: 'facebook',
@@ -64,11 +64,11 @@ const PLATFORMS: PlatformDef[] = [
     textColor: 'text-blue-600',
     available: true,
     fields: [
-      { key: 'pageId', label: 'Page ID', placeholder: '123456789012345' },
-      { key: 'pageAccessToken', label: 'Page Access Token', placeholder: 'EAAxxxxxxxxxxxxxxxxxx...' },
+      { key: 'pageId', label: '页面 ID', placeholder: '123456789012345' },
+      { key: 'pageAccessToken', label: '页面访问令牌', placeholder: 'EAAxxxxxxxxxxxxxxxxxx...' },
     ],
     helpUrl: 'https://developers.facebook.com/tools/explorer/',
-    helpText: 'Use Graph API Explorer to generate a long-lived Page Access Token.',
+    helpText: '在 Graph API Explorer 生成长期有效的页面访问令牌。',
   },
   {
     id: 'linkedin',
@@ -77,7 +77,7 @@ const PLATFORMS: PlatformDef[] = [
     textColor: 'text-blue-700',
     available: true,
     shareMode: true,
-    comingSoonNote: 'Share URL mode - no credentials needed. Content will open LinkedIn share dialog.',
+    comingSoonNote: '分享模式无需配置即可发布：直接在 LinkedIn 分享弹窗里提交内容。',
   },
   {
     id: 'youtube',
@@ -86,6 +86,16 @@ const PLATFORMS: PlatformDef[] = [
     textColor: 'text-red-600',
     available: true,
     oauthMode: true,
+  },
+  {
+    id: 'tiktok',
+    name: 'TikTok',
+    color: 'bg-neutral-950',
+    textColor: 'text-neutral-900',
+    available: true,
+    oauthMode: true,
+    helpUrl: 'https://developers.tiktok.com/products/content-posting-api',
+    helpText: 'TikTok 直发需完成内容发布接口与视频发布资质开通。',
   },
 ];
 
@@ -115,7 +125,7 @@ export default function SocialAccountsPage() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       setAccounts((data || []).filter((a: any) => a.isActive) as SocialAccount[]);
     } catch {
-      toast.error('Failed to load accounts');
+      toast.error('加载发布渠道失败，请稍后重试');
     } finally {
       setIsLoading(false);
     }
@@ -154,13 +164,13 @@ export default function SocialAccountsPage() {
       });
       setTestResult(result);
       if (result.success) {
-        toast.success(`Connected as ${result.accountName}`);
+        toast.success(`渠道可用，已绑定 ${result.accountName}`);
       } else {
-        toast.error(result.error || 'Connection failed');
+        toast.error(result.error || '渠道校验未通过');
       }
     } catch (err) {
-      setTestResult({ success: false, error: err instanceof Error ? err.message : 'Test failed' });
-      toast.error('Connection test failed');
+      setTestResult({ success: false, error: err instanceof Error ? err.message : '校验失败' });
+      toast.error('渠道可用性校验失败');
     } finally {
       setIsTesting(false);
     }
@@ -179,27 +189,27 @@ export default function SocialAccountsPage() {
         },
       });
       if (result.success) {
-        toast.success('Credentials saved');
+        toast.success('通道接入已保存，回到声量枢纽即可发布');
         handleCancel();
         loadAccounts();
       } else {
-        toast.error(result.error || 'Save failed');
+        toast.error(result.error || '保存失败，请重试');
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Save failed');
+      toast.error(err instanceof Error ? err.message : '保存失败，请重试');
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleDisconnect = async (accountId: string) => {
-    if (!confirm('Are you sure you want to disconnect this account?')) return;
+    if (!confirm('确定要停止该渠道的发布连接吗？')) return;
     try {
       await deleteSocialAccountHard(accountId);
-      toast.success('Account disconnected');
+      toast.success('该渠道已移除，可继续用其他渠道发布');
       loadAccounts();
     } catch {
-      toast.error('Disconnect failed');
+      toast.error('停止渠道失败，请稍后重试');
     }
   };
 
@@ -237,9 +247,9 @@ export default function SocialAccountsPage() {
           <div>
             <h1 className="text-2xl font-bold text-white flex items-center gap-3">
               <KeyRound size={24} className="text-[#D4AF37]" />
-              发布配置
+              发布通道接入
             </h1>
-            <p className="text-sm text-slate-400 mt-1">先完成渠道授权，再返回声量枢纽创建并发布内容</p>
+            <p className="text-sm text-slate-400 mt-1">先让关键渠道可用，再回到声量枢纽持续推进发布。</p>
           </div>
           <div className="flex items-center gap-3">
             <Link
@@ -265,16 +275,16 @@ export default function SocialAccountsPage() {
             <AlertCircle size={20} className="text-amber-600 shrink-0 mt-0.5" />
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold tracking-[0.18em] text-amber-700 uppercase">
-                  待配置
+              <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold tracking-[0.18em] text-amber-700 uppercase">
+                  待接入
                 </span>
-                <p className="text-sm font-semibold text-amber-900">新租户已进入发布安全模式</p>
+                <p className="text-sm font-semibold text-amber-900">尚未有可发布渠道</p>
               </div>
               <p className="text-sm text-amber-800">
-                当前还没有可用的发布账号，声量枢纽会先收起创建与发布入口，避免误操作。
+                先让至少一个渠道通过可用性校验，才能在声量枢纽继续推进内容发布。
               </p>
               <p className="text-xs text-amber-700">
-                建议先完成至少 1 个渠道授权，再返回发布中心继续内容生成、排期和发布。
+                建议先完成 1 个渠道接入，再返回发布中心进入创建、排期、执行。
               </p>
             </div>
           </div>
@@ -286,7 +296,7 @@ export default function SocialAccountsPage() {
         <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-center gap-3">
           <CheckCircle2 size={20} className="text-emerald-500 shrink-0" />
           <p className="text-sm text-emerald-800">
-            已连接 {accounts.length} 个发布账号
+            当前可直接发布 {accounts.length} 个渠道
           </p>
         </div>
       )}
@@ -330,11 +340,11 @@ export default function SocialAccountsPage() {
 
                   {!platform.available && (
                     <span className="text-xs px-3 py-1 rounded-full font-medium" style={{
-                      background: 'rgba(212,175,55,0.12)',
+                    background: 'rgba(212,175,55,0.12)',
                       color: '#D4AF37',
                       border: '1px solid rgba(212,175,55,0.25)',
                     }}>
-                      Coming Soon
+                      即将开放
                     </span>
                   )}
 
@@ -344,7 +354,7 @@ export default function SocialAccountsPage() {
                       <button
                         onClick={() => handleDisconnect(connected.id)}
                         className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                        title="Disconnect"
+                        title="移除渠道"
                       >
                         <Trash2 size={14} />
                       </button>
@@ -353,7 +363,7 @@ export default function SocialAccountsPage() {
 
                   {platform.shareMode && (
                     <span className="text-xs px-3 py-1 rounded-full font-medium bg-emerald-50 text-emerald-600 border border-emerald-200">
-                      Ready
+                      已接通
                     </span>
                   )}
                 </div>
@@ -363,10 +373,10 @@ export default function SocialAccountsPage() {
                   <div className="mt-2 p-3 bg-emerald-50/50 border border-emerald-100 rounded-xl">
                     <div className="flex items-center gap-2 mb-1">
                       <CheckCircle2 size={14} className="text-emerald-500" />
-                      <p className="text-xs font-medium text-emerald-800">分享模式，无需额外配置</p>
+                      <p className="text-xs font-medium text-emerald-800">分享接入，可直接用于传播</p>
                     </div>
                     <p className="text-[11px] text-slate-500">
-                      发布时会直接打开 LinkedIn 分享窗，一键带出内容；可作为统一发布配置完成前的补充渠道。
+                      发布时可直接打开分享窗口，一键带出内容，适合作为补充传播通道。
                     </p>
                   </div>
                 )}
@@ -382,7 +392,7 @@ export default function SocialAccountsPage() {
                     }
                   >
                     <KeyRound size={14} />
-                    {connected ? '更新配置' : '开始配置'}
+                    {connected ? '更新接入' : '开始接入'}
                   </button>
                 )}
 
@@ -394,7 +404,7 @@ export default function SocialAccountsPage() {
                     style={{ background: '#D4AF37', color: '#0B1220', boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)' }}
                   >
                     <ExternalLink size={14} />
-                    去授权
+                    去接通
                   </a>
                 )}
 
@@ -406,14 +416,14 @@ export default function SocialAccountsPage() {
                     style={{ background: '#0B1220', color: '#D4AF37' }}
                   >
                     <RefreshCw size={14} />
-                    重新授权
+                    重新接通
                   </a>
                 )}
 
                 {/* Not Available Description */}
                 {!platform.available && (
                   <p className="text-xs text-slate-400 mt-1">
-                    {platform.comingSoonNote || 'API integration is under development.'}
+                    {platform.comingSoonNote || '该渠道接入能力正在开发中，尽快补充中。'}
                   </p>
                 )}
 
@@ -470,15 +480,15 @@ export default function SocialAccountsPage() {
                           <>
                             <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />
                             <div>
-                              <p className="text-sm font-medium text-emerald-800">Connected successfully</p>
-                              <p className="text-xs text-emerald-600">Account: {testResult.accountName}</p>
+                              <p className="text-sm font-medium text-emerald-800">该渠道可发布</p>
+                              <p className="text-xs text-emerald-600">账号名：{testResult.accountName}</p>
                             </div>
                           </>
                         ) : (
                           <>
                             <AlertCircle size={16} className="text-red-500 shrink-0" />
                             <div>
-                              <p className="text-sm font-medium text-red-800">Connection failed</p>
+                              <p className="text-sm font-medium text-red-800">该渠道不可用</p>
                               <p className="text-xs text-red-600">{testResult.error}</p>
                             </div>
                           </>
@@ -497,12 +507,12 @@ export default function SocialAccountsPage() {
                         {isTesting ? (
                           <>
                             <Loader2 size={14} className="animate-spin" />
-                            Testing...
+                            校验中...
                           </>
                         ) : (
                           <>
                             <TestTube size={14} />
-                            Test Connection
+                            校验可用性
                           </>
                         )}
                       </button>
@@ -516,12 +526,12 @@ export default function SocialAccountsPage() {
                         {isSaving ? (
                           <>
                             <Loader2 size={14} className="animate-spin" />
-                            Saving...
+                            保存中...
                           </>
                         ) : (
                           <>
                             <Save size={14} />
-                            Save Credentials
+                            保存并启用
                           </>
                         )}
                       </button>
@@ -530,7 +540,7 @@ export default function SocialAccountsPage() {
                         onClick={handleCancel}
                         className="px-4 py-2.5 rounded-xl text-sm font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors"
                       >
-                        Cancel
+                        暂不设置
                       </button>
                     </div>
                   </div>
@@ -552,13 +562,12 @@ export default function SocialAccountsPage() {
         <div className="relative">
             <h3 className="font-bold text-white mb-3 flex items-center gap-2">
               <Globe size={18} className="text-[#D4AF37]" />
-              配置说明
+              快速上手
             </h3>
             <div className="space-y-2 text-xs text-slate-400">
-              <p>1. 在目标平台创建开发者账号或应用</p>
-              <p>2. 获取 API 凭证或完成 OAuth 授权</p>
-              <p>3. 在上方填写配置并点击“测试连接”校验可用性</p>
-              <p>4. 验证成功后保存配置，再返回声量枢纽开始发布</p>
+              <p>1. 先确认目标平台的发布方式：OAuth 直连或 API 直发。</p>
+              <p>2. 完成接入并校验成功后，即可在首页继续推进发布。</p>
+              <p>3. 将内容推进到该渠道后，先看“发布结果”再决定是否扩量到下一个渠道。</p>
             </div>
             <p className="text-[10px] text-slate-500 mt-4">
               说明：凭证仅用于已授权内容发布，并会安全存储。

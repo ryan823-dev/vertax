@@ -1087,7 +1087,7 @@ export default function RadarProspectsPage() {
       const response = await saveOutreachPackDraft(
         selectedCompany.id,
         outreachPack,
-        `Draft snapshot for ${selectedCompany.name}`
+        `外联推进草稿（${selectedCompany.name}）`
       );
 
       if (!response.success || !response.version) {
@@ -1299,33 +1299,33 @@ export default function RadarProspectsPage() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header - 深蓝舞台指令台 */}
-      <div className="relative rounded-2xl overflow-hidden" style={{ background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)', boxShadow: '0 8px 32px -8px rgba(0,0,0,0.45)' }}>
-        <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 70% 60% at 50% -20%, rgba(212,175,55,0.14) 0%, transparent 65%)' }} />
-        <div className="relative flex items-center justify-between px-6 py-5">
+    <div className="ci-work-surface space-y-5">
+      {/* Header - compact workbench command bar */}
+      <div className="ci-section-band">
+        <div className="flex flex-col gap-4 px-1 py-1 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-white">线索库</h1>
-            <p className="text-sm text-slate-400 mt-1">管理已导入的潜在客户，生成个性化外联方案</p>
+            <p className="text-[11px] font-semibold uppercase tracking-normal text-[var(--ci-muted)]">Radar Workbench</p>
+            <h1 className="text-xl font-semibold text-[var(--ci-ink)] sm:text-2xl">线索库</h1>
+            <p className="mt-1 text-sm text-[var(--ci-muted)]">管理已导入的潜在客户，生成个性化外联方案</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="ci-toolbar w-full justify-end sm:w-auto">
             <button 
               onClick={handleExport}
               disabled={isExporting}
               title="导出 CSV"
-              className={`p-2 rounded-lg transition-colors ${isExporting ? 'bg-slate-800 text-slate-500 cursor-not-allowed' : 'text-slate-400 hover:text-[#D4AF37]'}`}
+              className={`rounded-md p-2 transition-colors ${isExporting ? 'cursor-not-allowed bg-slate-100 text-slate-400' : 'text-slate-500 hover:bg-white hover:text-[var(--ci-signal)]'}`}
             >
               {isExporting ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
             </button>
             <button 
               onClick={() => setShowFilters(!showFilters)}
-              className={`p-2 rounded-lg transition-colors ${showFilters ? 'bg-[#D4AF37]/20 text-[#D4AF37]' : 'text-slate-400 hover:text-[#D4AF37]'}`}
+              className={`rounded-md p-2 transition-colors ${showFilters ? 'bg-white text-[var(--ci-signal)] shadow-sm' : 'text-slate-500 hover:bg-white hover:text-[var(--ci-signal)]'}`}
             >
               <Filter size={18} />
             </button>
             <button 
               onClick={loadData}
-              className="p-2 text-slate-400 hover:text-[#D4AF37] transition-colors"
+              className="rounded-md p-2 text-slate-500 transition-colors hover:bg-white hover:text-[var(--ci-signal)]"
             >
               <RefreshCw size={18} />
             </button>
@@ -1345,13 +1345,13 @@ export default function RadarProspectsPage() {
       )}
 
       {/* Tab 切换 */}
-      <div className="flex gap-1 bg-[#F0EBD8] rounded-xl p-1 w-full">
+      <div className="ci-toolbar w-full p-1">
         <button
           onClick={() => setOutreachView('companies')}
-          className={`flex-1 min-w-0 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all truncate ${
+          className={`flex min-w-0 flex-1 items-center justify-center gap-2 rounded-md py-2 text-sm font-medium transition-all truncate ${
             outreachView === 'companies'
-              ? 'bg-white text-[#0B1B2B] shadow-sm'
-              : 'text-slate-500 hover:text-[#0B1B2B]'
+              ? 'bg-white text-[var(--ci-ink)] shadow-sm'
+              : 'text-slate-500 hover:text-[var(--ci-ink)]'
           }`}
         >
           <Users size={14} />
@@ -1359,10 +1359,10 @@ export default function RadarProspectsPage() {
         </button>
         <button
           onClick={() => setOutreachView('outreach')}
-          className={`flex-1 min-w-0 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all truncate ${
+          className={`flex min-w-0 flex-1 items-center justify-center gap-2 rounded-md py-2 text-sm font-medium transition-all truncate ${
             outreachView === 'outreach'
-              ? 'bg-white text-[#0B1B2B] shadow-sm'
-              : 'text-slate-500 hover:text-[#0B1B2B]'
+              ? 'bg-white text-[var(--ci-ink)] shadow-sm'
+              : 'text-slate-500 hover:text-[var(--ci-ink)]'
           }`}
         >
           <Send size={14} />
@@ -1380,7 +1380,7 @@ export default function RadarProspectsPage() {
         <div className="space-y-4">
           {/* 统计卡 */}
           {outreachStats && (
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               {[
                 { label: '已发送', value: outreachStats.sent, color: 'text-[#0B1B2B]' },
                 { label: '回复率', value: `${outreachStats.replyRate}%`, color: 'text-blue-600' },
@@ -1391,7 +1391,7 @@ export default function RadarProspectsPage() {
                 },
                 { label: '7天无响应', value: outreachStats.noResponse, color: 'text-red-500' },
               ].map(({ label, value, color }) => (
-                <div key={label} className="bg-[#F7F3E8] rounded-xl border border-[#E8E0D0] p-4 text-center">
+                <div key={label} className="ci-object-card p-4 text-center">
                   <div className={`text-2xl font-bold ${color}`}>{value}</div>
                   <div className="text-xs text-slate-500 mt-1">{label}</div>
                 </div>
@@ -1400,7 +1400,7 @@ export default function RadarProspectsPage() {
           )}
 
           {/* 子 Tab：过滤器 */}
-          <div className="flex gap-1 bg-[#F0EBD8] rounded-xl p-1 w-full">
+          <div className="ci-toolbar w-full p-1">
             {([
               { key: 'all', label: '全部' },
               { key: 'pending', label: '待跟进' },
@@ -1413,10 +1413,10 @@ export default function RadarProspectsPage() {
                 <button
                   key={key}
                   onClick={() => setOutreachFilter(key)}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-md py-1.5 text-xs font-medium transition-all ${
                   outreachFilter === key
-                    ? 'bg-white text-[#0B1B2B] shadow-sm'
-                    : 'text-slate-500 hover:text-[#0B1B2B]'
+                    ? 'bg-white text-[var(--ci-ink)] shadow-sm'
+                    : 'text-slate-500 hover:text-[var(--ci-ink)]'
                 }`}
               >
                 {label}
@@ -1559,7 +1559,7 @@ export default function RadarProspectsPage() {
       {/* 线索库（原内容，切换显示）*/}
       {outreachView === 'companies' && (
       <>
-      <div className="flex items-center gap-6 px-4 py-3 bg-[#F0EBD8] rounded-xl">
+      <div className="ci-toolbar flex-wrap px-4 py-3">
         <div className="flex items-center gap-2">
           <Users size={16} className="text-[#D4AF37]" />
           <span className="text-xs text-slate-500">线索总数</span>
@@ -1591,8 +1591,8 @@ export default function RadarProspectsPage() {
 
       {/* Filters */}
       {showFilters && (
-        <div className="bg-[#F7F3E8] rounded-xl border border-[#E8E0D0] p-4">
-          <div className="grid grid-cols-3 gap-4">
+        <div className="ci-data-panel p-4">
+          <div className="grid gap-4 md:grid-cols-3">
             <div>
               <label className="text-xs text-slate-500 mb-1 block">状态</label>
               <select
@@ -1637,9 +1637,9 @@ export default function RadarProspectsPage() {
         </div>
       )}
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(320px,0.95fr)_minmax(0,1.55fr)]">
+      <div className="grid gap-4 xl:grid-cols-[minmax(300px,0.85fr)_minmax(0,1.35fr)_minmax(280px,0.8fr)]">
           {/* Companies List */}
-        <div className="min-w-0 rounded-[28px] border border-[#E8E0D0] bg-[#F7F3E8] p-6 shadow-[0_18px_36px_-28px_rgba(11,27,43,0.35)] xl:sticky xl:top-6">
+        <div className="ci-data-panel min-w-0 p-4 xl:sticky xl:top-6">
           <div className="mb-4 space-y-3">
             <div className="flex items-center justify-between gap-3">
               <div>
@@ -1660,7 +1660,7 @@ export default function RadarProspectsPage() {
             </div>
 
             {companies.length > 0 && (
-              <div className="rounded-2xl border border-[#D4AF37]/20 bg-[#FFFCF7] p-3">
+              <div className="ci-object-card p-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-xs font-medium text-[#0B1B2B]">
                     已选 {selectedCompanyIds.size} 条
@@ -1682,7 +1682,7 @@ export default function RadarProspectsPage() {
                 </div>
 
                 {(batchEnrichment.isRunning || batchEnrichment.summary) && (
-                  <div className="mt-3 rounded-xl bg-[#F7F3E8] border border-[#E8E0D0] p-3">
+                  <div className="mt-3 rounded-lg border border-[var(--ci-border)] bg-white/70 p-3">
                     <div className="flex items-center justify-between gap-3 text-xs">
                       <div>
                         <p className="font-medium text-[#0B1B2B]">
@@ -1735,7 +1735,7 @@ export default function RadarProspectsPage() {
               </div>
             </div>
           ) : (
-            <div className="space-y-2 max-h-[600px] overflow-y-auto">
+            <div className="max-h-[calc(100vh-310px)] space-y-2 overflow-y-auto pr-1">
               {companies.map((company) => {
                 const statusInfo = getStatusLabel(company.status);
                 const isSelected = selectedCompany?.id === company.id;
@@ -1761,10 +1761,10 @@ export default function RadarProspectsPage() {
                         setShowContactForm(false);
                         setOutreachHistory([]);
                       }}
-                    className={`p-4 border rounded-xl cursor-pointer transition-all ${
+                    className={`cursor-pointer rounded-lg border p-3 transition-colors ${
                       isSelected 
-                        ? 'border-[#D4AF37] bg-[#D4AF37]/5' 
-                        : 'border-[#E8E0D0] hover:border-[#D4AF37]/50 bg-[#FFFCF7]'
+                        ? 'border-[var(--ci-signal)] bg-[var(--ci-signal-soft)]' 
+                        : 'border-[var(--ci-border)] bg-white hover:border-[var(--ci-signal)]'
                     }`}
                   >
                     {/* 第一行: 公司名 + 状态 */}
@@ -1838,27 +1838,27 @@ export default function RadarProspectsPage() {
         </div>
 
         {/* Detail Panel */}
-        <div className="space-y-4 xl:sticky xl:top-6">
+        <div className="min-w-0 space-y-4">
           {selectedCompany ? (
             <>
               {/* Tabs */}
-              <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-2 flex gap-1 w-full">
+              <div className="ci-toolbar w-full p-1">
                 <button
                   onClick={() => setActiveTab('info')}
-                  className={`flex-1 min-w-0 py-2 rounded-xl text-sm font-medium transition-all truncate ${
+                  className={`min-w-0 flex-1 rounded-md py-2 text-sm font-medium transition-all truncate ${
                     activeTab === 'info'
-                      ? 'bg-[#0B1220] text-[#D4AF37]'
-                      : 'text-[#4A5568] hover:text-[#0B1B2B]'
+                      ? 'bg-white text-[var(--ci-signal)] shadow-sm'
+                      : 'text-slate-500 hover:text-[var(--ci-ink)]'
                   }`}
                 >
                   基本信息
                 </button>
                 <button
                   onClick={() => setActiveTab('contacts')}
-                  className={`flex-1 min-w-0 py-2 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-1.5 truncate ${
+                  className={`flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-md py-2 text-sm font-medium transition-all truncate ${
                     activeTab === 'contacts'
-                      ? 'bg-[#0B1220] text-[#D4AF37]'
-                      : 'text-[#4A5568] hover:text-[#0B1B2B]'
+                      ? 'bg-white text-[var(--ci-signal)] shadow-sm'
+                      : 'text-slate-500 hover:text-[var(--ci-ink)]'
                   }`}
                 >
                   <Users size={13} />
@@ -1871,10 +1871,10 @@ export default function RadarProspectsPage() {
                 </button>
                 <button
                   onClick={() => setActiveTab('outreach')}
-                  className={`flex-1 min-w-0 py-2 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-1.5 truncate ${
+                  className={`flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-md py-2 text-sm font-medium transition-all truncate ${
                     activeTab === 'outreach'
-                      ? 'bg-[#0B1220] text-[#D4AF37]'
-                      : 'text-[#4A5568] hover:text-[#0B1B2B]'
+                      ? 'bg-white text-[var(--ci-signal)] shadow-sm'
+                      : 'text-slate-500 hover:text-[var(--ci-ink)]'
                   }`}
                 >
                   <Sparkles size={13} />
@@ -1882,10 +1882,10 @@ export default function RadarProspectsPage() {
                 </button>
                 <button
                   onClick={() => setActiveTab('dossier')}
-                  className={`flex-1 min-w-0 py-2 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-1.5 truncate ${
+                  className={`flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-md py-2 text-sm font-medium transition-all truncate ${
                     activeTab === 'dossier'
-                      ? 'bg-[#0B1220] text-[#D4AF37]'
-                      : 'text-[#4A5568] hover:text-[#0B1B2B]'
+                      ? 'bg-white text-[var(--ci-signal)] shadow-sm'
+                      : 'text-slate-500 hover:text-[var(--ci-ink)]'
                   }`}
                 >
                   <Shield size={13} />
@@ -3526,6 +3526,100 @@ export default function RadarProspectsPage() {
             </div>
           )}
         </div>
+
+        <aside className="ci-detail-drawer min-w-0 rounded-xl border border-[var(--ci-border)] p-4 xl:sticky xl:top-6 xl:max-h-[calc(100vh-160px)] xl:overflow-y-auto">
+          {selectedCompany ? (
+            <div className="space-y-4">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-normal text-[var(--ci-muted)]">Action Workspace</p>
+                <h3 className="mt-1 text-sm font-semibold text-[var(--ci-ink)] line-clamp-2">{selectedCompany.name}</h3>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                <div className="rounded-lg border border-[var(--ci-border)] bg-white p-3">
+                  <p className="text-[10px] text-slate-500">Tier</p>
+                  <p className="mt-1 text-sm font-semibold text-[var(--ci-ink)]">{selectedCompany.tier || '-'}</p>
+                </div>
+                <div className="rounded-lg border border-[var(--ci-border)] bg-white p-3">
+                  <p className="text-[10px] text-slate-500">Contacts</p>
+                  <p className="mt-1 text-sm font-semibold text-[var(--ci-ink)]">{outreachContacts.length}</p>
+                </div>
+                <div className="rounded-lg border border-[var(--ci-border)] bg-white p-3">
+                  <p className="text-[10px] text-slate-500">Packs</p>
+                  <p className="mt-1 text-sm font-semibold text-[var(--ci-ink)]">{outreachVersions.length || selectedCompany.outreachArtifacts?.length || 0}</p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <button
+                  onClick={() => handleGenerateOutreach(selectedCompany)}
+                  disabled={isGenerating}
+                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--ci-signal)] px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-[#1d5fd6] disabled:opacity-50"
+                >
+                  {isGenerating ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                  生成外联方案
+                </button>
+                <button
+                  onClick={handleManualEnrich}
+                  disabled={isEnriching}
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-[var(--ci-border)] bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:border-[var(--ci-signal)] hover:text-[var(--ci-signal)] disabled:opacity-50"
+                >
+                  {isEnriching ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+                  深度丰富联系人
+                </button>
+              </div>
+
+              {selectedMatchReasons.length > 0 && (
+                <div className="rounded-lg border border-[var(--ci-border)] bg-white p-3">
+                  <div className="mb-2 flex items-center gap-2">
+                    <Target size={13} className="text-[var(--ci-signal)]" />
+                    <p className="text-xs font-semibold text-[var(--ci-ink)]">Evidence Signals</p>
+                  </div>
+                  <div className="space-y-2">
+                    {selectedMatchReasons.slice(0, 4).map((reason, idx) => (
+                      <p key={idx} className="text-xs leading-relaxed text-slate-600 line-clamp-2">{reason}</p>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="rounded-lg border border-[var(--ci-border)] bg-white p-3">
+                <div className="mb-2 flex items-center gap-2">
+                  <History size={13} className="text-slate-500" />
+                  <p className="text-xs font-semibold text-[var(--ci-ink)]">Recent Outreach</p>
+                </div>
+                {isLoadingHistory ? (
+                  <div className="flex items-center gap-2 py-2 text-xs text-slate-500">
+                    <Loader2 size={12} className="animate-spin" />
+                    加载历史...
+                  </div>
+                ) : outreachHistory.length > 0 ? (
+                  <div className="space-y-2">
+                    {outreachHistory.slice(0, 4).map((item) => (
+                      <div key={item.id} className="rounded-md bg-slate-50 px-2 py-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[11px] font-medium text-slate-700">{item.channel}</span>
+                          <span className="text-[10px] text-slate-400">
+                            {item.sentAt ? new Date(item.sentAt).toLocaleDateString('zh-CN') : item.status}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-[11px] text-slate-500 line-clamp-1">{item.toName || item.toPhone || item.status}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="py-2 text-xs text-slate-500">暂无外联历史，生成方案后可在这里跟踪最近动作。</p>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="flex min-h-[260px] flex-col items-center justify-center text-center">
+              <Users size={26} className="text-slate-300" />
+              <p className="mt-3 text-sm font-medium text-[var(--ci-ink)]">选择一个线索</p>
+              <p className="mt-1 max-w-[220px] text-xs leading-relaxed text-slate-500">右侧会显示外联动作、证据信号和最近历史。</p>
+            </div>
+          )}
+        </aside>
       </div>
       </> )} {/* end outreachView === 'companies' */}
     </div>

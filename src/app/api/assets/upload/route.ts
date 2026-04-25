@@ -34,14 +34,15 @@ export async function POST(request: NextRequest) {
       action?: string;
       files?: Array<{ originalName: string; mimeType: string; fileSize: number; folderId?: string }>;
       assetId?: string;
+      metadata?: Record<string, unknown>;
     };
 
     // 确认上传完成 + 自动触发文本处理
     if (action === "confirm") {
-      const { assetId } = body as { assetId: string };
+      const { assetId, metadata } = body as { assetId: string; metadata?: Record<string, unknown> };
       const asset = await db.asset.update({
         where: { id: assetId, tenantId },
-        data: { status: "active", metadata: { processingStatus: "processing" } },
+        data: { status: "active", metadata: { ...(metadata || {}), processingStatus: "processing" } },
       });
 
       // 用 after() 在响应发出后继续执行 OCR（最长 maxDuration=60s）
@@ -121,11 +122,23 @@ async function triggerProcessingAsync(
   tenantId: string,
   _userId: string
 ) {
+  let baseMetadata: Record<string, unknown> = {};
   try {
+    const existingAsset = await db.asset.findUnique({
+      where: { id: assetId },
+      select: { metadata: true },
+    });
+    baseMetadata =
+      existingAsset?.metadata &&
+      typeof existingAsset.metadata === "object" &&
+      !Array.isArray(existingAsset.metadata)
+        ? (existingAsset.metadata as Record<string, unknown>)
+        : {};
+
     // 标记为处理中
     await db.asset.update({
       where: { id: assetId },
-      data: { metadata: { processingStatus: "processing" } },
+      data: { metadata: { ...baseMetadata, processingStatus: "processing" } },
     });
 
     const text = await extractTextFromAsset(storageKey, mimeType);
@@ -136,6 +149,7 @@ async function triggerProcessingAsync(
         where: { id: assetId },
         data: {
           metadata: {
+            ...baseMetadata,
             processingStatus: "ready",
             processedAt: new Date().toISOString(),
             chunkCount: 0,
@@ -168,6 +182,7 @@ async function triggerProcessingAsync(
       where: { id: assetId },
       data: {
         metadata: {
+          ...baseMetadata,
           processingStatus: "ready",
           processedAt: new Date().toISOString(),
           chunkCount: chunks.length,
@@ -180,6 +195,7 @@ async function triggerProcessingAsync(
       where: { id: assetId },
       data: {
         metadata: {
+          ...baseMetadata,
           processingStatus: "failed",
           processingError: err instanceof Error ? err.message : "处理失败",
         },

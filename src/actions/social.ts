@@ -7,10 +7,29 @@ import { generateMultiPlatformContent } from "@/lib/services/openai.service";
 import * as facebookService from "@/lib/services/facebook.service";
 import * as twitterService from "@/lib/services/twitter.service";
 import * as youtubeService from "@/lib/services/youtube.service";
+import * as tiktokService from "@/lib/services/tiktok.service";
+import { generatePresignedGetUrl } from "@/lib/oss";
 import { formatPublishError } from "@/lib/utils/social.utils";
 import { requireDecider } from "@/lib/permissions";
+import type { Prisma } from "@prisma/client";
 
 const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
+
+type PostVersionInput = {
+  platform: string;
+  content: string;
+  media?: string[];
+  metrics?: Record<string, unknown>;
+};
+
+type PublishResult = {
+  platform: string;
+  success: boolean;
+  error?: string;
+  postId?: string;
+  pending?: boolean;
+  status?: string;
+};
 
 async function getSession() {
   const session = await auth();
@@ -66,6 +85,20 @@ export async function getSocialAccounts() {
         createdAt: new Date(),
         updatedAt: new Date(),
       },
+      {
+        id: "demo-tt",
+        platform: "tiktok",
+        accountName: "@demo_creator",
+        accountId: "demo-tt-id",
+        isActive: true,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        metadata: {
+          username: "demo_creator",
+          creatorInfo: getDemoTikTokCreatorInfo(),
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
     ];
   }
   const session = await getSession();
@@ -73,6 +106,71 @@ export async function getSocialAccounts() {
     where: { tenantId: session.user.tenantId },
     orderBy: { createdAt: "desc" },
   });
+}
+
+export async function getTikTokCreatorInfo(): Promise<{
+  accountId: string;
+  accountName: string;
+  creatorInfo: tiktokService.TikTokCreatorInfo;
+} | null> {
+  if (isDemoMode) {
+    return {
+      accountId: "demo-tt",
+      accountName: "@demo_creator",
+      creatorInfo: getDemoTikTokCreatorInfo(),
+    };
+  }
+
+  const session = await getSession();
+  const account = await db.socialAccount.findFirst({
+    where: {
+      tenantId: session.user.tenantId,
+      platform: "tiktok",
+      isActive: true,
+    },
+  });
+
+  if (!account) return null;
+
+  const refreshed = await tiktokService.refreshTokenIfNeeded(account);
+  if (refreshed) {
+    await db.socialAccount.update({
+      where: { id: account.id },
+      data: {
+        accessToken: refreshed.accessToken,
+        refreshToken: refreshed.refreshToken,
+        expiresAt: refreshed.expiresAt,
+      },
+    });
+    account.accessToken = refreshed.accessToken;
+  }
+
+  if (!account.accessToken) {
+    throw new Error("TikTok account needs to be reconnected.");
+  }
+
+  const creatorInfo = await tiktokService.queryCreatorInfo(account.accessToken);
+  const accountName =
+    creatorInfo.creator_username ||
+    creatorInfo.creator_nickname ||
+    account.accountName;
+
+  await db.socialAccount.update({
+    where: { id: account.id },
+    data: {
+      accountName,
+      metadata: {
+        ...toObjectRecord(account.metadata),
+        creatorInfo,
+      },
+    },
+  });
+
+  return {
+    accountId: account.id,
+    accountName,
+    creatorInfo,
+  };
 }
 
 // ==================== AI CONTENT GENERATION ====================
@@ -100,7 +198,7 @@ export async function createSocialPost(data: {
   status?: string;
   scheduledAt?: Date;
   autoEngage?: boolean;
-  versions: { platform: string; content: string }[];
+  versions: PostVersionInput[];
 }) {
   if (isDemoMode) {
     return { id: `demo_post_${Date.now()}`, ...data };
@@ -117,9 +215,11 @@ export async function createSocialPost(data: {
       scheduledAt: data.scheduledAt,
       autoEngage: data.autoEngage || false,
       versions: {
-        create: data.versions.map((v) => ({
-          platform: v.platform,
-          content: v.content,
+        create: data.versions.map((version) => ({
+          platform: version.platform,
+          content: version.content,
+          media: version.media || [],
+          metrics: (version.metrics || {}) as Prisma.InputJsonValue,
         })),
       },
     },
@@ -136,19 +236,20 @@ export async function updateSocialPost(
     title?: string;
     scheduledAt?: Date | null;
     autoEngage?: boolean;
-    versions?: { platform: string; content: string }[];
+    versions?: PostVersionInput[];
   }
 ) {
   if (isDemoMode) return { id: postId, ...data };
 
   const session = await getSession();
-
-  // Verify ownership
   const existing = await db.socialPost.findFirst({
     where: { id: postId, tenantId: session.user.tenantId, deletedAt: null },
   });
+
   if (!existing) throw new Error("Post not found");
-  if (existing.status === "published") throw new Error("Cannot edit published posts");
+  if (existing.status === "published" || existing.status === "publishing") {
+    throw new Error("Cannot edit posts that have been sent for publishing");
+  }
 
   const post = await db.socialPost.update({
     where: { id: postId },
@@ -159,14 +260,15 @@ export async function updateSocialPost(
     },
   });
 
-  // Replace versions if provided
   if (data.versions) {
     await db.postVersion.deleteMany({ where: { postId } });
     await db.postVersion.createMany({
-      data: data.versions.map((v) => ({
+      data: data.versions.map((version) => ({
         postId,
-        platform: v.platform,
-        content: v.content,
+        platform: version.platform,
+        content: version.content,
+        media: version.media || [],
+        metrics: (version.metrics || {}) as Prisma.InputJsonValue,
       })),
     });
   }
@@ -196,7 +298,7 @@ export async function deleteSocialPost(postId: string) {
 
 export async function publishSocialPost(postId: string): Promise<{
   success: boolean;
-  results: { platform: string; success: boolean; error?: string; postId?: string }[];
+  results: PublishResult[];
 }> {
   if (isDemoMode) {
     return {
@@ -204,6 +306,7 @@ export async function publishSocialPost(postId: string): Promise<{
       results: [
         { platform: "facebook", success: true, postId: `demo_fb_${Date.now()}` },
         { platform: "x", success: true, postId: `demo_tw_${Date.now()}` },
+        { platform: "tiktok", success: true, postId: `demo_tt_${Date.now()}` },
       ],
     };
   }
@@ -214,22 +317,44 @@ export async function publishSocialPost(postId: string): Promise<{
     throw new Error(roleCheck.error);
   }
 
+  return publishSocialPostForTenant(postId, session.user.tenantId);
+}
+
+export async function publishSocialPostForTenant(
+  postId: string,
+  tenantId: string
+): Promise<{
+  success: boolean;
+  results: PublishResult[];
+}> {
+  if (isDemoMode) return { success: true, results: [] };
+
   const post = await db.socialPost.findFirst({
-    where: { id: postId, tenantId: session.user.tenantId, deletedAt: null },
+    where: { id: postId, tenantId, deletedAt: null },
     include: { versions: true },
   });
 
   if (!post) throw new Error("Post not found");
 
-  const results: { platform: string; success: boolean; error?: string; postId?: string }[] = [];
+  const results: PublishResult[] = [];
 
   for (const version of post.versions) {
     if (version.platformPostId) {
-      results.push({ platform: version.platform, success: true, postId: version.platformPostId });
+      const storedState = getTikTokStoredState(version.metrics);
+      const pending =
+        version.platform === "tiktok" &&
+        storedState?.status !== "PUBLISH_COMPLETE" &&
+        storedState?.status !== "FAILED";
+      results.push({
+        platform: version.platform,
+        success: true,
+        postId: version.platformPostId,
+        pending,
+        status: storedState?.status,
+      });
       continue;
     }
 
-    // LinkedIn uses Share URL mode - no API account needed
     if (version.platform === "linkedin") {
       const shareText = encodeURIComponent(version.content);
       const shareUrl = `https://www.linkedin.com/feed/?shareActive=true&text=${shareText}`;
@@ -241,42 +366,46 @@ export async function publishSocialPost(postId: string): Promise<{
           publishedAt: new Date(),
           error: null,
           publishAttempts: { increment: 1 },
-          metrics: { shareUrl },
+          metrics: { ...toObjectRecord(version.metrics), shareUrl },
         },
       });
-      results.push({ platform: version.platform, success: true, postId: linkedinPostId });
+      results.push({
+        platform: version.platform,
+        success: true,
+        postId: linkedinPostId,
+      });
       continue;
     }
 
-    // Find active account for this platform
     const account = await db.socialAccount.findFirst({
       where: {
-        tenantId: session.user.tenantId,
+        tenantId,
         platform: version.platform,
         isActive: true,
       },
     });
 
     if (!account) {
+      const error = `No connected ${version.platform} account`;
       await db.postVersion.update({
         where: { id: version.id },
         data: {
-          error: `No connected ${version.platform} account`,
+          error,
           publishAttempts: { increment: 1 },
         },
       });
-      results.push({
-        platform: version.platform,
-        success: false,
-        error: `No connected ${version.platform} account`,
-      });
+      results.push({ platform: version.platform, success: false, error });
       continue;
     }
 
     try {
       let platformPostId: string;
-      const metadata = account.metadata as Record<string, string>;
-      const isApiKeys = metadata?.authMethod === 'api_keys';
+      let pending = false;
+      let status: string | undefined;
+      let publishedAt: Date | null = new Date();
+      let nextMetrics: Record<string, unknown> | undefined;
+      const metadata = toStringRecord(account.metadata);
+      const isApiKeys = metadata.authMethod === "api_keys";
 
       if (version.platform === "facebook") {
         if (!isApiKeys) {
@@ -284,7 +413,10 @@ export async function publishSocialPost(postId: string): Promise<{
           if (refreshed) {
             await db.socialAccount.update({
               where: { id: account.id },
-              data: { accessToken: refreshed.accessToken, expiresAt: refreshed.expiresAt },
+              data: {
+                accessToken: refreshed.accessToken,
+                expiresAt: refreshed.expiresAt,
+              },
             });
             account.accessToken = refreshed.accessToken;
           }
@@ -346,6 +478,17 @@ export async function publishSocialPost(postId: string): Promise<{
           text: version.content,
         });
         platformPostId = result.postId;
+      } else if (version.platform === "tiktok") {
+        const result = await publishTikTokVersion({
+          version,
+          account,
+          tenantId,
+        });
+        platformPostId = result.platformPostId;
+        pending = result.pending;
+        status = result.status;
+        publishedAt = result.publishedAt;
+        nextMetrics = result.metrics;
       } else {
         throw new Error(`Unsupported platform: ${version.platform}`);
       }
@@ -354,13 +497,20 @@ export async function publishSocialPost(postId: string): Promise<{
         where: { id: version.id },
         data: {
           platformPostId,
-          publishedAt: new Date(),
+          publishedAt,
           error: null,
           publishAttempts: { increment: 1 },
+          ...(nextMetrics ? { metrics: nextMetrics as Prisma.InputJsonValue } : {}),
         },
       });
 
-      results.push({ platform: version.platform, success: true, postId: platformPostId });
+      results.push({
+        platform: version.platform,
+        success: true,
+        postId: platformPostId,
+        pending,
+        status,
+      });
     } catch (err) {
       const errorMsg = formatPublishError(err);
       await db.postVersion.update({
@@ -370,43 +520,185 @@ export async function publishSocialPost(postId: string): Promise<{
           publishAttempts: { increment: 1 },
         },
       });
-      results.push({ platform: version.platform, success: false, error: errorMsg });
+      results.push({
+        platform: version.platform,
+        success: false,
+        error: errorMsg,
+      });
     }
   }
 
-  // Update post status
-  const allSuccess = results.every((r) => r.success);
-  const anySuccess = results.some((r) => r.success);
+  const allSuccess = results.length > 0 && results.every((result) => result.success);
+  const anySuccess = results.some((result) => result.success);
+  const hasPending = results.some((result) => result.pending);
+  const finalStatus = allSuccess
+    ? hasPending
+      ? "publishing"
+      : "published"
+    : anySuccess
+      ? hasPending
+        ? "publishing"
+        : "published"
+      : "failed";
 
-  const finalStatus = allSuccess ? "published" : anySuccess ? "published" : "failed";
   await db.socialPost.update({
     where: { id: postId },
     data: {
       status: finalStatus,
-      publishedAt: anySuccess ? new Date() : undefined,
+      publishedAt: finalStatus === "published" ? new Date() : undefined,
     },
   });
 
   if (finalStatus === "failed") {
-    const failedPlatforms = results.filter(r => !r.success).map(r => r.platform).join(", ");
+    const failedPlatforms = results
+      .filter((result) => !result.success)
+      .map((result) => result.platform)
+      .join(", ");
     try {
-      await (db as unknown as Record<string, { create: (args: unknown) => Promise<unknown> }>).notification.create({
+      await (
+        db as unknown as Record<
+          string,
+          { create: (args: unknown) => Promise<unknown> }
+        >
+      ).notification.create({
         data: {
-          tenantId: session.user.tenantId,
+          tenantId,
           type: "publish_failed",
-          title: "社媒帖子发布失败",
-          body: `「${post.title || "无标题"}」在 ${failedPlatforms} 发布失败，请检查账号授权。`,
+          title: "Social post publish failed",
+          body: `"${post.title || "Untitled"}" failed on ${failedPlatforms}. Please check account authorization.`,
           actionUrl: "/customer/social",
         },
       });
     } catch {
-      // no-op if Notification model not yet migrated
+      // Notification model may not exist in older deployments.
     }
   }
 
   revalidatePath("/customer/social");
-
   return { success: allSuccess, results };
+}
+
+async function publishTikTokVersion(params: {
+  version: {
+    id: string;
+    content: string;
+    media: string[];
+    metrics: unknown;
+  };
+  account: {
+    id: string;
+    accountId: string;
+    accessToken: string | null;
+    refreshToken: string | null;
+    expiresAt: Date | null;
+  };
+  tenantId: string;
+}): Promise<{
+  platformPostId: string;
+  pending: boolean;
+  status?: string;
+  publishedAt: Date | null;
+  metrics: Record<string, unknown>;
+}> {
+  const refreshed = await tiktokService.refreshTokenIfNeeded(params.account);
+  if (refreshed) {
+    await db.socialAccount.update({
+      where: { id: params.account.id },
+      data: {
+        accessToken: refreshed.accessToken,
+        refreshToken: refreshed.refreshToken,
+        expiresAt: refreshed.expiresAt,
+      },
+    });
+    params.account.accessToken = refreshed.accessToken;
+  }
+
+  if (!params.account.accessToken) {
+    throw new Error("TikTok account needs to be reconnected.");
+  }
+
+  const mediaRef = params.version.media?.[0];
+  if (!mediaRef) {
+    throw new Error("TikTok publish requires one uploaded video.");
+  }
+
+  const config = tiktokService.getTikTokConfigFromMetrics(params.version.metrics);
+  if (!config) {
+    throw new Error("TikTok publish options are missing. Recreate this TikTok post.");
+  }
+
+  const media = await resolveTikTokVideoMedia(params.tenantId, mediaRef);
+  const creatorInfo = await tiktokService.queryCreatorInfo(
+    params.account.accessToken
+  );
+  const finalConfig = {
+    ...config,
+    videoDurationSec: config.videoDurationSec ?? media.durationSec,
+  };
+
+  const result = await tiktokService.publishVideoDirect({
+    accessToken: params.account.accessToken,
+    title: params.version.content,
+    mediaUrl: media.mediaUrl,
+    mimeType: media.mimeType,
+    fileSize: media.fileSize,
+    config: finalConfig,
+    creatorInfo,
+  });
+
+  const state: tiktokService.TikTokPublishState = {
+    publishId: result.publishId,
+    status: result.status?.status || "PROCESSING_UPLOAD",
+    failReason: result.status?.failReason,
+    publicPostIds: result.status?.publicPostIds,
+    uploadedBytes: result.status?.uploadedBytes,
+    downloadedBytes: result.status?.downloadedBytes,
+    syncedAt: new Date().toISOString(),
+  };
+
+  const pending = state.status !== "PUBLISH_COMPLETE";
+  return {
+    platformPostId: `tiktok:${result.publishId}`,
+    pending,
+    status: state.status,
+    publishedAt: pending ? null : new Date(),
+    metrics: tiktokService.mergeTikTokPublishState(params.version.metrics, state),
+  };
+}
+
+async function resolveTikTokVideoMedia(tenantId: string, mediaRef: string): Promise<{
+  mediaUrl: string;
+  mimeType: string;
+  fileSize: number;
+  durationSec?: number;
+}> {
+  if (!mediaRef.startsWith("asset:")) {
+    throw new Error("TikTok videos must be uploaded to the VertaX asset store first.");
+  }
+
+  const assetId = mediaRef.slice("asset:".length);
+  const asset = await db.asset.findFirst({
+    where: {
+      id: assetId,
+      tenantId,
+      deletedAt: null,
+    },
+  });
+
+  if (!asset) {
+    throw new Error("TikTok video asset was not found.");
+  }
+
+  if (asset.fileCategory !== "video") {
+    throw new Error("TikTok media asset must be a video.");
+  }
+
+  return {
+    mediaUrl: await generatePresignedGetUrl(asset.storageKey, 3600),
+    mimeType: asset.mimeType,
+    fileSize: Number(asset.fileSize),
+    durationSec: getNumberValue(toObjectRecord(asset.metadata).durationSec),
+  };
 }
 
 export async function scheduleSocialPost(postId: string, scheduledAt: Date) {
@@ -429,7 +721,6 @@ export async function retryFailedPublish(postId: string) {
 
   const session = await getSession();
 
-  // Reset failed versions so they can be retried
   const post = await db.socialPost.findFirst({
     where: { id: postId, tenantId: session.user.tenantId },
     include: { versions: { where: { platformPostId: null } } },
@@ -437,15 +728,13 @@ export async function retryFailedPublish(postId: string) {
 
   if (!post) throw new Error("Post not found");
 
-  // Clear errors on failed versions
-  for (const v of post.versions) {
+  for (const version of post.versions) {
     await db.postVersion.update({
-      where: { id: v.id },
+      where: { id: version.id },
       data: { error: null },
     });
   }
 
-  // Re-attempt publish
   return publishSocialPost(postId);
 }
 
@@ -482,16 +771,16 @@ export async function saveSocialCredentials(data: {
     let accessToken: string | null = null;
     let refreshToken: string | null = null;
     let accountId: string;
-    const metadata: Record<string, unknown> = { authMethod: 'api_keys' };
+    const metadata: Record<string, unknown> = { authMethod: "api_keys" };
 
-    if (data.platform === 'x') {
+    if (data.platform === "x") {
       accessToken = data.credentials.accessToken;
       refreshToken = data.credentials.accessTokenSecret;
       accountId = data.credentials.accountId || `x_${Date.now()}`;
       metadata.apiKey = data.credentials.apiKey;
       metadata.apiKeySecret = data.credentials.apiKeySecret;
       metadata.username = data.accountName;
-    } else if (data.platform === 'facebook') {
+    } else if (data.platform === "facebook") {
       accessToken = data.credentials.pageAccessToken;
       accountId = data.credentials.pageId;
       metadata.pageId = data.credentials.pageId;
@@ -516,8 +805,7 @@ export async function saveSocialCredentials(data: {
         accessToken,
         refreshToken,
         expiresAt: null,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        metadata: metadata as any,
+        metadata: metadata as Prisma.InputJsonValue,
         isActive: true,
       },
       update: {
@@ -525,8 +813,7 @@ export async function saveSocialCredentials(data: {
         accessToken,
         refreshToken,
         expiresAt: null,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        metadata: metadata as any,
+        metadata: metadata as Prisma.InputJsonValue,
         isActive: true,
       },
     });
@@ -535,21 +822,29 @@ export async function saveSocialCredentials(data: {
     revalidatePath("/customer/social");
     return { success: true, accountId: account.id };
   } catch (err) {
-    console.error('[saveSocialCredentials] Error:', err);
-    return { success: false, error: err instanceof Error ? err.message : 'Failed to save credentials' };
+    console.error("[saveSocialCredentials] Error:", err);
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Failed to save credentials",
+    };
   }
 }
 
 export async function testSocialConnection(data: {
   platform: string;
   credentials: Record<string, string>;
-}): Promise<{ success: boolean; accountName?: string; accountId?: string; error?: string }> {
+}): Promise<{
+  success: boolean;
+  accountName?: string;
+  accountId?: string;
+  error?: string;
+}> {
   if (isDemoMode) {
-    return { success: true, accountName: 'Demo Account', accountId: 'demo_id' };
+    return { success: true, accountName: "Demo Account", accountId: "demo_id" };
   }
 
   try {
-    if (data.platform === 'x') {
+    if (data.platform === "x") {
       const userInfo = await twitterService.verifyApiKeys({
         apiKey: data.credentials.apiKey,
         apiKeySecret: data.credentials.apiKeySecret,
@@ -561,13 +856,15 @@ export async function testSocialConnection(data: {
         accountName: `@${userInfo.username}`,
         accountId: userInfo.id,
       };
-    } else if (data.platform === 'facebook') {
+    }
+
+    if (data.platform === "facebook") {
       const res = await fetch(
         `https://graph.facebook.com/v21.0/${data.credentials.pageId}?fields=name,id&access_token=${data.credentials.pageAccessToken}`
       );
       const fbData = await res.json();
       if (fbData.error) {
-        throw new Error(fbData.error.message || 'Facebook API error');
+        throw new Error(fbData.error.message || "Facebook API error");
       }
       return {
         success: true,
@@ -580,7 +877,7 @@ export async function testSocialConnection(data: {
   } catch (err) {
     return {
       success: false,
-      error: err instanceof Error ? err.message : 'Connection test failed',
+      error: err instanceof Error ? err.message : "Connection test failed",
     };
   }
 }
@@ -596,4 +893,46 @@ export async function deleteSocialAccountHard(accountId: string) {
 
   revalidatePath("/customer/social/accounts");
   revalidatePath("/customer/social");
+}
+
+function getDemoTikTokCreatorInfo(): tiktokService.TikTokCreatorInfo {
+  return {
+    creator_username: "demo_creator",
+    creator_nickname: "Demo Creator",
+    privacy_level_options: ["SELF_ONLY", "MUTUAL_FOLLOW_FRIENDS"],
+    comment_disabled: false,
+    duet_disabled: false,
+    stitch_disabled: false,
+    max_video_post_duration_sec: 300,
+  };
+}
+
+function toObjectRecord(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+  return { ...(value as Record<string, unknown>) };
+}
+
+function toStringRecord(value: unknown): Record<string, string> {
+  const record = toObjectRecord(value);
+  return Object.fromEntries(
+    Object.entries(record)
+      .filter((entry): entry is [string, string] => typeof entry[1] === "string")
+  );
+}
+
+function getNumberValue(value: unknown): number | undefined {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }
+  return undefined;
+}
+
+function getTikTokStoredState(metrics: unknown): tiktokService.TikTokPublishState | null {
+  const state = toObjectRecord(metrics)[tiktokService.TIKTOK_PUBLISH_STATE_KEY];
+  if (!state || typeof state !== "object" || Array.isArray(state)) return null;
+  return state as tiktokService.TikTokPublishState;
 }

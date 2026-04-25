@@ -299,6 +299,8 @@ export function MarketingFooter() {
           <p>&copy; {new Date().getFullYear()} VERTAX LIMITED</p>
           <div className="flex items-center gap-4">
             <Link href="/about/what-is-vertax">关于 VertaX</Link>
+            <Link href="/privacy">Privacy</Link>
+            <Link href="/terms">Terms</Link>
             <Link href="/en">English</Link>
           </div>
         </div>

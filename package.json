@@ -10,6 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "ui:audit": "tsx scripts/audit-customer-ui.ts",
     "test:e2e:radar-daily": "playwright test tests/e2e/radar-daily.test.js --project=chromium",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
