@@ -8,6 +8,10 @@ import {
   type RadarSearchQuery,
   type NormalizedCandidate,
 } from './adapters';
+import {
+  buildTenantIndustryRadarHints,
+  mergeRadarKeywordHints,
+} from './tenant-industry-source-pack';
 
 // ==================== 类型定义 ====================
 
@@ -68,6 +72,26 @@ export async function runIncrementalScan(
     });
     if (!source) throw new Error(`Source not found: ${sourceId}`);
 
+    const [tenant, companyProfile] = await Promise.all([
+      prisma.tenant.findUnique({
+        where: { id: profile.tenantId },
+        select: { slug: true, name: true, domain: true },
+      }),
+      prisma.companyProfile.findUnique({
+        where: { tenantId: profile.tenantId },
+        select: {
+          companyName: true,
+          companyIntro: true,
+          coreProducts: true,
+          targetIndustries: true,
+          scenarios: true,
+          buyerPersonas: true,
+          painPoints: true,
+          buyingTriggers: true,
+        },
+      }),
+    ]);
+
     // 2. 读取或初始化游标
     const cursorRecord = await prisma.radarScanCursor.findUnique({
       where: { profileId_sourceId: { profileId, sourceId } },
@@ -91,7 +115,21 @@ export async function runIncrementalScan(
     const adapter = getAdapter(source.code, source.adapterConfig as Record<string, unknown>);
 
     // 4. 构建基础查询
-    const keywords = profile.keywords as Record<string, string[]>;
+    const sourcePackHints = buildTenantIndustryRadarHints({
+      tenantSlug: tenant?.slug,
+      companyName: companyProfile?.companyName || tenant?.name,
+      companyIntro: companyProfile?.companyIntro || tenant?.domain,
+      coreProducts: companyProfile?.coreProducts,
+      targetIndustries: companyProfile?.targetIndustries,
+      scenarios: companyProfile?.scenarios,
+      buyerPersonas: companyProfile?.buyerPersonas,
+      painPoints: companyProfile?.painPoints,
+      buyingTriggers: companyProfile?.buyingTriggers,
+    });
+    const keywords = mergeRadarKeywordHints(
+      profile.keywords as Record<string, string[]>,
+      sourcePackHints
+    );
     const allKeywords = [
       ...(keywords.en || []),
       ...(keywords.zh || []),
@@ -104,7 +142,12 @@ export async function runIncrementalScan(
     const negativeKeywords = [
       ...(profile.negativeKeywords as string[] || []),
       ...(exclusionRules.negativeKeywords || []),
+      ...sourcePackHints.negativeKeywords,
     ];
+    const targetIndustries = mergeUnique([
+      ...profile.industryCodes,
+      ...sourcePackHints.targetIndustries,
+    ]);
 
     // 查询策略：按关键词+国家组合分批搜索
     // 每次只用1个关键词+1个国家，避免查询过长
@@ -124,7 +167,7 @@ export async function runIncrementalScan(
       countries: currentCountry ? [currentCountry] : undefined,
       regions: profile.targetRegions.length > 0 ? profile.targetRegions : undefined,
       categories: profile.categoryFilters.length > 0 ? profile.categoryFilters : undefined,
-      targetIndustries: profile.industryCodes.length > 0 ? profile.industryCodes : undefined,
+      targetIndustries: targetIndustries.length > 0 ? targetIndustries : undefined,
       cursor: {
         nextPage: cursor.nextPage,
         nextPageToken: cursor.nextPageToken,
@@ -183,7 +226,7 @@ export async function runIncrementalScan(
         countries: currentCountry ? [currentCountry] : undefined,
         regions: profile.targetRegions.length > 0 ? profile.targetRegions : undefined,
         categories: profile.categoryFilters.length > 0 ? profile.categoryFilters : undefined,
-        targetIndustries: profile.industryCodes.length > 0 ? profile.industryCodes : undefined,
+        targetIndustries: targetIndustries.length > 0 ? targetIndustries : undefined,
         cursor: {
           nextPage: cursor.nextPage,
           nextPageToken: cursor.nextPageToken,
@@ -395,4 +438,22 @@ async function processCandidate(
 
 function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function mergeUnique(values: string[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+
+  for (const value of values) {
+    const normalized = value.trim();
+    const key = normalized.toLowerCase();
+    if (!normalized || seen.has(key)) {
+      continue;
+    }
+
+    seen.add(key);
+    result.push(normalized);
+  }
+
+  return result;
 }
