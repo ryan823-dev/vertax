@@ -1,0 +1,4 @@
+interface:
+  display_name: "VertaX UI Upgrade"
+  short_description: "Calm Intelligence UI refactors"
+  default_prompt: "Use the VertaX UI Upgrade skill to inspect the current customer UI, declare design decisions, reduce card clutter, implement a scoped workbench-style improvement, and verify desktop/mobile screenshots."

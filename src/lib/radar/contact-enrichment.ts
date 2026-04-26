@@ -46,7 +46,7 @@ export interface PersistedRecommendedChannel {
   priority: number;
 }
 
-export interface PersistedIdentityResolution extends IdentityResolution {}
+export type PersistedIdentityResolution = IdentityResolution;
 
 export interface CandidateContactEnrichmentSnapshot {
   version: 1;

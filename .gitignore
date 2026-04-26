@@ -73,6 +73,7 @@ __pycache__/
 .bolt/
 .windsurf/
 .agent-browser/
+.codex-tmp/
 .codex/
 .tmp-browser-state.json
 
