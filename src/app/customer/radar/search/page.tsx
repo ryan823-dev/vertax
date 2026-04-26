@@ -335,8 +335,8 @@ export default function RadarSearchPage() {
 
       <section className="rounded-3xl border border-[#E8E0D0] bg-[#FFFCF7] p-6">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-<SectionHeader eyebrow="D. 可选补充偏好" title="告诉系统你更想看什么" description="给本轮检索加一条人工判断的优先方向，便于更快判断推进顺序。" compact />
-          <button onClick={() => setShowPreferences((value) => !value)} className="inline-flex items-center gap-2 self-start rounded-xl border border-[#E8E0D0] bg-[#FCFAF4] px-4 py-2 text-sm font-medium text-[#0B1B2B] transition-colors hover:border-[#D4AF37]/35 hover:bg-[#FFF7E5]">{showPreferences ? "收起偏好" : "补充本轮偏好（可选）"}<ChevronRight className={`h-4 w-4 transition-transform ${showPreferences ? "rotate-90" : ""}`} /></button>
+<SectionHeader eyebrow="D. 本轮画像校准" title="把专家判断临时叠加到本轮匹配" description="这里不是让客户改成搜索员，而是在长期画像之上补一层本轮优先级，帮助系统更接近客户的行业判断。" compact />
+          <button onClick={() => setShowPreferences((value) => !value)} className="inline-flex items-center gap-2 self-start rounded-xl border border-[#E8E0D0] bg-[#FCFAF4] px-4 py-2 text-sm font-medium text-[#0B1B2B] transition-colors hover:border-[#D4AF37]/35 hover:bg-[#FFF7E5]">{showPreferences ? "收起校准" : "补充本轮校准（可选）"}<ChevronRight className={`h-4 w-4 transition-transform ${showPreferences ? "rotate-90" : ""}`} /></button>
         </div>
         {showPreferences ? (
           <div className="mt-4 space-y-4">
@@ -347,7 +347,7 @@ export default function RadarSearchPage() {
               <TextField label="想排除的特殊对象" value={preferences.excludedTargets} placeholder="例如：贸易商、维修服务商" onChange={(value) => setPreferences((prev) => ({ ...prev, excludedTargets: value }))} />
             </div>
             <TextField label="一句补充说明" value={preferences.note} placeholder="例如：本轮优先看德国本地制造企业，先不要看渠道商。" onChange={(value) => setPreferences((prev) => ({ ...prev, note: value }))} textarea />
-            <div className="rounded-2xl border border-[#E8E0D0] bg-[#FCFAF4] px-4 py-3 text-sm text-slate-600">本阶段已经把 <span className="font-semibold text-[#0B1B2B]">国家 / 行业 / 关键词优先级</span> 接到自动搜索执行里。<span className="font-semibold text-[#0B1B2B]">排除对象和补充说明</span> 先作为结构预留，下一阶段再接入执行器。</div>
+            <div className="rounded-2xl border border-[#E8E0D0] bg-[#FCFAF4] px-4 py-3 text-sm text-slate-600">本轮会把 <span className="font-semibold text-[#0B1B2B]">国家 / 行业 / 关键词优先级</span> 临时叠加到画像匹配里。需要长期生效的行业判断，请回到总览页用 <span className="font-semibold text-[#0B1B2B]">画像校正助手</span> 写入目标客户画像。</div>
           </div>
         ) : null}
       </section>

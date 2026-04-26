@@ -45,6 +45,27 @@ const radarModules = [
   { label: '采购机会', href: '/customer/radar/opportunities', icon: Radar, description: '单独管理采购与招投标商机', badge: null },
 ];
 
+type RefinementPayload = {
+  summary?: string;
+  targetCountries?: string[];
+  targetIndustries?: string[];
+  keywords?: string[];
+  negativeKeywords?: string[];
+  useCases?: string[];
+  triggers?: string[];
+};
+
+type RequestResult = {
+  success: boolean;
+  message: string;
+  refinement?: RefinementPayload;
+  targetingSpec?: {
+    id?: string;
+    version?: number;
+    name?: string;
+  };
+};
+
 export default function RadarPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -52,13 +73,13 @@ export default function RadarPage() {
   const [error, setError] = useState<string | null>(null);
   const [pipelineLoaded, setPipelineLoaded] = useState(false);
 
-  // 自然语言需求输入
+  // 客户专家判断输入
   const [showChatInput, setShowChatInput] = useState(false);
   const [userRequest, setUserRequest] = useState('');
   const [isProcessingRequest, setIsProcessingRequest] = useState(false);
-  const [requestResult, setRequestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [requestResult, setRequestResult] = useState<RequestResult | null>(null);
 
-  // 处理自然语言需求
+  // 处理客户专家判断
   const handleUserRequest = async () => {
     if (!userRequest.trim()) return;
     
@@ -77,13 +98,14 @@ export default function RadarPage() {
       if (data.success) {
         setRequestResult({ 
           success: true, 
-          message: `已创建自动搜索任务"${data.profile.name}"，正在执行中...` 
+          message: `已写入目标客户画像：${data.refinement?.summary || data.targetingSpec?.name || '客户行业判断补充'}`,
+          refinement: data.refinement,
+          targetingSpec: data.targetingSpec,
         });
         setUserRequest('');
         // 刷新状态
         setTimeout(() => {
           loadPipelineStatus(true);
-          setRequestResult(null);
         }, 2000);
       } else {
         setRequestResult({ 
@@ -254,14 +276,14 @@ export default function RadarPage() {
           </div>
         )}
 
-        {/* 智能对话输入 - 自然语言需求 */}
+        {/* 客户专家判断输入 */}
         <div className="bg-gradient-to-r from-[#0B1220] to-[#152942] rounded-2xl p-5 relative overflow-hidden">
           <div className="absolute inset-0 pointer-events-none" style={{background: 'radial-gradient(ellipse 60% 50% at 50% 0%, rgba(212,175,55,0.1) 0%, transparent 60%)'}} />
           
           <div className="relative">
             <div className="flex items-center gap-2 mb-3">
               <MessageSquare size={18} className="text-[#D4AF37]" />
-              <h3 className="font-bold text-white">智能获客助手</h3>
+              <h3 className="font-bold text-white">画像校正助手</h3>
             </div>
             
             {!showChatInput ? (
@@ -270,7 +292,7 @@ export default function RadarPage() {
                 className="w-full py-3 px-4 bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-xl text-left text-slate-400 hover:border-[#D4AF37]/50 transition-all flex items-center gap-2"
               >
                 <Sparkles size={16} className="text-[#D4AF37]" />
-                <span>描述你的目标客户，AI 会按画像帮你发起自动搜索...</span>
+                <span>补充你对目标客户的行业判断，系统会写入画像再用于自动匹配...</span>
               </button>
             ) : (
               <div className="space-y-3">
@@ -280,7 +302,7 @@ export default function RadarPage() {
                     value={userRequest}
                     onChange={e => setUserRequest(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleUserRequest()}
-                    placeholder="例如：帮我寻找美国的冰箱制造企业，需要喷漆机器人设备"
+                    placeholder="例如：美国制造企业中有喷涂产线升级、机器人喷涂、paint booth 改造需求的客户；先不要看住宅刷漆和汽修喷漆。"
                     className="flex-1 py-3 px-4 bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.15)] rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#D4AF37]"
                     disabled={isProcessingRequest}
                   />
@@ -304,26 +326,62 @@ export default function RadarPage() {
                 </div>
                 
                 {requestResult && (
-                  <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
-                    requestResult.success 
-                      ? 'bg-emerald-500/20 text-emerald-300' 
-                      : 'bg-red-500/20 text-red-300'
+                  <div className={`rounded-xl border px-4 py-3 text-sm ${
+                    requestResult.success
+                      ? 'border-emerald-400/25 bg-emerald-500/15 text-emerald-200'
+                      : 'border-red-400/25 bg-red-500/15 text-red-200'
                   }`}>
+                    <div className="flex items-start gap-2">
+                      {requestResult.success ? (
+                        <CheckCircle2 size={16} className="mt-0.5 shrink-0" />
+                      ) : (
+                        <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium">{requestResult.message}</div>
+                        {requestResult.success && requestResult.targetingSpec?.version ? (
+                          <div className="mt-1 text-xs text-emerald-100/75">TargetingSpec v{requestResult.targetingSpec.version} 已生成，后续自动匹配会按这版画像执行。</div>
+                        ) : null}
+                      </div>
+                      <button
+                        onClick={() => setRequestResult(null)}
+                        className="rounded-lg p-1 text-white/50 transition-colors hover:bg-white/10 hover:text-white"
+                        aria-label="关闭画像校正结果"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+
                     {requestResult.success ? (
-                      <CheckCircle2 size={14} />
-                    ) : (
-                      <AlertTriangle size={14} />
-                    )}
-                    {requestResult.message}
+                      <>
+                        <RefinementSummary refinement={requestResult.refinement} />
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          <Link
+                            href="/customer/radar/search"
+                            className="inline-flex items-center gap-2 rounded-lg bg-[#D4AF37] px-3 py-2 text-xs font-semibold text-[#0B1220] transition-colors hover:bg-[#E0C04A]"
+                          >
+                            按最新画像重新搜索
+                            <ArrowRight size={14} />
+                          </Link>
+                          <Link
+                            href="/customer/radar/targeting"
+                            className="inline-flex items-center gap-2 rounded-lg border border-white/15 px-3 py-2 text-xs font-medium text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+                          >
+                            查看目标客户画像
+                            <ChevronRight size={14} />
+                          </Link>
+                        </div>
+                      </>
+                    ) : null}
                   </div>
                 )}
                 
                 <div className="flex flex-wrap gap-2">
                   <span className="text-xs text-slate-500">试试：</span>
                   {[
-                    '寻找美国汽车零部件制造商',
-                    '欧洲家电企业需要喷涂设备',
-                    '日本精密制造工厂',
+                    '美国汽车零部件工厂，有paint booth改造需求',
+                    '欧洲家电企业，关注喷涂自动化和VOC合规',
+                    '日本精密制造工厂，优先看机器人喷涂升级',
                   ].map(example => (
                     <button
                       key={example}
@@ -614,4 +672,51 @@ export default function RadarPage() {
       </div>
     </div>
   );
+}
+
+function RefinementSummary({ refinement }: { refinement?: RefinementPayload }) {
+  const groups = [
+    { label: '目标市场', values: refinement?.targetCountries },
+    { label: '目标行业', values: refinement?.targetIndustries },
+    { label: '需求关键词', values: refinement?.keywords },
+    { label: '排除对象', values: refinement?.negativeKeywords },
+    { label: '应用场景', values: refinement?.useCases },
+    { label: '购买触发器', values: refinement?.triggers },
+  ]
+    .map((group) => ({ ...group, values: normalizePreviewValues(group.values) }))
+    .filter((group) => group.values.length > 0);
+
+  if (groups.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="mt-4 grid gap-3 md:grid-cols-2">
+      {groups.map((group) => (
+        <div key={group.label} className="rounded-xl border border-white/10 bg-white/5 px-3 py-3">
+          <div className="text-[11px] font-semibold text-emerald-100/70">{group.label}</div>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {group.values.slice(0, 8).map((value) => (
+              <span key={value} className="max-w-full rounded-full bg-white/10 px-2.5 py-1 text-[11px] leading-4 text-white/85">
+                {value}
+              </span>
+            ))}
+            {group.values.length > 8 ? (
+              <span className="rounded-full bg-white/5 px-2.5 py-1 text-[11px] leading-4 text-white/55">
+                +{group.values.length - 8}
+              </span>
+            ) : null}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function normalizePreviewValues(values?: string[]) {
+  if (!Array.isArray(values)) {
+    return [];
+  }
+
+  return Array.from(new Set(values.map((value) => value.trim()).filter(Boolean)));
 }
