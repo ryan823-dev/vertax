@@ -70,7 +70,7 @@ function MetricCard({
   return (
     <div
       data-testid={testId}
-      className="rounded-3xl border border-[#E8E0D0] bg-[#FFFCF7] p-5 shadow-[0_18px_36px_-30px_rgba(11,27,43,0.35)]"
+      className="rounded-xl border border-[var(--ci-border)] bg-[#FFFFFF] p-5 shadow-[var(--ci-shadow-soft)]"
     >
       <div className="flex items-center justify-between gap-3">
         <div>
@@ -78,7 +78,7 @@ function MetricCard({
           <p data-testid={`${testId}-value`} className="mt-3 text-3xl font-bold text-[#0B1B2B]">{value}</p>
           <p data-testid={`${testId}-helper`} className="mt-2 text-xs text-slate-500">{helper}</p>
         </div>
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F7F3E8] text-[#9A7A1C]">
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--ci-surface-strong)] text-[#9A7A1C]">
           {icon}
         </div>
       </div>
@@ -94,13 +94,13 @@ function WorkspaceCard({
   bucketLabel: string;
 }) {
   return (
-    <div className="rounded-3xl border border-[#E8E0D0] bg-[#FFFCF7] p-5 shadow-[0_18px_36px_-30px_rgba(11,27,43,0.28)]">
+    <div className="rounded-xl border border-[var(--ci-border)] bg-[#FFFFFF] p-5 shadow-[var(--ci-shadow-soft)]">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-base font-semibold text-[#0B1B2B]">{item.companyName}</h3>
             {item.tier && (
-              <span className="rounded-full bg-[#F0EBD8] px-2 py-0.5 text-[11px] font-semibold text-[#9A7A1C]">
+              <span className="rounded-full bg-[var(--ci-surface-muted)] px-2 py-0.5 text-[11px] font-semibold text-[#9A7A1C]">
                 Tier {item.tier}
               </span>
             )}
@@ -112,14 +112,14 @@ function WorkspaceCard({
             {item.country || "国家待补"} · {item.industry || "行业待补"} · {bucketLabel}
           </p>
         </div>
-        <div className="rounded-2xl bg-[#0B1B2B] px-3 py-2 text-right text-white">
+        <div className="rounded-xl bg-[#0B1B2B] px-3 py-2 text-right text-white">
           <div className="text-[10px] uppercase tracking-[0.14em] text-slate-400">Ready Score</div>
           <div className="text-xl font-semibold">{item.contactReadyScore}</div>
         </div>
       </div>
 
       <div className="mt-4 space-y-3">
-        <div className="rounded-2xl bg-[#F7F3E8] p-4">
+        <div className="rounded-xl bg-[var(--ci-surface-strong)] p-4">
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-[#9A7A1C]">
             <Target size={13} />
             推荐切入点
@@ -128,7 +128,7 @@ function WorkspaceCard({
         </div>
 
         <div className="grid gap-3 md:grid-cols-2">
-          <div className="rounded-2xl border border-[#E8E0D0] bg-white p-4">
+          <div className="rounded-xl border border-[var(--ci-border)] bg-white p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">主联系人</p>
             {item.recommendedContact ? (
               <>
@@ -138,7 +138,7 @@ function WorkspaceCard({
                     {item.recommendedContact.role ? ` · ${item.recommendedContact.role}` : ""}
                   </p>
                   {!item.recommendedContact.isPersisted && (
-                    <span className="rounded-full bg-[#D4AF37]/10 px-2 py-0.5 text-[10px] font-semibold text-[#9A7A1C]">
+                    <span className="rounded-full bg-[var(--ci-accent)]/10 px-2 py-0.5 text-[10px] font-semibold text-[#9A7A1C]">
                       导入快照
                     </span>
                   )}
@@ -164,7 +164,7 @@ function WorkspaceCard({
             )}
           </div>
 
-          <div className="rounded-2xl border border-[#E8E0D0] bg-white p-4">
+          <div className="rounded-xl border border-[var(--ci-border)] bg-white p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">执行提示</p>
             <p className="mt-2 text-sm leading-6 text-slate-700">{item.quickNote}</p>
             {(item.recommendedChannelLabel || item.complianceNote) && (
@@ -196,7 +196,7 @@ function WorkspaceCard({
         {item.recommendedContact?.phone && (
           <a
             href={`tel:${item.recommendedContact.phone}`}
-            className="inline-flex items-center gap-2 rounded-full border border-[#D4AF37]/30 bg-[#FFF4D6] px-4 py-2 text-sm font-semibold text-[#9A7A1C]"
+            className="inline-flex items-center gap-2 rounded-full border border-[var(--ci-accent)]/30 bg-[#FFF4D6] px-4 py-2 text-sm font-semibold text-[#9A7A1C]"
           >
             <PhoneCall size={14} />
             直接拨号
@@ -205,7 +205,7 @@ function WorkspaceCard({
         {item.recommendedContact?.email && (
           <a
             href={`mailto:${item.recommendedContact.email}`}
-            className="inline-flex items-center gap-2 rounded-full border border-[#E8E0D0] bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+            className="inline-flex items-center gap-2 rounded-full border border-[var(--ci-border)] bg-white px-4 py-2 text-sm font-semibold text-slate-700"
           >
             <Mail size={14} />
             直接发邮
@@ -216,7 +216,7 @@ function WorkspaceCard({
             href={item.website}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-2 rounded-full border border-[#E8E0D0] bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+            className="inline-flex items-center gap-2 rounded-full border border-[var(--ci-border)] bg-white px-4 py-2 text-sm font-semibold text-slate-700"
           >
             <Globe size={14} />
             官网
@@ -291,18 +291,18 @@ export default function RadarDailyPage() {
   if (!loaded && !metrics && !workspace) {
     return (
       <div className="flex min-h-[420px] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[#D4AF37]" />
+        <Loader2 className="h-8 w-8 animate-spin text-[var(--ci-accent)]" />
       </div>
     );
   }
 
   return (
     <div data-testid="radar-daily-page" className="space-y-6 pb-10">
-      <div className="rounded-[32px] border border-[#E8E0D0] bg-[linear-gradient(135deg,#FFF8E8_0%,#FFFCF7_55%,#F7F3E8_100%)] p-6 shadow-[0_24px_54px_-38px_rgba(11,27,43,0.45)]">
+      <div className="rounded-xl border border-[var(--ci-border)] bg-[var(--ci-surface-strong)] p-6 shadow-[var(--ci-shadow-soft)]">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-3xl">
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#0B1B2B] text-[#D4AF37]">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#0B1B2B] text-[var(--ci-accent)]">
                 <Sparkles size={18} />
               </div>
               <div>
@@ -316,14 +316,14 @@ export default function RadarDailyPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <div data-testid="radar-daily-generated-at" className="rounded-2xl border border-[#E8E0D0] bg-white px-4 py-3 text-sm text-slate-600">
+            <div data-testid="radar-daily-generated-at" className="rounded-xl border border-[var(--ci-border)] bg-white px-4 py-3 text-sm text-slate-600">
               最近更新 {workspace ? formatWorkspaceTime(workspace.generatedAt) : "--"}
             </div>
             <button
               type="button"
               onClick={loadData}
               disabled={isRefreshing}
-              className="inline-flex items-center gap-2 rounded-full border border-[#E8E0D0] bg-white px-4 py-2 text-sm font-semibold text-slate-700 disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-full border border-[var(--ci-border)] bg-white px-4 py-2 text-sm font-semibold text-slate-700 disabled:opacity-60"
             >
               <RefreshCw size={14} className={isRefreshing ? "animate-spin" : ""} />
               刷新清单
@@ -332,7 +332,7 @@ export default function RadarDailyPage() {
         </div>
 
         {error && (
-          <div className="mt-5 flex items-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="mt-5 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             <AlertCircle size={16} />
             <span>{error}</span>
           </div>
@@ -374,14 +374,14 @@ export default function RadarDailyPage() {
 
           <div className="grid gap-6 xl:grid-cols-[1.2fr_2fr]">
             <div className="space-y-6">
-              <div className="rounded-3xl border border-[#E8E0D0] bg-[#FFFCF7] p-5 shadow-[0_18px_36px_-30px_rgba(11,27,43,0.28)]">
+              <div className="rounded-xl border border-[var(--ci-border)] bg-[#FFFFFF] p-5 shadow-[var(--ci-shadow-soft)]">
                 <div className="flex items-center gap-2 text-sm font-semibold text-[#0B1B2B]">
                   <Clock3 size={16} className="text-[#9A7A1C]" />
                   7 日供给趋势
                 </div>
                 <div className="mt-4 space-y-3">
                   {metrics.points.map((point) => (
-                    <div key={point.day} className="rounded-2xl border border-[#F0EBD8] bg-white px-4 py-3">
+                    <div key={point.day} className="rounded-xl border border-[var(--ci-surface-muted)] bg-white px-4 py-3">
                       <div className="flex items-center justify-between">
                         <p className="text-sm font-semibold text-[#0B1B2B]">{point.day}</p>
                         <p className="text-xs text-slate-500">Ready {point.readyCompanies}</p>
@@ -397,22 +397,22 @@ export default function RadarDailyPage() {
                 </div>
               </div>
 
-              <div className="rounded-3xl border border-[#E8E0D0] bg-[#FFFCF7] p-5 shadow-[0_18px_36px_-30px_rgba(11,27,43,0.28)]">
+              <div className="rounded-xl border border-[var(--ci-border)] bg-[#FFFFFF] p-5 shadow-[var(--ci-shadow-soft)]">
                 <h2 className="text-sm font-semibold text-[#0B1B2B]">今日工作量概览</h2>
                 <div className="mt-4 space-y-3 text-sm text-slate-600">
-                  <div className="flex items-center justify-between rounded-2xl bg-white px-4 py-3">
+                  <div className="flex items-center justify-between rounded-xl bg-white px-4 py-3">
                     <span>电话优先</span>
                     <strong data-testid="daily-summary-phone-priority" className="text-[#0B1B2B]">{workspace.summary.phonePriorityCount}</strong>
                   </div>
-                  <div className="flex items-center justify-between rounded-2xl bg-white px-4 py-3">
+                  <div className="flex items-center justify-between rounded-xl bg-white px-4 py-3">
                     <span>邮件优先</span>
                     <strong data-testid="daily-summary-email-priority" className="text-[#0B1B2B]">{workspace.summary.emailPriorityCount}</strong>
                   </div>
-                  <div className="flex items-center justify-between rounded-2xl bg-white px-4 py-3">
+                  <div className="flex items-center justify-between rounded-xl bg-white px-4 py-3">
                     <span>待补全</span>
                     <strong data-testid="daily-summary-pending" className="text-[#0B1B2B]">{workspace.summary.pendingCount}</strong>
                   </div>
-                  <div className="flex items-center justify-between rounded-2xl bg-[#F7F3E8] px-4 py-3">
+                  <div className="flex items-center justify-between rounded-xl bg-[var(--ci-surface-strong)] px-4 py-3">
                     <span>当前 Workspace 总量</span>
                     <strong data-testid="daily-summary-workspace-total" className="text-[#9A7A1C]">{workspace.summary.workspaceTotal}</strong>
                   </div>
@@ -438,7 +438,7 @@ export default function RadarDailyPage() {
                   </div>
 
                   {column.items.length === 0 ? (
-                    <div className="rounded-3xl border border-dashed border-[#E8E0D0] bg-white/70 px-5 py-10 text-center text-sm text-slate-500">
+                    <div className="rounded-xl border border-dashed border-[var(--ci-border)] bg-white/70 px-5 py-10 text-center text-sm text-slate-500">
                       当前没有可展示的条目。
                     </div>
                   ) : (

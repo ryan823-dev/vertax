@@ -47,9 +47,9 @@ const STATUS_CONFIG: Record<AssetProcessingStatus, {
   },
   ready: {
     label: '已就绪',
-    bg: 'rgba(212,175,55,0.08)',
-    color: '#B8860B',
-    border: 'rgba(212,175,55,0.25)',
+    bg: 'rgba(79,141,246,0.08)',
+    color: 'var(--ci-accent-strong)',
+    border: 'rgba(79,141,246,0.25)',
     icon: CheckCircle2,
   },
   failed: {

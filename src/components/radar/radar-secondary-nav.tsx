@@ -32,13 +32,13 @@ export function RadarSecondaryNav() {
   })().sort((left, right) => left.order - right.order);
 
   return (
-    <div className="rounded-[28px] border border-[#E8E0D0] bg-white/80 p-3 shadow-[0_18px_36px_-28px_rgba(11,27,43,0.45)] backdrop-blur-sm">
+    <div className="rounded-xl border border-[var(--ci-border)] bg-white/88 p-3 shadow-[var(--ci-shadow-soft)] backdrop-blur-sm">
       <div className="mb-3 flex items-center gap-3 px-2">
-        <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[#F0EBD8] text-[#D4AF37] ring-1 ring-[#D4AF37]/15">
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[rgba(79,141,246,0.10)] text-[var(--ci-accent)] ring-1 ring-[rgba(79,141,246,0.18)]">
           <Radar size={16} />
         </div>
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#9A7A1C]">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ci-accent-strong)]">
             Radar Flow
           </p>
           <p className="text-xs text-slate-500">以目标画像驱动的获客工作台</p>
@@ -55,24 +55,24 @@ export function RadarSecondaryNav() {
             <Link
               key={item.key}
               href={item.href}
-              className={`group rounded-2xl border px-3.5 py-3.5 transition-all duration-200 ${
+              className={`group rounded-xl border px-3.5 py-3.5 transition-colors duration-200 ${
                 active
-                  ? "border-[#D4AF37]/40 bg-[#FFF8E6] shadow-[0_14px_34px_-24px_rgba(212,175,55,0.85)]"
-                  : "border-[#E8E0D0] bg-[#FFFCF8] hover:border-[#D4AF37]/30 hover:bg-[#FFF9ED]"
+                  ? "border-[rgba(79,141,246,0.34)] bg-[rgba(79,141,246,0.08)]"
+                  : "border-[var(--ci-border)] bg-white hover:border-[rgba(79,141,246,0.24)] hover:bg-[var(--ci-surface-strong)]"
               }`}
             >
               <div className="flex items-center gap-3">
                 <div
                   className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
                     active
-                      ? "bg-[#D4AF37]/15 text-[#9A7A1C]"
-                      : "bg-[#F7F3E8] text-slate-500 group-hover:text-[#9A7A1C]"
+                      ? "bg-[rgba(79,141,246,0.12)] text-[var(--ci-accent)]"
+                      : "bg-[var(--ci-surface-muted)] text-slate-500 group-hover:text-[var(--ci-accent)]"
                   }`}
                 >
                   <Icon size={16} />
                 </div>
                 <div className="min-w-0">
-                  <div className={`text-sm font-semibold ${active ? "text-[#0B1B2B]" : "text-slate-700"}`}>
+                  <div className={`text-sm font-semibold ${active ? "text-[var(--ci-text)]" : "text-slate-700"}`}>
                     {item.label}
                   </div>
                   <div className="mt-0.5 text-xs leading-5 text-slate-500">

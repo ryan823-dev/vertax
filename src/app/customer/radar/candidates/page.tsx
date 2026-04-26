@@ -720,7 +720,7 @@ export default function RadarCandidatesPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 text-[#D4AF37] animate-spin" />
+        <Loader2 className="w-8 h-8 text-[var(--ci-accent)] animate-spin" />
       </div>
     );
   }
@@ -774,7 +774,7 @@ export default function RadarCandidatesPage() {
           </div>
         )}
 
-        <div className="rounded-2xl border border-[#E8E0D0] bg-[#FFFCF7] p-4">
+        <div className="rounded-xl border border-[var(--ci-border)] bg-[#FFFFFF] p-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#9A7A1C]">候选池默认语义</div>
@@ -782,13 +782,13 @@ export default function RadarCandidatesPage() {
               <p className="mt-2 text-sm leading-6 text-slate-500">采购机会已迁到采购机会页统一管理，联系人不再作为一级列表对象，而是在候选详情中承接。</p>
             </div>
             <div className="flex flex-wrap gap-3">
-              <div className="rounded-2xl border border-[#E8E0D0] bg-[#FCFAF4] px-4 py-3 text-sm">
+              <div className="rounded-xl border border-[var(--ci-border)] bg-[#FCFAF4] px-4 py-3 text-sm">
                 <div className="text-xs text-slate-500">公司候选</div>
                 <div className="mt-1 font-semibold text-[#0B1B2B]">{total}</div>
               </div>
               <Link
                 href="/customer/radar/opportunities"
-                className="rounded-2xl border border-[#D4AF37]/35 bg-[#FFF8E8] px-4 py-3 text-sm transition-colors hover:bg-[#FFF2CE]"
+                className="rounded-xl border border-[var(--ci-accent)]/35 bg-[var(--ci-surface-strong)] px-4 py-3 text-sm transition-colors hover:bg-[#FFF2CE]"
               >
                 <div className="text-xs text-slate-500">采购机会</div>
                 <div className="mt-1 flex items-center gap-2 font-semibold text-[#0B1B2B]">
@@ -801,7 +801,7 @@ export default function RadarCandidatesPage() {
         </div>
 
         {/* Status Filter Bar */}
-        <div className="flex flex-col gap-3 rounded-xl border border-[#E8E0D0] bg-[#FFFCF7] p-3 lg:flex-row lg:items-center">
+        <div className="flex flex-col gap-3 rounded-xl border border-[var(--ci-border)] bg-[#FFFFFF] p-3 lg:flex-row lg:items-center">
           <div className="flex flex-wrap gap-2">
             {STATUS_FILTERS.map((filter) => {
               const isActive = filters.status === filter.value;
@@ -812,8 +812,8 @@ export default function RadarCandidatesPage() {
                   onClick={() => setFilters(prev => ({ ...prev, status: filter.value as CandidateStatus | '' }))}
                   className={`rounded-lg px-4 py-2 text-sm font-medium transition-all ${
                     isActive
-                      ? 'bg-[#0B1220] text-[#D4AF37]'
-                      : 'bg-[#F7F3E8] text-slate-600 hover:bg-[#F0EBD8]'
+                      ? 'bg-[#0B1220] text-[var(--ci-accent)]'
+                      : 'bg-[var(--ci-surface-strong)] text-slate-600 hover:bg-[var(--ci-surface-muted)]'
                   }`}
                 >
                   {filter.label}
@@ -828,7 +828,7 @@ export default function RadarCandidatesPage() {
             <select
               value={filters.qualifyTier}
               onChange={(e) => setFilters(prev => ({ ...prev, qualifyTier: e.target.value }))}
-              className="rounded-lg border border-[#E8E0D0] bg-[#FCFAF4] px-3 py-2 text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/30"
+              className="rounded-lg border border-[var(--ci-border)] bg-[#FCFAF4] px-3 py-2 text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-[var(--ci-accent)]/30"
             >
               {TIER_FILTERS.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -844,7 +844,7 @@ export default function RadarCandidatesPage() {
                 value={filters.search}
                 onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
                 placeholder="搜索公司名、网站、行业或来源"
-                className="w-full min-w-[240px] rounded-lg border border-[#E8E0D0] bg-[#FCFAF4] py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/30"
+                className="w-full min-w-[240px] rounded-lg border border-[var(--ci-border)] bg-[#FCFAF4] py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ci-accent)]/30"
               />
             </div>
           </div>
@@ -853,14 +853,14 @@ export default function RadarCandidatesPage() {
         {/* Batch Actions Bar */}
         {selectedIds.size > 0 && (
           <div className="flex items-center gap-3 px-4 py-3 bg-[#0B1B2B] rounded-xl">
-            <span className="text-[#D4AF37] text-sm font-medium">
+            <span className="text-[var(--ci-accent)] text-sm font-medium">
               已选择 {selectedIds.size} 项
             </span>
             <div className="flex-1" />
             <button
               onClick={handleBatchImport}
               disabled={isBatchImporting}
-              className="px-3 py-1.5 bg-[#D4AF37]/20 text-[#D4AF37] rounded-lg text-xs font-medium hover:bg-[#D4AF37]/30 transition-colors disabled:opacity-50"
+              className="px-3 py-1.5 bg-[var(--ci-accent)]/20 text-[var(--ci-accent)] rounded-lg text-xs font-medium hover:bg-[var(--ci-accent)]/30 transition-colors disabled:opacity-50"
             >
               {isBatchImporting ? '导入中...' : '批量导入线索库'}
             </button>
@@ -907,15 +907,15 @@ export default function RadarCandidatesPage() {
         {/* Main Content */}
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(380px,0.9fr)]">
             {/* Candidates List */}
-          <div className="min-w-0 overflow-hidden rounded-[28px] border border-[#E8E0D0] bg-[#F7F3E8] shadow-[0_18px_36px_-28px_rgba(11,27,43,0.35)]">
+          <div className="min-w-0 overflow-hidden rounded-xl border border-[var(--ci-border)] bg-[var(--ci-surface-strong)] shadow-[var(--ci-shadow-soft)]">
             {/* List Header */}
-            <div className="border-b border-[#E8E0D0] bg-[#F0EBD8] px-4 py-3">
+            <div className="border-b border-[var(--ci-border)] bg-[var(--ci-surface-muted)] px-4 py-3">
               <div className="flex items-center gap-3">
                 <input
                   type="checkbox"
                   checked={selectedIds.size === candidates.length && candidates.length > 0}
                   onChange={toggleSelectAll}
-                  className="w-4 h-4 rounded border-slate-300 text-[#D4AF37] focus:ring-[#D4AF37]"
+                  className="w-4 h-4 rounded border-slate-300 text-[var(--ci-accent)] focus:ring-[var(--ci-accent)]"
                 />
                 <span className="text-sm font-medium text-[#0B1B2B]">公司候选列表</span>
                 <span className="text-xs text-slate-400">
@@ -937,8 +937,8 @@ export default function RadarCandidatesPage() {
               <div className="text-center py-16 px-6">
                 {emptyStateType === 'no_task' && (
                   <>
-                    <div className="w-16 h-16 rounded-2xl bg-[#F0EBD8] flex items-center justify-center mx-auto mb-4" style={{background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.3)'}}>
-                      <Search size={28} className="text-[#D4AF37]" />
+                    <div className="w-16 h-16 rounded-xl bg-[var(--ci-surface-muted)] flex items-center justify-center mx-auto mb-4" style={{background: 'rgba(79,141,246,0.12)', border: '1px solid rgba(79,141,246,0.3)'}}>
+                      <Search size={28} className="text-[var(--ci-accent)]" />
                     </div>
                     <h3 className="text-lg font-bold text-[#0B1B2B] mb-2">暂无候选数据</h3>
                     <p className="text-sm text-slate-500 mb-4">
@@ -947,7 +947,7 @@ export default function RadarCandidatesPage() {
                     <Link 
                       href="/customer/radar/search"
                       className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium hover:opacity-90 transition-colors"
-                      style={{background: '#D4AF37', color: '#0B1220', boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)'}}
+                      style={{background: 'var(--ci-accent)', color: '#FFFFFF', boxShadow: '0 4px 16px -2px rgba(79,141,246,0.35)'}}
                     >
                       前往自动搜索
                       <ArrowRight size={14} />
@@ -956,8 +956,8 @@ export default function RadarCandidatesPage() {
                 )}
                 {emptyStateType === 'opportunity_only' && (
                   <>
-                    <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.3)'}}>
-                      <Filter size={28} className="text-[#D4AF37]" />
+                    <div className="w-16 h-16 rounded-xl flex items-center justify-center mx-auto mb-4" style={{background: 'rgba(79,141,246,0.12)', border: '1px solid rgba(79,141,246,0.3)'}}>
+                      <Filter size={28} className="text-[var(--ci-accent)]" />
                     </div>
                     <h3 className="text-lg font-bold text-[#0B1B2B] mb-2">当前没有公司候选</h3>
                     <p className="text-sm text-slate-500 mb-4">
@@ -966,7 +966,7 @@ export default function RadarCandidatesPage() {
                     <Link
                       href="/customer/radar/opportunities"
                       className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium hover:opacity-90 transition-colors"
-                      style={{background: '#D4AF37', color: '#0B1220', boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)'}}
+                      style={{background: 'var(--ci-accent)', color: '#FFFFFF', boxShadow: '0 4px 16px -2px rgba(79,141,246,0.35)'}}
                     >
                       查看采购机会
                       <ArrowRight size={14} />
@@ -975,8 +975,8 @@ export default function RadarCandidatesPage() {
                 )}
                 {emptyStateType === 'no_results' && (
                   <>
-                    <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.3)'}}>
-                      <Filter size={28} className="text-[#D4AF37]" />
+                    <div className="w-16 h-16 rounded-xl flex items-center justify-center mx-auto mb-4" style={{background: 'rgba(79,141,246,0.12)', border: '1px solid rgba(79,141,246,0.3)'}}>
+                      <Filter size={28} className="text-[var(--ci-accent)]" />
                     </div>
                     <h3 className="text-lg font-bold text-[#0B1B2B] mb-2">无匹配结果</h3>
                     <p className="text-sm text-slate-500 mb-4">
@@ -995,7 +995,7 @@ export default function RadarCandidatesPage() {
             
             {/* Candidates List */}
             {candidates.length > 0 && (
-              <div className="divide-y divide-[#E8E0D0] max-h-[calc(100vh-320px)] overflow-y-auto">
+              <div className="divide-y divide-[var(--ci-border)] max-h-[calc(100vh-320px)] overflow-y-auto">
                 {candidates.map((candidate) => {
                   const statusInfo = getStatusLabel(candidate.status);
                   const isSelected = selectedCandidate?.id === candidate.id;
@@ -1024,7 +1024,7 @@ export default function RadarCandidatesPage() {
                       className={`cursor-pointer p-4 transition-all ${
                         isSelected 
                           ? 'bg-[#FFF7E5]' 
-                          : 'hover:bg-[#F0EBD8]'
+                          : 'hover:bg-[var(--ci-surface-muted)]'
                       }`}
                     >
                       <div className="flex items-start gap-3">
@@ -1036,11 +1036,11 @@ export default function RadarCandidatesPage() {
                             toggleSelect(candidate.id);
                           }}
                           onClick={(e) => e.stopPropagation()}
-                          className="mt-1 w-4 h-4 rounded border-slate-300 text-[#D4AF37] focus:ring-[#D4AF37]"
+                          className="mt-1 w-4 h-4 rounded border-slate-300 text-[var(--ci-accent)] focus:ring-[var(--ci-accent)]"
                         />
 
-                        <div className="mt-0.5 flex h-11 w-11 items-center justify-center rounded-xl bg-[#F0EBD8] shrink-0" style={{background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.3)'}}>
-                          <Building2 size={18} className="text-[#D4AF37]" />
+                        <div className="mt-0.5 flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--ci-surface-muted)] shrink-0" style={{background: 'rgba(79,141,246,0.12)', border: '1px solid rgba(79,141,246,0.3)'}}>
+                          <Building2 size={18} className="text-[var(--ci-accent)]" />
                         </div>
 
                         <div className="min-w-0 flex-1">
@@ -1070,7 +1070,7 @@ export default function RadarCandidatesPage() {
                             <CandidateMetaPill label={`来源：${candidate.source.name}`} />
                           </div>
 
-                          <div className="mt-3 rounded-2xl border border-[#E8E0D0] bg-[#FFFCF7] p-3">
+                          <div className="mt-3 rounded-xl border border-[var(--ci-border)] bg-[#FFFFFF] p-3">
                             <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#9A7A1C]">
                               为什么是它
                             </div>
@@ -1083,14 +1083,14 @@ export default function RadarCandidatesPage() {
                         </div>
 
                         <div className="flex shrink-0 flex-col items-end gap-2">
-                          <div className="rounded-2xl border border-[#E8E0D0] bg-[#FFFCF7] px-3 py-2 text-right">
+                          <div className="rounded-xl border border-[var(--ci-border)] bg-[#FFFFFF] px-3 py-2 text-right">
                             <div className="text-[10px] text-slate-400">ICP 分数</div>
                             <div className={`text-lg font-bold ${getMatchScoreColor(candidate.matchScore)}`}>
                               {formatMatchScore(candidate.matchScore)}
                             </div>
                           </div>
                           <ChevronRight size={16} className={`transition-colors ${
-                            isSelected ? 'text-[#D4AF37]' : 'text-slate-300'
+                            isSelected ? 'text-[var(--ci-accent)]' : 'text-slate-300'
                           }`} />
                         </div>
                       </div>
@@ -1106,9 +1106,9 @@ export default function RadarCandidatesPage() {
             {selectedCandidate ? (
               <>
                 {/* Basic Info Card */}
-                <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-5">
+                <div className="bg-[var(--ci-surface-strong)] rounded-xl border border-[var(--ci-border)] p-5">
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-[#D4AF37] to-[#D4AF37]/80 rounded-xl flex items-center justify-center">
+                    <div className="w-12 h-12 bg-[var(--ci-accent-soft)] rounded-xl flex items-center justify-center">
                       <Building2 size={24} className="text-[#0B1B2B]" />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -1128,7 +1128,7 @@ export default function RadarCandidatesPage() {
                             href={selectedCandidate.sourceUrl} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="text-[#D4AF37] hover:underline"
+                            className="text-[var(--ci-accent)] hover:underline"
                             onClick={(e) => e.stopPropagation()}
                           >
                             <ExternalLink size={12} />
@@ -1150,7 +1150,7 @@ export default function RadarCandidatesPage() {
                     <DetailItem label="补全状态" value={getEnrichmentStatus(selectedCandidate)} />
                   </div>
                   {selectedCandidate.description ? (
-                    <div className="mt-4 rounded-2xl border border-[#E8E0D0] bg-[#FFFCF7] p-3 text-xs leading-6 text-slate-600">
+                    <div className="mt-4 rounded-xl border border-[var(--ci-border)] bg-[#FFFFFF] p-3 text-xs leading-6 text-slate-600">
                       {selectedCandidate.description}
                     </div>
                   ) : null}
@@ -1159,9 +1159,9 @@ export default function RadarCandidatesPage() {
                     if (!contactSnapshot) return null;
 
                     return (
-                      <div className="mt-4 rounded-2xl border border-[#E8E0D0] bg-[#FFFCF7] p-4">
+                      <div className="mt-4 rounded-xl border border-[var(--ci-border)] bg-[#FFFFFF] p-4">
                         <div className="flex items-center gap-2">
-                          <Shield size={14} className="text-[#D4AF37]" />
+                          <Shield size={14} className="text-[var(--ci-accent)]" />
                           <div className="text-sm font-bold text-[#0B1B2B]">联系方式补全</div>
                           <div className="ml-auto text-[10px] text-slate-400">
                             {new Date(contactSnapshot.enrichedAt).toLocaleDateString('zh-CN')}
@@ -1186,7 +1186,7 @@ export default function RadarCandidatesPage() {
                         </div>
 
                         <div className="mt-3 grid gap-3 md:grid-cols-2">
-                          <div className="rounded-2xl border border-[#E8E0D0] bg-[#FCFAF4] px-3 py-3">
+                          <div className="rounded-xl border border-[var(--ci-border)] bg-[#FCFAF4] px-3 py-3">
                             <div className="text-[11px] uppercase tracking-[0.16em] text-slate-400">推荐联系渠道</div>
                             <div className="mt-2 text-sm font-medium text-[#0B1B2B]">
                               {contactSnapshot.recommendedContact || '待评估'}
@@ -1197,7 +1197,7 @@ export default function RadarCandidatesPage() {
                               </div>
                             ) : null}
                           </div>
-                          <div className="rounded-2xl border border-[#E8E0D0] bg-[#FCFAF4] px-3 py-3">
+                          <div className="rounded-xl border border-[var(--ci-border)] bg-[#FCFAF4] px-3 py-3">
                             <div className="text-[11px] uppercase tracking-[0.16em] text-slate-400">合规说明</div>
                             <div className="mt-2 text-xs leading-5 text-slate-600">
                               {contactSnapshot.complianceNote || '仅使用公开商务联系方式'}
@@ -1210,14 +1210,14 @@ export default function RadarCandidatesPage() {
                 </div>
 
                 {/* Match Reasons */}
-                <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-5">
+                <div className="bg-[var(--ci-surface-strong)] rounded-xl border border-[var(--ci-border)] p-5">
                   <h4 className="flex items-center gap-2 text-sm font-bold text-[#0B1B2B] mb-3">
-                    <Target size={14} className="text-[#D4AF37]" />
+                    <Target size={14} className="text-[var(--ci-accent)]" />
                     为什么命中画像
                   </h4>
                   <div className="space-y-2">
                     {getCandidateReasons(selectedCandidate, 4).map((reason) => (
-                      <div key={reason} className="flex items-start gap-2 rounded-2xl border border-[#E8E0D0] bg-[#FFFCF7] px-3 py-2 text-xs text-slate-600">
+                      <div key={reason} className="flex items-start gap-2 rounded-xl border border-[var(--ci-border)] bg-[#FFFFFF] px-3 py-2 text-xs text-slate-600">
                         <CheckCircle2 size={12} className="mt-0.5 shrink-0 text-emerald-500" />
                         <span>{reason}</span>
                       </div>
@@ -1248,13 +1248,13 @@ export default function RadarCandidatesPage() {
                   }
 
                   return (
-                    <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-5">
+                    <div className="bg-[var(--ci-surface-strong)] rounded-xl border border-[var(--ci-border)] p-5">
                       <h4 className="flex items-center gap-2 text-sm font-bold text-[#0B1B2B] mb-3">
-                        <AlertCircle size={14} className="text-[#D4AF37]" />
+                        <AlertCircle size={14} className="text-[var(--ci-accent)]" />
                         分层解释
                       </h4>
                       {selectedCandidate.qualifyTier && (
-                        <div className="rounded-2xl border border-[#E8E0D0] bg-[#FFFCF7] px-3 py-3 mb-3">
+                        <div className="rounded-xl border border-[var(--ci-border)] bg-[#FFFFFF] px-3 py-3 mb-3">
                           <div className="flex items-center justify-between gap-3">
                             <span className="text-xs font-semibold text-[#0B1B2B]">
                               {isExcluded ? '为什么被排除' : `为什么是 ${selectedCandidate.qualifyTier} 档`}
@@ -1278,7 +1278,7 @@ export default function RadarCandidatesPage() {
                         </div>
                       )}
                       {rel?.dataGaps?.length ? (
-                        <div className="rounded-2xl border border-dashed border-[#D4AF37]/30 bg-[#FFF9E9] px-3 py-3">
+                        <div className="rounded-xl border border-dashed border-[var(--ci-accent)]/30 bg-[#FFF9E9] px-3 py-3">
                           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#9A7A1C]">
                             还缺什么
                           </p>
@@ -1297,9 +1297,9 @@ export default function RadarCandidatesPage() {
 
                 {/* Enrichment Summary */}
                 {selectedCandidate.aiSummary && !researchData && (
-                  <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-5">
+                  <div className="bg-[var(--ci-surface-strong)] rounded-xl border border-[var(--ci-border)] p-5">
                     <h4 className="flex items-center gap-2 text-sm font-bold text-[#0B1B2B] mb-3">
-                      <Sparkles size={14} className="text-[#D4AF37]" />
+                      <Sparkles size={14} className="text-[var(--ci-accent)]" />
                       enrichment 结果摘要
                     </h4>
                     <p className="text-xs text-slate-600 leading-relaxed">
@@ -1318,9 +1318,9 @@ export default function RadarCandidatesPage() {
                   } | null;
                   if (!rel?.matchReasons?.length && !rel?.approachAngle) return null;
                   return (
-                    <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-5">
+                    <div className="bg-[var(--ci-surface-strong)] rounded-xl border border-[var(--ci-border)] p-5">
                       <h4 className="flex items-center gap-2 text-sm font-bold text-[#0B1B2B] mb-3">
-                        <MessageSquare size={14} className="text-[#D4AF37]" />
+                        <MessageSquare size={14} className="text-[var(--ci-accent)]" />
                         推荐接触角度
                         {rel.tier && (
                           <span className={`ml-auto text-xs font-semibold px-2 py-0.5 rounded-full ${
@@ -1331,9 +1331,9 @@ export default function RadarCandidatesPage() {
                         )}
                       </h4>
                       {rel.approachAngle ? (
-                        <div className="bg-[#F0EBD8] rounded-xl p-3">
+                        <div className="bg-[var(--ci-surface-muted)] rounded-xl p-3">
                           <div className="flex items-center gap-1.5 text-xs font-medium text-[#0B1B2B] mb-1">
-                            <Zap size={11} className="text-[#D4AF37]" />
+                            <Zap size={11} className="text-[var(--ci-accent)]" />
                             推荐接触角度
                           </div>
                           <p className="text-xs text-slate-600 leading-relaxed">{rel.approachAngle}</p>
@@ -1356,9 +1356,9 @@ export default function RadarCandidatesPage() {
                   if (!intel && !signals) return null;
 
                   return (
-                    <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-5">
+                    <div className="bg-[var(--ci-surface-strong)] rounded-xl border border-[var(--ci-border)] p-5">
                       <h4 className="flex items-center gap-2 text-sm font-bold text-[#0B1B2B] mb-4">
-                        <TrendingUp size={14} className="text-[#D4AF37]" />
+                        <TrendingUp size={14} className="text-[var(--ci-accent)]" />
                         情报雷达
                       </h4>
 
@@ -1375,7 +1375,7 @@ export default function RadarCandidatesPage() {
                                 <span>{label}</span>
                                 <span>{value}</span>
                               </div>
-                              <div className="h-1.5 bg-[#E8E0D0] rounded-full overflow-hidden">
+                              <div className="h-1.5 bg-[var(--ci-border)] rounded-full overflow-hidden">
                                 <div className={`h-full ${color} rounded-full transition-all`} style={{ width: `${value}%` }} />
                               </div>
                             </div>
@@ -1385,9 +1385,9 @@ export default function RadarCandidatesPage() {
 
                       {/* 融资信息 */}
                       {intel?.funding && (intel.funding.latestRound || intel.funding.totalRaised) && (
-                        <div className="mb-3 bg-[#FFFCF7] rounded-xl border border-[#E8E0D0] p-3">
+                        <div className="mb-3 bg-[#FFFFFF] rounded-xl border border-[var(--ci-border)] p-3">
                           <div className="text-xs font-medium text-[#0B1B2B] mb-2 flex items-center gap-1">
-                            <DollarSign size={11} className="text-[#D4AF37]" />
+                            <DollarSign size={11} className="text-[var(--ci-accent)]" />
                             融资动态
                           </div>
                           <div className="grid grid-cols-2 gap-1 text-[11px]">
@@ -1409,16 +1409,16 @@ export default function RadarCandidatesPage() {
 
                       {/* 决策者联系人 */}
                       {intel?.contacts?.decisionMakers?.length ? (
-                        <div className="mb-3 bg-[#FFFCF7] rounded-xl border border-[#E8E0D0] p-3">
+                        <div className="mb-3 bg-[#FFFFFF] rounded-xl border border-[var(--ci-border)] p-3">
                           <div className="text-xs font-medium text-[#0B1B2B] mb-2 flex items-center gap-1">
-                            <Users size={11} className="text-[#D4AF37]" />
+                            <Users size={11} className="text-[var(--ci-accent)]" />
                             决策者联系人
                           </div>
                           <div className="space-y-2">
                             {intel.contacts.decisionMakers.slice(0, 3).map((person, i) => (
                               <div key={i} className="flex items-start gap-2">
-                                <div className="w-6 h-6 rounded-full bg-[#D4AF37]/20 flex items-center justify-center shrink-0 mt-0.5">
-                                  <span className="text-[9px] font-bold text-[#D4AF37]">{person.name.charAt(0)}</span>
+                                <div className="w-6 h-6 rounded-full bg-[var(--ci-accent)]/20 flex items-center justify-center shrink-0 mt-0.5">
+                                  <span className="text-[9px] font-bold text-[var(--ci-accent)]">{person.name.charAt(0)}</span>
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <div className="text-[11px] font-medium text-[#0B1B2B] truncate">{person.name}</div>
@@ -1426,7 +1426,7 @@ export default function RadarCandidatesPage() {
                                   {person.email && (
                                     <a
                                       href={`mailto:${person.email}`}
-                                      className="text-[10px] text-[#D4AF37] hover:underline flex items-center gap-1 truncate"
+                                      className="text-[10px] text-[var(--ci-accent)] hover:underline flex items-center gap-1 truncate"
                                     >
                                       <Mail size={9} />
                                       {person.email}
@@ -1467,9 +1467,9 @@ export default function RadarCandidatesPage() {
 
                       {/* 最新新闻 */}
                       {intel?.news?.recentHeadlines?.length ? (
-                        <div className="bg-[#FFFCF7] rounded-xl border border-[#E8E0D0] p-3">
+                        <div className="bg-[#FFFFFF] rounded-xl border border-[var(--ci-border)] p-3">
                           <div className="text-xs font-medium text-[#0B1B2B] mb-2 flex items-center gap-1.5">
-                            <Clock size={11} className="text-[#D4AF37]" />
+                            <Clock size={11} className="text-[var(--ci-accent)]" />
                             近期动态
                             {intel.news.sentiment && (
                               <span className={`ml-auto text-[9px] px-1.5 py-0.5 rounded-full ${
@@ -1484,7 +1484,7 @@ export default function RadarCandidatesPage() {
                           <div className="space-y-1">
                             {intel.news.recentHeadlines.slice(0, 3).map((headline, i) => (
                               <div key={i} className="text-[11px] text-slate-600 flex items-start gap-1.5">
-                                <span className="text-[#D4AF37] mt-0.5 shrink-0">•</span>
+                                <span className="text-[var(--ci-accent)] mt-0.5 shrink-0">•</span>
                                 <span className="line-clamp-2">{headline}</span>
                               </div>
                             ))}
@@ -1496,10 +1496,10 @@ export default function RadarCandidatesPage() {
                 })()}
 
                 {/* AI背调模块 */}
-                <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-5">
+                <div className="bg-[var(--ci-surface-strong)] rounded-xl border border-[var(--ci-border)] p-5">
                   <div className="flex items-center justify-between mb-3">
                     <h4 className="flex items-center gap-2 text-sm font-bold text-[#0B1B2B]">
-                      <SearchCheck size={14} className="text-[#D4AF37]" />
+                      <SearchCheck size={14} className="text-[var(--ci-accent)]" />
                       AI 客户背调
                     </h4>
                     {researchData && (
@@ -1512,15 +1512,15 @@ export default function RadarCandidatesPage() {
 
                   {isResearching ? (
                     <div className="flex items-center justify-center py-8">
-                      <Loader2 size={24} className="text-[#D4AF37] animate-spin" />
+                      <Loader2 size={24} className="text-[var(--ci-accent)] animate-spin" />
                       <span className="ml-2 text-sm text-slate-500">AI正在深度分析...</span>
                     </div>
                   ) : researchData ? (
                     <div className="space-y-4">
                       {/* 公司概况 */}
-                      <div className="bg-[#FFFCF7] rounded-xl border border-[#E8E0D0] p-3">
+                      <div className="bg-[#FFFFFF] rounded-xl border border-[var(--ci-border)] p-3">
                         <h5 className="text-xs font-medium text-[#0B1B2B] mb-2 flex items-center gap-1">
-                          <Building2 size={12} className="text-[#D4AF37]" />
+                          <Building2 size={12} className="text-[var(--ci-accent)]" />
                           公司概况
                         </h5>
                         <div className="grid grid-cols-2 gap-2 text-xs">
@@ -1532,9 +1532,9 @@ export default function RadarCandidatesPage() {
                       </div>
 
                       {/* 行业分析 */}
-                      <div className="bg-[#FFFCF7] rounded-xl border border-[#E8E0D0] p-3">
+                      <div className="bg-[#FFFFFF] rounded-xl border border-[var(--ci-border)] p-3">
                         <h5 className="text-xs font-medium text-[#0B1B2B] mb-2 flex items-center gap-1">
-                          <TrendingUp size={12} className="text-[#D4AF37]" />
+                          <TrendingUp size={12} className="text-[var(--ci-accent)]" />
                           行业分析
                         </h5>
                         <div className="text-xs space-y-1">
@@ -1544,9 +1544,9 @@ export default function RadarCandidatesPage() {
                       </div>
 
                       {/* 潜在痛点 */}
-                      <div className="bg-[#FFFCF7] rounded-xl border border-[#E8E0D0] p-3">
+                      <div className="bg-[#FFFFFF] rounded-xl border border-[var(--ci-border)] p-3">
                         <h5 className="text-xs font-medium text-[#0B1B2B] mb-2 flex items-center gap-1">
-                          <Target size={12} className="text-[#D4AF37]" />
+                          <Target size={12} className="text-[var(--ci-accent)]" />
                           潜在痛点
                         </h5>
                         <div className="space-y-1">
@@ -1560,9 +1560,9 @@ export default function RadarCandidatesPage() {
                       </div>
 
                       {/* 决策链 */}
-                      <div className="bg-[#FFFCF7] rounded-xl border border-[#E8E0D0] p-3">
+                      <div className="bg-[#FFFFFF] rounded-xl border border-[var(--ci-border)] p-3">
                         <h5 className="text-xs font-medium text-[#0B1B2B] mb-2 flex items-center gap-1">
-                          <Users size={12} className="text-[#D4AF37]" />
+                          <Users size={12} className="text-[var(--ci-accent)]" />
                           决策链推断
                         </h5>
                         <div className="text-xs space-y-2">
@@ -1577,9 +1577,9 @@ export default function RadarCandidatesPage() {
                       </div>
 
                       {/* 推荐策略 */}
-                      <div className="bg-gradient-to-r from-[#D4AF37]/10 to-transparent rounded-xl border border-[#D4AF37]/30 p-3">
+                      <div className="bg-[var(--ci-accent-soft)] rounded-xl border border-[var(--ci-accent)]/30 p-3">
                         <h5 className="text-xs font-medium text-[#0B1B2B] mb-2 flex items-center gap-1">
-                          <MessageSquare size={12} className="text-[#D4AF37]" />
+                          <MessageSquare size={12} className="text-[var(--ci-accent)]" />
                           推荐接触策略
                         </h5>
                         <div className="text-xs space-y-2">
@@ -1605,7 +1605,7 @@ export default function RadarCandidatesPage() {
                       {/* 重新背调按钮 */}
                       <button
                         onClick={() => handleResearch(selectedCandidate)}
-                        className="w-full py-2 text-xs text-slate-500 hover:text-[#D4AF37] transition-colors"
+                        className="w-full py-2 text-xs text-slate-500 hover:text-[var(--ci-accent)] transition-colors"
                       >
                         重新分析
                       </button>
@@ -1613,7 +1613,7 @@ export default function RadarCandidatesPage() {
                   ) : (
                     // v2.0: 背调改为自动触发，不再显示手动按钮
                     <div className="text-center py-6">
-                      <Loader2 size={20} className="text-[#D4AF37] animate-spin mx-auto mb-2" />
+                      <Loader2 size={20} className="text-[var(--ci-accent)] animate-spin mx-auto mb-2" />
                       <p className="text-xs text-slate-500">
                         AI 正在自动背调中...
                       </p>
@@ -1634,7 +1634,7 @@ export default function RadarCandidatesPage() {
                 {/* 邮件序列模块已隐藏 - 导入线索库后可继续跟进 */}
 
                 {/* Actions */}
-                <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-5">
+                <div className="bg-[var(--ci-surface-strong)] rounded-xl border border-[var(--ci-border)] p-5">
                   <h4 className="text-sm font-bold text-[#0B1B2B] mb-3">操作</h4>
                   
                   {/* Qualify Tier */}
@@ -1672,7 +1672,7 @@ export default function RadarCandidatesPage() {
                   {selectedCandidate.status === 'QUALIFIED' && selectedCandidate.qualifyTier && (
                     <button
                       onClick={() => handleImport(selectedCandidate)}
-                      className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#0B1B2B] text-[#D4AF37] rounded-xl text-sm font-medium hover:bg-[#10263B] transition-colors"
+                      className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#0B1B2B] text-[var(--ci-accent)] rounded-xl text-sm font-medium hover:bg-[#10263B] transition-colors"
                     >
                       <Download size={16} />
                       导入线索库并继续跟进
@@ -1687,7 +1687,7 @@ export default function RadarCandidatesPage() {
 
                   {/* 立即丰富化（P3）*/}
                   {selectedCandidate.status !== 'IMPORTED' && (
-                    <div className="mt-3 pt-3 border-t border-[#E8E0D0]">
+                    <div className="mt-3 pt-3 border-t border-[var(--ci-border)]">
                       {enrichDone ? (
                         <div className="flex items-center gap-2 py-2 text-emerald-600 text-xs">
                           <CheckCircle2 size={14} />
@@ -1697,7 +1697,7 @@ export default function RadarCandidatesPage() {
                         <button
                           onClick={() => handleEnrichNow(selectedCandidate)}
                           disabled={isEnriching}
-                          className="w-full flex items-center justify-center gap-2 py-2 border border-[#E8E0D0] text-slate-500 rounded-xl text-xs hover:bg-[#F7F3E8] hover:text-[#0B1B2B] transition-colors disabled:opacity-50"
+                          className="w-full flex items-center justify-center gap-2 py-2 border border-[var(--ci-border)] text-slate-500 rounded-xl text-xs hover:bg-[var(--ci-surface-strong)] hover:text-[#0B1B2B] transition-colors disabled:opacity-50"
                         >
                           {isEnriching ? (
                             <><Loader2 size={13} className="animate-spin" />情报丰富化中...</>
@@ -1720,9 +1720,9 @@ export default function RadarCandidatesPage() {
               </>
             ) : (
               /* No Selection */
-              <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-8 text-center">
-                <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.3)'}}>
-                  <Search size={28} className="text-[#D4AF37]" />
+              <div className="bg-[var(--ci-surface-strong)] rounded-xl border border-[var(--ci-border)] p-8 text-center">
+                <div className="w-16 h-16 rounded-xl flex items-center justify-center mx-auto mb-4" style={{background: 'rgba(79,141,246,0.12)', border: '1px solid rgba(79,141,246,0.3)'}}>
+                  <Search size={28} className="text-[var(--ci-accent)]" />
                 </div>
                 <h3 className="text-sm font-bold text-[#0B1B2B] mb-2">选择候选查看详情</h3>
                 <p className="text-xs text-slate-500">
@@ -1737,9 +1737,9 @@ export default function RadarCandidatesPage() {
       {/* Exclusion Reason Modal (Task #125) */}
       {showExclusionModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-3xl border border-[#E8E0D0] w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+          <div className="bg-white rounded-xl border border-[var(--ci-border)] w-full max-w-md overflow-hidden shadow-[var(--ci-shadow-soft)] animate-in zoom-in-95 duration-200">
             <div className="p-8">
-              <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center mb-6">
+              <div className="w-16 h-16 rounded-xl bg-red-50 flex items-center justify-center mb-6">
                 <Trash2 size={32} className="text-red-500" />
               </div>
               <h3 className="text-xl font-bold text-[#0B1B2B] mb-2">确认排除该候选？</h3>
@@ -1753,7 +1753,7 @@ export default function RadarCandidatesPage() {
                   <select 
                     value={exclusionReason.startsWith('其他: ') ? '其他' : exclusionReason}
                     onChange={(e) => setExclusionReason(e.target.value)}
-                    className="w-full px-4 py-3 bg-[#F7F3E8] border border-[#E8E0D0] rounded-xl text-sm focus:outline-none focus:border-[#D4AF37] appearance-none"
+                    className="w-full px-4 py-3 bg-[var(--ci-surface-strong)] border border-[var(--ci-border)] rounded-xl text-sm focus:outline-none focus:border-[var(--ci-accent)] appearance-none"
                   >
                     <option value="">-- 请选择原因 (可选) --</option>
                     <option value="行业不匹配">行业不匹配 (Wrong Industry)</option>
@@ -1770,14 +1770,14 @@ export default function RadarCandidatesPage() {
                     placeholder="请输入具体原因，帮助 AI 更好理解您的需求..."
                     rows={3}
                     defaultValue={exclusionReason.startsWith('其他: ') ? exclusionReason.replace('其他: ', '') : ''}
-                    className="w-full px-4 py-3 bg-[#F7F3E8] border border-[#E8E0D0] rounded-xl text-sm focus:outline-none focus:border-[#D4AF37] resize-none"
+                    className="w-full px-4 py-3 bg-[var(--ci-surface-strong)] border border-[var(--ci-border)] rounded-xl text-sm focus:outline-none focus:border-[var(--ci-accent)] resize-none"
                     onBlur={(e) => setExclusionReason(`其他: ${e.target.value}`)}
                   />
                 )}
               </div>
             </div>
             
-            <div className="flex border-t border-[#E8E0D0] w-full">
+            <div className="flex border-t border-[var(--ci-border)] w-full">
               <button
                 onClick={() => {
                   setShowExclusionModal(null);
@@ -1790,7 +1790,7 @@ export default function RadarCandidatesPage() {
               <button
                 onClick={confirmExclusion}
                 disabled={isExcluding}
-                className="flex-1 min-w-0 py-5 text-sm font-bold text-red-500 hover:bg-red-50 transition-colors border-l border-[#E8E0D0] disabled:opacity-50 truncate"
+                className="flex-1 min-w-0 py-5 text-sm font-bold text-red-500 hover:bg-red-50 transition-colors border-l border-[var(--ci-border)] disabled:opacity-50 truncate"
               >
                 {isExcluding ? '正在处理...' : '确认排除'}
               </button>
@@ -1816,7 +1816,7 @@ function CandidateMetaPill({
       ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
       : tone === 'warning'
         ? 'border-amber-200 bg-amber-50 text-amber-700'
-        : 'border-[#E8E0D0] bg-white text-slate-600';
+        : 'border-[var(--ci-border)] bg-white text-slate-600';
 
   const content = <span className="truncate">{label}</span>;
 
@@ -1826,7 +1826,7 @@ function CandidateMetaPill({
         href={href}
         target="_blank"
         rel="noopener noreferrer"
-        className={`inline-flex max-w-full items-center gap-1 rounded-full border px-2.5 py-1 transition-colors hover:border-[#D4AF37]/35 hover:text-[#9A7A1C] ${toneClass}`}
+        className={`inline-flex max-w-full items-center gap-1 rounded-full border px-2.5 py-1 transition-colors hover:border-[var(--ci-accent)]/35 hover:text-[#9A7A1C] ${toneClass}`}
         onClick={(event) => event.stopPropagation()}
       >
         {content}
@@ -1844,7 +1844,7 @@ function CandidateMetaPill({
 
 function ReasonPill({ reason }: { reason: string }) {
   return (
-    <span className="inline-flex items-center rounded-full border border-[#E8E0D0] bg-white px-2.5 py-1 text-[11px] leading-5 text-slate-600">
+    <span className="inline-flex items-center rounded-full border border-[var(--ci-border)] bg-white px-2.5 py-1 text-[11px] leading-5 text-slate-600">
       {reason}
     </span>
   );
@@ -1876,7 +1876,7 @@ function DetailItem({
   );
 
   return (
-    <div className="rounded-2xl border border-[#E8E0D0] bg-[#FFFCF7] px-3 py-3">
+    <div className="rounded-xl border border-[var(--ci-border)] bg-[#FFFFFF] px-3 py-3">
       <div className="text-[11px] uppercase tracking-[0.16em] text-slate-400">{label}</div>
       <div className="mt-2 text-sm">{content}</div>
     </div>
@@ -1911,7 +1911,7 @@ function ContactEvidenceCard({
   );
 
   return (
-    <div className="rounded-2xl border border-[#E8E0D0] bg-[#FCFAF4] px-3 py-3">
+    <div className="rounded-xl border border-[var(--ci-border)] bg-[#FCFAF4] px-3 py-3">
       <div className="text-[11px] uppercase tracking-[0.16em] text-slate-400">{label}</div>
       <div className="mt-2 text-sm">{content}</div>
       <div className="mt-2 flex items-center gap-2 text-[11px] text-slate-500">

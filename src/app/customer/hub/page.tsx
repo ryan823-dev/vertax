@@ -154,7 +154,7 @@ export default function HubPage() {
       completed: { label: '已完成', color: 'bg-emerald-50 text-emerald-600' },
       open: { label: '待处理', color: 'bg-amber-50 text-amber-600' },
       done: { label: '已完成', color: 'bg-emerald-50 text-emerald-600' },
-      cancelled: { label: '已取消', color: 'bg-[#F7F3E8] text-slate-600' },
+      cancelled: { label: '已取消', color: 'bg-[var(--ci-surface-strong)] text-slate-600' },
     };
     return styles[status] || styles.pending;
   };
@@ -220,7 +220,7 @@ export default function HubPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 text-[#D4AF37] animate-spin" />
+        <Loader2 className="w-8 h-8 text-[var(--ci-accent)] animate-spin" />
       </div>
     );
   }
@@ -228,12 +228,12 @@ export default function HubPage() {
   return (
     <div className="space-y-8">
       {/* Header - 指令台 深蓝舞台风格 */}
-      <div className="rounded-2xl p-6 relative overflow-hidden" style={{
-        background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)',
-        boxShadow: '0 8px 32px -8px rgba(0,0,0,0.45)',
+      <div className="rounded-xl p-6 relative overflow-hidden" style={{
+        background: 'var(--ci-sidebar-shell)',
+        boxShadow: 'var(--ci-shadow-soft)',
       }}>
         <div className="absolute inset-0 pointer-events-none" style={{
-          background: 'radial-gradient(ellipse 70% 60% at 50% -20%, rgba(212,175,55,0.14) 0%, transparent 65%)',
+          background: 'transparent',
         }} />
         <div className="relative flex items-center justify-between">
           <div>
@@ -242,7 +242,7 @@ export default function HubPage() {
           </div>
           <button 
             onClick={loadData}
-            className="p-2 text-slate-400 hover:text-[#D4AF37] transition-colors"
+            className="p-2 text-slate-400 hover:text-[var(--ci-accent)] transition-colors"
           >
             <RefreshCw size={18} />
           </button>
@@ -268,7 +268,7 @@ export default function HubPage() {
           { label: '进行中任务', value: collabStats.inProgressTasks, icon: Play, color: 'text-purple-500' },
           { label: '待解决评论', value: collabStats.openComments, icon: MessageSquare, color: 'text-emerald-500' },
         ].map((stat) => (
-          <div key={stat.label} className="bg-[#F7F3E8] rounded-xl border border-[#E8E0D0] p-4">
+          <div key={stat.label} className="bg-[var(--ci-surface-strong)] rounded-xl border border-[var(--ci-border)] p-4">
             <div className="flex items-center gap-2 mb-2">
               <stat.icon size={16} className={stat.color} />
               <span className="text-xs text-slate-500">{stat.label}</span>
@@ -280,8 +280,8 @@ export default function HubPage() {
 
       {/* Tabs - 指令台风格 */}
       <div className="rounded-xl p-1.5 flex gap-1" style={{
-        background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)',
-        boxShadow: '0 4px 16px -4px rgba(0,0,0,0.35)',
+        background: 'var(--ci-sidebar-shell)',
+        boxShadow: 'var(--ci-shadow-soft)',
       }}>
         {[
           { id: 'todos' as const, label: '系统待办', icon: ClipboardList, count: todos.length },
@@ -296,7 +296,7 @@ export default function HubPage() {
                 ? 'text-[#0B1220]'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
-            style={activeTab === tab.id ? { background: '#D4AF37', boxShadow: '0 2px 8px -2px rgba(212,175,55,0.4)' } : {}}
+            style={activeTab === tab.id ? { background: 'var(--ci-accent)', boxShadow: '0 2px 8px -2px rgba(79,141,246,0.4)' } : {}}
           >
             <tab.icon size={16} />
             {tab.label}
@@ -313,24 +313,24 @@ export default function HubPage() {
 
       <div className="grid grid-cols-3 gap-6">
         {/* Main Content */}
-        <div className="col-span-2 bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0]">
-          <div className="px-6 py-4 border-b border-[#E8E0D0]" style={{ background: '#F0EBD8' }}>
+        <div className="col-span-2 bg-[var(--ci-surface-strong)] rounded-xl border border-[var(--ci-border)]">
+          <div className="px-6 py-4 border-b border-[var(--ci-border)]" style={{ background: 'var(--ci-surface-muted)' }}>
           {/* System Todos Tab */}
           {activeTab === 'todos' && (
             <h3 className="font-bold text-[#0B1B2B] flex items-center gap-2">
-              <ClipboardList size={18} className="text-[#D4AF37]" />
+              <ClipboardList size={18} className="text-[var(--ci-accent)]" />
               系统待办事项
             </h3>
           )}
           {activeTab === 'tasks' && (
             <h3 className="font-bold text-[#0B1B2B] flex items-center gap-2">
-              <ListTodo size={18} className="text-[#D4AF37]" />
+              <ListTodo size={18} className="text-[var(--ci-accent)]" />
               协作任务
             </h3>
           )}
           {activeTab === 'comments' && (
             <h3 className="font-bold text-[#0B1B2B] flex items-center gap-2">
-              <MessageSquare size={18} className="text-[#D4AF37]" />
+              <MessageSquare size={18} className="text-[var(--ci-accent)]" />
               待解决评论
             </h3>
           )}
@@ -353,13 +353,13 @@ export default function HubPage() {
                     return (
                       <div 
                         key={todo.id} 
-                        className="flex items-center gap-4 p-4 bg-[#FFFCF7] border border-[#E8E0D0] rounded-xl hover:border-[#D4AF37]/30 transition-colors"
+                        className="flex items-center gap-4 p-4 bg-[#FFFFFF] border border-[var(--ci-border)] rounded-xl hover:border-[var(--ci-accent)]/30 transition-colors"
                       >
                         <span className={`text-[10px] font-bold px-2 py-1 rounded ${getPriorityStyle(todo.priority)}`}>
                           {todo.priority}
                         </span>
-                        <div className="w-8 h-8 bg-[#F0EBD8] rounded-lg flex items-center justify-center">
-                          <Icon size={16} className="text-[#D4AF37]" />
+                        <div className="w-8 h-8 bg-[var(--ci-surface-muted)] rounded-lg flex items-center justify-center">
+                          <Icon size={16} className="text-[var(--ci-accent)]" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <h4 className="font-medium text-[#0B1B2B]">{todo.title}</h4>
@@ -373,13 +373,13 @@ export default function HubPage() {
                           <Link 
                             href={todo.actionLink}
                             className="px-4 py-2 text-xs font-bold rounded-lg transition-colors flex items-center gap-1"
-                            style={{ background: '#D4AF37', color: '#0B1220' }}
+                            style={{ background: 'var(--ci-accent)', color: '#FFFFFF' }}
                           >
                             {todo.action}
                             <ChevronRight size={12} />
                           </Link>
                         ) : (
-                          <button className="px-4 py-2 text-xs font-bold rounded-lg transition-colors" style={{ background: '#D4AF37', color: '#0B1220' }}>
+                          <button className="px-4 py-2 text-xs font-bold rounded-lg transition-colors" style={{ background: 'var(--ci-accent)', color: '#FFFFFF' }}>
                             {todo.action}
                           </button>
                         )}
@@ -407,7 +407,7 @@ export default function HubPage() {
                     return (
                       <div 
                         key={task.id} 
-                        className="flex items-center gap-4 p-4 bg-[#FFFCF7] border border-[#E8E0D0] rounded-xl hover:border-[#D4AF37]/30 transition-colors"
+                        className="flex items-center gap-4 p-4 bg-[#FFFFFF] border border-[var(--ci-border)] rounded-xl hover:border-[var(--ci-accent)]/30 transition-colors"
                       >
                         <span className={`text-[10px] font-bold px-2 py-1 rounded ${getPriorityStyle(task.priority)}`}>
                           {task.priority}
@@ -415,7 +415,7 @@ export default function HubPage() {
                         <div className="flex-1 min-w-0">
                           <h4 className="font-medium text-[#0B1B2B]">{task.title}</h4>
                           <div className="flex items-center gap-2 mt-1">
-                            <span className="text-[10px] text-slate-500 bg-[#F0EBD8] px-1.5 py-0.5 rounded">
+                            <span className="text-[10px] text-slate-500 bg-[var(--ci-surface-muted)] px-1.5 py-0.5 rounded">
                               {getEntityLabel(task.entityType)}
                             </span>
                             {task.assigneeName && (
@@ -485,10 +485,10 @@ export default function HubPage() {
                   {comments.map((comment) => (
                     <div 
                       key={comment.id} 
-                      className="flex items-start gap-4 p-4 bg-[#FFFCF7] border border-[#E8E0D0] rounded-xl hover:border-[#D4AF37]/30 transition-colors"
+                      className="flex items-start gap-4 p-4 bg-[#FFFFFF] border border-[var(--ci-border)] rounded-xl hover:border-[var(--ci-accent)]/30 transition-colors"
                     >
-                      <div className="w-8 h-8 bg-[#F0EBD8] rounded-full flex items-center justify-center shrink-0">
-                        <MessageSquare size={14} className="text-[#D4AF37]" />
+                      <div className="w-8 h-8 bg-[var(--ci-surface-muted)] rounded-full flex items-center justify-center shrink-0">
+                        <MessageSquare size={14} className="text-[var(--ci-accent)]" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-[#0B1B2B]">{comment.content}</p>
@@ -500,7 +500,7 @@ export default function HubPage() {
                           <span className="text-[10px] text-slate-400">
                             {new Date(comment.createdAt).toLocaleString('zh-CN')}
                           </span>
-                          <span className="text-[10px] text-slate-500 bg-[#F0EBD8] px-1.5 py-0.5 rounded">
+                          <span className="text-[10px] text-slate-500 bg-[var(--ci-surface-muted)] px-1.5 py-0.5 rounded">
                             {getEntityLabel(comment.entityType)}
                           </span>
                         </div>
@@ -526,9 +526,9 @@ export default function HubPage() {
         {/* Right Sidebar */}
         <div className="col-span-1 space-y-6">
           {/* Module Health */}
-          <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
+          <div className="bg-[var(--ci-surface-strong)] rounded-xl border border-[var(--ci-border)] p-6">
             <h3 className="font-bold text-[#0B1B2B] mb-4 flex items-center gap-2">
-              <Activity size={18} className="text-[#D4AF37]" />
+              <Activity size={18} className="text-[var(--ci-accent)]" />
               模块健康度
             </h3>
             <div className="space-y-3">
@@ -545,9 +545,9 @@ export default function HubPage() {
           </div>
 
           {/* Recent Activity */}
-          <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
+          <div className="bg-[var(--ci-surface-strong)] rounded-xl border border-[var(--ci-border)] p-6">
             <h3 className="font-bold text-[#0B1B2B] mb-4 flex items-center gap-2">
-              <Zap size={18} className="text-[#D4AF37]" />
+              <Zap size={18} className="text-[var(--ci-accent)]" />
               最近活动
             </h3>
             {activities.length === 0 ? (
@@ -558,8 +558,8 @@ export default function HubPage() {
               <div className="space-y-3">
                 {activities.map((activity) => (
                   <div key={activity.id} className="flex items-start gap-3">
-                    <div className="w-6 h-6 bg-[#F0EBD8] rounded-full flex items-center justify-center shrink-0 mt-0.5">
-                      <TrendingUp size={12} className="text-[#D4AF37]" />
+                    <div className="w-6 h-6 bg-[var(--ci-surface-muted)] rounded-full flex items-center justify-center shrink-0 mt-0.5">
+                      <TrendingUp size={12} className="text-[var(--ci-accent)]" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs text-[#0B1B2B]">
@@ -576,17 +576,17 @@ export default function HubPage() {
           </div>
 
           {/* Quick Tips */}
-          <div className="rounded-2xl p-6 relative overflow-hidden" style={{
-            background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)',
-            boxShadow: '0 8px 32px -8px rgba(0,0,0,0.45)',
+          <div className="rounded-xl p-6 relative overflow-hidden" style={{
+            background: 'var(--ci-sidebar-shell)',
+            boxShadow: 'var(--ci-shadow-soft)',
           }}>
             <div className="absolute inset-0 pointer-events-none" style={{
-              background: 'radial-gradient(ellipse 70% 60% at 50% -20%, rgba(212,175,55,0.14) 0%, transparent 65%)',
+              background: 'transparent',
             }} />
             <div className="relative">
               <h3 className="font-bold text-white mb-2 flex items-center gap-2">
-                <div className="w-6 h-6 rounded flex items-center justify-center" style={{ background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.3)' }}>
-                  <Zap size={12} className="text-[#D4AF37]" />
+                <div className="w-6 h-6 rounded flex items-center justify-center" style={{ background: 'rgba(79,141,246,0.12)', border: '1px solid rgba(79,141,246,0.3)' }}>
+                  <Zap size={12} className="text-[var(--ci-accent)]" />
                 </div>
                 今日建议
               </h3>

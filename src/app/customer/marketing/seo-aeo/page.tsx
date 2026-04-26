@@ -85,29 +85,29 @@ function ContentCard({ item, onRefresh }: { item: SeoAeoItem; onRefresh: () => v
     item.seoHealthScore >= 80
       ? "text-emerald-400"
       : item.seoHealthScore >= 60
-      ? "text-[#D4AF37]"
+      ? "text-[var(--ci-accent)]"
       : "text-red-400";
 
   const scoreBg =
     item.seoHealthScore >= 80
       ? "rgba(16,185,129,0.1)"
       : item.seoHealthScore >= 60
-      ? "rgba(212,175,55,0.1)"
+      ? "rgba(79,141,246,0.1)"
       : "rgba(239,68,68,0.1)";
 
   const scoreBorder =
     item.seoHealthScore >= 80
       ? "rgba(16,185,129,0.3)"
       : item.seoHealthScore >= 60
-      ? "rgba(212,175,55,0.3)"
+      ? "rgba(79,141,246,0.3)"
       : "rgba(239,68,68,0.3)";
 
   return (
     <div
       className="rounded-xl overflow-hidden border transition-all"
       style={{
-        background: "linear-gradient(135deg, #0B1220 0%, #0A1018 70%, #0D1525 100%)",
-        borderColor: expanded ? "rgba(212,175,55,0.3)" : "rgba(255,255,255,0.07)",
+        background: "var(--ci-sidebar-shell)",
+        borderColor: expanded ? "rgba(79,141,246,0.3)" : "rgba(255,255,255,0.07)",
         boxShadow: expanded ? "0 4px 24px -4px rgba(0,0,0,0.4)" : undefined,
       }}
     >
@@ -153,7 +153,7 @@ function ContentCard({ item, onRefresh }: { item: SeoAeoItem; onRefresh: () => v
             </div>
             <div className="flex items-center gap-3 mt-1 flex-wrap">
               {item.primaryKeyword && (
-                <span className="text-[10px] text-[#D4AF37] font-mono">
+                <span className="text-[10px] text-[var(--ci-accent)] font-mono">
                   {item.primaryKeyword}
                 </span>
               )}
@@ -171,7 +171,7 @@ function ContentCard({ item, onRefresh }: { item: SeoAeoItem; onRefresh: () => v
               </span>
               <span
                 className={`text-[10px] flex items-center gap-0.5 ${
-                  item.hasGeoVersion ? "text-[#D4AF37]" : "text-slate-600"
+                  item.hasGeoVersion ? "text-[var(--ci-accent)]" : "text-slate-600"
                 }`}
               >
                 <Globe size={10} />
@@ -207,9 +207,9 @@ function ContentCard({ item, onRefresh }: { item: SeoAeoItem; onRefresh: () => v
             <Link
               href={`/customer/marketing/contents/${item.id}`}
               onClick={(e) => e.stopPropagation()}
-              className="p-1.5 rounded-lg hover:bg-[rgba(212,175,55,0.1)] transition-colors"
+              className="p-1.5 rounded-lg hover:bg-[rgba(79,141,246,0.1)] transition-colors"
             >
-              <ChevronRight size={14} className="text-slate-500 hover:text-[#D4AF37]" />
+              <ChevronRight size={14} className="text-slate-500 hover:text-[var(--ci-accent)]" />
             </Link>
           </div>
         </div>
@@ -222,8 +222,8 @@ function ContentCard({ item, onRefresh }: { item: SeoAeoItem; onRefresh: () => v
             {/* SEO checks */}
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <BarChart3 size={12} className="text-[#D4AF37]" />
-                <span className="text-[11px] font-semibold text-[#D4AF37] uppercase tracking-wider">
+                <BarChart3 size={12} className="text-[var(--ci-accent)]" />
+                <span className="text-[11px] font-semibold text-[var(--ci-accent)] uppercase tracking-wider">
                   SEO 检查项
                 </span>
               </div>
@@ -237,8 +237,8 @@ function ContentCard({ item, onRefresh }: { item: SeoAeoItem; onRefresh: () => v
             {/* AEO checks */}
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <Sparkles size={12} className="text-[#D4AF37]" />
-                <span className="text-[11px] font-semibold text-[#D4AF37] uppercase tracking-wider">
+                <Sparkles size={12} className="text-[var(--ci-accent)]" />
+                <span className="text-[11px] font-semibold text-[var(--ci-accent)] uppercase tracking-wider">
                   AEO 结构检查
                 </span>
               </div>
@@ -306,7 +306,7 @@ function ContentCard({ item, onRefresh }: { item: SeoAeoItem; onRefresh: () => v
                     onComplete={() => { onRefresh(); }}
                     variant="outline"
                     size="sm"
-                    className="flex-1 text-[11px] border-[rgba(212,175,55,0.4)] text-[#D4AF37] hover:bg-[#D4AF37]/10"
+                    className="flex-1 text-[11px] border-[rgba(79,141,246,0.4)] text-[var(--ci-accent)] hover:bg-[var(--ci-accent)]/10"
                   />
                 </div>
                 <Link
@@ -411,15 +411,15 @@ export default function SeoAeoPage() {
   }, [summary, search, filter, sortKey]);
 
   const avgColor = (score: number) =>
-    score >= 80 ? "text-emerald-400" : score >= 60 ? "text-[#D4AF37]" : "text-red-400";
+    score >= 80 ? "text-emerald-400" : score >= 60 ? "text-[var(--ci-accent)]" : "text-red-400";
 
   return (
-    <div className="min-h-screen bg-[#F7F3E8]">
+    <div className="min-h-screen bg-[var(--ci-surface-strong)]">
       {/* Header */}
       <div
-        className="border-b border-[#E8E0D0]"
+        className="border-b border-[var(--ci-border)]"
         style={{
-          background: "linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)",
+          background: "var(--ci-sidebar-shell)",
           boxShadow: "0 8px 32px -8px rgba(0,0,0,0.45)",
         }}
       >
@@ -427,16 +427,16 @@ export default function SeoAeoPage() {
           <div
             style={{
               position: "absolute", inset: 0, pointerEvents: "none",
-              background: "radial-gradient(ellipse 60% 55% at 50% -15%, rgba(212,175,55,0.13) 0%, transparent 65%)",
+              background: "transparent",
             }}
           />
           <div className="relative flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div
                 className="w-12 h-12 rounded-xl flex items-center justify-center"
-                style={{ background: "rgba(212,175,55,0.12)", border: "1px solid rgba(212,175,55,0.3)" }}
+                style={{ background: "rgba(79,141,246,0.12)", border: "1px solid rgba(79,141,246,0.3)" }}
               >
-                <BarChart3 className="w-6 h-6 text-[#D4AF37]" />
+                <BarChart3 className="w-6 h-6 text-[var(--ci-accent)]" />
               </div>
               <div>
                 <h1 className="text-xl font-bold text-white">SEO / AEO 工作台</h1>
@@ -449,10 +449,10 @@ export default function SeoAeoPage() {
               {summary && (
                 <div
                   className="flex items-center gap-2 px-3 py-1.5 rounded-lg"
-                  style={{ background: "rgba(212,175,55,0.08)", border: "1px solid rgba(212,175,55,0.2)" }}
+                  style={{ background: "rgba(79,141,246,0.08)", border: "1px solid rgba(79,141,246,0.2)" }}
                 >
-                  <Target className="w-3.5 h-3.5 text-[#D4AF37]" />
-                  <span className="text-sm text-[#D4AF37] font-medium">
+                  <Target className="w-3.5 h-3.5 text-[var(--ci-accent)]" />
+                  <span className="text-sm text-[var(--ci-accent)] font-medium">
                     {summary.total} 条内容
                   </span>
                 </div>
@@ -462,7 +462,7 @@ export default function SeoAeoPage() {
                 size="icon"
                 onClick={loadData}
                 disabled={isLoading}
-                className="text-slate-400 hover:text-[#D4AF37]"
+                className="text-slate-400 hover:text-[var(--ci-accent)]"
               >
                 <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
               </Button>
@@ -471,7 +471,7 @@ export default function SeoAeoPage() {
                 onClick={handleScan}
                 disabled={isScanning || isLoading || !summary?.total}
                 className="hover:opacity-90 disabled:opacity-50"
-                style={{ background: "#D4AF37", color: "#0B1220", boxShadow: "0 4px 16px -2px rgba(212,175,55,0.35)" }}
+                style={{ background: "var(--ci-accent)", color: "#0B1220", boxShadow: "0 4px 16px -2px rgba(79,141,246,0.35)" }}
               >
                 {isScanning ? (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -505,7 +505,7 @@ export default function SeoAeoPage() {
                 {
                   label: "有 GEO 版本",
                   value: summary.withGeo,
-                  color: "text-[#D4AF37]",
+                  color: "text-[var(--ci-accent)]",
                 },
                 {
                   label: "问题内容 (<60)",
@@ -528,22 +528,22 @@ export default function SeoAeoPage() {
       </div>
 
       {/* Filters */}
-      <div className="px-8 py-4 border-b border-[#E8E0D0] bg-[#F0EBD8] flex items-center gap-4 flex-wrap">
+      <div className="px-8 py-4 border-b border-[var(--ci-border)] bg-[var(--ci-surface-muted)] flex items-center gap-4 flex-wrap">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <Input
             placeholder="搜索标题、关键词..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 bg-[#FFFCF7] border-[#E8E0D0] text-[#0B1B2B] placeholder:text-slate-400"
+            className="pl-9 bg-[#FFFFFF] border-[var(--ci-border)] text-[#0B1B2B] placeholder:text-slate-400"
           />
         </div>
         <Select value={filter} onValueChange={(v) => setFilter(v as FilterKey)}>
-          <SelectTrigger className="w-40 bg-[#FFFCF7] border-[#E8E0D0] text-[#0B1B2B]">
+          <SelectTrigger className="w-40 bg-[#FFFFFF] border-[var(--ci-border)] text-[#0B1B2B]">
             <Filter className="w-4 h-4 mr-2 text-slate-400" />
             <SelectValue />
           </SelectTrigger>
-          <SelectContent className="bg-[#FFFCF7] border-[#E8E0D0]">
+          <SelectContent className="bg-[#FFFFFF] border-[var(--ci-border)]">
             <SelectItem value="all">全部内容</SelectItem>
             <SelectItem value="problem">问题内容 (&lt;60分)</SelectItem>
             <SelectItem value="no_schema">缺 Schema</SelectItem>
@@ -551,11 +551,11 @@ export default function SeoAeoPage() {
           </SelectContent>
         </Select>
         <Select value={sortKey} onValueChange={(v) => setSortKey(v as SortKey)}>
-          <SelectTrigger className="w-40 bg-[#FFFCF7] border-[#E8E0D0] text-[#0B1B2B]">
+          <SelectTrigger className="w-40 bg-[#FFFFFF] border-[var(--ci-border)] text-[#0B1B2B]">
             <ArrowUpDown className="w-4 h-4 mr-2 text-slate-400" />
             <SelectValue />
           </SelectTrigger>
-          <SelectContent className="bg-[#FFFCF7] border-[#E8E0D0]">
+          <SelectContent className="bg-[#FFFFFF] border-[var(--ci-border)]">
             <SelectItem value="score_asc">SEO 分 ↑ 最低优先</SelectItem>
             <SelectItem value="score_desc">SEO 分 ↓ 最高优先</SelectItem>
             <SelectItem value="aeo_desc">AEO 分 ↓</SelectItem>
@@ -573,21 +573,21 @@ export default function SeoAeoPage() {
       <div className="px-8 py-6">
         {isLoading ? (
           <div className="flex items-center justify-center py-24">
-            <Loader2 className="w-8 h-8 text-[#D4AF37] animate-spin" />
+            <Loader2 className="w-8 h-8 text-[var(--ci-accent)] animate-spin" />
           </div>
         ) : filtered.length === 0 ? (
           <div
-            className="text-center py-24 rounded-2xl"
+            className="text-center py-24 rounded-xl"
             style={{
-              background: "linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)",
+              background: "var(--ci-sidebar-shell)",
               boxShadow: "0 8px 32px -8px rgba(0,0,0,0.45)",
             }}
           >
             <div
               className="w-16 h-16 mx-auto mb-4 rounded-xl flex items-center justify-center"
-              style={{ background: "rgba(212,175,55,0.12)", border: "1px solid rgba(212,175,55,0.3)" }}
+              style={{ background: "rgba(79,141,246,0.12)", border: "1px solid rgba(79,141,246,0.3)" }}
             >
-              <BarChart3 className="w-8 h-8 text-[#D4AF37]" />
+              <BarChart3 className="w-8 h-8 text-[var(--ci-accent)]" />
             </div>
             <h3 className="text-lg font-medium text-slate-300">
               {search || filter !== "all" ? "未找到匹配内容" : "暂无 SEO 内容"}
@@ -602,7 +602,7 @@ export default function SeoAeoPage() {
                 <Button
                   size="sm"
                   className="mt-4 hover:opacity-90"
-                  style={{ background: "#D4AF37", color: "#0B1220" }}
+                  style={{ background: "var(--ci-accent)", color: "#0B1220" }}
                 >
                   <FileText className="w-4 h-4 mr-2" />
                   前往生成内容
@@ -615,7 +615,7 @@ export default function SeoAeoPage() {
             {/* Legend */}
             <div className="flex items-center gap-4 text-[10px] text-slate-500 px-1 mb-4">
               <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-400" />≥80 优秀</span>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#D4AF37]" />60–79 良好</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[var(--ci-accent)]" />60–79 良好</span>
               <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-400" />&lt;60 需改进</span>
               <span className="ml-auto flex items-center gap-1 text-slate-600">点击行展开检查详情</span>
             </div>

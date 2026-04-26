@@ -271,7 +271,7 @@ export default function MarketingPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 text-[#D4AF37] animate-spin" />
+        <Loader2 className="w-8 h-8 text-[var(--ci-accent)] animate-spin" />
       </div>
     );
   }
@@ -279,12 +279,12 @@ export default function MarketingPage() {
   return (
     <div className="space-y-8">
       {/* Header - 指令台 */}
-      <div className="rounded-2xl p-6 relative overflow-hidden" style={{
-        background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)',
-        boxShadow: '0 8px 32px -8px rgba(0,0,0,0.45)',
+      <div className="rounded-xl p-6 relative overflow-hidden" style={{
+        background: 'var(--ci-sidebar-shell)',
+        boxShadow: 'var(--ci-shadow-soft)',
       }}>
         <div className="absolute inset-0 pointer-events-none" style={{
-          background: 'radial-gradient(ellipse 70% 60% at 50% -20%, rgba(212,175,55,0.14) 0%, transparent 65%)',
+          background: 'transparent',
         }} />
         <div className="relative flex items-center justify-between">
           <div>
@@ -296,7 +296,7 @@ export default function MarketingPage() {
               <button 
                 onClick={() => setViewMode('create')}
                 className="px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors"
-                style={{ background: '#D4AF37', color: '#0B1220', boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)' }}
+                style={{ background: 'var(--ci-accent)', color: '#FFFFFF', boxShadow: '0 4px 16px -2px rgba(79,141,246,0.35)' }}
               >
                 <PenTool size={16} />
                 创建内容
@@ -310,14 +310,14 @@ export default function MarketingPage() {
                   setGeneratedContent(null);
                 }}
                 className="px-4 py-2 rounded-xl text-sm font-medium transition-colors"
-                style={{ background: '#0B1220', color: '#D4AF37' }}
+                style={{ background: '#0B1220', color: 'var(--ci-accent)' }}
               >
                 返回列表
               </button>
             )}
             <button 
               onClick={loadData}
-              className="p-2 text-slate-400 hover:text-[#D4AF37] transition-colors"
+              className="p-2 text-slate-400 hover:text-[var(--ci-accent)] transition-colors"
             >
               <RefreshCw size={18} />
             </button>
@@ -339,24 +339,24 @@ export default function MarketingPage() {
       {/* Stats */}
       <div className="grid grid-cols-6 gap-4">
         {[
-          { label: '内容资产', value: stats.totalContents, icon: FileText, color: 'text-[#D4AF37]', href: undefined, dark: false },
+          { label: '内容资产', value: stats.totalContents, icon: FileText, color: 'text-[var(--ci-accent)]', href: undefined, dark: false },
           { label: '已发布', value: stats.published, icon: CheckCircle2, color: 'text-emerald-500', href: undefined, dark: false },
           { label: '草稿', value: stats.draft, icon: Edit2, color: 'text-slate-500', href: undefined, dark: false },
           { label: '已排期', value: stats.scheduled, icon: Clock, color: 'text-blue-500', href: undefined, dark: false },
-          { label: 'SEO 健康分', value: seoHealthScore, icon: BarChart3, color: 'text-[#D4AF37]', href: '/customer/marketing/seo-aeo', dark: true },
-          { label: 'GEO 版本', value: geoCount, icon: Globe, color: 'text-[#D4AF37]', href: '/customer/marketing/geo-center', dark: true },
+          { label: 'SEO 健康分', value: seoHealthScore, icon: BarChart3, color: 'text-[var(--ci-accent)]', href: '/customer/marketing/seo-aeo', dark: true },
+          { label: 'GEO 版本', value: geoCount, icon: Globe, color: 'text-[var(--ci-accent)]', href: '/customer/marketing/geo-center', dark: true },
         ].map((stat) => {
           const content = (
             <div key={stat.label} className="rounded-xl p-4 border transition-all hover:scale-[1.01]" style={
               stat.dark
-                ? { background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 70%, #0D1525 100%)', border: '1px solid rgba(212,175,55,0.25)', boxShadow: '0 4px 16px -4px rgba(0,0,0,0.3)' }
-                : { background: '#F7F3E8', border: '1px solid #E8E0D0' }
+                ? { background: 'var(--ci-sidebar-shell)', border: '1px solid rgba(79,141,246,0.25)', boxShadow: 'var(--ci-shadow-soft)' }
+                : { background: 'var(--ci-surface-strong)', border: '1px solid var(--ci-border)' }
             }>
               <div className="flex items-center gap-2 mb-2">
                 <stat.icon size={16} className={stat.color} />
                 <span className={`text-xs ${stat.dark ? 'text-slate-400' : 'text-slate-500'}`}>{stat.label}</span>
               </div>
-              <p className={`text-2xl font-bold ${stat.dark ? 'text-[#D4AF37]' : 'text-[#0B1B2B]'}`}>{stat.value}</p>
+              <p className={`text-2xl font-bold ${stat.dark ? 'text-[var(--ci-accent)]' : 'text-[#0B1B2B]'}`}>{stat.value}</p>
             </div>
           );
           return stat.href
@@ -369,9 +369,9 @@ export default function MarketingPage() {
       {viewMode === 'create' ? (
         <div className="grid grid-cols-2 gap-6">
           {/* Step 1: Keyword Research */}
-          <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
+          <div className="bg-[var(--ci-surface-strong)] rounded-xl border border-[var(--ci-border)] p-6">
             <h3 className="font-bold text-[#0B1B2B] mb-4 flex items-center gap-2">
-              <span className="w-6 h-6 bg-[#0B1B2B] text-[#D4AF37] rounded-full text-xs flex items-center justify-center">1</span>
+              <span className="w-6 h-6 bg-[#0B1B2B] text-[var(--ci-accent)] rounded-full text-xs flex items-center justify-center">1</span>
               关键词规划
             </h3>
             
@@ -384,12 +384,12 @@ export default function MarketingPage() {
                     value={keywordTopic}
                     onChange={(e) => setKeywordTopic(e.target.value)}
                     placeholder="例如：工业机器人、激光切割机..."
-                    className="flex-1 px-4 py-2.5 border border-[#E8E0D0] rounded-xl text-sm focus:outline-none focus:border-[#D4AF37]"
+                    className="flex-1 px-4 py-2.5 border border-[var(--ci-border)] rounded-xl text-sm focus:outline-none focus:border-[var(--ci-accent)]"
                   />
                   <button
                     onClick={handleGenerateKeywords}
                     disabled={!keywordTopic.trim() || isGeneratingKeywords}
-                    className="px-4 py-2.5 bg-[#0B1B2B] text-[#D4AF37] rounded-xl text-sm font-medium disabled:opacity-50 flex items-center gap-2"
+                    className="px-4 py-2.5 bg-[#0B1B2B] text-[var(--ci-accent)] rounded-xl text-sm font-medium disabled:opacity-50 flex items-center gap-2"
                   >
                     {isGeneratingKeywords ? (
                       <Loader2 size={14} className="animate-spin" />
@@ -411,14 +411,14 @@ export default function MarketingPage() {
                       onClick={() => setSelectedKeyword(kw.keyword)}
                       className={`p-3 border rounded-xl cursor-pointer transition-all ${
                         selectedKeyword === kw.keyword
-                          ? 'border-[#D4AF37] bg-[#D4AF37]/5'
-                          : 'border-[#E8E0D0] hover:border-[#D4AF37]/30'
+                          ? 'border-[var(--ci-accent)] bg-[var(--ci-accent)]/5'
+                          : 'border-[var(--ci-border)] hover:border-[var(--ci-accent)]/30'
                       }`}
                     >
                       <div className="flex items-center justify-between">
                         <span className="font-medium text-[#0B1B2B] text-sm">{kw.keyword}</span>
                         {selectedKeyword === kw.keyword && (
-                          <CheckCircle2 size={16} className="text-[#D4AF37]" />
+                          <CheckCircle2 size={16} className="text-[var(--ci-accent)]" />
                         )}
                       </div>
                       <div className="flex gap-3 mt-2 text-[10px]">
@@ -452,7 +452,7 @@ export default function MarketingPage() {
                         onClick={() => setContentType(type.value as 'article' | 'product' | 'case')}
                         className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${
                           contentType === type.value
-                            ? 'bg-[#0B1B2B] text-[#D4AF37]'
+                            ? 'bg-[#0B1B2B] text-[var(--ci-accent)]'
                             : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                         }`}
                       >
@@ -467,7 +467,7 @@ export default function MarketingPage() {
               {selectedKeyword && (
                 <Link
                   href={`/customer/marketing/briefs?keyword=${encodeURIComponent(selectedKeyword)}&type=${contentType}`}
-                  className="w-full py-3 bg-gradient-to-r from-[#0B1B2B] to-[#152942] text-[#D4AF37] rounded-xl font-medium text-sm flex items-center justify-center gap-2"
+                  className="w-full py-3 bg-[var(--ci-accent)] text-white rounded-xl font-medium text-sm flex items-center justify-center gap-2"
                 >
                   <Sparkles size={16} />
                   用此关键词创建 Brief
@@ -478,16 +478,16 @@ export default function MarketingPage() {
           </div>
 
           {/* Step 2: Content Preview */}
-          <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
+          <div className="bg-[var(--ci-surface-strong)] rounded-xl border border-[var(--ci-border)] p-6">
             <h3 className="font-bold text-[#0B1B2B] mb-4 flex items-center gap-2">
-              <span className="w-6 h-6 bg-[#0B1B2B] text-[#D4AF37] rounded-full text-xs flex items-center justify-center">2</span>
+              <span className="w-6 h-6 bg-[#0B1B2B] text-[var(--ci-accent)] rounded-full text-xs flex items-center justify-center">2</span>
               内容预览与发布
             </h3>
 
             {generatedContent ? (
               <div className="space-y-4">
                 {/* SEO Meta */}
-                <div className="p-3 bg-[#F0EBD8] rounded-xl">
+                <div className="p-3 bg-[var(--ci-surface-muted)] rounded-xl">
                   <p className="text-xs text-slate-500 mb-1">SEO标题</p>
                   <p className="text-sm font-medium text-[#0B1B2B]">{generatedContent.metaTitle}</p>
                   <p className="text-xs text-slate-500 mt-2 mb-1">SEO描述</p>
@@ -506,10 +506,10 @@ export default function MarketingPage() {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex gap-3 pt-4 border-t border-[#E8E0D0]">
+                <div className="flex gap-3 pt-4 border-t border-[var(--ci-border)]">
                   <button
                     onClick={() => handleSaveContent('draft')}
-                    className="flex-1 py-2.5 bg-[#0B1220] text-[#D4AF37] rounded-xl text-sm font-medium hover:opacity-90 flex items-center justify-center gap-2"
+                    className="flex-1 py-2.5 bg-[#0B1220] text-[var(--ci-accent)] rounded-xl text-sm font-medium hover:opacity-90 flex items-center justify-center gap-2"
                   >
                     <Edit2 size={14} />
                     保存草稿
@@ -517,7 +517,7 @@ export default function MarketingPage() {
                   <button
                     onClick={() => handleSaveContent('published')}
                     className="flex-1 py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2"
-                    style={{ background: '#D4AF37', color: '#0B1220', boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)' }}
+                    style={{ background: 'var(--ci-accent)', color: '#FFFFFF', boxShadow: '0 4px 16px -2px rgba(79,141,246,0.35)' }}
                   >
                     <Send size={14} />
                     立即发布
@@ -526,8 +526,8 @@ export default function MarketingPage() {
               </div>
             ) : (
               <div className="text-center py-16">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-xl flex items-center justify-center" style={{ background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.3)' }}>
-                  <PenTool size={28} className="text-[#D4AF37]" />
+                <div className="w-16 h-16 mx-auto mb-4 rounded-xl flex items-center justify-center" style={{ background: 'rgba(79,141,246,0.12)', border: '1px solid rgba(79,141,246,0.3)' }}>
+                  <PenTool size={28} className="text-[var(--ci-accent)]" />
                 </div>
                 <p className="text-sm text-slate-500">选择关键词后点击&quot;AI生成内容&quot;</p>
                 <p className="text-xs text-slate-400 mt-1">AI将根据企业画像生成优质SEO内容</p>
@@ -538,21 +538,21 @@ export default function MarketingPage() {
       ) : (
         <div className="grid grid-cols-3 gap-6">
           {/* Content List */}
-          <div className="col-span-2 bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0]">
-            <div className="px-6 py-4 border-b border-[#E8E0D0]" style={{ background: '#F0EBD8' }}>
+          <div className="col-span-2 bg-[var(--ci-surface-strong)] rounded-xl border border-[var(--ci-border)]">
+            <div className="px-6 py-4 border-b border-[var(--ci-border)]" style={{ background: 'var(--ci-surface-muted)' }}>
               <h3 className="font-bold text-[#0B1B2B]">内容资产库</h3>
             </div>
             <div className="p-6">
             {contents.length === 0 ? (
-              <div className="rounded-2xl p-12 text-center" style={{ background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)', boxShadow: '0 8px 32px -8px rgba(0,0,0,0.45)' }}>
-                <div className="w-16 h-16 mx-auto mb-4 rounded-xl flex items-center justify-center" style={{ background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.3)' }}>
-                  <FileText size={28} className="text-[#D4AF37]" />
+              <div className="rounded-xl p-12 text-center" style={{ background: 'var(--ci-sidebar-shell)', boxShadow: 'var(--ci-shadow-soft)' }}>
+                <div className="w-16 h-16 mx-auto mb-4 rounded-xl flex items-center justify-center" style={{ background: 'rgba(79,141,246,0.12)', border: '1px solid rgba(79,141,246,0.3)' }}>
+                  <FileText size={28} className="text-[var(--ci-accent)]" />
                 </div>
                 <p className="text-slate-400 mb-4">暂无内容资产</p>
                 <button
                   onClick={() => setViewMode('create')}
                   className="px-4 py-2 rounded-xl text-sm font-medium"
-                  style={{ background: '#D4AF37', color: '#0B1220', boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)' }}
+                  style={{ background: 'var(--ci-accent)', color: '#FFFFFF', boxShadow: '0 4px 16px -2px rgba(79,141,246,0.35)' }}
                 >
                   创建第一篇内容
                 </button>
@@ -567,8 +567,8 @@ export default function MarketingPage() {
                       onClick={() => setSelectedContent(content)}
                       className={`p-4 border rounded-xl cursor-pointer transition-all ${
                         selectedContent?.id === content.id
-                          ? 'border-[#D4AF37] bg-[#D4AF37]/5'
-                          : 'border-[#E8E0D0] hover:border-[#D4AF37]/50 bg-[#FFFCF7]'
+                          ? 'border-[var(--ci-accent)] bg-[var(--ci-accent)]/5'
+                          : 'border-[var(--ci-border)] hover:border-[var(--ci-accent)]/50 bg-[#FFFFFF]'
                       }`}
                     >
                       <div className="flex items-start justify-between">
@@ -610,7 +610,7 @@ export default function MarketingPage() {
           <div className="col-span-1 space-y-4">
             {selectedContent ? (
               <>
-                <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
+                <div className="bg-[var(--ci-surface-strong)] rounded-xl border border-[var(--ci-border)] p-6">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="font-bold text-[#0B1B2B]">内容详情</h3>
                     <button
@@ -624,7 +624,7 @@ export default function MarketingPage() {
                   <h4 className="font-medium text-[#0B1B2B] mb-2">{selectedContent.title}</h4>
                   
                   {selectedContent.metaTitle && (
-                    <div className="mb-3 p-2 bg-[#F0EBD8] rounded-lg">
+                    <div className="mb-3 p-2 bg-[var(--ci-surface-muted)] rounded-lg">
                       <p className="text-[10px] text-slate-500">SEO标题</p>
                       <p className="text-xs text-[#0B1B2B]">{selectedContent.metaTitle}</p>
                     </div>
@@ -646,7 +646,7 @@ export default function MarketingPage() {
                   </div>
 
                   {/* Status Actions */}
-                  <div className="mt-4 pt-4 border-t border-[#E8E0D0]">
+                  <div className="mt-4 pt-4 border-t border-[var(--ci-border)]">
                     <p className="text-xs text-slate-500 mb-2">更新状态</p>
                     <div className="flex flex-wrap gap-2">
                       {['draft', 'published'].map((status) => {
@@ -669,7 +669,7 @@ export default function MarketingPage() {
                   </div>
 
                   {/* AI SEO优化 */}
-                  <div className="mt-4 pt-4 border-t border-[#E8E0D0]">
+                  <div className="mt-4 pt-4 border-t border-[var(--ci-border)]">
                     <button
                       onClick={async () => {
                         if (!selectedContent) return;
@@ -701,7 +701,7 @@ export default function MarketingPage() {
                         }
                       }}
                       disabled={isGeneratingContent}
-                      className="w-full py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50 hover:shadow-md transition-all"
+                      className="w-full py-2.5 bg-[var(--ci-accent)] text-white rounded-xl text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50 hover:shadow-md transition-all"
                     >
                       <Search size={14} />
                       {isGeneratingContent ? 'AI优化中...' : 'AI SEO优化'}
@@ -714,9 +714,9 @@ export default function MarketingPage() {
 
                 {/* 推送到官网 */}
                 {websiteConfig && websiteConfig.isActive && (
-                  <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
+                  <div className="bg-[var(--ci-surface-strong)] rounded-xl border border-[var(--ci-border)] p-6">
                     <h3 className="font-bold text-[#0B1B2B] mb-3 flex items-center gap-2">
-                      <Globe size={16} className="text-[#D4AF37]" />
+                      <Globe size={16} className="text-[var(--ci-accent)]" />
                       推送到官网
                     </h3>
 
@@ -733,7 +733,7 @@ export default function MarketingPage() {
                             <button
                               onClick={() => handlePushToWebsite(selectedContent.id)}
                               disabled={isPushing}
-                              className="w-full py-2.5 bg-gradient-to-r from-[#0B1B2B] to-[#152942] text-[#D4AF37] rounded-xl text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50 hover:shadow-md transition-all"
+                              className="w-full py-2.5 bg-[var(--ci-accent)] text-white rounded-xl text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50 hover:shadow-md transition-all"
                             >
                               {isPushing ? (
                                 <>
@@ -814,7 +814,7 @@ export default function MarketingPage() {
                               <button
                                 onClick={() => handleRetryPush(pushRecord.id)}
                                 disabled={isPushing}
-                                className="flex-1 py-2 bg-[#0B1B2B] text-[#D4AF37] rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 disabled:opacity-50 hover:bg-[#10263B] transition-colors"
+                                className="flex-1 py-2 bg-[#0B1B2B] text-[var(--ci-accent)] rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 disabled:opacity-50 hover:bg-[#10263B] transition-colors"
                               >
                                 <RotateCcw size={12} />
                                 重新推送
@@ -828,7 +828,7 @@ export default function MarketingPage() {
                 )}
 
                 {/* AI Skills Panel (流式) */}
-                <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
+                <div className="bg-[var(--ci-surface-strong)] rounded-xl border border-[var(--ci-border)] p-6">
                   <SkillStreamPanel
                     engine="marketing"
                     entityType="ContentPiece"
@@ -843,17 +843,17 @@ export default function MarketingPage() {
               </>
             ) : (
               <div className="space-y-4">
-                <div className="rounded-2xl p-8 text-center" style={{ background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)', boxShadow: '0 8px 32px -8px rgba(0,0,0,0.45)' }}>
-                  <div className="w-16 h-16 mx-auto mb-3 rounded-xl flex items-center justify-center" style={{ background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.3)' }}>
-                    <Eye size={28} className="text-[#D4AF37]" />
+                <div className="rounded-xl p-8 text-center" style={{ background: 'var(--ci-sidebar-shell)', boxShadow: 'var(--ci-shadow-soft)' }}>
+                  <div className="w-16 h-16 mx-auto mb-3 rounded-xl flex items-center justify-center" style={{ background: 'rgba(79,141,246,0.12)', border: '1px solid rgba(79,141,246,0.3)' }}>
+                    <Eye size={28} className="text-[var(--ci-accent)]" />
                   </div>
                   <p className="text-sm text-slate-400">选择内容查看详情</p>
                 </div>
                 {/* Quick verify — run on the most recent unpublished content */}
                 {contents.filter((c) => c.status !== 'published').slice(0, 1).map((c) => (
-                  <div key={c.id} className="rounded-2xl border border-[#E8E0D0] p-5 bg-[#F7F3E8]">
+                  <div key={c.id} className="rounded-xl border border-[var(--ci-border)] p-5 bg-[var(--ci-surface-strong)]">
                     <div className="flex items-center gap-2 mb-3">
-                      <Sparkles size={14} className="text-[#D4AF37]" />
+                      <Sparkles size={14} className="text-[var(--ci-accent)]" />
                       <span className="text-sm font-semibold text-[#0B1B2B]">快速证据校验</span>
                     </div>
                     <p className="text-xs text-slate-500 mb-3 line-clamp-2">
@@ -870,7 +870,7 @@ export default function MarketingPage() {
                       onComplete={() => loadData()}
                       variant="outline"
                       size="sm"
-                      className="w-full border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37]/10"
+                      className="w-full border-[var(--ci-accent)] text-[var(--ci-accent)] hover:bg-[var(--ci-accent)]/10"
                     />
                   </div>
                 ))}

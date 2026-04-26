@@ -170,28 +170,28 @@ export default function GuidelinesPage() {
 
       <div className="p-5 space-y-5">
         {/* Input Source Hint */}
-        <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-4">
+        <div className="bg-[var(--ci-surface-strong)] rounded-xl border border-[var(--ci-border)] p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <Building2 size={16} className="text-slate-400" />
                 <span className="text-xs text-slate-500">输入来源：</span>
-                <span className={`text-xs font-medium ${hasCompanyProfile ? 'text-[#B8860B]' : 'text-slate-400'}`}>
+                <span className={`text-xs font-medium ${hasCompanyProfile ? 'text-[var(--ci-accent-strong)]' : 'text-slate-400'}`}>
                   企业档案 {hasCompanyProfile ? '✓ 已生成' : '× 未生成'}
                 </span>
               </div>
               {!hasCompanyProfile && (
-                <div className="flex items-center gap-2 text-[#B8860B] text-xs">
+                <div className="flex items-center gap-2 text-[var(--ci-accent-strong)] text-xs">
                   <AlertCircle size={14} />
                   <span>请先生成企业档案</span>
-                  <Link href="/customer/knowledge/company" className="text-[#D4AF37] hover:underline">去企业档案</Link>
+                  <Link href="/customer/knowledge/company" className="text-[var(--ci-accent)] hover:underline">去企业档案</Link>
                 </div>
               )}
             </div>
             <button 
               onClick={() => { setShowCreate(true); setCreateForm({ ...createForm, category: activeCategory }); }} 
               disabled={!hasCompanyProfile}
-              className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-slate-600 border border-[#E8E0D0] rounded-lg hover:bg-[#F0EBD8] transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-slate-600 border border-[var(--ci-border)] rounded-lg hover:bg-[var(--ci-surface-muted)] transition-colors disabled:opacity-50"
             >
               <Plus size={14} />
               手动添加
@@ -200,11 +200,11 @@ export default function GuidelinesPage() {
         </div>
 
         {/* Category Tabs */}
-        <div className="flex items-center gap-1 bg-[#F0EBD8] rounded-lg p-1">
+        <div className="flex items-center gap-1 bg-[var(--ci-surface-muted)] rounded-lg p-1">
           {CATEGORY_TABS.map((tab) => (
             <button key={tab.value} onClick={() => setActiveCategory(tab.value)}
               className={`flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-md transition-colors ${
-                activeCategory === tab.value ? 'bg-[#0B1220] text-[#D4AF37] shadow-sm' : 'text-slate-500 hover:text-[#0B1220]'
+                activeCategory === tab.value ? 'bg-[#0B1220] text-[var(--ci-accent)] shadow-sm' : 'text-slate-500 hover:text-[#0B1220]'
               }`}>
               <tab.icon size={13} />
               {tab.label}
@@ -214,11 +214,11 @@ export default function GuidelinesPage() {
 
         {/* Guidelines List */}
         {isLoading ? (
-          <div className="flex items-center justify-center py-16"><Loader2 size={28} className="text-[#D4AF37] animate-spin" /></div>
+          <div className="flex items-center justify-center py-16"><Loader2 size={28} className="text-[var(--ci-accent)] animate-spin" /></div>
         ) : guidelines.length === 0 ? (
-          <div className="text-center py-16 bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0]">
-            <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.2)', boxShadow: '0 0 24px rgba(212,175,55,0.1)' }}>
-              <BookOpen size={32} className="text-[#D4AF37]" />
+          <div className="text-center py-16 bg-[var(--ci-surface-strong)] rounded-xl border border-[var(--ci-border)]">
+            <div className="w-16 h-16 rounded-xl mx-auto mb-4 flex items-center justify-center" style={{ background: 'rgba(79,141,246,0.08)', border: '1px solid rgba(79,141,246,0.2)', boxShadow: '0 0 24px rgba(79,141,246,0.1)' }}>
+              <BookOpen size={32} className="text-[var(--ci-accent)]" />
             </div>
             <p className="text-sm text-slate-500 mb-2">暂无{CATEGORY_TABS.find(t => t.value === activeCategory)?.label}规范</p>
             {hasCompanyProfile ? (
@@ -226,8 +226,8 @@ export default function GuidelinesPage() {
                 <p className="text-xs text-slate-400 mb-4">从企业档案中提取或手动创建规范</p>
                 <button
                   onClick={() => setShowCreate(true)}
-                  style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #C4A028 100%)' }}
-                  className="inline-flex items-center gap-2 px-4 py-2 text-[#0B1220] rounded-xl text-sm font-medium hover:opacity-90 transition-all shadow-[0_4px_16px_-2px_rgba(212,175,55,0.35)]"
+                  style={{ background: 'var(--ci-accent)' }}
+                  className="inline-flex items-center gap-2 px-4 py-2 text-[var(--ci-text)] rounded-xl text-sm font-medium hover:opacity-90 transition-all shadow-[0_4px_16px_-2px_rgba(79,141,246,0.35)]"
                 >
                   <Sparkles size={16} />
                   创建规范
@@ -238,7 +238,7 @@ export default function GuidelinesPage() {
                 <p className="text-xs text-slate-400 mb-4">需要先生成企业档案</p>
                 <Link
                   href="/customer/knowledge/company"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-[#D4AF37] text-[#0B1220] rounded-xl text-sm font-medium hover:bg-[#D4AF37]/90 transition-colors shadow-[0_4px_16px_-2px_rgba(212,175,55,0.35)]"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--ci-accent)] text-white rounded-xl text-sm font-medium hover:bg-[var(--ci-accent)]/90 transition-colors shadow-[0_4px_16px_-2px_rgba(79,141,246,0.35)]"
                 >
                   <Building2 size={16} />
                   去企业档案
@@ -253,17 +253,17 @@ export default function GuidelinesPage() {
                 onMouseEnter={() => setHoveredId(g.id)}
                 onMouseLeave={() => setHoveredId(null)}
                 style={{
-                  borderColor: hoveredId === g.id ? 'rgba(212,175,55,0.4)' : '#E8E0D0',
-                  boxShadow: hoveredId === g.id ? '0 4px 16px -4px rgba(212,175,55,0.15)' : 'none',
+                  borderColor: hoveredId === g.id ? 'rgba(79,141,246,0.4)' : 'var(--ci-border)',
+                  boxShadow: hoveredId === g.id ? '0 4px 16px -4px rgba(79,141,246,0.15)' : 'none',
                   transform: hoveredId === g.id ? 'translateY(-1px)' : 'none'
                 }}
-                className={`p-5 border rounded-xl transition-all ${g.isActive ? 'bg-[#FFFCF7]' : 'bg-[#F7F3E8] opacity-60'}`}>
+                className={`p-5 border rounded-xl transition-all ${g.isActive ? 'bg-[#FFFFFF]' : 'bg-[var(--ci-surface-strong)] opacity-60'}`}>
                 <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-sm font-bold text-[#0B1220]">{g.title}</h4>
+                  <h4 className="text-sm font-bold text-[var(--ci-text)]">{g.title}</h4>
                   <div className="flex items-center gap-1">
                     <button onClick={() => handleToggleActive(g.id, g.isActive)}
                       style={g.isActive 
-                        ? { background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.3)', color: '#B8860B' }
+                        ? { background: 'rgba(79,141,246,0.1)', border: '1px solid rgba(79,141,246,0.3)', color: 'var(--ci-accent-strong)' }
                         : { background: 'rgba(0,0,0,0.04)', border: '1px solid rgba(0,0,0,0.08)', color: '#94A3B8' }
                       }
                       className="px-2.5 py-1 text-[10px] rounded-full transition-colors font-medium">
@@ -278,8 +278,8 @@ export default function GuidelinesPage() {
                 {(g.examples?.do?.length > 0 || g.examples?.dont?.length > 0) && (
                   <div className="grid grid-cols-2 gap-3">
                     {g.examples?.do?.length > 0 && (
-                      <div className="p-3 rounded-lg border" style={{ background: 'rgba(212,175,55,0.06)', borderColor: 'rgba(212,175,55,0.15)' }}>
-                        <p className="text-[10px] font-medium mb-1.5 flex items-center gap-1" style={{ color: '#B8860B' }}><ThumbsUp size={10} /> Do</p>
+                      <div className="p-3 rounded-lg border" style={{ background: 'rgba(79,141,246,0.06)', borderColor: 'rgba(79,141,246,0.15)' }}>
+                        <p className="text-[10px] font-medium mb-1.5 flex items-center gap-1" style={{ color: 'var(--ci-accent-strong)' }}><ThumbsUp size={10} /> Do</p>
                         {g.examples.do.map((ex, i) => (
                           <p key={i} className="text-[11px] text-slate-600 leading-relaxed">• {ex}</p>
                         ))}
@@ -304,7 +304,7 @@ export default function GuidelinesPage() {
       {/* Create Dialog */}
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }} onClick={() => setShowCreate(false)}>
-          <div className="rounded-2xl w-[520px] max-h-[85vh] overflow-y-auto p-6" 
+          <div className="rounded-xl w-[520px] max-h-[85vh] overflow-y-auto p-6"
             style={{ background: '#0F1728', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 24px 64px -12px rgba(0,0,0,0.6)' }}
             onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-bold text-white mb-4">新建规范</h3>
@@ -313,31 +313,31 @@ export default function GuidelinesPage() {
                 <label className="text-[10px] uppercase tracking-widest font-medium mb-1.5 block" style={{ color: 'rgba(255,255,255,0.35)' }}>标题</label>
                 <input value={createForm.title} onChange={(e) => setCreateForm({ ...createForm, title: e.target.value })}
                   style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
-                  className="w-full px-3 py-2 text-sm rounded-lg focus:outline-none focus:border-[#D4AF37]/50" placeholder="规范标题" />
+                  className="w-full px-3 py-2 text-sm rounded-lg focus:outline-none focus:border-[var(--ci-accent)]/50" placeholder="规范标题" />
               </div>
               <div>
                 <label className="text-[10px] uppercase tracking-widest font-medium mb-1.5 block" style={{ color: 'rgba(255,255,255,0.35)' }}>内容描述</label>
                 <textarea value={createForm.content} onChange={(e) => setCreateForm({ ...createForm, content: e.target.value })}
                   style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
-                  rows={3} className="w-full px-3 py-2 text-sm rounded-lg focus:outline-none focus:border-[#D4AF37]/50" placeholder="详细描述这条规范..." />
+                  rows={3} className="w-full px-3 py-2 text-sm rounded-lg focus:outline-none focus:border-[var(--ci-accent)]/50" placeholder="详细描述这条规范..." />
               </div>
               <div>
                 <label className="text-[10px] uppercase tracking-widest font-medium mb-1.5 block" style={{ color: 'rgba(255,255,255,0.35)' }}>正例 (Do)</label>
                 {createForm.examples?.do?.map((ex, i) => (
                   <input key={i} value={ex} onChange={(e) => updateExample('do', i, e.target.value)}
                     style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
-                    className="w-full px-3 py-1.5 text-xs rounded-lg mb-1 focus:outline-none focus:border-[#D4AF37]/50" placeholder="正确的示例..." />
+                    className="w-full px-3 py-1.5 text-xs rounded-lg mb-1 focus:outline-none focus:border-[var(--ci-accent)]/50" placeholder="正确的示例..." />
                 ))}
-                <button onClick={() => addExample('do')} className="text-xs text-[#D4AF37] hover:underline">+ 添加正例</button>
+                <button onClick={() => addExample('do')} className="text-xs text-[var(--ci-accent)] hover:underline">+ 添加正例</button>
               </div>
               <div>
                 <label className="text-[10px] uppercase tracking-widest font-medium mb-1.5 block" style={{ color: 'rgba(255,255,255,0.35)' }}>反例 (Don&apos;t)</label>
                 {createForm.examples?.dont?.map((ex, i) => (
                   <input key={i} value={ex} onChange={(e) => updateExample('dont', i, e.target.value)}
                     style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
-                    className="w-full px-3 py-1.5 text-xs rounded-lg mb-1 focus:outline-none focus:border-[#D4AF37]/50" placeholder="错误的示例..." />
+                    className="w-full px-3 py-1.5 text-xs rounded-lg mb-1 focus:outline-none focus:border-[var(--ci-accent)]/50" placeholder="错误的示例..." />
                 ))}
-                <button onClick={() => addExample('dont')} className="text-xs text-[#D4AF37] hover:underline">+ 添加反例</button>
+                <button onClick={() => addExample('dont')} className="text-xs text-[var(--ci-accent)] hover:underline">+ 添加反例</button>
               </div>
             </div>
             <div className="flex justify-end gap-2 mt-6">
@@ -345,7 +345,7 @@ export default function GuidelinesPage() {
                 style={{ color: 'rgba(255,255,255,0.5)', border: '1px solid rgba(255,255,255,0.1)' }}
                 className="px-4 py-2 text-sm rounded-xl hover:bg-white/5 transition-colors">取消</button>
               <button onClick={handleCreate} disabled={isCreating || !createForm.title || !createForm.content} 
-                style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #C4A028 100%)', color: '#0B1220' }}
+                style={{ background: 'var(--ci-accent)', color: '#FFFFFF' }}
                 className="px-4 py-2 text-sm rounded-xl font-bold disabled:opacity-50 transition-opacity">
                 {isCreating ? '创建中...' : '创建'}
               </button>
@@ -357,7 +357,7 @@ export default function GuidelinesPage() {
       {/* Delete Confirmation Dialog */}
       {deleteTarget && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-[#0F1728] border border-white/10 rounded-2xl p-6 w-[360px] shadow-2xl">
+          <div className="bg-[#0F1728] border border-white/10 rounded-xl p-6 w-[360px] shadow-[var(--ci-shadow-soft)]">
             <h4 className="text-white font-bold mb-2">确认删除？</h4>
             <p className="text-white/50 text-xs mb-6 text-pretty">此操作无法撤销，该品牌规范将被永久移除。</p>
             <div className="flex gap-3">
@@ -371,7 +371,7 @@ export default function GuidelinesPage() {
       {/* Toast Notification */}
       {toast && (
         <div className="fixed top-20 right-6 z-[100] animate-slide-up">
-          <div className={`px-4 py-3 rounded-xl shadow-lg border flex items-center gap-3 ${
+          <div className={`px-4 py-3 rounded-xl shadow-[var(--ci-shadow-soft)] border flex items-center gap-3 ${
             toast.type === 'success' 
               ? 'bg-emerald-50 border-emerald-100 text-emerald-700' 
               : 'bg-red-50 border-red-100 text-red-700'

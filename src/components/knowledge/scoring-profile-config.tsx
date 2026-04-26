@@ -241,7 +241,7 @@ export function ScoringProfileConfig({ segmentId, onSaveSuccess }: Props) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#D4AF37]"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--ci-accent)]"></div>
       </div>
     );
   }
@@ -261,7 +261,7 @@ export function ScoringProfileConfig({ segmentId, onSaveSuccess }: Props) {
       {/* 快捷模板 */}
       <div className="p-4 rounded-lg bg-[#0f172a]/50 border border-white/5">
         <div className="flex items-center gap-2 mb-3">
-          <Sparkles className="w-4 h-4 text-[#D4AF37]" />
+          <Sparkles className="w-4 h-4 text-[var(--ci-accent)]" />
           <span className="text-sm font-medium text-white">快速开始：选择预设模板</span>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -302,7 +302,7 @@ export function ScoringProfileConfig({ segmentId, onSaveSuccess }: Props) {
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-white">{signal.name}</span>
-                    <span className="px-1.5 py-0.5 text-xs rounded bg-[#D4AF37]/20 text-[#D4AF37]">
+                    <span className="px-1.5 py-0.5 text-xs rounded bg-[var(--ci-accent)]/20 text-[var(--ci-accent)]">
                       +{signal.weight}分
                     </span>
                     {signal.category && (
@@ -340,7 +340,7 @@ export function ScoringProfileConfig({ segmentId, onSaveSuccess }: Props) {
                     value={newPositiveSignal.name}
                     onChange={e => setNewPositiveSignal(prev => ({ ...prev, name: e.target.value }))}
                     placeholder="如：制造商信号"
-                    className="w-full px-2 py-1.5 text-sm rounded bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-[#D4AF37]/50"
+                    className="w-full px-2 py-1.5 text-sm rounded bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-[var(--ci-accent)]/50"
                   />
                 </div>
                 <div>
@@ -351,7 +351,7 @@ export function ScoringProfileConfig({ segmentId, onSaveSuccess }: Props) {
                     max={20}
                     value={newPositiveSignal.weight}
                     onChange={e => setNewPositiveSignal(prev => ({ ...prev, weight: parseInt(e.target.value) || 1 }))}
-                    className="w-full px-2 py-1.5 text-sm rounded bg-white/5 border border-white/10 text-white focus:outline-none focus:border-[#D4AF37]/50"
+                    className="w-full px-2 py-1.5 text-sm rounded bg-white/5 border border-white/10 text-white focus:outline-none focus:border-[var(--ci-accent)]/50"
                   />
                 </div>
               </div>
@@ -365,7 +365,7 @@ export function ScoringProfileConfig({ segmentId, onSaveSuccess }: Props) {
                   }}
                   placeholder="manufacturing, factory, mfg"
                   rows={2}
-                  className="w-full px-2 py-1.5 text-sm rounded bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-[#D4AF37]/50"
+                  className="w-full px-2 py-1.5 text-sm rounded bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-[var(--ci-accent)]/50"
                 />
               </div>
               <div className="flex justify-end gap-2">
@@ -487,7 +487,7 @@ export function ScoringProfileConfig({ segmentId, onSaveSuccess }: Props) {
         {/* 层级阈值 */}
         <div className="p-4 rounded-lg bg-[#0f172a]/50 border border-white/5">
           <div className="flex items-center gap-2 mb-3">
-            <Zap className="w-4 h-4 text-[#D4AF37]" />
+            <Zap className="w-4 h-4 text-[var(--ci-accent)]" />
             <span className="text-sm font-medium text-white">层级阈值</span>
           </div>
           <div className="space-y-3">
@@ -500,7 +500,7 @@ export function ScoringProfileConfig({ segmentId, onSaveSuccess }: Props) {
                   max={50}
                   value={profile.thresholds.tierA}
                   onChange={e => handleThresholdChange('tierA', parseInt(e.target.value) || 8)}
-                  className="w-16 px-2 py-1 text-sm text-center rounded bg-white/5 border border-white/10 text-white focus:outline-none focus:border-[#D4AF37]/50"
+                  className="w-16 px-2 py-1 text-sm text-center rounded bg-white/5 border border-white/10 text-white focus:outline-none focus:border-[var(--ci-accent)]/50"
                 />
                 <span className="text-xs text-white/50">分</span>
               </div>
@@ -514,7 +514,7 @@ export function ScoringProfileConfig({ segmentId, onSaveSuccess }: Props) {
                   max={50}
                   value={profile.thresholds.tierB}
                   onChange={e => handleThresholdChange('tierB', parseInt(e.target.value) || 5)}
-                  className="w-16 px-2 py-1 text-sm text-center rounded bg-white/5 border border-white/10 text-white focus:outline-none focus:border-[#D4AF37]/50"
+                  className="w-16 px-2 py-1 text-sm text-center rounded bg-white/5 border border-white/10 text-white focus:outline-none focus:border-[var(--ci-accent)]/50"
                 />
                 <span className="text-xs text-white/50">分</span>
               </div>
@@ -528,7 +528,7 @@ export function ScoringProfileConfig({ segmentId, onSaveSuccess }: Props) {
         {/* 联系方式评分 */}
         <div className="p-4 rounded-lg bg-[#0f172a]/50 border border-white/5">
           <div className="flex items-center gap-2 mb-3">
-            <Phone className="w-4 h-4 text-[#D4AF37]" />
+            <Phone className="w-4 h-4 text-[var(--ci-accent)]" />
             <span className="text-sm font-medium text-white">联系方式加分</span>
           </div>
           <div className="space-y-2">
@@ -537,21 +537,21 @@ export function ScoringProfileConfig({ segmentId, onSaveSuccess }: Props) {
                 <Globe className="w-3.5 h-3.5 text-white/50" />
                 <span className="text-sm text-white/70">有网站</span>
               </div>
-              <span className="text-sm text-[#D4AF37]">+{profile.contactScoring.hasWebsite}分</span>
+              <span className="text-sm text-[var(--ci-accent)]">+{profile.contactScoring.hasWebsite}分</span>
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Phone className="w-3.5 h-3.5 text-white/50" />
                 <span className="text-sm text-white/70">有电话</span>
               </div>
-              <span className="text-sm text-[#D4AF37]">+{profile.contactScoring.hasPhone}分</span>
+              <span className="text-sm text-[var(--ci-accent)]">+{profile.contactScoring.hasPhone}分</span>
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Mail className="w-3.5 h-3.5 text-white/50" />
                 <span className="text-sm text-white/70">有邮箱</span>
               </div>
-              <span className="text-sm text-[#D4AF37]">+{profile.contactScoring.hasEmail}分</span>
+              <span className="text-sm text-[var(--ci-accent)]">+{profile.contactScoring.hasEmail}分</span>
             </div>
           </div>
         </div>
@@ -570,7 +570,7 @@ export function ScoringProfileConfig({ segmentId, onSaveSuccess }: Props) {
         <button
           onClick={handleSave}
           disabled={isSaving}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#D4AF37] hover:bg-[#D4AF37]/90 text-[#0B1018] font-medium transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--ci-accent)] hover:bg-[var(--ci-accent)]/90 text-[#0B1018] font-medium transition-colors disabled:opacity-50"
         >
           {isSaving ? (
             <>

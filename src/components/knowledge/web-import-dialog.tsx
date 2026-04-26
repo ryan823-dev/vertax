@@ -139,16 +139,16 @@ export function WebImportDialog({ open, onClose, onComplete }: WebImportDialogPr
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div
-        className="relative w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden"
+        className="relative w-full max-w-2xl rounded-xl shadow-[0_18px_42px_-34px_rgba(15,23,38,0.24)] overflow-hidden"
         style={{
-          background: "linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)",
-          border: "1px solid rgba(212, 175, 55, 0.2)",
+          background: "var(--ci-sidebar-shell)",
+          border: "1px solid rgba(79, 141, 246, 0.2)",
         }}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-white/10">
           <div className="flex items-center gap-3">
-            <Globe className="w-6 h-6" style={{ color: "#D4AF37" }} />
+            <Globe className="w-6 h-6" style={{ color: "var(--ci-accent)" }} />
             <h2 className="text-xl font-semibold" style={{ color: "#FFFFFF" }}>
               网站智采
             </h2>
@@ -183,7 +183,7 @@ export function WebImportDialog({ open, onClose, onComplete }: WebImportDialogPr
                       setUrlError("");
                     }}
                     placeholder="https://example.com"
-                    className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]"
+                    className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[var(--ci-accent)]"
                     onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
                   />
                   {urlError && (
@@ -208,11 +208,11 @@ export function WebImportDialog({ open, onClose, onComplete }: WebImportDialogPr
                     step={50}
                     value={maxPages}
                     onChange={(e) => setMaxPages(Number(e.target.value))}
-                    className="flex-1 accent-[#D4AF37]"
+                    className="flex-1 accent-[var(--ci-accent)]"
                   />
                   <span
                     className="text-sm font-mono w-16 text-right"
-                    style={{ color: "#D4AF37" }}
+                    style={{ color: "var(--ci-accent)" }}
                   >
                     {maxPages}
                   </span>
@@ -232,7 +232,7 @@ export function WebImportDialog({ open, onClose, onComplete }: WebImportDialogPr
                 disabled={!url}
                 className="w-full py-4 rounded-xl font-medium flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{
-                  background: "linear-gradient(135deg, #D4AF37 0%, #B8941F 100%)",
+                  background: "var(--ci-accent)",
                   color: "#000000",
                 }}
               >
@@ -253,7 +253,7 @@ export function WebImportDialog({ open, onClose, onComplete }: WebImportDialogPr
                   ) : isFailed ? (
                     <AlertCircle className="w-8 h-8" style={{ color: "#ef4444" }} />
                   ) : (
-                    <Loader2 className="w-8 h-8 animate-spin" style={{ color: "#D4AF37" }} />
+                    <Loader2 className="w-8 h-8 animate-spin" style={{ color: "var(--ci-accent)" }} />
                   )}
                   <div>
                     <h3 className="text-lg font-medium" style={{ color: "#FFFFFF" }}>
@@ -285,7 +285,7 @@ export function WebImportDialog({ open, onClose, onComplete }: WebImportDialogPr
                   className="p-2 rounded-lg hover:bg-white/10 transition-colors"
                   title="Refresh status"
                 >
-                  <RefreshCcw className="w-5 h-5" style={{ color: "#D4AF37" }} />
+                  <RefreshCcw className="w-5 h-5" style={{ color: "var(--ci-accent)" }} />
                 </button>
               </div>
 
@@ -304,7 +304,7 @@ export function WebImportDialog({ open, onClose, onComplete }: WebImportDialogPr
                         ? "#ef4444"
                         : isComplete
                         ? "#22c55e"
-                        : "linear-gradient(135deg, #D4AF37 0%, #B8941F 100%)",
+                        : "var(--ci-accent)",
                     }}
                   />
                 </div>
@@ -318,7 +318,7 @@ export function WebImportDialog({ open, onClose, onComplete }: WebImportDialogPr
               <div className="bg-white/5 rounded-xl p-4 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span style={{ color: "rgba(255,255,255,0.5)" }}>Status</span>
-                  <span style={{ color: "#D4AF37" }}>{status.status.toUpperCase()}</span>
+                  <span style={{ color: "var(--ci-accent)" }}>{status.status.toUpperCase()}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span style={{ color: "rgba(255,255,255,0.5)" }}>Batch ID</span>
@@ -352,7 +352,7 @@ export function WebImportDialog({ open, onClose, onComplete }: WebImportDialogPr
                       }}
                       className="flex-1 py-3 rounded-xl font-medium flex items-center justify-center gap-2"
                       style={{
-                        background: "linear-gradient(135deg, #D4AF37 0%, #B8941F 100%)",
+                        background: "var(--ci-accent)",
                         color: "#000000",
                       }}
                     >
@@ -374,7 +374,7 @@ export function WebImportDialog({ open, onClose, onComplete }: WebImportDialogPr
                       onClick={handleClose}
                       className="flex-1 py-3 rounded-xl font-medium transition-colors"
                       style={{
-                        background: "linear-gradient(135deg, #D4AF37 0%, #B8941F 100%)",
+                        background: "var(--ci-accent)",
                         color: "#000000",
                       }}
                     >

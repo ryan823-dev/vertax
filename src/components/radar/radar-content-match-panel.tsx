@@ -132,10 +132,10 @@ export function RadarContentMatchPanel({
   };
 
   return (
-    <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-5">
+    <div className="bg-[var(--ci-surface-muted)] rounded-xl border border-[var(--ci-border)] p-5">
       <div className="flex items-center justify-between mb-3">
         <h4 className="flex items-center gap-2 text-sm font-bold text-[#0B1B2B]">
-          <FileText size={14} className="text-[#D4AF37]" />
+          <FileText size={14} className="text-[var(--ci-accent)]" />
           内容联动
         </h4>
         <span className="text-xs text-slate-400">
@@ -146,25 +146,25 @@ export function RadarContentMatchPanel({
       {/* Existing Links */}
       {isLoadingLinks ? (
         <div className="flex items-center justify-center py-4">
-          <Loader2 size={16} className="text-[#D4AF37] animate-spin" />
+          <Loader2 size={16} className="text-[var(--ci-accent)] animate-spin" />
         </div>
       ) : links.length > 0 ? (
         <div className="space-y-2 mb-3">
           {links.map((link) => (
             <div
               key={link.id}
-              className="bg-[#FFFCF7] rounded-xl border border-[#E8E0D0] p-3 flex items-start gap-2"
+              className="bg-[#FFFFFF] rounded-xl border border-[var(--ci-border)] p-3 flex items-start gap-2"
             >
-              <FileText size={14} className="text-[#D4AF37] mt-0.5 shrink-0" />
+              <FileText size={14} className="text-[var(--ci-accent)] mt-0.5 shrink-0" />
               <div className="flex-1 min-w-0">
                 <Link
                   href={`/customer/marketing/contents/${link.content?.id}`}
-                  className="text-xs font-medium text-[#0B1B2B] hover:text-[#D4AF37] truncate block"
+                  className="text-xs font-medium text-[#0B1B2B] hover:text-[var(--ci-accent)] truncate block"
                 >
                   {link.content?.title || '未知内容'}
                 </Link>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#D4AF37]/10 text-[#D4AF37]">
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--ci-accent)]/10 text-[var(--ci-accent)]">
                     {linkTypeLabel(link.linkType)}
                   </span>
                   {link.matchScore !== null && (
@@ -203,7 +203,7 @@ export function RadarContentMatchPanel({
             <button
               onClick={handleBatchLink}
               disabled={isLinking}
-              className="text-xs text-[#D4AF37] hover:underline flex items-center gap-1 disabled:opacity-50"
+              className="text-xs text-[var(--ci-accent)] hover:underline flex items-center gap-1 disabled:opacity-50"
             >
               {isLinking ? (
                 <Loader2 size={10} className="animate-spin" />
@@ -217,9 +217,9 @@ export function RadarContentMatchPanel({
             {suggestions.slice(0, 5).map((s) => (
               <div
                 key={s.contentId}
-                className="bg-[#FFFCF7] rounded-lg border border-dashed border-[#D4AF37]/30 p-2 flex items-center gap-2"
+                className="bg-[#FFFFFF] rounded-lg border border-dashed border-[var(--ci-accent)]/30 p-2 flex items-center gap-2"
               >
-                <Sparkles size={12} className="text-[#D4AF37] shrink-0" />
+                <Sparkles size={12} className="text-[var(--ci-accent)] shrink-0" />
                 <div className="flex-1 min-w-0">
                   <span className="text-xs text-[#0B1B2B] truncate block">
                     {s.title}
@@ -257,7 +257,7 @@ export function RadarContentMatchPanel({
       <button
         onClick={handleAutoMatch}
         disabled={isMatching}
-        className="w-full flex items-center justify-center gap-2 py-2 bg-[#D4AF37]/10 text-[#D4AF37] rounded-xl text-xs font-medium hover:bg-[#D4AF37]/20 transition-colors disabled:opacity-50"
+        className="w-full flex items-center justify-center gap-2 py-2 bg-[var(--ci-accent)]/10 text-[var(--ci-accent)] rounded-xl text-xs font-medium hover:bg-[var(--ci-accent)]/20 transition-colors disabled:opacity-50"
       >
         {isMatching ? (
           <>

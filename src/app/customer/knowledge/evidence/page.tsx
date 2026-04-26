@@ -30,7 +30,7 @@ import type { PipelineStatus } from '@/lib/knowledge/pipeline';
 // ============================================
 
 const TYPE_CONFIG: Record<EvidenceTypeValue, { label: string; color: string; bg: string; border: string }> = {
-  claim:         { label: '产品主张', color: '#B8860B', bg: 'rgba(212,175,55,0.10)', border: 'rgba(212,175,55,0.30)' },
+  claim:         { label: '产品主张', color: 'var(--ci-accent-strong)', bg: 'rgba(79,141,246,0.10)', border: 'rgba(79,141,246,0.30)' },
   statistic:     { label: '数据统计', color: '#8B6914', bg: 'rgba(184,134,11,0.08)', border: 'rgba(184,134,11,0.25)' },
   testimonial:   { label: '客户证言', color: '#A0522D', bg: 'rgba(160,82,45,0.08)',  border: 'rgba(160,82,45,0.25)' },
   case_study:    { label: '案例研究', color: '#6B7B3A', bg: 'rgba(107,123,58,0.08)', border: 'rgba(107,123,58,0.25)' },
@@ -75,7 +75,7 @@ function Toast({ message, type, onClose }: { message: string; type: ToastType; o
   }, [onClose]);
 
   const styles: Record<ToastType, { bg: string; border: string; color: string }> = {
-    success: { bg: 'rgba(212,175,55,0.08)', border: 'rgba(212,175,55,0.3)', color: '#B8860B' },
+    success: { bg: 'rgba(79,141,246,0.08)', border: 'rgba(79,141,246,0.3)', color: 'var(--ci-accent-strong)' },
     error:   { bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.25)', color: '#DC2626' },
     info:    { bg: 'rgba(59,130,246,0.08)', border: 'rgba(59,130,246,0.25)', color: '#2563EB' },
   };
@@ -104,7 +104,7 @@ function ConfirmDialog({ title, message, onConfirm, onCancel, isLoading }: {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }} onClick={onCancel}>
       <div
-        className="w-[400px] rounded-2xl p-6 animate-slide-up"
+        className="w-[400px] rounded-xl p-6 animate-slide-up"
         style={{ background: '#0F1728', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 24px 64px -12px rgba(0,0,0,0.6)' }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -278,7 +278,7 @@ export default function EvidencePage() {
   const stepNumber = pipelineStatus?.currentStep ?? 2;
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden" style={{ background: '#F7F3E8' }}>
+    <div className="flex-1 flex flex-col overflow-hidden" style={{ background: 'var(--ci-surface-strong)' }}>
       {/* Toast */}
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
@@ -305,16 +305,16 @@ export default function EvidencePage() {
         {hasReady > 0 && (
           <div
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs animate-slide-up"
-            style={{ background: 'rgba(212,175,55,0.06)', border: '1px solid rgba(212,175,55,0.15)' }}
+            style={{ background: 'rgba(79,141,246,0.06)', border: '1px solid rgba(79,141,246,0.15)' }}
           >
-            <FileStack size={14} style={{ color: '#D4AF37' }} />
+            <FileStack size={14} style={{ color: 'var(--ci-accent)' }} />
             <span style={{ color: '#8B7D3C' }}>
-              已有 <strong className="font-semibold" style={{ color: '#B8860B' }}>{hasReady}</strong> 个素材可提取
+              已有 <strong className="font-semibold" style={{ color: 'var(--ci-accent-strong)' }}>{hasReady}</strong> 个素材可提取
             </span>
             <Link
               href="/customer/knowledge/assets"
               className="ml-auto flex items-center gap-1 font-medium transition-colors"
-              style={{ color: '#D4AF37' }}
+              style={{ color: 'var(--ci-accent)' }}
             >
               查看资料库 <ExternalLink size={11} />
             </Link>
@@ -324,7 +324,7 @@ export default function EvidencePage() {
         {/* 工具栏 */}
         <div
           className="flex items-center gap-3 px-4 py-3 rounded-xl animate-slide-up-delay-1"
-          style={{ background: '#FFFCF7', border: '1px solid #E7E0D3' }}
+          style={{ background: '#FFFFFF', border: '1px solid var(--ci-border)' }}
         >
           {/* 搜索框 */}
           <div className="relative w-64">
@@ -335,9 +335,9 @@ export default function EvidencePage() {
               onChange={(e) => setSearch(e.target.value)}
               placeholder="搜索证据标题..."
               className="w-full pl-9 pr-3 py-2 text-sm rounded-lg outline-none transition-all"
-              style={{ background: '#F7F3E8', border: '1px solid #E7E0D3', color: '#0B1B2B' }}
-              onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(212,175,55,0.5)')}
-              onBlur={(e) => (e.currentTarget.style.borderColor = '#E7E0D3')}
+              style={{ background: 'var(--ci-surface-strong)', border: '1px solid var(--ci-border)', color: '#0B1B2B' }}
+              onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(79,141,246,0.5)')}
+              onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--ci-border)')}
             />
           </div>
 
@@ -369,9 +369,9 @@ export default function EvidencePage() {
           <button
             onClick={() => setShowCreate(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all"
-            style={{ background: 'rgba(212,175,55,0.08)', color: '#B8860B', border: '1px solid rgba(212,175,55,0.25)' }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(212,175,55,0.15)')}
-            onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(212,175,55,0.08)')}
+            style={{ background: 'rgba(79,141,246,0.08)', color: 'var(--ci-accent-strong)', border: '1px solid rgba(79,141,246,0.25)' }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(79,141,246,0.15)')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(79,141,246,0.08)')}
           >
             <Plus size={13} />
             手动添加
@@ -383,7 +383,7 @@ export default function EvidencePage() {
             disabled={isLoading}
             className="p-1.5 rounded-lg transition-colors disabled:opacity-40"
             style={{ color: '#94A3B8' }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = '#D4AF37')}
+            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--ci-accent)')}
             onMouseLeave={(e) => (e.currentTarget.style.color = '#94A3B8')}
           >
             <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
@@ -397,7 +397,7 @@ export default function EvidencePage() {
               共 <strong style={{ color: '#0B1B2B' }}>{total}</strong> 条证据
             </span>
             {typeFilter.length > 0 && (
-              <button onClick={() => setTypeFilter([])} className="text-[10px] px-2 py-0.5 rounded-full transition-colors" style={{ background: 'rgba(212,175,55,0.08)', color: '#B8860B' }}>
+              <button onClick={() => setTypeFilter([])} className="text-[10px] px-2 py-0.5 rounded-full transition-colors" style={{ background: 'rgba(79,141,246,0.08)', color: 'var(--ci-accent-strong)' }}>
                 清除筛选 ×
               </button>
             )}
@@ -407,16 +407,16 @@ export default function EvidencePage() {
         {/* 证据列表 */}
         {isLoading && evidences.length === 0 ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 size={24} className="animate-spin" style={{ color: '#D4AF37' }} />
+            <Loader2 size={24} className="animate-spin" style={{ color: 'var(--ci-accent)' }} />
           </div>
         ) : evidences.length === 0 ? (
           /* 空态 */
           <div className="flex flex-col items-center justify-center py-16 text-center animate-slide-up">
             <div
-              className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5"
-              style={{ background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.2)', boxShadow: '0 0 24px rgba(212,175,55,0.1)' }}
+              className="w-16 h-16 rounded-xl flex items-center justify-center mb-5"
+              style={{ background: 'rgba(79,141,246,0.08)', border: '1px solid rgba(79,141,246,0.2)', boxShadow: '0 0 24px rgba(79,141,246,0.1)' }}
             >
-              <ShieldCheck size={28} style={{ color: '#D4AF37' }} />
+              <ShieldCheck size={28} style={{ color: 'var(--ci-accent)' }} />
             </div>
             <h3 className="text-lg font-bold mb-2" style={{ color: '#0B1B2B' }}>证据库尚未建立</h3>
             <p className="text-sm mb-6 max-w-md" style={{ color: 'rgba(0,0,0,0.45)' }}>
@@ -428,9 +428,9 @@ export default function EvidencePage() {
                 disabled={hasReady === 0}
                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-40"
                 style={{
-                  background: hasReady > 0 ? 'linear-gradient(135deg, #D4AF37 0%, #C4A028 100%)' : 'rgba(0,0,0,0.06)',
+                  background: hasReady > 0 ? 'var(--ci-accent)' : 'rgba(0,0,0,0.06)',
                   color: hasReady > 0 ? '#0B1220' : 'rgba(0,0,0,0.3)',
-                  boxShadow: hasReady > 0 ? '0 4px 16px -2px rgba(212,175,55,0.35)' : 'none',
+                  boxShadow: hasReady > 0 ? '0 4px 16px -2px rgba(79,141,246,0.35)' : 'none',
                 }}
               >
                 <Sparkles size={15} />
@@ -439,7 +439,7 @@ export default function EvidencePage() {
               <button
                 onClick={() => setShowCreate(true)}
                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all"
-                style={{ background: '#F0EBD8', color: '#4A5568', border: '1px solid #E7E0D3' }}
+                style={{ background: 'var(--ci-surface-muted)', color: '#4A5568', border: '1px solid var(--ci-border)' }}
               >
                 <Plus size={15} />
                 手动添加
@@ -452,14 +452,14 @@ export default function EvidencePage() {
               <div
                 key={ev.id}
                 className={`p-4 rounded-xl transition-all group ${idx < 4 ? `animate-slide-up-delay-${idx}` : 'animate-slide-up'}`}
-                style={{ background: '#FFFCF7', border: '1px solid #E7E0D3' }}
+                style={{ background: '#FFFFFF', border: '1px solid var(--ci-border)' }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(212,175,55,0.4)';
-                  e.currentTarget.style.boxShadow = '0 4px 16px -4px rgba(212,175,55,0.15)';
+                  e.currentTarget.style.borderColor = 'rgba(79,141,246,0.4)';
+                  e.currentTarget.style.boxShadow = '0 4px 16px -4px rgba(79,141,246,0.15)';
                   e.currentTarget.style.transform = 'translateY(-1px)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = '#E7E0D3';
+                  e.currentTarget.style.borderColor = 'var(--ci-border)';
                   e.currentTarget.style.boxShadow = '';
                   e.currentTarget.style.transform = '';
                 }}
@@ -471,7 +471,7 @@ export default function EvidencePage() {
                       value={editTitle}
                       onChange={(e) => setEditTitle(e.target.value)}
                       className="w-full px-3 py-1.5 text-sm font-semibold rounded-lg outline-none"
-                      style={{ background: '#F7F3E8', border: '1px solid rgba(212,175,55,0.3)', color: '#0B1B2B' }}
+                      style={{ background: 'var(--ci-surface-strong)', border: '1px solid rgba(79,141,246,0.3)', color: '#0B1B2B' }}
                       autoFocus
                     />
                     <textarea
@@ -479,12 +479,12 @@ export default function EvidencePage() {
                       onChange={(e) => setEditContent(e.target.value)}
                       rows={3}
                       className="w-full px-3 py-1.5 text-sm rounded-lg outline-none resize-none"
-                      style={{ background: '#F7F3E8', border: '1px solid rgba(212,175,55,0.3)', color: '#0B1B2B' }}
+                      style={{ background: 'var(--ci-surface-strong)', border: '1px solid rgba(79,141,246,0.3)', color: '#0B1B2B' }}
                     />
                     <div className="flex items-center gap-2 justify-end">
                       <span className="text-[10px] mr-auto" style={{ color: '#94A3B8' }}>Esc 取消 · Cmd+Enter 保存</span>
-                      <button onClick={() => setEditingId(null)} className="px-3 py-1 text-xs rounded-lg" style={{ color: '#94A3B8', border: '1px solid #E7E0D3' }}>取消</button>
-                      <button onClick={() => handleEditSave(ev.id)} className="px-3 py-1 text-xs rounded-lg font-medium" style={{ background: 'rgba(212,175,55,0.1)', color: '#B8860B', border: '1px solid rgba(212,175,55,0.3)' }}>保存</button>
+                      <button onClick={() => setEditingId(null)} className="px-3 py-1 text-xs rounded-lg" style={{ color: '#94A3B8', border: '1px solid var(--ci-border)' }}>取消</button>
+                      <button onClick={() => handleEditSave(ev.id)} className="px-3 py-1 text-xs rounded-lg font-medium" style={{ background: 'rgba(79,141,246,0.1)', color: 'var(--ci-accent-strong)', border: '1px solid rgba(79,141,246,0.3)' }}>保存</button>
                     </div>
                   </div>
                 ) : (
@@ -505,7 +505,7 @@ export default function EvidencePage() {
                           onClick={() => { setEditingId(ev.id); setEditTitle(ev.title); setEditContent(ev.content); }}
                           className="p-1.5 rounded-lg transition-colors"
                           style={{ color: '#94A3B8' }}
-                          onMouseEnter={(e) => { e.currentTarget.style.color = '#D4AF37'; e.currentTarget.style.background = 'rgba(212,175,55,0.08)'; }}
+                          onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--ci-accent)'; e.currentTarget.style.background = 'rgba(79,141,246,0.08)'; }}
                           onMouseLeave={(e) => { e.currentTarget.style.color = '#94A3B8'; e.currentTarget.style.background = ''; }}
                           title="编辑"
                         >
@@ -532,7 +532,7 @@ export default function EvidencePage() {
                       {ev.sourceLocator && (
                         <span
                           className="text-[10px] px-1.5 py-0.5 rounded"
-                          style={{ background: 'rgba(212,175,55,0.06)', color: '#B0A78C' }}
+                          style={{ background: 'rgba(79,141,246,0.06)', color: '#B0A78C' }}
                         >
                           AI 提取
                         </span>
@@ -553,7 +553,7 @@ export default function EvidencePage() {
               disabled={page === 1}
               className="p-2 rounded-lg transition-all disabled:opacity-30"
               style={{ color: '#94A3B8' }}
-              onMouseEnter={(e) => { if (page > 1) e.currentTarget.style.color = '#D4AF37'; }}
+              onMouseEnter={(e) => { if (page > 1) e.currentTarget.style.color = 'var(--ci-accent)'; }}
               onMouseLeave={(e) => (e.currentTarget.style.color = '#94A3B8')}
             >
               <ChevronLeft size={16} />
@@ -571,7 +571,7 @@ export default function EvidencePage() {
                       className="w-8 h-8 rounded-lg text-xs font-medium transition-all"
                       style={
                         p === page
-                          ? { background: 'rgba(212,175,55,0.12)', color: '#D4AF37', border: '1px solid rgba(212,175,55,0.3)', fontWeight: 700 }
+                          ? { background: 'rgba(79,141,246,0.12)', color: 'var(--ci-accent)', border: '1px solid rgba(79,141,246,0.3)', fontWeight: 700 }
                           : { color: '#94A3B8', border: '1px solid transparent' }
                       }
                     >
@@ -586,7 +586,7 @@ export default function EvidencePage() {
               disabled={page === totalPages}
               className="p-2 rounded-lg transition-all disabled:opacity-30"
               style={{ color: '#94A3B8' }}
-              onMouseEnter={(e) => { if (page < totalPages) e.currentTarget.style.color = '#D4AF37'; }}
+              onMouseEnter={(e) => { if (page < totalPages) e.currentTarget.style.color = 'var(--ci-accent)'; }}
               onMouseLeave={(e) => (e.currentTarget.style.color = '#94A3B8')}
             >
               <ChevronRight size={16} />
@@ -605,7 +605,7 @@ export default function EvidencePage() {
           onClick={() => setShowCreate(false)}
         >
           <div
-            className="w-[520px] rounded-2xl p-6 animate-slide-up"
+            className="w-[520px] rounded-xl p-6 animate-slide-up"
             style={{ background: '#0F1728', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 24px 64px -12px rgba(0,0,0,0.6)' }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -620,7 +620,7 @@ export default function EvidencePage() {
                   onChange={(e) => setCreateForm({ ...createForm, title: e.target.value })}
                   className="w-full px-3 py-2 text-sm rounded-lg outline-none transition-all"
                   style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(212,175,55,0.4)')}
+                  onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(79,141,246,0.4)')}
                   onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)')}
                   placeholder="例：产品通过 ISO 9001 认证"
                 />
@@ -636,7 +636,7 @@ export default function EvidencePage() {
                       className="px-3 py-1.5 text-xs font-medium rounded-lg transition-all"
                       style={
                         createForm.type === key
-                          ? { background: 'rgba(212,175,55,0.15)', color: '#D4AF37', border: '1px solid rgba(212,175,55,0.4)' }
+                          ? { background: 'rgba(79,141,246,0.15)', color: 'var(--ci-accent)', border: '1px solid rgba(79,141,246,0.4)' }
                           : { background: 'rgba(255,255,255,0.03)', color: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.08)' }
                       }
                     >
@@ -654,7 +654,7 @@ export default function EvidencePage() {
                   rows={4}
                   className="w-full px-3 py-2 text-sm rounded-lg outline-none resize-none transition-all"
                   style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(212,175,55,0.4)')}
+                  onFocus={(e) => (e.currentTarget.style.borderColor = 'rgba(79,141,246,0.4)')}
                   onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)')}
                   placeholder="证据的具体内容描述..."
                 />
@@ -674,9 +674,8 @@ export default function EvidencePage() {
                 disabled={isCreating || !createForm.title || !createForm.content}
                 className="flex items-center gap-1.5 px-4 py-2 text-sm rounded-xl font-semibold transition-all disabled:opacity-40"
                 style={{
-                  background: 'linear-gradient(135deg, #D4AF37 0%, #C4A028 100%)',
-                  color: '#0B1220',
-                  boxShadow: '0 2px 12px -2px rgba(212,175,55,0.4)',
+                  background: 'var(--ci-accent)', color: '#FFFFFF',
+                  boxShadow: '0 2px 12px -2px rgba(79,141,246,0.4)',
                 }}
               >
                 {isCreating ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
@@ -697,12 +696,12 @@ export default function EvidencePage() {
           onClick={() => setShowBatchDialog(false)}
         >
           <div
-            className="w-[520px] rounded-2xl p-6 animate-slide-up"
+            className="w-[520px] rounded-xl p-6 animate-slide-up"
             style={{ background: '#0F1728', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 24px 64px -12px rgba(0,0,0,0.6)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-base font-bold text-white mb-1 flex items-center gap-2">
-              <Sparkles size={16} style={{ color: '#D4AF37' }} />
+              <Sparkles size={16} style={{ color: 'var(--ci-accent)' }} />
               AI 批量提取证据
             </h3>
             <p className="text-xs mb-5" style={{ color: 'rgba(255,255,255,0.4)' }}>选择一个已处理的素材，AI 将从每个文本片段中提取可引用证据</p>
@@ -711,14 +710,14 @@ export default function EvidencePage() {
               /* 结果展示 */
               <div
                 className="p-4 rounded-xl mb-5"
-                style={{ background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.2)' }}
+                style={{ background: 'rgba(79,141,246,0.08)', border: '1px solid rgba(79,141,246,0.2)' }}
               >
                 <div className="flex items-center gap-2 mb-1">
-                  <Check size={16} style={{ color: '#D4AF37' }} />
+                  <Check size={16} style={{ color: 'var(--ci-accent)' }} />
                   <span className="text-sm font-semibold text-white">提取完成</span>
                 </div>
                 <p className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>
-                  成功生成 <strong style={{ color: '#D4AF37' }}>{batchResult.generated}</strong> 条证据
+                  成功生成 <strong style={{ color: 'var(--ci-accent)' }}>{batchResult.generated}</strong> 条证据
                   {batchResult.errors > 0 && <span style={{ color: '#EF4444' }}>，{batchResult.errors} 条失败</span>}
                 </p>
               </div>
@@ -728,7 +727,7 @@ export default function EvidencePage() {
                 {readyAssets.length === 0 ? (
                   <div className="text-center py-8">
                     <p className="text-sm" style={{ color: 'rgba(255,255,255,0.35)' }}>没有已处理的素材</p>
-                    <Link href="/customer/knowledge/assets" className="text-xs mt-2 inline-block" style={{ color: '#D4AF37' }}>
+                    <Link href="/customer/knowledge/assets" className="text-xs mt-2 inline-block" style={{ color: 'var(--ci-accent)' }}>
                       前往资料库 →
                     </Link>
                   </div>
@@ -739,7 +738,7 @@ export default function EvidencePage() {
                     className="w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all"
                     style={
                       selectedAssetId === a.id
-                        ? { background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.4)' }
+                        ? { background: 'rgba(79,141,246,0.1)', border: '1px solid rgba(79,141,246,0.4)' }
                         : { background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }
                     }
                   >
@@ -750,7 +749,7 @@ export default function EvidencePage() {
                       </p>
                     </div>
                     {selectedAssetId === a.id && (
-                      <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: '#D4AF37' }}>
+                      <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: 'var(--ci-accent)' }}>
                         <Check size={12} style={{ color: '#0B1220' }} />
                       </div>
                     )}
@@ -773,9 +772,8 @@ export default function EvidencePage() {
                   disabled={!selectedAssetId || isBatchGenerating}
                   className="flex items-center gap-1.5 px-4 py-2 text-sm rounded-xl font-semibold transition-all disabled:opacity-40"
                   style={{
-                    background: 'linear-gradient(135deg, #D4AF37 0%, #C4A028 100%)',
-                    color: '#0B1220',
-                    boxShadow: '0 2px 12px -2px rgba(212,175,55,0.4)',
+                    background: 'var(--ci-accent)', color: '#FFFFFF',
+                    boxShadow: '0 2px 12px -2px rgba(79,141,246,0.4)',
                   }}
                 >
                   {isBatchGenerating ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}

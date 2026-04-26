@@ -228,7 +228,7 @@ export default function SocialAccountsPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 text-[#D4AF37] animate-spin" />
+        <Loader2 className="w-8 h-8 text-[var(--ci-accent)] animate-spin" />
       </div>
     );
   }
@@ -236,17 +236,17 @@ export default function SocialAccountsPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="rounded-2xl p-6 relative overflow-hidden" style={{
-        background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)',
-        boxShadow: '0 8px 32px -8px rgba(0,0,0,0.45)',
+      <div className="rounded-xl p-6 relative overflow-hidden" style={{
+        background: 'var(--ci-sidebar-shell)',
+        boxShadow: 'var(--ci-shadow-soft)',
       }}>
         <div className="absolute inset-0 pointer-events-none" style={{
-          background: 'radial-gradient(ellipse 70% 60% at 50% -20%, rgba(212,175,55,0.14) 0%, transparent 65%)',
+          background: 'transparent',
         }} />
         <div className="relative flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-white flex items-center gap-3">
-              <KeyRound size={24} className="text-[#D4AF37]" />
+              <KeyRound size={24} className="text-[var(--ci-accent)]" />
               发布通道接入
             </h1>
             <p className="text-sm text-slate-400 mt-1">先让关键渠道可用，再回到声量枢纽持续推进发布。</p>
@@ -254,14 +254,14 @@ export default function SocialAccountsPage() {
           <div className="flex items-center gap-3">
             <Link
               href="/customer/social"
-              className="px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors text-slate-400 hover:text-[#D4AF37]"
+              className="px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors text-slate-400 hover:text-[var(--ci-accent)]"
             >
               <ArrowLeft size={16} />
               返回声量枢纽
             </Link>
             <button
               onClick={loadAccounts}
-              className="p-2 text-slate-400 hover:text-[#D4AF37] transition-colors"
+              className="p-2 text-slate-400 hover:text-[var(--ci-accent)] transition-colors"
             >
               <RefreshCw size={18} />
             </button>
@@ -270,7 +270,7 @@ export default function SocialAccountsPage() {
       </div>
 
       {accounts.length === 0 && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-5">
           <div className="flex items-start gap-3">
             <AlertCircle size={20} className="text-amber-600 shrink-0 mt-0.5" />
             <div className="space-y-1">
@@ -310,12 +310,12 @@ export default function SocialAccountsPage() {
           return (
             <div
               key={platform.id}
-              className={`bg-[#F7F3E8] rounded-2xl border transition-all ${
+              className={`bg-[var(--ci-surface-strong)] rounded-xl border transition-all ${
                 isConfiguring
-                  ? 'border-[#D4AF37] col-span-1 md:col-span-2 lg:col-span-3'
+                  ? 'border-[var(--ci-accent)] col-span-1 md:col-span-2 lg:col-span-3'
                   : connected
                     ? 'border-emerald-300'
-                    : 'border-[#E8E0D0]'
+                    : 'border-[var(--ci-border)]'
               }`}
             >
               <div className="p-5">
@@ -340,9 +340,9 @@ export default function SocialAccountsPage() {
 
                   {!platform.available && (
                     <span className="text-xs px-3 py-1 rounded-full font-medium" style={{
-                    background: 'rgba(212,175,55,0.12)',
-                      color: '#D4AF37',
-                      border: '1px solid rgba(212,175,55,0.25)',
+                    background: 'rgba(79,141,246,0.12)',
+                      color: 'var(--ci-accent)',
+                      border: '1px solid rgba(79,141,246,0.25)',
                     }}>
                       即将开放
                     </span>
@@ -387,8 +387,8 @@ export default function SocialAccountsPage() {
                     onClick={() => handleStartConfig(platform.id)}
                     className="w-full py-2.5 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2"
                     style={connected
-                      ? { background: '#0B1220', color: '#D4AF37' }
-                      : { background: '#D4AF37', color: '#0B1220', boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)' }
+                      ? { background: '#0B1220', color: 'var(--ci-accent)' }
+                      : { background: 'var(--ci-accent)', color: '#FFFFFF', boxShadow: '0 4px 16px -2px rgba(79,141,246,0.35)' }
                     }
                   >
                     <KeyRound size={14} />
@@ -401,7 +401,7 @@ export default function SocialAccountsPage() {
                   <a
                     href={`/api/oauth/${platform.id}/authorize`}
                     className="w-full py-2.5 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 block"
-                    style={{ background: '#D4AF37', color: '#0B1220', boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)' }}
+                    style={{ background: 'var(--ci-accent)', color: '#FFFFFF', boxShadow: '0 4px 16px -2px rgba(79,141,246,0.35)' }}
                   >
                     <ExternalLink size={14} />
                     去接通
@@ -413,7 +413,7 @@ export default function SocialAccountsPage() {
                   <a
                     href={`/api/oauth/${platform.id}/authorize`}
                     className="w-full py-2.5 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 block"
-                    style={{ background: '#0B1220', color: '#D4AF37' }}
+                    style={{ background: '#0B1220', color: 'var(--ci-accent)' }}
                   >
                     <RefreshCw size={14} />
                     重新接通
@@ -429,7 +429,7 @@ export default function SocialAccountsPage() {
 
                 {/* Configuration Form */}
                 {isConfiguring && platform.fields && (
-                  <div className="mt-4 pt-4 border-t border-[#E8E0D0]">
+                  <div className="mt-4 pt-4 border-t border-[var(--ci-border)]">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {platform.fields.map((field) => (
                         <div key={field.key}>
@@ -442,7 +442,7 @@ export default function SocialAccountsPage() {
                               value={credentials[field.key] || ''}
                               onChange={(e) => setCredentials(prev => ({ ...prev, [field.key]: e.target.value }))}
                               placeholder={field.placeholder}
-                              className="w-full px-4 py-2.5 border border-[#E8E0D0] rounded-xl text-sm focus:outline-none focus:border-[#D4AF37] bg-[#FFFCF7] pr-10 font-mono"
+                              className="w-full px-4 py-2.5 border border-[var(--ci-border)] rounded-xl text-sm focus:outline-none focus:border-[var(--ci-accent)] bg-[#FFFFFF] pr-10 font-mono"
                             />
                             <button
                               type="button"
@@ -462,7 +462,7 @@ export default function SocialAccountsPage() {
                         href={platform.helpUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="mt-3 text-xs text-[#D4AF37] hover:underline flex items-center gap-1"
+                        className="mt-3 text-xs text-[var(--ci-accent)] hover:underline flex items-center gap-1"
                       >
                         <ExternalLink size={10} />
                         {platform.helpText}
@@ -502,7 +502,7 @@ export default function SocialAccountsPage() {
                         onClick={handleTest}
                         disabled={!isFormComplete() || isTesting}
                         className="px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 disabled:opacity-50 transition-colors"
-                        style={{ background: '#0B1220', color: '#D4AF37' }}
+                        style={{ background: '#0B1220', color: 'var(--ci-accent)' }}
                       >
                         {isTesting ? (
                           <>
@@ -521,7 +521,7 @@ export default function SocialAccountsPage() {
                         onClick={handleSave}
                         disabled={!testResult?.success || isSaving}
                         className="px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 disabled:opacity-50 transition-colors"
-                        style={{ background: '#D4AF37', color: '#0B1220', boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)' }}
+                        style={{ background: 'var(--ci-accent)', color: '#FFFFFF', boxShadow: '0 4px 16px -2px rgba(79,141,246,0.35)' }}
                       >
                         {isSaving ? (
                           <>
@@ -552,16 +552,16 @@ export default function SocialAccountsPage() {
       </div>
 
       {/* Help Section */}
-      <div className="rounded-2xl p-6 relative overflow-hidden" style={{
-        background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)',
-        boxShadow: '0 8px 32px -8px rgba(0,0,0,0.45)',
+      <div className="rounded-xl p-6 relative overflow-hidden" style={{
+        background: 'var(--ci-sidebar-shell)',
+        boxShadow: 'var(--ci-shadow-soft)',
       }}>
         <div className="absolute inset-0 pointer-events-none" style={{
-          background: 'radial-gradient(ellipse 70% 60% at 50% -20%, rgba(212,175,55,0.14) 0%, transparent 65%)',
+          background: 'transparent',
         }} />
         <div className="relative">
             <h3 className="font-bold text-white mb-3 flex items-center gap-2">
-              <Globe size={18} className="text-[#D4AF37]" />
+              <Globe size={18} className="text-[var(--ci-accent)]" />
               快速上手
             </h3>
             <div className="space-y-2 text-xs text-slate-400">

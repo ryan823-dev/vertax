@@ -154,7 +154,7 @@ export default function RadarPage() {
   if (isLoading && !pipelineLoaded) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 text-[#D4AF37] animate-spin" />
+        <Loader2 className="w-8 h-8 text-[var(--ci-accent)] animate-spin" />
       </div>
     );
   }
@@ -162,12 +162,12 @@ export default function RadarPage() {
   // pipeline 加载失败或 null：降级为纯快捷入口页面（仍可用）
   if (!pipelineStatus) {
     return (
-      <div className="min-h-screen" style={{background: 'linear-gradient(180deg, #0B1220 0%, #0A1018 100%)'}}>
+      <div className="min-h-screen" style={{background: 'var(--ci-sidebar-shell)'}}>
         {/* 舞台标题区 */}
         <div className="relative px-6 pt-8 pb-6 overflow-hidden">
-          <div className="absolute inset-0 pointer-events-none" style={{background: 'radial-gradient(ellipse 80% 60% at 50% -10%, rgba(212,175,55,0.12) 0%, transparent 65%)'}} />
+          <div className="absolute inset-0 pointer-events-none" style={{background: 'transparent'}} />
           <div className="flex items-center gap-3 mb-1">
-            <Radar size={22} className="text-[#D4AF37]" />
+            <Radar size={22} className="text-[var(--ci-accent)]" />
             <h1 className="text-xl font-bold text-white">获客雷达</h1>
           </div>
           <p className="text-sm text-slate-400 ml-9">基于目标客户画像自动发现、补全并沉淀线索</p>
@@ -187,27 +187,27 @@ export default function RadarPage() {
               <Link
                 key={mod.label}
                 href={mod.href}
-                className="group flex items-center gap-4 p-5 rounded-2xl border transition-all hover:scale-[1.01]"
+                className="group flex items-center gap-4 p-5 rounded-xl border transition-all hover:scale-[1.01]"
                 style={{background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.07)'}}
               >
                 <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-all group-hover:scale-110"
-                  style={{background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.3)'}}>
-                  <mod.icon size={22} className="text-[#D4AF37]" />
+                  style={{background: 'rgba(79,141,246,0.12)', border: '1px solid rgba(79,141,246,0.3)'}}>
+                  <mod.icon size={22} className="text-[var(--ci-accent)]" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h4 className="font-bold text-white">{mod.label}</h4>
                   <p className="text-xs text-slate-400 mt-0.5">{mod.description}</p>
                 </div>
-                <ChevronRight size={16} className="text-slate-600 group-hover:text-[#D4AF37] transition-colors shrink-0" />
+                <ChevronRight size={16} className="text-slate-600 group-hover:text-[var(--ci-accent)] transition-colors shrink-0" />
               </Link>
             ))}
           </div>
 
           {/* 起步引导 */}
-          <div className="rounded-2xl p-6" style={{background: 'rgba(212,175,55,0.06)', border: '1px solid rgba(212,175,55,0.15)'}}>
+          <div className="rounded-xl p-6" style={{background: 'rgba(79,141,246,0.06)', border: '1px solid rgba(79,141,246,0.15)'}}>
             <div className="flex items-center gap-2 mb-4">
-              <Sparkles size={16} className="text-[#D4AF37]" />
-              <h3 className="font-bold text-[#D4AF37]">五步启动获客雷达</h3>
+              <Sparkles size={16} className="text-[var(--ci-accent)]" />
+              <h3 className="font-bold text-[var(--ci-accent)]">五步启动获客雷达</h3>
             </div>
             <div className="grid gap-3 md:grid-cols-5">
               {[
@@ -218,9 +218,9 @@ export default function RadarPage() {
                 { step: 5, label: '采购机会', href: '/customer/radar/opportunities', icon: Radar },
               ].map((s) => (
                 <Link key={s.step} href={s.href}
-                  className="group flex flex-col items-center gap-2 p-3 rounded-xl text-center transition-all hover:bg-[rgba(212,175,55,0.08)]">
+                  className="group flex flex-col items-center gap-2 p-3 rounded-xl text-center transition-all hover:bg-[rgba(79,141,246,0.08)]">
                   <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
-                    style={{background: 'rgba(212,175,55,0.15)', color: '#D4AF37', border: '1px solid rgba(212,175,55,0.3)'}}>
+                    style={{background: 'rgba(79,141,246,0.15)', color: 'var(--ci-accent)', border: '1px solid rgba(79,141,246,0.3)'}}>
                     {s.step}
                   </div>
                   <span className="text-[11px] text-slate-400 group-hover:text-slate-200 transition-colors leading-tight">{s.label}</span>
@@ -277,21 +277,21 @@ export default function RadarPage() {
         )}
 
         {/* 客户专家判断输入 */}
-        <div className="bg-gradient-to-r from-[#0B1220] to-[#152942] rounded-2xl p-5 relative overflow-hidden">
-          <div className="absolute inset-0 pointer-events-none" style={{background: 'radial-gradient(ellipse 60% 50% at 50% 0%, rgba(212,175,55,0.1) 0%, transparent 60%)'}} />
+        <div className="bg-[var(--ci-sidebar-shell)] rounded-xl p-5 relative overflow-hidden">
+          <div className="absolute inset-0 pointer-events-none" style={{background: 'transparent'}} />
           
           <div className="relative">
             <div className="flex items-center gap-2 mb-3">
-              <MessageSquare size={18} className="text-[#D4AF37]" />
+              <MessageSquare size={18} className="text-[var(--ci-accent)]" />
               <h3 className="font-bold text-white">画像校正助手</h3>
             </div>
             
             {!showChatInput ? (
               <button
                 onClick={() => setShowChatInput(true)}
-                className="w-full py-3 px-4 bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-xl text-left text-slate-400 hover:border-[#D4AF37]/50 transition-all flex items-center gap-2"
+                className="w-full py-3 px-4 bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-xl text-left text-slate-400 hover:border-[var(--ci-accent)]/50 transition-all flex items-center gap-2"
               >
-                <Sparkles size={16} className="text-[#D4AF37]" />
+                <Sparkles size={16} className="text-[var(--ci-accent)]" />
                 <span>补充你对目标客户的行业判断，系统会写入画像再用于自动匹配...</span>
               </button>
             ) : (
@@ -303,13 +303,13 @@ export default function RadarPage() {
                     onChange={e => setUserRequest(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleUserRequest()}
                     placeholder="例如：美国制造企业中有喷涂产线升级、机器人喷涂、paint booth 改造需求的客户；先不要看住宅刷漆和汽修喷漆。"
-                    className="flex-1 py-3 px-4 bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.15)] rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#D4AF37]"
+                    className="flex-1 py-3 px-4 bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.15)] rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[var(--ci-accent)]"
                     disabled={isProcessingRequest}
                   />
                   <button
                     onClick={handleUserRequest}
                     disabled={isProcessingRequest || !userRequest.trim()}
-                    className="px-4 py-3 bg-[#D4AF37] text-[#0B1220] rounded-xl font-medium hover:bg-[#C5A030] transition-colors disabled:opacity-50 flex items-center gap-2"
+                    className="px-4 py-3 bg-[var(--ci-accent)] text-white rounded-xl font-medium hover:bg-[var(--ci-accent-strong)] transition-colors disabled:opacity-50 flex items-center gap-2"
                   >
                     {isProcessingRequest ? (
                       <Loader2 size={18} className="animate-spin" />
@@ -358,7 +358,7 @@ export default function RadarPage() {
                         <div className="mt-4 flex flex-wrap gap-2">
                           <Link
                             href="/customer/radar/search"
-                            className="inline-flex items-center gap-2 rounded-lg bg-[#D4AF37] px-3 py-2 text-xs font-semibold text-[#0B1220] transition-colors hover:bg-[#E0C04A]"
+                            className="inline-flex items-center gap-2 rounded-lg bg-[var(--ci-accent)] px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-[var(--ci-accent-strong)]"
                           >
                             按最新画像重新搜索
                             <ArrowRight size={14} />
@@ -386,7 +386,7 @@ export default function RadarPage() {
                     <button
                       key={example}
                       onClick={() => setUserRequest(example)}
-                      className="px-2 py-1 text-xs bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded text-slate-400 hover:text-white hover:border-[#D4AF37]/50 transition-all"
+                      className="px-2 py-1 text-xs bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded text-slate-400 hover:text-white hover:border-[var(--ci-accent)]/50 transition-all"
                     >
                       {example}
                     </button>
@@ -407,14 +407,14 @@ export default function RadarPage() {
             />
             
             {/* 快速入门步骤 */}
-            <div className="mt-8 bg-[#FFFCF7] rounded-2xl border border-[#E8E0D0] p-6">
+            <div className="mt-8 bg-[#FFFFFF] rounded-xl border border-[var(--ci-border)] p-6">
               <h3 className="font-bold text-[#0B1B2B] mb-4">快速入门</h3>
               <div className="space-y-4">
                 {steps.map((step: StepState, idx: number) => (
                   <Link
                     key={step.key}
                     href={step.href}
-                    className="flex items-center gap-4 p-3 rounded-xl hover:bg-[#F0EBD8] transition-colors group"
+                    className="flex items-center gap-4 p-3 rounded-xl hover:bg-[var(--ci-surface-muted)] transition-colors group"
                   >
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
                       step.status === 'DONE' 
@@ -422,7 +422,7 @@ export default function RadarPage() {
                         : step.status === 'BLOCKED'
                           ? 'bg-red-50 text-red-400'
                           : idx + 1 === currentStep
-                            ? 'bg-[#D4AF37]/20 text-[#D4AF37]'
+                            ? 'bg-[var(--ci-accent)]/20 text-[var(--ci-accent)]'
                             : 'bg-slate-100 text-slate-400'
                     }`}>
                       {step.status === 'DONE' ? <CheckCircle2 size={16} /> : idx + 1}
@@ -433,7 +433,7 @@ export default function RadarPage() {
                         <div className="text-xs text-slate-500 mt-0.5">{step.blocker}</div>
                       )}
                     </div>
-                    <ChevronRight size={16} className="text-slate-300 group-hover:text-[#D4AF37] transition-colors" />
+                    <ChevronRight size={16} className="text-slate-300 group-hover:text-[var(--ci-accent)] transition-colors" />
                   </Link>
                 ))}
               </div>
@@ -477,14 +477,14 @@ export default function RadarPage() {
                   <StatCard
                     label="已导入"
                     value={counts.candidatesImported7d}
-                    icon={<CheckCircle2 size={18} className="text-[#D4AF37]" />}
+                    icon={<CheckCircle2 size={18} className="text-[var(--ci-accent)]" />}
                     href="/customer/radar/prospects"
                   />
                 </div>
               </div>
 
               {/* Module Quick Access */}
-              <div className="bg-[#FFFCF7] rounded-2xl border border-[#E8E0D0] p-5">
+              <div className="bg-[#FFFFFF] rounded-xl border border-[var(--ci-border)] p-5">
                 <h3 className="font-bold text-[#0B1B2B] mb-4">快捷入口</h3>
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
                   {radarModules.map((mod) => {
@@ -493,7 +493,7 @@ export default function RadarPage() {
                       <Link
                         key={mod.label}
                         href={mod.href}
-                        className="relative p-4 rounded-xl border border-[#E8E0D0] hover:border-[#D4AF37]/50 hover:shadow-md transition-all group bg-[#FFFCF7]"
+                        className="relative p-4 rounded-xl border border-[var(--ci-border)] hover:border-[var(--ci-accent)]/50 hover:shadow-md transition-all group bg-[#FFFFFF]"
                       >
                         {badge && (
                           <span className="absolute -top-2 -right-2 min-w-[20px] h-5 px-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
@@ -501,8 +501,8 @@ export default function RadarPage() {
                           </span>
                         )}
                         <div className="flex items-center gap-3 mb-2">
-                          <div className="w-9 h-9 bg-[#F0EBD8] rounded-lg flex items-center justify-center group-hover:bg-[#D4AF37]/10 transition-colors">
-                            <mod.icon size={18} className="text-[#D4AF37]" />
+                          <div className="w-9 h-9 bg-[var(--ci-surface-muted)] rounded-lg flex items-center justify-center group-hover:bg-[var(--ci-accent)]/10 transition-colors">
+                            <mod.icon size={18} className="text-[var(--ci-accent)]" />
                           </div>
                           <h4 className="font-medium text-[#0B1B2B]">{mod.label}</h4>
                         </div>
@@ -514,12 +514,12 @@ export default function RadarPage() {
               </div>
 
               {/* Current Step Action Card */}
-              <div style={{background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)', boxShadow: '0 8px 32px -8px rgba(0,0,0,0.45)'}} className="rounded-2xl p-6 relative overflow-hidden">
-                <div style={{background: 'radial-gradient(ellipse 70% 60% at 50% -20%, rgba(212,175,55,0.14) 0%, transparent 65%)'}} className="absolute inset-0 pointer-events-none" />
+              <div style={{background: 'var(--ci-sidebar-shell)', boxShadow: 'var(--ci-shadow-soft)'}} className="rounded-xl p-6 relative overflow-hidden">
+                <div style={{background: 'transparent'}} className="absolute inset-0 pointer-events-none" />
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <Radar size={20} className="text-[#D4AF37]" />
+                      <Radar size={20} className="text-[var(--ci-accent)]" />
                       <span className="text-xs text-slate-400">当前步骤</span>
                     </div>
                     <h3 className="text-xl font-bold text-white mb-1">
@@ -535,7 +535,7 @@ export default function RadarPage() {
                     className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium transition-all ${
                       primaryCTA.disabled
                         ? 'bg-slate-600 text-slate-400 cursor-not-allowed'
-                        : 'bg-[#D4AF37] text-[#0B1B2B] hover:bg-[#D4B57A]'
+                        : 'bg-[var(--ci-accent)] text-[#0B1B2B] hover:bg-[#D4B57A]'
                     }`}
                   >
                     <Sparkles size={16} />
@@ -554,7 +554,7 @@ export default function RadarPage() {
                           : step.status === 'BLOCKED'
                             ? 'bg-red-400'
                             : idx + 1 === currentStep
-                              ? 'bg-[#D4AF37]'
+                              ? 'bg-[var(--ci-accent)]'
                               : 'bg-slate-600'
                       }`} />
                     </div>
@@ -571,7 +571,7 @@ export default function RadarPage() {
 
               {/* Scan Status Summary */}
               {counts.lastScanAt && (
-                <div className="bg-[#FFFCF7] rounded-xl border border-[#E8E0D0] p-4">
+                <div className="bg-[#FFFFFF] rounded-xl border border-[var(--ci-border)] p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -588,7 +588,7 @@ export default function RadarPage() {
                       </span>
                       <Link 
                         href="/customer/radar/search" 
-                        className="text-[#D4AF37] hover:underline"
+                        className="text-[var(--ci-accent)] hover:underline"
                       >
                         查看自动搜索
                       </Link>
@@ -629,8 +629,8 @@ export default function RadarPage() {
               )}
 
               {/* Recent Activity */}
-              <div className="bg-[#FFFCF7] rounded-xl border border-[#E8E0D0] overflow-hidden">
-                <div className="px-4 py-3 border-b border-[#E8E0D0] bg-[#F7F3E8]">
+              <div className="bg-[#FFFFFF] rounded-xl border border-[var(--ci-border)] overflow-hidden">
+                <div className="px-4 py-3 border-b border-[var(--ci-border)] bg-[var(--ci-surface-strong)]">
                   <h3 className="text-sm font-medium text-[#0B1B2B]">最近活动</h3>
                 </div>
                 <div className="p-4">
@@ -652,7 +652,7 @@ export default function RadarPage() {
                       )}
                       {counts.candidatesImported7d > 0 && (
                         <div className="flex items-center gap-2 text-xs">
-                          <CheckCircle2 size={14} className="text-[#D4AF37]" />
+                          <CheckCircle2 size={14} className="text-[var(--ci-accent)]" />
                           <span className="text-slate-600">
                             已导入 <strong>{counts.candidatesImported7d}</strong> 个到线索库
                           </span>

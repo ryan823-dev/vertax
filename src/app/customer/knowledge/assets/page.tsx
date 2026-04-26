@@ -242,9 +242,9 @@ export default function KnowledgeAssetsPage() {
             顶部深蓝舞台区 —— 上传指令台
         ═══════════════════════════════════════════ */}
         <div
-          className="relative rounded-2xl overflow-hidden"
+          className="relative rounded-xl overflow-hidden"
           style={{
-            background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)',
+            background: 'var(--ci-sidebar-shell)',
             boxShadow: '0 8px 32px -8px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.03)',
           }}
         >
@@ -252,7 +252,7 @@ export default function KnowledgeAssetsPage() {
           <div
             className="absolute inset-0 pointer-events-none"
             style={{
-              background: 'radial-gradient(ellipse 70% 60% at 50% -20%, rgba(212,175,55,0.14) 0%, transparent 65%)',
+              background: 'transparent',
             }}
           />
 
@@ -261,26 +261,26 @@ export default function KnowledgeAssetsPage() {
             <div
               className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
               style={{
-                background: 'rgba(212,175,55,0.12)',
-                border: '1px solid rgba(212,175,55,0.3)',
+                background: 'rgba(79,141,246,0.12)',
+                border: '1px solid rgba(79,141,246,0.3)',
               }}
             >
-              <Database size={20} style={{ color: '#D4AF37' }} />
+              <Database size={20} style={{ color: 'var(--ci-accent)' }} />
             </div>
 
             {/* 文案 */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-0.5">
-                <Sparkles size={13} style={{ color: '#D4AF37' }} />
-                <span className="text-xs font-semibold tracking-widest uppercase" style={{ color: '#D4AF37' }}>
+                <Sparkles size={13} style={{ color: 'var(--ci-accent)' }} />
+                <span className="text-xs font-semibold tracking-widest uppercase" style={{ color: 'var(--ci-accent)' }}>
                   企业知识资料库
                 </span>
                 <span
                   className="text-[10px] px-2 py-0.5 rounded-full font-medium"
                   style={{
-                    background: 'rgba(212,175,55,0.15)',
-                    border: '1px solid rgba(212,175,55,0.25)',
-                    color: '#D4AF37CC',
+                    background: 'rgba(79,141,246,0.15)',
+                    border: '1px solid rgba(79,141,246,0.25)',
+                    color: 'rgba(29,78,216,0.8)',
                   }}
                 >
                   {total} 份资料
@@ -294,7 +294,7 @@ export default function KnowledgeAssetsPage() {
             {/* 上传按钮 + 网站智采 + 进度 */}
             <div className="flex items-center gap-3 shrink-0">
               {uploadProgress && (
-                <div className="flex items-center gap-2 text-xs" style={{ color: '#D4AF37' }}>
+                <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--ci-accent)' }}>
                   <Loader2 size={13} className="animate-spin" />
                   <span>{uploadProgress}</span>
                 </div>
@@ -304,20 +304,20 @@ export default function KnowledgeAssetsPage() {
                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all"
                 style={{
                   background: 'transparent',
-                  color: '#D4AF37',
-                  border: '1.5px solid rgba(212,175,55,0.45)',
-                  boxShadow: '0 0 16px -4px rgba(212,175,55,0.2)',
+                  color: 'var(--ci-accent)',
+                  border: '1.5px solid rgba(79,141,246,0.45)',
+                  boxShadow: '0 0 16px -4px rgba(79,141,246,0.2)',
                 }}
                 onMouseEnter={e => {
-                  (e.currentTarget as HTMLButtonElement).style.background = 'rgba(212,175,55,0.1)';
-                  (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(212,175,55,0.7)';
-                  (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 24px -4px rgba(212,175,55,0.35)';
+                  (e.currentTarget as HTMLButtonElement).style.background = 'rgba(79,141,246,0.1)';
+                  (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(79,141,246,0.7)';
+                  (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 24px -4px rgba(79,141,246,0.35)';
                   (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)';
                 }}
                 onMouseLeave={e => {
                   (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
-                  (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(212,175,55,0.45)';
-                  (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 16px -4px rgba(212,175,55,0.2)';
+                  (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(79,141,246,0.45)';
+                  (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 16px -4px rgba(79,141,246,0.2)';
                   (e.currentTarget as HTMLButtonElement).style.transform = '';
                 }}
               >
@@ -329,16 +329,15 @@ export default function KnowledgeAssetsPage() {
                 disabled={isUploading}
                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
                 style={{
-                  background: '#D4AF37',
-                  color: '#0B1220',
-                  boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)',
+                  background: 'var(--ci-accent)', color: '#FFFFFF',
+                  boxShadow: '0 4px 16px -2px rgba(79,141,246,0.35)',
                 }}
                 onMouseEnter={e => {
-                  (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 20px -2px rgba(212,175,55,0.5)';
+                  (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 20px -2px rgba(79,141,246,0.5)';
                   (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)';
                 }}
                 onMouseLeave={e => {
-                  (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 16px -2px rgba(212,175,55,0.35)';
+                  (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 16px -2px rgba(79,141,246,0.35)';
                   (e.currentTarget as HTMLButtonElement).style.transform = '';
                 }}
               >
@@ -352,21 +351,21 @@ export default function KnowledgeAssetsPage() {
           <div
             className="mx-5 mb-5 rounded-xl flex items-center justify-center gap-3 cursor-pointer transition-all"
             style={{
-              border: '1.5px dashed rgba(212,175,55,0.22)',
-              background: 'rgba(212,175,55,0.04)',
+              border: '1.5px dashed rgba(79,141,246,0.22)',
+              background: 'rgba(79,141,246,0.04)',
               padding: '14px 0',
             }}
             onClick={() => fileInputRef.current?.click()}
             onMouseEnter={e => {
-              (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(212,175,55,0.45)';
-              (e.currentTarget as HTMLDivElement).style.background = 'rgba(212,175,55,0.07)';
+              (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(79,141,246,0.45)';
+              (e.currentTarget as HTMLDivElement).style.background = 'rgba(79,141,246,0.07)';
             }}
             onMouseLeave={e => {
-              (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(212,175,55,0.22)';
-              (e.currentTarget as HTMLDivElement).style.background = 'rgba(212,175,55,0.04)';
+              (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(79,141,246,0.22)';
+              (e.currentTarget as HTMLDivElement).style.background = 'rgba(79,141,246,0.04)';
             }}
           >
-            <Upload size={16} style={{ color: 'rgba(212,175,55,0.6)' }} />
+            <Upload size={16} style={{ color: 'rgba(79,141,246,0.6)' }} />
             <span className="text-sm" style={{ color: 'rgba(255,255,255,0.35)' }}>
               或将文件拖拽至此处
             </span>
@@ -387,20 +386,20 @@ export default function KnowledgeAssetsPage() {
         ═══════════════════════════════════════════ */}
         {showProcessingQueue && (
           <div
-            className="rounded-2xl overflow-hidden"
+            className="rounded-xl overflow-hidden"
             style={{
-              background: '#F7F3E8',
-              border: '1px solid #E8E0D0',
+              background: 'var(--ci-surface-strong)',
+              border: '1px solid var(--ci-border)',
               boxShadow: '0 2px 12px -4px rgba(0,0,0,0.06)',
             }}
           >
             {/* 标题栏 */}
             <div
               className="px-5 py-3 flex items-center justify-between"
-              style={{ borderBottom: '1px solid #E8E0D0', background: '#F0EBD8' }}
+              style={{ borderBottom: '1px solid var(--ci-border)', background: 'var(--ci-surface-muted)' }}
             >
               <div className="flex items-center gap-2">
-                <Clock size={15} style={{ color: '#D4AF37' }} />
+                <Clock size={15} style={{ color: 'var(--ci-accent)' }} />
                 <span className="text-sm font-bold" style={{ color: '#1A1A1A' }}>处理队列</span>
               </div>
               <div className="flex items-center gap-3 text-xs" style={{ color: '#718096' }}>
@@ -463,17 +462,17 @@ export default function KnowledgeAssetsPage() {
             文件列表主区
         ═══════════════════════════════════════════ */}
         <div
-          className="rounded-2xl overflow-hidden"
+          className="rounded-xl overflow-hidden"
           style={{
-            background: '#F7F3E8',
-            border: '1px solid #E8E0D0',
+            background: 'var(--ci-surface-strong)',
+            border: '1px solid var(--ci-border)',
             boxShadow: '0 2px 12px -4px rgba(0,0,0,0.06)',
           }}
         >
           {/* 工具栏 */}
           <div
             className="px-5 py-3 flex items-center gap-3"
-            style={{ borderBottom: '1px solid #E8E0D0', background: '#EDE7D5' }}
+            style={{ borderBottom: '1px solid var(--ci-border)', background: 'var(--ci-surface-muted)' }}
           >
             {/* 搜索框 */}
             <div className="w-64">
@@ -483,7 +482,7 @@ export default function KnowledgeAssetsPage() {
             {/* 状态 Tab */}
             <div
               className="flex items-center gap-0.5 rounded-xl p-1"
-              style={{ background: '#E8E0D0' }}
+              style={{ background: 'var(--ci-border)' }}
             >
               {STATUS_TABS.map((tab) => (
                 <button
@@ -494,7 +493,7 @@ export default function KnowledgeAssetsPage() {
                     statusFilter === tab.value
                       ? {
                           background: '#0B1220',
-                          color: '#D4AF37',
+                          color: 'var(--ci-accent)',
                           boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
                         }
                       : { color: '#4A5568' }
@@ -512,7 +511,7 @@ export default function KnowledgeAssetsPage() {
                 onClick={() => setViewMode('grid')}
                 className="p-1.5 rounded-lg transition-colors"
                 style={viewMode === 'grid'
-                  ? { background: '#0B1220', color: '#D4AF37' }
+                  ? { background: '#0B1220', color: 'var(--ci-accent)' }
                   : { color: '#718096' }}
               >
                 <Grid3X3 size={15} />
@@ -521,7 +520,7 @@ export default function KnowledgeAssetsPage() {
                 onClick={() => setViewMode('list')}
                 className="p-1.5 rounded-lg transition-colors"
                 style={viewMode === 'list'
-                  ? { background: '#0B1220', color: '#D4AF37' }
+                  ? { background: '#0B1220', color: 'var(--ci-accent)' }
                   : { color: '#718096' }}
               >
                 <List size={15} />
@@ -530,7 +529,7 @@ export default function KnowledgeAssetsPage() {
                 onClick={() => { loadAssets(); loadPipelineStatus(); }}
                 className="p-1.5 rounded-lg transition-colors"
                 style={{ color: '#718096' }}
-                onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = '#D4AF37'}
+                onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = 'var(--ci-accent)'}
                 onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = '#718096'}
                 title="刷新"
               >
@@ -543,7 +542,7 @@ export default function KnowledgeAssetsPage() {
           <div className="p-5">
             {isLoading ? (
               <div className="flex flex-col items-center justify-center py-16 gap-3">
-                <Loader2 size={32} className="animate-spin" style={{ color: '#D4AF37' }} />
+                <Loader2 size={32} className="animate-spin" style={{ color: 'var(--ci-accent)' }} />
                 <span className="text-sm" style={{ color: '#718096' }}>加载中...</span>
               </div>
             ) : assets.length === 0 ? (
@@ -551,16 +550,16 @@ export default function KnowledgeAssetsPage() {
                 {search || statusFilter !== 'all' ? (
                   <div className="text-center space-y-3">
                     <div
-                      className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto"
-                      style={{ background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.2)' }}
+                      className="w-16 h-16 rounded-xl flex items-center justify-center mx-auto"
+                      style={{ background: 'rgba(79,141,246,0.08)', border: '1px solid rgba(79,141,246,0.2)' }}
                     >
-                      <SearchIcon size={28} style={{ color: '#D4AF37' }} />
+                      <SearchIcon size={28} style={{ color: 'var(--ci-accent)' }} />
                     </div>
                     <p className="text-sm font-medium" style={{ color: '#1A1A1A' }}>没有找到匹配的文件</p>
                     <button
                       onClick={() => { setSearch(''); setStatusFilter('all'); }}
                       className="text-xs font-medium transition-colors"
-                      style={{ color: '#D4AF37' }}
+                      style={{ color: 'var(--ci-accent)' }}
                     >
                       清除过滤条件
                     </button>
@@ -574,28 +573,28 @@ export default function KnowledgeAssetsPage() {
                 ) : (
                   /* 全空态 —— 深蓝舞台风格 */
                   <div
-                    className="relative rounded-2xl overflow-hidden py-14 text-center"
+                    className="relative rounded-xl overflow-hidden py-14 text-center"
                     style={{
-                      background: 'linear-gradient(135deg, #0B1220 0%, #0D1525 100%)',
-                      border: '1px solid rgba(212,175,55,0.15)',
+                      background: 'var(--ci-sidebar-shell)',
+                      border: '1px solid rgba(79,141,246,0.15)',
                     }}
                   >
                     <div
                       className="absolute inset-0 pointer-events-none"
                       style={{
-                        background: 'radial-gradient(ellipse 60% 50% at 50% 0%, rgba(212,175,55,0.1) 0%, transparent 60%)',
+                        background: 'transparent',
                       }}
                     />
                     <div className="relative z-10 space-y-4">
                       <div
-                        className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto"
+                        className="w-16 h-16 rounded-xl flex items-center justify-center mx-auto"
                         style={{
-                          background: 'rgba(212,175,55,0.12)',
-                          border: '1px solid rgba(212,175,55,0.3)',
-                          boxShadow: '0 0 30px rgba(212,175,55,0.15)',
+                          background: 'rgba(79,141,246,0.12)',
+                          border: '1px solid rgba(79,141,246,0.3)',
+                          boxShadow: '0 0 30px rgba(79,141,246,0.15)',
                         }}
                       >
-                        <Database size={28} style={{ color: '#D4AF37' }} />
+                        <Database size={28} style={{ color: 'var(--ci-accent)' }} />
                       </div>
                       <div>
                         <p className="text-base font-bold" style={{ color: '#FFFFFF' }}>知识库尚未建立</p>
@@ -607,9 +606,8 @@ export default function KnowledgeAssetsPage() {
                         onClick={() => fileInputRef.current?.click()}
                         className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold transition-all"
                         style={{
-                          background: '#D4AF37',
-                          color: '#0B1220',
-                          boxShadow: '0 4px 16px -2px rgba(212,175,55,0.4)',
+                          background: 'var(--ci-accent)', color: '#FFFFFF',
+                          boxShadow: '0 4px 16px -2px rgba(79,141,246,0.4)',
                         }}
                       >
                         <Upload size={15} />
@@ -639,25 +637,25 @@ export default function KnowledgeAssetsPage() {
             {total > 24 && (
               <div
                 className="flex items-center justify-center gap-2 pt-4 mt-4"
-                style={{ borderTop: '1px solid #E8E0D0' }}
+                style={{ borderTop: '1px solid var(--ci-border)' }}
               >
                 <button
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page <= 1}
                   className="flex items-center gap-1.5 px-4 py-1.5 text-xs rounded-lg transition-colors disabled:opacity-30"
-                  style={{ border: '1px solid #E8E0D0', color: '#4A5568', background: '#FFFCF7' }}
+                  style={{ border: '1px solid var(--ci-border)', color: '#4A5568', background: '#FFFFFF' }}
                 >
                   <ChevronRight size={13} className="rotate-180" />
                   上一页
                 </button>
-                <span className="text-xs px-3 py-1.5 rounded-lg" style={{ background: '#0B1220', color: '#D4AF37' }}>
+                <span className="text-xs px-3 py-1.5 rounded-lg" style={{ background: '#0B1220', color: 'var(--ci-accent)' }}>
                   第 {page} 页
                 </span>
                 <button
                   onClick={() => setPage((p) => p + 1)}
                   disabled={assets.length < 24}
                   className="flex items-center gap-1.5 px-4 py-1.5 text-xs rounded-lg transition-colors disabled:opacity-30"
-                  style={{ border: '1px solid #E8E0D0', color: '#4A5568', background: '#FFFCF7' }}
+                  style={{ border: '1px solid var(--ci-border)', color: '#4A5568', background: '#FFFFFF' }}
                 >
                   下一页
                   <ChevronRight size={13} />

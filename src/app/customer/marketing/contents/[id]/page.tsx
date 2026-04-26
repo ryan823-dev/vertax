@@ -382,15 +382,15 @@ export default function ContentEditorPage() {
 
   const getBlockHighlightClass = (blockId: string) => {
     if (highlightedBlockId === blockId) {
-      return 'ring-2 ring-[#D4AF37] ring-offset-2 ring-offset-[#070E15] transition-all duration-300';
+      return 'ring-2 ring-[var(--ci-accent)] ring-offset-2 ring-offset-[#070E15] transition-all duration-300';
     }
     return '';
   };
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#F7F3E8] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-[#D4AF37] animate-spin" />
+      <div className="min-h-screen bg-[var(--ci-surface-strong)] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-[var(--ci-accent)] animate-spin" />
       </div>
     );
   }
@@ -398,17 +398,17 @@ export default function ContentEditorPage() {
   const selectedEvidences = evidences.filter((e) => form.evidenceRefs.includes(e.id));
 
   return (
-    <div className="min-h-screen bg-[#F7F3E8]">
+    <div className="min-h-screen bg-[var(--ci-surface-strong)]">
       {/* Header - 指令台 深蓝舞台风格 */}
-      <div className="border-b border-[#E8E0D0] sticky top-0 z-10" style={{
-        background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)',
-        boxShadow: '0 8px 32px -8px rgba(0,0,0,0.45)',
+      <div className="border-b border-[var(--ci-border)] sticky top-0 z-10" style={{
+        background: 'var(--ci-sidebar-shell)',
+        boxShadow: 'var(--ci-shadow-soft)',
       }}>
         <div className="px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link href="/customer/marketing/contents">
-                <Button variant="ghost" size="icon" className="text-slate-400 hover:text-[#D4AF37]">
+                <Button variant="ghost" size="icon" className="text-slate-400 hover:text-[var(--ci-accent)]">
                   <ArrowLeft className="w-5 h-5" />
                 </Button>
               </Link>
@@ -417,7 +417,7 @@ export default function ContentEditorPage() {
                   {isNew ? "新建内容" : "编辑内容"}
                 </h1>
                 {brief && (
-                  <p className="text-xs text-[#D4AF37] mt-0.5 flex items-center gap-1">
+                  <p className="text-xs text-[var(--ci-accent)] mt-0.5 flex items-center gap-1">
                     <Sparkles className="w-3 h-3" />
                     基于: {brief.title}
                   </p>
@@ -426,16 +426,16 @@ export default function ContentEditorPage() {
             </div>
             <div className="flex items-center gap-3">
               {isReadOnly && (
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.3)' }}>
-                  <Lock className="w-3.5 h-3.5 text-[#D4AF37]" />
-                  <span className="text-xs text-[#D4AF37]">已批准 · 只读</span>
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ background: 'rgba(79,141,246,0.1)', border: '1px solid rgba(79,141,246,0.3)' }}>
+                  <Lock className="w-3.5 h-3.5 text-[var(--ci-accent)]" />
+                  <span className="text-xs text-[var(--ci-accent)]">已批准 · 只读</span>
                 </div>
               )}
               {!isNew && versions.length > 1 && (
                 <Button
                   variant="outline"
                   onClick={() => setShowDiffDialog(true)}
-                  className="border-[#E8E0D0] text-[#0B1B2B] hover:bg-[#F0EBD8]"
+                  className="border-[var(--ci-border)] text-[#0B1B2B] hover:bg-[var(--ci-surface-muted)]"
                 >
                   <GitCompare className="w-4 h-4 mr-2" />
                   版本对比
@@ -444,7 +444,7 @@ export default function ContentEditorPage() {
               <Button
                 onClick={handleSave}
                 disabled={isSaving || isReadOnly}
-                style={{ background: '#D4AF37', color: '#0B1220', boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)' }}
+                style={{ background: 'var(--ci-accent)', color: '#FFFFFF', boxShadow: '0 4px 16px -2px rgba(79,141,246,0.35)' }}
                 className="hover:opacity-90 disabled:opacity-50"
               >
                 {isSaving ? (
@@ -477,10 +477,10 @@ export default function ContentEditorPage() {
                 value={form.categoryId}
                 onValueChange={(v) => setForm({ ...form, categoryId: v })}
               >
-                <SelectTrigger className="w-40 bg-[#FFFCF7] border-[#E8E0D0] text-[#0B1B2B] text-sm">
+                <SelectTrigger className="w-40 bg-[#FFFFFF] border-[var(--ci-border)] text-[#0B1B2B] text-sm">
                   <SelectValue placeholder="选择分类" />
                 </SelectTrigger>
-                <SelectContent className="bg-[#FFFCF7] border-[#E8E0D0]">
+                <SelectContent className="bg-[#FFFFFF] border-[var(--ci-border)]">
                   {categories.map((c) => (
                     <SelectItem key={c.id} value={c.id}>
                       {c.name}
@@ -492,7 +492,7 @@ export default function ContentEditorPage() {
                 placeholder="自定义 Slug"
                 value={form.slug}
                 onChange={(e) => setForm({ ...form, slug: e.target.value })}
-                className="flex-1 max-w-xs bg-[#FFFCF7] border-[#E8E0D0] text-[#0B1B2B] text-sm"
+                className="flex-1 max-w-xs bg-[#FFFFFF] border-[var(--ci-border)] text-[#0B1B2B] text-sm"
               />
             </div>
             {/* Scheduled Publish */}
@@ -506,7 +506,7 @@ export default function ContentEditorPage() {
                 onChange={(date) => setForm({ ...form, scheduledAt: date })}
                 placeholder="选择发布时间"
                 minDate={new Date()}
-                className="w-64 bg-[#FFFCF7] border-[#E8E0D0] text-[#0B1B2B] text-sm"
+                className="w-64 bg-[#FFFFFF] border-[var(--ci-border)] text-[#0B1B2B] text-sm"
               />
               {form.scheduledAt && (
                 <span className="text-xs text-slate-500">
@@ -517,13 +517,13 @@ export default function ContentEditorPage() {
           </div>
 
           {/* Outline Section */}
-          <div className="bg-[#FFFCF7] border border-[#E8E0D0] rounded-xl mb-6">
+          <div className="bg-[#FFFFFF] border border-[var(--ci-border)] rounded-xl mb-6">
             <button
               onClick={() => toggleSection("outline")}
               className="w-full flex items-center justify-between p-4 text-left"
             >
               <div className="flex items-center gap-2">
-                <FileText className="w-4 h-4 text-[#D4AF37]" />
+                <FileText className="w-4 h-4 text-[var(--ci-accent)]" />
                 <span className="font-medium text-[#0B1B2B]">内容大纲</span>
               </div>
               {expandedSections.outline ? (
@@ -533,7 +533,7 @@ export default function ContentEditorPage() {
               )}
             </button>
             {expandedSections.outline && (
-              <div className="px-4 pb-4 border-t border-[#E8E0D0] pt-4">
+              <div className="px-4 pb-4 border-t border-[var(--ci-border)] pt-4">
                 {form.outline ? (
                   <div className="space-y-3">
                     {form.outline.sections.map((section, idx) => {
@@ -541,7 +541,7 @@ export default function ContentEditorPage() {
                       return (
                         <div 
                           key={idx} 
-                          className={`bg-[#F0EBD8] rounded-lg p-3 relative group ${getBlockHighlightClass(blockId)}`}
+                          className={`bg-[var(--ci-surface-muted)] rounded-lg p-3 relative group ${getBlockHighlightClass(blockId)}`}
                           data-block-id={blockId}
                         >
                           <div className="flex items-center gap-2 mb-2">
@@ -551,7 +551,7 @@ export default function ContentEditorPage() {
                             {!isReadOnly && (
                               <button
                                 onClick={() => setAnchorForBlock(blockId, `大纲: ${section.heading}`)}
-                                className="p-1 text-slate-400 opacity-0 group-hover:opacity-100 hover:text-[#D4AF37] transition-all"
+                                className="p-1 text-slate-400 opacity-0 group-hover:opacity-100 hover:text-[var(--ci-accent)] transition-all"
                                 title="添加评论"
                               >
                                 <MessageSquarePlus className="w-3.5 h-3.5" />
@@ -561,7 +561,7 @@ export default function ContentEditorPage() {
                           <ul className="space-y-1">
                             {section.keyPoints.map((point, pIdx) => (
                               <li key={pIdx} className="text-xs text-slate-500 flex items-start gap-2">
-                                <span className="text-[#D4AF37]">•</span>
+                                <span className="text-[var(--ci-accent)]">•</span>
                                 {String(point)}
                               </li>
                             ))}
@@ -578,7 +578,7 @@ export default function ContentEditorPage() {
                   size="sm"
                   onClick={handleGenerateOutline}
                   disabled={isGeneratingOutline || !brief || isReadOnly}
-                  className="mt-3 border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 bg-transparent"
+                  className="mt-3 border-[var(--ci-accent)]/30 text-[var(--ci-accent)] hover:bg-[var(--ci-accent)]/10 bg-transparent"
                 >
                   {isGeneratingOutline ? (
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -599,7 +599,7 @@ export default function ContentEditorPage() {
                 {!isReadOnly && (
                   <button
                     onClick={() => setAnchorForBlock('content-body', '正文内容')}
-                    className="p-1 text-slate-400 hover:text-[#D4AF37] transition-colors"
+                    className="p-1 text-slate-400 hover:text-[var(--ci-accent)] transition-colors"
                     title="添加评论"
                   >
                     <MessageSquarePlus className="w-3.5 h-3.5" />
@@ -611,7 +611,7 @@ export default function ContentEditorPage() {
                 size="sm"
                 onClick={handleGenerateContent}
                 disabled={isGeneratingContent || !form.outline || isReadOnly}
-                className="border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10 bg-transparent"
+                className="border-[var(--ci-accent)]/30 text-[var(--ci-accent)] hover:bg-[var(--ci-accent)]/10 bg-transparent"
               >
                 {isGeneratingContent ? (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -626,7 +626,7 @@ export default function ContentEditorPage() {
               value={form.content}
               onChange={(e) => setForm({ ...form, content: e.target.value })}
               disabled={isReadOnly}
-              className={`min-h-[400px] bg-[#FFFCF7] border-[#E8E0D0] text-[#0B1B2B] placeholder:text-slate-400 resize-none disabled:opacity-60 ${getBlockHighlightClass('content-body')}`}
+              className={`min-h-[400px] bg-[#FFFFFF] border-[var(--ci-border)] text-[#0B1B2B] placeholder:text-slate-400 resize-none disabled:opacity-60 ${getBlockHighlightClass('content-body')}`}
             />
           </div>
 
@@ -637,12 +637,12 @@ export default function ContentEditorPage() {
               placeholder="内容摘要..."
               value={form.excerpt}
               onChange={(e) => setForm({ ...form, excerpt: e.target.value })}
-              className="h-24 bg-[#FFFCF7] border-[#E8E0D0] text-[#0B1B2B] placeholder:text-slate-400 resize-none"
+              className="h-24 bg-[#FFFFFF] border-[var(--ci-border)] text-[#0B1B2B] placeholder:text-slate-400 resize-none"
             />
           </div>
 
           {/* SEO Section */}
-          <div className="bg-[#FFFCF7] border border-[#E8E0D0] rounded-xl">
+          <div className="bg-[#FFFFFF] border border-[var(--ci-border)] rounded-xl">
             <button
               onClick={() => toggleSection("seo")}
               className="w-full flex items-center justify-between p-4 text-left"
@@ -655,14 +655,14 @@ export default function ContentEditorPage() {
               )}
             </button>
             {expandedSections.seo && (
-              <div className="px-4 pb-4 border-t border-[#E8E0D0] pt-4 space-y-4">
+              <div className="px-4 pb-4 border-t border-[var(--ci-border)] pt-4 space-y-4">
                 <div>
                   <Label className="text-slate-500 text-sm">Meta 标题</Label>
                   <Input
                     placeholder="SEO 标题"
                     value={form.metaTitle}
                     onChange={(e) => setForm({ ...form, metaTitle: e.target.value })}
-                    className="mt-1 bg-[#F0EBD8] border-[#E8E0D0] text-[#0B1B2B]"
+                    className="mt-1 bg-[var(--ci-surface-muted)] border-[var(--ci-border)] text-[#0B1B2B]"
                   />
                 </div>
                 <div>
@@ -671,7 +671,7 @@ export default function ContentEditorPage() {
                     placeholder="SEO 描述"
                     value={form.metaDescription}
                     onChange={(e) => setForm({ ...form, metaDescription: e.target.value })}
-                    className="mt-1 h-20 bg-[#F0EBD8] border-[#E8E0D0] text-[#0B1B2B] resize-none"
+                    className="mt-1 h-20 bg-[var(--ci-surface-muted)] border-[var(--ci-border)] text-[#0B1B2B] resize-none"
                   />
                 </div>
               </div>
@@ -680,7 +680,7 @@ export default function ContentEditorPage() {
         </div>
 
         {/* Right Sidebar */}
-        <div className="w-[340px] border-l border-[#E8E0D0] bg-[#F7F3E8] p-4 space-y-4 overflow-y-auto max-h-[calc(100vh-65px)]">
+        <div className="w-[340px] border-l border-[var(--ci-border)] bg-[var(--ci-surface-strong)] p-4 space-y-4 overflow-y-auto max-h-[calc(100vh-65px)]">
           {/* Collaborative Shell */}
           {!isNew && content?.id && currentVersionId && (
             <CollaborativeShell
@@ -703,7 +703,7 @@ export default function ContentEditorPage() {
           )}
 
           {/* Evidence References */}
-          <div className="bg-[#FFFCF7] border border-[#E8E0D0] rounded-xl">
+          <div className="bg-[#FFFFFF] border border-[var(--ci-border)] rounded-xl">
             <button
               onClick={() => toggleSection("evidence")}
               className="w-full flex items-center justify-between p-3 text-left"
@@ -720,13 +720,13 @@ export default function ContentEditorPage() {
               )}
             </button>
             {expandedSections.evidence && (
-              <div className="px-3 pb-3 border-t border-[#E8E0D0] pt-3">
+              <div className="px-3 pb-3 border-t border-[var(--ci-border)] pt-3">
                 {selectedEvidences.length > 0 ? (
                   <div className="space-y-2 mb-3">
                     {selectedEvidences.map((e) => (
                       <div
                         key={e.id}
-                        className="flex items-start gap-2 bg-[#F0EBD8] rounded p-2"
+                        className="flex items-start gap-2 bg-[var(--ci-surface-muted)] rounded p-2"
                       >
                         <span className="text-xs text-emerald-600 font-mono">
                           [E{selectedEvidences.indexOf(e) + 1}]
@@ -750,7 +750,7 @@ export default function ContentEditorPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => setShowEvidencePicker(true)}
-                  className="w-full border-[#E8E0D0] text-slate-500 hover:text-[#0B1B2B] hover:bg-[#F0EBD8]"
+                  className="w-full border-[var(--ci-border)] text-slate-500 hover:text-[#0B1B2B] hover:bg-[var(--ci-surface-muted)]"
                 >
                   <Plus className="w-3 h-3 mr-1" />
                   添加证据
@@ -760,7 +760,7 @@ export default function ContentEditorPage() {
           </div>
 
           {/* Guideline Validation */}
-          <div className="bg-[#FFFCF7] border border-[#E8E0D0] rounded-xl">
+          <div className="bg-[#FFFFFF] border border-[var(--ci-border)] rounded-xl">
             <button
               onClick={() => toggleSection("guidelines")}
               className="w-full flex items-center justify-between p-3 text-left"
@@ -776,7 +776,7 @@ export default function ContentEditorPage() {
               )}
             </button>
             {expandedSections.guidelines && (
-              <div className="px-3 pb-3 border-t border-[#E8E0D0] pt-3">
+              <div className="px-3 pb-3 border-t border-[var(--ci-border)] pt-3">
                 {guidelineHints.length > 0 ? (
                   <div className="space-y-2">
                     {guidelineHints.map((hint, idx) => (
@@ -829,14 +829,14 @@ export default function ContentEditorPage() {
             const metaDescLen = form.metaDescription.length;
 
             return (
-              <div className="rounded-xl overflow-hidden border border-[rgba(212,175,55,0.3)]" style={{
-                background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 70%, #0D1525 100%)',
+              <div className="rounded-xl overflow-hidden border border-[rgba(79,141,246,0.3)]" style={{
+                background: 'var(--ci-sidebar-shell)',
               }}>
                 {/* SEO Score Card */}
-                <div className="p-3 border-b border-[rgba(212,175,55,0.12)]">
+                <div className="p-3 border-b border-[rgba(79,141,246,0.12)]">
                   <div className="flex items-center gap-2 mb-3">
-                    <BarChart3 className="w-3.5 h-3.5 text-[#D4AF37]" />
-                    <span className="text-[11px] font-semibold text-[#D4AF37] uppercase tracking-wider">SEO · AEO 指标</span>
+                    <BarChart3 className="w-3.5 h-3.5 text-[var(--ci-accent)]" />
+                    <span className="text-[11px] font-semibold text-[var(--ci-accent)] uppercase tracking-wider">SEO · AEO 指标</span>
                     {framework && (
                       <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded text-slate-400 bg-slate-800 border border-slate-700">
                         Framework {framework}
@@ -847,7 +847,7 @@ export default function ContentEditorPage() {
                     {primaryKeyword && (
                       <div className="flex items-center justify-between">
                         <span className="text-[11px] text-slate-500">主关键词</span>
-                        <span className="text-[11px] text-[#D4AF37] font-mono">{primaryKeyword}</span>
+                        <span className="text-[11px] text-[var(--ci-accent)] font-mono">{primaryKeyword}</span>
                       </div>
                     )}
                     {wordCount && (
@@ -893,7 +893,7 @@ export default function ContentEditorPage() {
 
                 {/* FAQ Schema block */}
                 {schemaJson && (
-                  <div className="p-3 border-b border-[rgba(212,175,55,0.12)]">
+                  <div className="p-3 border-b border-[rgba(79,141,246,0.12)]">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-1.5">
                         <Code2 className="w-3.5 h-3.5 text-emerald-400" />
@@ -905,7 +905,7 @@ export default function ContentEditorPage() {
                           setSchemaCopied(true);
                           setTimeout(() => setSchemaCopied(false), 1800);
                         }}
-                        className="flex items-center gap-1 text-[10px] text-slate-400 hover:text-[#D4AF37] transition-colors"
+                        className="flex items-center gap-1 text-[10px] text-slate-400 hover:text-[var(--ci-accent)] transition-colors"
                       >
                         {schemaCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                         {schemaCopied ? '已复制' : '复制'}
@@ -922,8 +922,8 @@ export default function ContentEditorPage() {
                   <div className="p-3">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-1.5">
-                        <Globe className="w-3.5 h-3.5 text-[#D4AF37]" />
-                        <span className="text-[11px] font-medium text-[#D4AF37]">GEO 版本</span>
+                        <Globe className="w-3.5 h-3.5 text-[var(--ci-accent)]" />
+                        <span className="text-[11px] font-medium text-[var(--ci-accent)]">GEO 版本</span>
                         <span className="text-[10px] text-slate-600">AI 引擎可引用</span>
                       </div>
                       <button
@@ -932,7 +932,7 @@ export default function ContentEditorPage() {
                           setGeoCopied(true);
                           setTimeout(() => setGeoCopied(false), 1800);
                         }}
-                        className="flex items-center gap-1 text-[10px] text-[#D4AF37] hover:opacity-80 transition-opacity"
+                        className="flex items-center gap-1 text-[10px] text-[var(--ci-accent)] hover:opacity-80 transition-opacity"
                       >
                         {geoCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                         {geoCopied ? '已复制' : '复制'}
@@ -950,10 +950,10 @@ export default function ContentEditorPage() {
 
           {/* Brief Context */}
           {brief && (
-            <div className="bg-[#FFFCF7] border border-[#E8E0D0] rounded-xl p-3">
+            <div className="bg-[#FFFFFF] border border-[var(--ci-border)] rounded-xl p-3">
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-6 h-6 rounded flex items-center justify-center" style={{ background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.3)' }}>
-                  <Sparkles className="w-3 h-3 text-[#D4AF37]" />
+                <div className="w-6 h-6 rounded flex items-center justify-center" style={{ background: 'rgba(79,141,246,0.12)', border: '1px solid rgba(79,141,246,0.3)' }}>
+                  <Sparkles className="w-3 h-3 text-[var(--ci-accent)]" />
                 </div>
                 <span className="text-sm font-medium text-[#0B1B2B]">内容规划</span>
               </div>
@@ -978,7 +978,7 @@ export default function ContentEditorPage() {
 
       {/* Evidence Picker Dialog */}
       <Dialog open={showEvidencePicker} onOpenChange={setShowEvidencePicker}>
-        <DialogContent className="bg-[#FFFCF7] border-[#E8E0D0] text-[#0B1B2B] max-w-lg max-h-[80vh] overflow-hidden flex flex-col">
+        <DialogContent className="bg-[#FFFFFF] border-[var(--ci-border)] text-[#0B1B2B] max-w-lg max-h-[80vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle className="text-lg font-bold text-[#0B1B2B]">选择证据</DialogTitle>
           </DialogHeader>
@@ -993,18 +993,18 @@ export default function ContentEditorPage() {
                       onClick={() => toggleEvidence(e.id)}
                       className={`w-full text-left p-3 rounded-lg border transition-colors ${
                         isSelected
-                          ? "bg-[#D4AF37]/10 border-[#D4AF37]/40"
-                          : "bg-[#F7F3E8] border-[#E8E0D0] hover:border-[#D4AF37]/30"
+                          ? "bg-[var(--ci-accent)]/10 border-[var(--ci-accent)]/40"
+                          : "bg-[var(--ci-surface-strong)] border-[var(--ci-border)] hover:border-[var(--ci-accent)]/30"
                       }`}
                     >
                       <div className="flex items-start gap-3">
                         <div
                           className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 ${
                             isSelected
-                              ? "border-[#D4AF37]"
+                              ? "border-[var(--ci-accent)]"
                               : "border-slate-300"
                           }`}
-                          style={isSelected ? { background: '#D4AF37' } : {}}
+                          style={isSelected ? { background: 'var(--ci-accent)' } : {}}
                         >
                           {isSelected && <CheckCircle2 className="w-3 h-3 text-[#0B1220]" />}
                         </div>
@@ -1012,7 +1012,7 @@ export default function ContentEditorPage() {
                           <p className="text-sm font-medium text-[#0B1B2B]">{e.title}</p>
                           <p className="text-xs text-slate-500 mt-1 line-clamp-2">{e.content}</p>
                           <div className="flex items-center gap-2 mt-2">
-                            <span className="px-1.5 py-0.5 bg-[#F0EBD8] rounded text-[10px] text-slate-500">
+                            <span className="px-1.5 py-0.5 bg-[var(--ci-surface-muted)] rounded text-[10px] text-slate-500">
                               {e.type}
                             </span>
                             {e.assetName && (
@@ -1031,11 +1031,11 @@ export default function ContentEditorPage() {
               <p className="text-sm text-slate-400 text-center py-8">暂无可用证据</p>
             )}
           </div>
-          <div className="pt-3 border-t border-[#E8E0D0]">
+          <div className="pt-3 border-t border-[var(--ci-border)]">
             <Button
               onClick={() => setShowEvidencePicker(false)}
               className="w-full hover:opacity-90"
-              style={{ background: '#D4AF37', color: '#0B1220', boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)' }}
+              style={{ background: 'var(--ci-accent)', color: '#FFFFFF', boxShadow: '0 4px 16px -2px rgba(79,141,246,0.35)' }}
             >
               完成选择 ({form.evidenceRefs.length} 条)
             </Button>

@@ -125,7 +125,7 @@ export function CustomerSidebar({
           collapsed ? "w-[76px]" : "w-[264px]"
         } ci-sidebar-shell relative hidden h-screen flex-col overflow-hidden border-r border-[var(--ci-sidebar-border)] transition-[width] duration-200 lg:sticky lg:top-0 lg:flex ${
           mobileOpen
-            ? "!fixed !inset-y-0 !left-0 !z-50 !flex shadow-[0_24px_64px_-32px_rgba(15,23,38,0.78)]"
+            ? "!fixed !inset-y-0 !left-0 !z-50 !flex shadow-[var(--ci-shadow-strong)]"
             : ""
         }`}
       >
@@ -357,7 +357,7 @@ function NavItemRow({
                   className={subActive ? "text-[var(--ci-accent)]" : ""}
                 />
                 <span className="flex-1 truncate">{sub.label}</span>
-                {sub.badge?.type === "premium" && sub.badge.text ? (
+                {sub.badge?.type === "highlight" && sub.badge.text ? (
                   <span className="rounded-full border border-[rgba(148,163,184,0.18)] bg-white/[0.04] px-1.5 py-0.5 text-[9px] font-medium text-[var(--ci-sidebar-muted)]">
                     {sub.badge.text}
                   </span>

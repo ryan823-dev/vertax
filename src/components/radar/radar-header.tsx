@@ -51,7 +51,7 @@ function formatRelativeTime(date: Date | null) {
 function getStatusTone(status: StepStatus) {
   if (status === "DONE") return "text-emerald-600";
   if (status === "BLOCKED") return "text-red-500";
-  return "text-[#D4AF37]";
+  return "text-[var(--ci-accent)]";
 }
 
 function getStepBadge(status: StepStatus, isCurrent: boolean) {
@@ -66,10 +66,10 @@ function getStepBadge(status: StepStatus, isCurrent: boolean) {
   return (
     <span
       className={`flex h-3.5 w-3.5 items-center justify-center rounded-full border ${
-        isCurrent ? "border-[#D4AF37] bg-[#D4AF37]/15" : "border-white/20 bg-transparent"
+        isCurrent ? "border-[var(--ci-accent)] bg-[var(--ci-accent)]/15" : "border-white/20 bg-transparent"
       }`}
     >
-      <span className={`h-1.5 w-1.5 rounded-full ${isCurrent ? "bg-[#D4AF37]" : "bg-white/40"}`} />
+      <span className={`h-1.5 w-1.5 rounded-full ${isCurrent ? "bg-[var(--ci-accent)]" : "bg-white/40"}`} />
     </span>
   );
 }
@@ -97,8 +97,8 @@ function RadarStepper({
               title={step.blocker || step.label}
               className={`group flex shrink-0 items-center gap-2 rounded-full border px-3 py-2 text-left transition-all ${
                 isCurrent
-                  ? "border-[#D4AF37]/30 bg-[#FFF4D6] shadow-[0_8px_18px_-14px_rgba(212,175,55,0.8)]"
-                  : "border-transparent bg-white/0 hover:border-[#E8E0D0] hover:bg-white/60"
+                  ? "border-[var(--ci-accent)]/30 bg-[var(--ci-surface-strong)] shadow-[0_8px_18px_-14px_rgba(79,141,246,0.8)]"
+                  : "border-transparent bg-white/0 hover:border-[var(--ci-border)] hover:bg-white/60"
               }`}
             >
               {getStepBadge(step.status, isCurrent)}
@@ -140,15 +140,15 @@ export function RadarHeader({
 
   return (
     <div className="sticky top-0 z-20 px-0 pt-0">
-      <div className="rounded-[28px] border border-[#E8E0D0] bg-white/85 px-4 py-4 shadow-[0_18px_36px_-28px_rgba(11,27,43,0.45)] backdrop-blur-md sm:px-5">
+      <div className="rounded-xl border border-[var(--ci-border)] bg-white/85 px-4 py-4 shadow-[var(--ci-shadow-soft)] backdrop-blur-md sm:px-5">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#F0EBD8] text-[#D4AF37] ring-1 ring-[#D4AF37]/15">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--ci-surface-muted)] text-[var(--ci-accent)] ring-1 ring-[var(--ci-accent)]/15">
                 <Radar size={18} />
               </div>
               <div className="min-w-0">
-                <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#9A7A1C]">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--ci-accent-strong)]">
                   Radar Workspace
                 </div>
                 <h1 className="truncate text-[18px] font-bold tracking-tight text-[#0B1B2B] sm:text-[20px]">
@@ -197,7 +197,7 @@ export function RadarHeader({
                   type="button"
                   onClick={onRefresh}
                   disabled={isRefreshing}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-[#E8E0D0] bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-[#D4AF37]/35 hover:text-[#D4AF37] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-[var(--ci-border)] bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-[var(--ci-accent)]/35 hover:text-[var(--ci-accent)] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <RefreshCw size={12} className={isRefreshing ? "animate-spin" : ""} />
                   刷新
@@ -211,8 +211,8 @@ export function RadarHeader({
                   href={primaryCTA.href}
                   className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-all ${
                     primaryCTA.disabled
-                      ? "pointer-events-none cursor-not-allowed border border-[#E8E0D0] bg-slate-100 text-slate-400"
-                      : "border border-[#D4AF37]/30 bg-gradient-to-r from-[#D4AF37] to-[#C4A028] text-[#0B1220] shadow-[0_12px_24px_-16px_rgba(212,175,55,0.9)]"
+                      ? "pointer-events-none cursor-not-allowed border border-[var(--ci-border)] bg-slate-100 text-slate-400"
+                      : "border border-[var(--ci-accent)]/30 bg-[var(--ci-accent)] text-white shadow-[0_12px_24px_-16px_rgba(79,141,246,0.9)]"
                   }`}
                   onClick={(event) => primaryCTA.disabled && event.preventDefault()}
                   aria-disabled={primaryCTA.disabled}
@@ -226,7 +226,7 @@ export function RadarHeader({
           </div>
         </div>
 
-        <div className="mt-4 rounded-2xl border border-[#E8E0D0] bg-[#FCFAF7] px-3 py-2">
+        <div className="mt-4 rounded-xl border border-[var(--ci-border)] bg-[#FFFFFF] px-3 py-2">
           <RadarStepper steps={steps} currentStep={currentStep} />
         </div>
       </div>
@@ -255,16 +255,16 @@ export function StatCard({
 }: StatCardProps) {
   const content = (
     <div
-      className={`group h-full rounded-2xl border p-4 transition-all duration-200 ${
+      className={`group h-full rounded-xl border p-4 transition-all duration-200 ${
         highlight
-          ? "border-[#D4AF37]/30 bg-[#FFF8E8] shadow-[0_14px_32px_-24px_rgba(212,175,55,0.8)]"
-          : "border-[#E8E0D0] bg-white hover:border-[#D4AF37]/30 hover:shadow-[0_14px_30px_-26px_rgba(11,27,43,0.3)]"
+          ? "border-[var(--ci-accent)]/30 bg-[var(--ci-surface-strong)] shadow-[0_14px_32px_-24px_rgba(79,141,246,0.8)]"
+          : "border-[var(--ci-border)] bg-white hover:border-[var(--ci-accent)]/30 "
       }`}
     >
       <div className="mb-4 flex items-start justify-between gap-3">
         <div
           className={`flex h-10 w-10 items-center justify-center rounded-xl ring-1 ${
-            highlight ? "bg-[#D4AF37]/12 text-[#9A7A1C] ring-[#D4AF37]/10" : "bg-[#F7F3E8] text-slate-500 ring-[#E8E0D0]"
+            highlight ? "bg-[var(--ci-accent)]/12 text-[var(--ci-accent-strong)] ring-[var(--ci-accent)]/10" : "bg-[var(--ci-surface-muted)] text-slate-500 ring-[var(--ci-border)]"
           }`}
         >
           {icon}
@@ -284,7 +284,7 @@ export function StatCard({
         )}
       </div>
 
-      <div className={`text-2xl font-bold tracking-tight ${highlight ? "text-[#9A7A1C]" : "text-[#0B1B2B]"}`}>
+      <div className={`text-2xl font-bold tracking-tight ${highlight ? "text-[var(--ci-accent-strong)]" : "text-[#0B1B2B]"}`}>
         {value}
       </div>
       <div className="mt-1 text-xs text-slate-500">{label}</div>
@@ -313,12 +313,12 @@ export function RadarEmptyGuide({ currentStep, steps, primaryCTA }: RadarEmptyGu
   const nextStepData = steps[currentStep] || null;
 
   return (
-    <div className="flex flex-col items-center justify-center rounded-[28px] border border-dashed border-[#E8E0D0] bg-white/80 px-6 py-14 text-center shadow-[0_18px_36px_-28px_rgba(11,27,43,0.35)]">
-      <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#FFF4D6] text-[#D4AF37] ring-1 ring-[#D4AF37]/10">
+    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-[var(--ci-border)] bg-white/80 px-6 py-14 text-center shadow-[var(--ci-shadow-soft)]">
+      <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-xl bg-[var(--ci-surface-strong)] text-[var(--ci-accent)] ring-1 ring-[var(--ci-accent)]/10">
         {currentStep === 1 ? <Radar size={28} /> : currentStep === 2 ? <Sparkles size={28} /> : <AlertCircle size={28} />}
       </div>
 
-      <div className="text-sm font-semibold uppercase tracking-[0.16em] text-[#9A7A1C]">
+      <div className="text-sm font-semibold uppercase tracking-[0.16em] text-[var(--ci-accent-strong)]">
         当前处于第 {currentStep} 步
       </div>
       <h3 className="mt-2 text-lg font-bold text-[#0B1B2B]">
@@ -335,7 +335,7 @@ export function RadarEmptyGuide({ currentStep, steps, primaryCTA }: RadarEmptyGu
           className={`mt-6 inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-all ${
             primaryCTA.disabled
               ? "pointer-events-none cursor-not-allowed bg-slate-100 text-slate-400"
-              : "bg-[#0B1220] text-[#D4AF37] shadow-[0_12px_24px_-16px_rgba(11,18,32,0.75)] hover:bg-[#132036]"
+              : "bg-[var(--ci-accent)] text-white shadow-[0_12px_24px_-16px_rgba(11,18,32,0.75)] hover:bg-[#132036]"
           }`}
           onClick={(event) => primaryCTA.disabled && event.preventDefault()}
         >
@@ -404,32 +404,32 @@ export function SecretaryPanel({ counts, errors }: SecretaryPanelProps) {
   }
 
   return (
-    <div className="overflow-hidden rounded-[28px] border border-[#E8E0D0] bg-white/90 shadow-[0_18px_36px_-28px_rgba(11,27,43,0.4)]">
-      <div className="flex items-center gap-2 border-b border-[#E8E0D0] bg-[#FCFAF7] px-4 py-3">
-        <div className="h-2 w-2 rounded-full bg-[#D4AF37] animate-pulse" />
+    <div className="overflow-hidden rounded-xl border border-[var(--ci-border)] bg-white/90 shadow-[var(--ci-shadow-soft)]">
+      <div className="flex items-center gap-2 border-b border-[var(--ci-border)] bg-[#FFFFFF] px-4 py-3">
+        <div className="h-2 w-2 rounded-full bg-[var(--ci-accent)] animate-pulse" />
         <h3 className="text-sm font-semibold text-[#0B1B2B]">秘书提醒</h3>
-        <span className="ml-auto rounded-full bg-[#FFF4D6] px-2.5 py-1 text-[10px] font-medium text-[#9A7A1C]">
+        <span className="ml-auto rounded-full bg-[var(--ci-surface-strong)] px-2.5 py-1 text-[10px] font-medium text-[var(--ci-accent-strong)]">
           {items.length} 条
         </span>
       </div>
 
-      <div className="divide-y divide-[#E8E0D0]">
+      <div className="divide-y divide-[var(--ci-border)]">
         {items.map((item, index) => {
           const tone =
             item.type === "warning"
               ? "text-amber-500"
               : item.type === "action"
-                ? "text-[#D4AF37]"
+                ? "text-[var(--ci-accent)]"
                 : "text-emerald-500";
 
           const card = (
-            <div className="group flex items-start gap-3 px-4 py-4 transition-colors hover:bg-[#FCFAF7]">
+            <div className="group flex items-start gap-3 px-4 py-4 transition-colors hover:bg-[#FFFFFF]">
               <div className={`mt-1 h-2.5 w-2.5 rounded-full ${tone.replace("text-", "bg-")}`} />
               <div className="min-w-0 flex-1">
                 <div className="text-sm font-medium text-[#0B1B2B]">{item.title}</div>
                 <div className="mt-1 text-xs leading-5 text-slate-500">{item.description}</div>
               </div>
-              {item.href && <ChevronRight size={13} className="mt-1 text-slate-300 group-hover:text-[#D4AF37]" />}
+              {item.href && <ChevronRight size={13} className="mt-1 text-slate-300 group-hover:text-[var(--ci-accent)]" />}
             </div>
           );
 
@@ -460,7 +460,7 @@ function MiniStat({
       ? "border-amber-200 bg-amber-50 text-amber-700"
       : tone === "success"
         ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-        : "border-[#E8E0D0] bg-[#FCFAF7] text-slate-600";
+        : "border-[var(--ci-border)] bg-[#FFFFFF] text-slate-600";
 
   return (
     <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs ${toneClass}`}>
@@ -486,7 +486,7 @@ function StatusChip({
       ? "border-red-200 bg-red-50 text-red-600"
       : tone === "warning"
         ? "border-amber-200 bg-amber-50 text-amber-700"
-        : "border-[#E8E0D0] bg-[#FCFAF7] text-slate-600";
+        : "border-[var(--ci-border)] bg-[#FFFFFF] text-slate-600";
 
   return (
     <div className={`group inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs ${toneClass}`}>

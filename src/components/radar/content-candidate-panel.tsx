@@ -113,10 +113,10 @@ export function ContentCandidatePanel({ contentId }: ContentCandidatePanelProps)
   };
 
   return (
-    <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-5">
+    <div className="bg-[var(--ci-surface-muted)] rounded-xl border border-[var(--ci-border)] p-5">
       <div className="flex items-center justify-between mb-3">
         <h4 className="flex items-center gap-2 text-sm font-bold text-[#0B1B2B]">
-          <Building2 size={14} className="text-[#D4AF37]" />
+          <Building2 size={14} className="text-[var(--ci-accent)]" />
           关联候选
         </h4>
         <span className="text-xs text-slate-400">
@@ -127,20 +127,20 @@ export function ContentCandidatePanel({ contentId }: ContentCandidatePanelProps)
       {/* Existing links */}
       {isLoadingLinks ? (
         <div className="flex items-center justify-center py-4">
-          <Loader2 size={16} className="text-[#D4AF37] animate-spin" />
+          <Loader2 size={16} className="text-[var(--ci-accent)] animate-spin" />
         </div>
       ) : links.length > 0 ? (
         <div className="space-y-2 mb-3">
           {links.map((link) => (
             <div
               key={link.id}
-              className="bg-[#FFFCF7] rounded-xl border border-[#E8E0D0] p-3 flex items-start gap-2"
+              className="bg-[#FFFFFF] rounded-xl border border-[var(--ci-border)] p-3 flex items-start gap-2"
             >
-              <Building2 size={14} className="text-[#D4AF37] mt-0.5 shrink-0" />
+              <Building2 size={14} className="text-[var(--ci-accent)] mt-0.5 shrink-0" />
               <div className="flex-1 min-w-0">
                 <Link
                   href="/customer/radar/candidates"
-                  className="text-xs font-medium text-[#0B1B2B] hover:text-[#D4AF37] truncate block"
+                  className="text-xs font-medium text-[#0B1B2B] hover:text-[var(--ci-accent)] truncate block"
                 >
                   {link.candidate?.displayName || '未知候选'}
                 </Link>
@@ -184,9 +184,9 @@ export function ContentCandidatePanel({ contentId }: ContentCandidatePanelProps)
             {suggestions.slice(0, 5).map((s) => (
               <div
                 key={s.candidateId}
-                className="bg-[#FFFCF7] rounded-lg border border-dashed border-[#D4AF37]/30 p-2 flex items-center gap-2"
+                className="bg-[#FFFFFF] rounded-lg border border-dashed border-[var(--ci-accent)]/30 p-2 flex items-center gap-2"
               >
-                <Sparkles size={12} className="text-[#D4AF37] shrink-0" />
+                <Sparkles size={12} className="text-[var(--ci-accent)] shrink-0" />
                 <div className="flex-1 min-w-0">
                   <span className="text-xs text-[#0B1B2B] truncate block">
                     {s.displayName}
@@ -197,7 +197,7 @@ export function ContentCandidatePanel({ contentId }: ContentCandidatePanelProps)
                 </div>
                 <button
                   onClick={() => handleLink(s)}
-                  className="text-[#D4AF37] hover:text-[#C5A030] p-1"
+                  className="text-[var(--ci-accent)] hover:text-[var(--ci-accent-strong)] p-1"
                   title="关联"
                 >
                   <LinkIcon size={12} />
@@ -218,7 +218,7 @@ export function ContentCandidatePanel({ contentId }: ContentCandidatePanelProps)
       <button
         onClick={handleAutoMatch}
         disabled={isMatching}
-        className="w-full flex items-center justify-center gap-2 py-2 bg-[#D4AF37]/10 text-[#D4AF37] rounded-xl text-xs font-medium hover:bg-[#D4AF37]/20 transition-colors disabled:opacity-50"
+        className="w-full flex items-center justify-center gap-2 py-2 bg-[var(--ci-accent)]/10 text-[var(--ci-accent)] rounded-xl text-xs font-medium hover:bg-[var(--ci-accent)]/20 transition-colors disabled:opacity-50"
       >
         {isMatching ? (
           <>

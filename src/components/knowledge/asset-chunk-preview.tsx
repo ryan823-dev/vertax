@@ -17,10 +17,10 @@ function ChunkCard({ chunk }: { chunk: ChunkData }) {
 
   return (
     <div
-      className="p-4 border border-[#E7E0D3] rounded-xl bg-white transition-all duration-200"
+      className="p-4 border border-[var(--ci-border)] rounded-xl bg-white transition-all duration-200"
       style={{
-        borderColor: isHovered ? 'rgba(212,175,55,0.4)' : '#E7E0D3',
-        boxShadow: isHovered ? '0 4px 16px -4px rgba(212,175,55,0.15)' : 'none',
+        borderColor: isHovered ? 'rgba(79,141,246,0.4)' : 'var(--ci-border)',
+        boxShadow: isHovered ? '0 4px 16px -4px rgba(79,141,246,0.15)' : 'none',
         transform: isHovered ? 'translateY(-1px)' : 'translateY(0)',
       }}
       onMouseEnter={() => setIsHovered(true)}
@@ -78,18 +78,18 @@ export function AssetChunkPreview({ assetId, assetName, open, onClose }: AssetCh
   if (!open) return null;
 
   return (
-    <div className="fixed inset-y-0 right-0 w-[520px] bg-[#FFFCF6] border-l border-[#E7E0D3] shadow-2xl z-50 flex flex-col">
+    <div className="fixed inset-y-0 right-0 w-[520px] bg-[#FFFCF6] border-l border-[var(--ci-border)] shadow-[0_18px_42px_-34px_rgba(15,23,38,0.24)] z-50 flex flex-col">
       {/* Header */}
       <div 
         className="flex items-center justify-between px-6 py-4"
         style={{ 
           background: 'rgba(11,18,32,0.95)', 
           backdropFilter: 'blur(16px)',
-          borderBottom: '1px solid rgba(212,175,55,0.1)'
+          borderBottom: '1px solid rgba(79,141,246,0.1)'
         }}
       >
         <div className="flex items-center gap-2 min-w-0">
-          <FileText size={18} className="text-[#D4AF37] shrink-0" />
+          <FileText size={18} className="text-[var(--ci-accent)] shrink-0" />
           <h3 className="text-sm font-bold text-white truncate">{assetName}</h3>
           {data && (
             <span className="text-[10px] shrink-0" style={{ color: 'rgba(255,255,255,0.4)' }}>
@@ -100,7 +100,7 @@ export function AssetChunkPreview({ assetId, assetName, open, onClose }: AssetCh
         <button 
           onClick={onClose} 
           className="p-1.5 rounded-lg transition-colors"
-          style={{ color: isCloseHovered ? '#D4AF37' : 'rgba(255,255,255,0.4)' }}
+          style={{ color: isCloseHovered ? 'var(--ci-accent)' : 'rgba(255,255,255,0.4)' }}
           onMouseEnter={() => setIsCloseHovered(true)}
           onMouseLeave={() => setIsCloseHovered(false)}
         >
@@ -112,7 +112,7 @@ export function AssetChunkPreview({ assetId, assetName, open, onClose }: AssetCh
       <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 size={24} className="text-[#D4AF37] animate-spin" />
+            <Loader2 size={24} className="text-[var(--ci-accent)] animate-spin" />
           </div>
         ) : data && data.items.length > 0 ? (
           data.items.map((chunk: ChunkData) => (
@@ -125,7 +125,7 @@ export function AssetChunkPreview({ assetId, assetName, open, onClose }: AssetCh
 
       {/* Pagination */}
       {data && data.totalPages > 1 && (
-        <div className="flex items-center justify-between px-6 py-3 border-t border-[#E7E0D3]">
+        <div className="flex items-center justify-between px-6 py-3 border-t border-[var(--ci-border)]">
           <span className="text-xs text-slate-400">
             第 {data.page} / {data.totalPages} 页
           </span>
@@ -133,14 +133,14 @@ export function AssetChunkPreview({ assetId, assetName, open, onClose }: AssetCh
             <button
               onClick={() => handlePageChange(page - 1)}
               disabled={page <= 1}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-[#D4AF37] hover:bg-[#E7E0D3]/50 disabled:opacity-30 transition-colors"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-[var(--ci-accent)] hover:bg-[var(--ci-border)]/50 disabled:opacity-30 transition-colors"
             >
               <ChevronLeft size={16} />
             </button>
             <button
               onClick={() => handlePageChange(page + 1)}
               disabled={page >= data.totalPages}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-[#D4AF37] hover:bg-[#E7E0D3]/50 disabled:opacity-30 transition-colors"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-[var(--ci-accent)] hover:bg-[var(--ci-border)]/50 disabled:opacity-30 transition-colors"
             >
               <ChevronRight size={16} />
             </button>

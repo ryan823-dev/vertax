@@ -63,15 +63,15 @@ export function KnowledgeAssetCard({ asset, onViewChunks, onProcessingUpdate }: 
       className="p-4 rounded-xl transition-all group"
       style={{
         background: '#FFFCF6',
-        border: '1px solid #E7E0D3',
+        border: '1px solid var(--ci-border)',
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = 'rgba(212,175,55,0.4)';
-        e.currentTarget.style.boxShadow = '0 4px 16px -4px rgba(212,175,55,0.15)';
+        e.currentTarget.style.borderColor = 'rgba(79,141,246,0.4)';
+        e.currentTarget.style.boxShadow = '0 4px 16px -4px rgba(79,141,246,0.15)';
         e.currentTarget.style.transform = 'translateY(-1px)';
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = '#E7E0D3';
+        e.currentTarget.style.borderColor = 'var(--ci-border)';
         e.currentTarget.style.boxShadow = '';
         e.currentTarget.style.transform = '';
       }}
@@ -116,7 +116,7 @@ export function KnowledgeAssetCard({ asset, onViewChunks, onProcessingUpdate }: 
                 <span style={{ color: '#CBD5E1' }}>·</span>
                 <span
                   className="px-1.5 py-0.5 rounded font-medium"
-                  style={{ background: 'rgba(212,175,55,0.08)', color: '#D4AF37' }}
+                  style={{ background: 'rgba(79,141,246,0.08)', color: 'var(--ci-accent)' }}
                 >
                   {asset.processingMeta.chunkCount} 片段
                 </span>
@@ -134,12 +134,12 @@ export function KnowledgeAssetCard({ asset, onViewChunks, onProcessingUpdate }: 
             disabled={isProcessing}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
             style={{
-              background: 'rgba(212,175,55,0.08)',
+              background: 'rgba(79,141,246,0.08)',
               color: '#0B1B2B',
-              border: '1px solid rgba(212,175,55,0.25)',
+              border: '1px solid rgba(79,141,246,0.25)',
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(212,175,55,0.15)')}
-            onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(212,175,55,0.08)')}
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(79,141,246,0.15)')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(79,141,246,0.08)')}
           >
             {isProcessing ? (
               <Loader2 size={12} className="animate-spin" />
@@ -157,16 +157,16 @@ export function KnowledgeAssetCard({ asset, onViewChunks, onProcessingUpdate }: 
             onClick={() => onViewChunks(asset.id, asset.originalName)}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors"
             style={{
-              background: '#F0EBD8',
+              background: 'var(--ci-surface-muted)',
               color: '#4A5568',
-              border: '1px solid #E7E0D3',
+              border: '1px solid var(--ci-border)',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = '#E8E0D0';
+              e.currentTarget.style.background = 'var(--ci-border)';
               e.currentTarget.style.color = '#0B1B2B';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = '#F0EBD8';
+              e.currentTarget.style.background = 'var(--ci-surface-muted)';
               e.currentTarget.style.color = '#4A5568';
             }}
           >

@@ -196,17 +196,17 @@ export function BrowserFileProcessor({ onUploadComplete, folderId }: FileProcess
         <div
           className="border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors"
           style={{
-            borderColor: '#E7E0D3',
+            borderColor: 'var(--ci-border)',
             background: '#FFFCF6',
           }}
           onDrop={handleDrop}
           onDragOver={(e) => {
             e.preventDefault();
-            e.currentTarget.style.borderColor = '#D4AF37';
-            e.currentTarget.style.background = 'rgba(212,175,55,0.05)';
+            e.currentTarget.style.borderColor = 'var(--ci-accent)';
+            e.currentTarget.style.background = 'rgba(79,141,246,0.05)';
           }}
           onDragLeave={(e) => {
-            e.currentTarget.style.borderColor = '#E7E0D3';
+            e.currentTarget.style.borderColor = 'var(--ci-border)';
             e.currentTarget.style.background = '#FFFCF6';
           }}
           onClick={() => document.getElementById('file-input')?.click()}
@@ -232,7 +232,7 @@ export function BrowserFileProcessor({ onUploadComplete, folderId }: FileProcess
       {(state.status === 'uploading' || state.status === 'processing') && state.file && (
         <div
           className="rounded-xl p-6"
-          style={{ background: '#FFFCF6', border: '1px solid #E7E0D3' }}
+          style={{ background: '#FFFCF6', border: '1px solid var(--ci-border)' }}
         >
           <div className="flex items-center gap-3 mb-4">
             <FileText size={24} style={{ color: '#3B82F6' }} />
@@ -261,13 +261,13 @@ export function BrowserFileProcessor({ onUploadComplete, folderId }: FileProcess
               </div>
               <div
                 className="h-1.5 rounded-full overflow-hidden"
-                style={{ background: '#E7E0D3' }}
+                style={{ background: 'var(--ci-border)' }}
               >
                 <div
                   className="h-full rounded-full transition-all duration-300"
                   style={{
                     width: `${state.progress.progress}%`,
-                    background: 'linear-gradient(90deg, #D4AF37, #B8860B)',
+                    background: 'var(--ci-accent)',
                   }}
                 />
               </div>
@@ -328,9 +328,9 @@ export function BrowserFileProcessor({ onUploadComplete, folderId }: FileProcess
           onClick={() => setState({ file: null, status: 'idle', progress: null, error: null, result: null })}
           className="w-full py-2 text-sm font-medium rounded-lg transition-colors"
           style={{
-            background: 'rgba(212,175,55,0.08)',
+            background: 'rgba(79,141,246,0.08)',
             color: '#0B1B2B',
-            border: '1px solid rgba(212,175,55,0.25)',
+            border: '1px solid rgba(79,141,246,0.25)',
           }}
         >
           上传更多文件

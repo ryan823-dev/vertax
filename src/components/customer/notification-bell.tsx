@@ -21,7 +21,7 @@ export interface NotificationItem {
 }
 
 const TYPE_CONFIG: Record<string, { label: string; dotColor: string }> = {
-  tier_a_lead: { label: "雷达", dotColor: "#D4AF37" },
+  tier_a_lead: { label: "雷达", dotColor: "var(--ci-accent)" },
   geo_citation: { label: "GEO", dotColor: "#22C55E" },
   publish_failed: { label: "社媒", dotColor: "#EF4444" },
   system: { label: "系统", dotColor: "#60A5FA" },
@@ -114,7 +114,7 @@ export function NotificationBell({ tenantId: _tenantId }: { tenantId?: string })
 
       {open && (
         <div
-          className="absolute right-0 mt-2 w-80 rounded-2xl overflow-hidden z-50"
+          className="absolute right-0 mt-2 w-80 rounded-xl overflow-hidden z-50"
           style={{
             background: "#0F1728",
             border: "1px solid rgba(255,255,255,0.08)",
@@ -127,7 +127,7 @@ export function NotificationBell({ tenantId: _tenantId }: { tenantId?: string })
             style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
           >
             <div className="flex items-center gap-2">
-              <Bell size={13} style={{ color: "#D4AF37" }} />
+              <Bell size={13} style={{ color: "var(--ci-accent)" }} />
               <span className="text-white text-sm font-semibold">通知</span>
               {unread > 0 && (
                 <span
@@ -144,7 +144,7 @@ export function NotificationBell({ tenantId: _tenantId }: { tenantId?: string })
                 className="flex items-center gap-1 text-[10px] transition-colors"
                 aria-label="标记全部已读"
                 style={{ color: "rgba(255,255,255,0.35)" }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "#D4AF37")}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "var(--ci-accent)")}
                 onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.35)")}
               >
                 <CheckCheck size={11} />
@@ -174,7 +174,7 @@ export function NotificationBell({ tenantId: _tenantId }: { tenantId?: string })
                     className="flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors"
                     style={{
                       borderBottom: "1px solid rgba(255,255,255,0.04)",
-                      background: isUnread ? "rgba(212,175,55,0.03)" : "transparent",
+                      background: isUnread ? "rgba(79,141,246,0.03)" : "transparent",
                     }}
                     onClick={() => !n.readAt && handleMarkRead(n.id)}
                   >
@@ -208,7 +208,7 @@ export function NotificationBell({ tenantId: _tenantId }: { tenantId?: string })
                           href={n.actionUrl}
                           onClick={() => setOpen(false)}
                           className="inline-flex items-center gap-1 mt-1.5 text-[10px] font-medium"
-                          style={{ color: "#D4AF37" }}
+                          style={{ color: "var(--ci-accent)" }}
                         >
                           查看详情
                           <ExternalLink size={9} />

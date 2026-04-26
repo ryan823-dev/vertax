@@ -229,33 +229,33 @@ export function TopicClusterStarter({ counts: countsProp, onSuccess }: StarterPr
   return (
     <div className="space-y-6">
       {/* 顶部深蓝指令台 */}
-      <div className="rounded-2xl p-8 relative overflow-hidden" style={{
-        background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)',
-        boxShadow: '0 8px 32px -8px rgba(0,0,0,0.45)',
+      <div className="relative overflow-hidden rounded-xl border border-[var(--ci-border)] bg-white/88 p-6 shadow-[var(--ci-shadow-soft)] sm:p-8" style={{
+        background: 'rgba(255,255,255,0.88)',
+        boxShadow: 'var(--ci-shadow-soft)',
       }}>
         {/* 金色光晕 */}
         <div className="absolute inset-0 pointer-events-none" style={{
-          background: 'radial-gradient(ellipse 70% 60% at 50% -10%, rgba(212,175,55,0.18) 0%, transparent 65%)',
+          background: 'transparent',
         }} />
         <div className="relative text-center">
-          <div className="w-16 h-16 mx-auto mb-5 rounded-2xl flex items-center justify-center" style={{
-            background: 'rgba(212,175,55,0.12)',
-            border: '1px solid rgba(212,175,55,0.35)',
-            boxShadow: '0 0 24px rgba(212,175,55,0.15)',
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-xl" style={{
+            background: 'rgba(79,141,246,0.10)',
+            border: '1px solid rgba(79,141,246,0.18)',
+            boxShadow: 'none',
           }}>
-            <Layers size={28} className="text-[#D4AF37]" />
+            <Layers size={28} className="text-[var(--ci-accent)]" />
           </div>
-          <h2 className="text-2xl font-bold text-white mb-2">启动内容增长引擎</h2>
-          <p className="text-slate-400 text-sm max-w-lg mx-auto">
+          <h2 className="mb-2 text-2xl font-bold text-[var(--ci-text)]">启动内容增长引擎</h2>
+          <p className="mx-auto max-w-lg text-sm leading-6 text-[var(--ci-text-secondary)]">
             选择启动方式，AI 自动规划 TOFU → MOFU → BOFU 全漏斗内容矩阵
           </p>
           {/* 漏斗标签 */}
-          <div className="flex items-center justify-center gap-3 mt-4">
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
             {['TOFU 认知', 'MOFU 评估', 'BOFU 决策'].map((stage, i) => (
-              <span key={i} className="px-3 py-1 rounded-full text-xs font-medium" style={{
-                background: 'rgba(212,175,55,0.1)',
-                border: '1px solid rgba(212,175,55,0.25)',
-                color: '#D4AF37',
+              <span key={i} className="rounded-full px-3 py-1 text-xs font-medium" style={{
+                background: 'rgba(79,141,246,0.08)',
+                border: '1px solid rgba(79,141,246,0.18)',
+                color: 'var(--ci-accent-strong)',
               }}>
                 {stage}
               </span>
@@ -266,46 +266,46 @@ export function TopicClusterStarter({ counts: countsProp, onSuccess }: StarterPr
 
       {/* 三条路径卡片 */}
       {selectedPath === null && (
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           {/* 路径 1: 从知识引擎同步 */}
           <button
             onClick={() => setSelectedPath('sync')}
-            className="group p-6 rounded-2xl border text-left transition-all hover:shadow-lg"
+            className="group rounded-xl border p-5 text-left transition-colors"
             style={{
               background: canSyncFromKnowledge
-                ? 'linear-gradient(135deg, #0B1220 0%, #0D1830 100%)'
-                : 'linear-gradient(135deg, #0F1620 0%, #111B28 100%)',
+                ? 'rgba(79,141,246,0.08)'
+                : '#FFFFFF',
               border: canSyncFromKnowledge
-                ? '1px solid rgba(212,175,55,0.45)'
-                : '1px solid rgba(255,255,255,0.08)',
-              boxShadow: canSyncFromKnowledge ? '0 4px 24px -4px rgba(212,175,55,0.2)' : 'none',
+                ? '1px solid rgba(79,141,246,0.28)'
+                : '1px solid var(--ci-border)',
+
             }}
           >
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{
-                background: canSyncFromKnowledge ? 'rgba(212,175,55,0.15)' : 'rgba(255,255,255,0.06)',
-                border: `1px solid ${canSyncFromKnowledge ? 'rgba(212,175,55,0.35)' : 'rgba(255,255,255,0.1)'}`,
+                background: canSyncFromKnowledge ? 'rgba(79,141,246,0.12)' : 'var(--ci-surface-muted)',
+                border: `1px solid ${canSyncFromKnowledge ? 'rgba(79,141,246,0.24)' : 'var(--ci-border)'}`,
               }}>
-                <Sparkles size={18} className={canSyncFromKnowledge ? 'text-[#D4AF37]' : 'text-slate-500'} />
+                <Sparkles size={18} className={canSyncFromKnowledge ? 'text-[var(--ci-accent)]' : 'text-slate-500'} />
               </div>
               {canSyncFromKnowledge && (
                 <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{
-                  background: '#D4AF37',
-                  color: '#0B1220',
+                  background: 'var(--ci-accent)',
+                  color: '#FFFFFF',
                 }}>
                   推荐
                 </span>
               )}
             </div>
-            <h3 className="font-bold text-white mb-2">从知识引擎同步</h3>
-            <p className="text-xs text-slate-400 mb-4 leading-relaxed">
+            <h3 className="mb-2 font-bold text-[var(--ci-text)]">从知识引擎同步</h3>
+            <p className="mb-4 text-xs leading-relaxed text-[var(--ci-text-secondary)]">
               基于企业档案、买家画像、证据库自动生成高质量内容规划
             </p>
             <div className="flex items-center gap-2 text-xs flex-wrap">
-              <span className={`flex items-center gap-1 ${counts.hasCompanyProfile ? 'text-emerald-400' : 'text-slate-600'}`}>
+              <span className={`flex items-center gap-1 ${counts.hasCompanyProfile ? 'text-emerald-600' : 'text-slate-500'}`}>
                 <CheckCircle2 size={11} /> 企业档案
               </span>
-              <span className={`flex items-center gap-1 ${counts.hasEvidence ? 'text-emerald-400' : 'text-slate-600'}`}>
+              <span className={`flex items-center gap-1 ${counts.hasEvidence ? 'text-emerald-600' : 'text-slate-500'}`}>
                 <CheckCircle2 size={11} /> 证据库
               </span>
             </div>
@@ -314,22 +314,22 @@ export function TopicClusterStarter({ counts: countsProp, onSuccess }: StarterPr
           {/* 路径 2: 手动快速起步 */}
           <button
             onClick={() => setSelectedPath('manual')}
-            className="group p-6 rounded-2xl border text-left transition-all hover:shadow-lg"
+            className="group rounded-xl border p-5 text-left transition-colors"
             style={{
-              background: 'linear-gradient(135deg, #0F1620 0%, #111B28 100%)',
-              border: '1px solid rgba(255,255,255,0.08)',
+              background: '#FFFFFF',
+              border: '1px solid var(--ci-border)',
             }}
           >
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.1)',
+                background: '#FFFFFF',
+                border: '1px solid var(--ci-border)',
               }}>
-                <BookOpen size={18} className="text-slate-400 group-hover:text-[#D4AF37] transition-colors" />
+                <BookOpen size={18} className="text-slate-500 transition-colors group-hover:text-[var(--ci-accent)]" />
               </div>
             </div>
-            <h3 className="font-bold text-white mb-2">手动快速起步</h3>
-            <p className="text-xs text-slate-400 mb-4 leading-relaxed">
+            <h3 className="mb-2 font-bold text-[var(--ci-text)]">手动快速起步</h3>
+            <p className="mb-4 text-xs leading-relaxed text-[var(--ci-text-secondary)]">
               输入产品关键词和目标市场，即可快速生成内容规划
             </p>
             <div className="flex items-center gap-1 text-xs text-slate-600">
@@ -341,22 +341,22 @@ export function TopicClusterStarter({ counts: countsProp, onSuccess }: StarterPr
           {/* 路径 3: 导入参考材料 */}
           <button
             onClick={() => setSelectedPath('import')}
-            className="group p-6 rounded-2xl border text-left transition-all hover:shadow-lg"
+            className="group rounded-xl border p-5 text-left transition-colors"
             style={{
-              background: 'linear-gradient(135deg, #0F1620 0%, #111B28 100%)',
-              border: '1px solid rgba(255,255,255,0.08)',
+              background: '#FFFFFF',
+              border: '1px solid var(--ci-border)',
             }}
           >
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.1)',
+                background: '#FFFFFF',
+                border: '1px solid var(--ci-border)',
               }}>
-                <Upload size={18} className="text-slate-400 group-hover:text-[#D4AF37] transition-colors" />
+                <Upload size={18} className="text-slate-500 transition-colors group-hover:text-[var(--ci-accent)]" />
               </div>
             </div>
-            <h3 className="font-bold text-white mb-2">导入参考材料</h3>
-            <p className="text-xs text-slate-400 mb-4 leading-relaxed">
+            <h3 className="mb-2 font-bold text-[var(--ci-text)]">导入参考材料</h3>
+            <p className="mb-4 text-xs leading-relaxed text-[var(--ci-text-secondary)]">
               粘贴竞品介绍、产品说明等文本，AI 提取关键信息生成规划
             </p>
             <div className="flex items-center gap-1 text-xs text-slate-600">
@@ -369,13 +369,13 @@ export function TopicClusterStarter({ counts: countsProp, onSuccess }: StarterPr
 
       {/* 路径 1: 从知识引擎同步 - 详情 */}
       {selectedPath === 'sync' && (
-        <div className="rounded-2xl p-6" style={{
-          background: 'linear-gradient(135deg, #0B1220 0%, #0D1830 100%)',
-          border: '1px solid rgba(212,175,55,0.25)',
+        <div className="rounded-xl border border-[var(--ci-border)] bg-white p-6" style={{
+          background: '#FFFFFF',
+          border: '1px solid rgba(79,141,246,0.18)',
         }}>
           <button
             onClick={() => setSelectedPath(null)}
-            className="flex items-center gap-1 text-sm text-slate-500 hover:text-[#D4AF37] mb-6 transition-colors"
+            className="flex items-center gap-1 text-sm text-slate-500 hover:text-[var(--ci-accent)] mb-6 transition-colors"
           >
             <ChevronRight size={14} className="rotate-180" />
             返回选择
@@ -383,14 +383,14 @@ export function TopicClusterStarter({ counts: countsProp, onSuccess }: StarterPr
 
           <div className="max-w-lg mx-auto">
             <div className="rounded-xl p-5 mb-6" style={{
-              background: 'rgba(212,175,55,0.06)',
-              border: '1px solid rgba(212,175,55,0.2)',
+              background: 'rgba(79,141,246,0.06)',
+              border: '1px solid rgba(79,141,246,0.18)',
             }}>
-              <h3 className="font-bold text-white mb-2 flex items-center gap-2">
-                <Sparkles size={16} className="text-[#D4AF37]" />
+              <h3 className="mb-2 font-bold text-[var(--ci-text)] flex items-center gap-2">
+                <Sparkles size={16} className="text-[var(--ci-accent)]" />
                 从知识引擎同步生成
               </h3>
-              <p className="text-sm text-slate-400 mb-4">
+              <p className="mb-4 text-sm text-[var(--ci-text-secondary)]">
                 系统将读取您的企业档案、买家画像和证据库，自动生成覆盖全漏斗的主题集群。
               </p>
 
@@ -406,7 +406,7 @@ export function TopicClusterStarter({ counts: countsProp, onSuccess }: StarterPr
                     ) : (
                       <AlertCircle size={15} className="text-amber-400" />
                     )}
-                    <span className={item.ready ? 'text-slate-300' : 'text-slate-500'}>
+                    <span className={item.ready ? 'text-[var(--ci-text)]' : 'text-slate-500'}>
                       {item.label} {item.note}
                     </span>
                   </div>
@@ -436,9 +436,9 @@ export function TopicClusterStarter({ counts: countsProp, onSuccess }: StarterPr
               disabled={isProcessing}
               className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-medium transition-all disabled:opacity-50"
               style={{
-                background: '#D4AF37',
-                color: '#0B1220',
-                boxShadow: '0 4px 20px -4px rgba(212,175,55,0.5)',
+                background: 'var(--ci-accent)',
+                color: '#FFFFFF',
+                boxShadow: '0 14px 28px -22px rgba(29,78,216,0.58)',
               }}
             >
               {isProcessing ? (
@@ -453,13 +453,13 @@ export function TopicClusterStarter({ counts: countsProp, onSuccess }: StarterPr
 
       {/* 路径 2: 手动快速起步 - 详情 */}
       {selectedPath === 'manual' && (
-        <div className="rounded-2xl p-6" style={{
-          background: 'linear-gradient(135deg, #0B1220 0%, #0D1830 100%)',
-          border: '1px solid rgba(255,255,255,0.08)',
+        <div className="rounded-xl border border-[var(--ci-border)] bg-white p-6" style={{
+          background: '#FFFFFF',
+          border: '1px solid var(--ci-border)',
         }}>
           <button
             onClick={() => setSelectedPath(null)}
-            className="flex items-center gap-1 text-sm text-slate-500 hover:text-[#D4AF37] mb-6 transition-colors"
+            className="flex items-center gap-1 text-sm text-slate-500 hover:text-[var(--ci-accent)] mb-6 transition-colors"
           >
             <ChevronRight size={14} className="rotate-180" />
             返回选择
@@ -468,7 +468,7 @@ export function TopicClusterStarter({ counts: countsProp, onSuccess }: StarterPr
           <div className="max-w-lg mx-auto space-y-5">
             {/* 产品关键词 */}
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-[var(--ci-text)] mb-2">
                 产品关键词 <span className="text-red-400">*</span>
                 <span className="text-xs text-slate-500 font-normal ml-2">(最多10个)</span>
               </label>
@@ -477,7 +477,7 @@ export function TopicClusterStarter({ counts: countsProp, onSuccess }: StarterPr
                   <span
                     key={kw}
                     className="inline-flex items-center gap-1 px-2 py-1 rounded text-sm"
-                    style={{ background: 'rgba(212,175,55,0.15)', color: '#D4AF37', border: '1px solid rgba(212,175,55,0.3)' }}
+                    style={{ background: 'rgba(79,141,246,0.10)', color: 'var(--ci-accent-strong)', border: '1px solid rgba(79,141,246,0.18)' }}
                   >
                     {kw}
                     <button onClick={() => removeKeyword(kw)} className="hover:text-red-400 transition-colors">
@@ -493,14 +493,14 @@ export function TopicClusterStarter({ counts: countsProp, onSuccess }: StarterPr
                   onChange={(e) => setNewKeyword(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && addKeyword()}
                   placeholder="输入关键词后回车"
-                  className="flex-1 px-3 py-2 rounded-lg text-sm text-white placeholder-slate-600 focus:outline-none"
-                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
+                  className="flex-1 px-3 py-2 rounded-lg text-sm text-[var(--ci-text)] placeholder:text-slate-400 focus:outline-none"
+                  style={{ background: '#FFFFFF', border: '1px solid var(--ci-border)' }}
                 />
                 <button
                   onClick={addKeyword}
                   disabled={manualKeywords.length >= 10}
-                  className="px-3 py-2 rounded-lg disabled:opacity-50 transition-colors hover:bg-[#D4AF37]/10"
-                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
+                  className="px-3 py-2 rounded-lg disabled:opacity-50 transition-colors hover:bg-[rgba(79,141,246,0.08)]"
+                  style={{ background: '#FFFFFF', border: '1px solid var(--ci-border)' }}
                 >
                   <Plus size={16} className="text-slate-400" />
                 </button>
@@ -509,7 +509,7 @@ export function TopicClusterStarter({ counts: countsProp, onSuccess }: StarterPr
 
             {/* 目标国家 */}
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-[var(--ci-text)] mb-2">
                 目标国家
                 <span className="text-xs text-slate-500 font-normal ml-2">(可选)</span>
               </label>
@@ -520,12 +520,12 @@ export function TopicClusterStarter({ counts: countsProp, onSuccess }: StarterPr
                     onClick={() => toggleCountry(code)}
                     className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
                     style={targetCountries.includes(code) ? {
-                      background: '#D4AF37',
-                      color: '#0B1220',
+                      background: 'var(--ci-accent)',
+                      color: '#FFFFFF',
                     } : {
-                      background: 'rgba(255,255,255,0.06)',
+                      background: '#FFFFFF',
                       color: '#94a3b8',
-                      border: '1px solid rgba(255,255,255,0.1)',
+                      border: '1px solid var(--ci-border)',
                     }}
                   >
                     {COUNTRY_NAMES[code]}
@@ -536,7 +536,7 @@ export function TopicClusterStarter({ counts: countsProp, onSuccess }: StarterPr
 
             {/* 目标客户类型 */}
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-[var(--ci-text)] mb-2">
                 目标客户类型
                 <span className="text-xs text-slate-500 font-normal ml-2">(可选)</span>
               </label>
@@ -545,8 +545,8 @@ export function TopicClusterStarter({ counts: countsProp, onSuccess }: StarterPr
                 value={customerType}
                 onChange={(e) => setCustomerType(e.target.value)}
                 placeholder="如：制造业采购经理、电商卖家..."
-                className="w-full px-3 py-2 rounded-lg text-sm text-white placeholder-slate-600 focus:outline-none"
-                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
+                className="w-full px-3 py-2 rounded-lg text-sm text-[var(--ci-text)] placeholder:text-slate-400 focus:outline-none"
+                style={{ background: '#FFFFFF', border: '1px solid var(--ci-border)' }}
               />
             </div>
 
@@ -555,9 +555,9 @@ export function TopicClusterStarter({ counts: countsProp, onSuccess }: StarterPr
               disabled={isProcessing || manualKeywords.length === 0}
               className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-medium transition-all disabled:opacity-50 mt-2"
               style={{
-                background: '#D4AF37',
-                color: '#0B1220',
-                boxShadow: '0 4px 20px -4px rgba(212,175,55,0.5)',
+                background: 'var(--ci-accent)',
+                color: '#FFFFFF',
+                boxShadow: '0 14px 28px -22px rgba(29,78,216,0.58)',
               }}
             >
               {isProcessing ? (
@@ -572,13 +572,13 @@ export function TopicClusterStarter({ counts: countsProp, onSuccess }: StarterPr
 
       {/* 路径 3: 导入参考材料 - 详情 */}
       {selectedPath === 'import' && (
-        <div className="rounded-2xl p-6" style={{
-          background: 'linear-gradient(135deg, #0B1220 0%, #0D1830 100%)',
-          border: '1px solid rgba(255,255,255,0.08)',
+        <div className="rounded-xl border border-[var(--ci-border)] bg-white p-6" style={{
+          background: '#FFFFFF',
+          border: '1px solid var(--ci-border)',
         }}>
           <button
             onClick={() => setSelectedPath(null)}
-            className="flex items-center gap-1 text-sm text-slate-500 hover:text-[#D4AF37] mb-6 transition-colors"
+            className="flex items-center gap-1 text-sm text-slate-500 hover:text-[var(--ci-accent)] mb-6 transition-colors"
           >
             <ChevronRight size={14} className="rotate-180" />
             返回选择
@@ -586,7 +586,7 @@ export function TopicClusterStarter({ counts: countsProp, onSuccess }: StarterPr
 
           <div className="max-w-lg mx-auto space-y-4">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-[var(--ci-text)] mb-2">
                 参考材料
                 <span className="text-xs text-slate-500 font-normal ml-2">
                   粘贴产品介绍、竞品信息或网站URL
@@ -597,8 +597,8 @@ export function TopicClusterStarter({ counts: countsProp, onSuccess }: StarterPr
                 onChange={(e) => setImportText(e.target.value)}
                 placeholder={"粘贴以下任意内容：\n- 产品介绍文案\n- 竞品网站URL\n- 公司简介\n- 行业关键词列表"}
                 rows={8}
-                className="w-full px-3 py-2 rounded-lg text-sm text-white placeholder-slate-600 focus:outline-none resize-none"
-                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
+                className="w-full px-3 py-2 rounded-lg text-sm text-[var(--ci-text)] placeholder:text-slate-400 focus:outline-none resize-none"
+                style={{ background: '#FFFFFF', border: '1px solid var(--ci-border)' }}
               />
               <p className="text-xs text-slate-600 mt-2">
                 注：系统不会抓取网页正文，仅将您输入的文本作为参考
@@ -610,9 +610,9 @@ export function TopicClusterStarter({ counts: countsProp, onSuccess }: StarterPr
               disabled={isProcessing || !importText.trim()}
               className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-medium transition-all disabled:opacity-50"
               style={{
-                background: '#D4AF37',
-                color: '#0B1220',
-                boxShadow: '0 4px 20px -4px rgba(212,175,55,0.5)',
+                background: 'var(--ci-accent)',
+                color: '#FFFFFF',
+                boxShadow: '0 14px 28px -22px rgba(29,78,216,0.58)',
               }}
             >
               {isProcessing ? (

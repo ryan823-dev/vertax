@@ -549,7 +549,7 @@ export default function TargetingSpecPage() {
 
         {/* Version History Panel */}
         {showVersionHistory && versions.length > 0 && !isEditing && (
-          <div className="bg-emerald-50/50 rounded-2xl border border-emerald-100 p-4">
+          <div className="bg-emerald-50/50 rounded-xl border border-emerald-100 p-4">
             <h3 className="text-sm font-bold text-[#0B1B2B] mb-3 flex items-center gap-2">
               <History size={14} className="text-emerald-500" />
               版本历史
@@ -576,7 +576,7 @@ export default function TargetingSpecPage() {
 
         {/* No Data State */}
         {!spec && !channels ? (
-          <div className="bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3] p-12 text-center">
+          <div className="bg-[#FFFCF6] rounded-xl border border-[var(--ci-border)] p-12 text-center">
             <Target size={48} className="text-slate-300 mx-auto mb-4" />
             <h3 className="text-lg font-bold text-[#0B1B2B] mb-2">尚未生成目标客户画像</h3>
             <p className="text-sm text-slate-500 mb-6 max-w-md mx-auto">
@@ -602,7 +602,7 @@ export default function TargetingSpecPage() {
               </button>
               <Link
                 href="/customer/knowledge/profiles"
-                className="inline-flex items-center gap-2 px-4 py-2.5 border border-[#E7E0D3] text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2.5 border border-[var(--ci-border)] text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors"
               >
                   前往知识引擎
                 <ChevronRight size={16} />
@@ -612,7 +612,7 @@ export default function TargetingSpecPage() {
         ) : (
           <>
             {/* Tabs */}
-            <div className="flex gap-2 border-b border-[#E7E0D3]">
+            <div className="flex gap-2 border-b border-[var(--ci-border)]">
               <button
                 onClick={() => { setActiveTab('targeting'); cancelEdit(); }}
                 className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
@@ -645,7 +645,7 @@ export default function TargetingSpecPage() {
             {activeTab === 'targeting' && spec && (
               <div className="space-y-6">
                 {/* ICP Header */}
-                <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl p-6 text-white">
+                <div className="bg-[var(--ci-success)] rounded-xl p-6 text-white">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       {isEditing ? (
@@ -695,7 +695,7 @@ export default function TargetingSpecPage() {
 
                 {/* Firmographic & Technographic */}
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3] p-5">
+                  <div className="bg-[#FFFCF6] rounded-xl border border-[var(--ci-border)] p-5">
                     <h3 className="font-bold text-[#0B1B2B] mb-4 flex items-center gap-2">
                       <Building2 size={16} className="text-emerald-500" />
                       企业画像
@@ -745,7 +745,7 @@ export default function TargetingSpecPage() {
                     </div>
                   </div>
 
-                  <div className="bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3] p-5">
+                  <div className="bg-[#FFFCF6] rounded-xl border border-[var(--ci-border)] p-5">
                     <h3 className="font-bold text-[#0B1B2B] mb-4 flex items-center gap-2">
                       <Cpu size={16} className="text-purple-500" />
                       技术画像
@@ -798,7 +798,7 @@ export default function TargetingSpecPage() {
                 </div>
 
                 {/* Decision Unit */}
-                <div className="bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3] p-5">
+                <div className="bg-[#FFFCF6] rounded-xl border border-[var(--ci-border)] p-5">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="font-bold text-[#0B1B2B] flex items-center gap-2">
                       <Users size={16} className="text-blue-500" />
@@ -816,7 +816,7 @@ export default function TargetingSpecPage() {
                   </div>
                   <div className="flex flex-wrap gap-3">
                     {spec.segmentation?.decisionUnit?.map((person, i) => (
-                      <div key={i} className="px-4 py-3 bg-white rounded-xl border border-[#E7E0D3] flex items-center gap-3">
+                      <div key={i} className="px-4 py-3 bg-white rounded-xl border border-[var(--ci-border)] flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
                           <Users size={14} className="text-blue-600" />
                         </div>
@@ -867,14 +867,14 @@ export default function TargetingSpecPage() {
 
                 {/* Triggers (Read-only for now) */}
                 {spec.segmentation?.triggers?.length > 0 && !isEditing && (
-                  <div className="bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3] p-5">
+                  <div className="bg-[#FFFCF6] rounded-xl border border-[var(--ci-border)] p-5">
                     <h3 className="font-bold text-[#0B1B2B] mb-4 flex items-center gap-2">
                       <Zap size={16} className="text-amber-500" />
                       购买触发器
                     </h3>
                     <div className="grid grid-cols-2 gap-3">
                       {spec.segmentation.triggers.map((trigger, i) => (
-                        <div key={i} className="p-4 bg-white rounded-xl border border-[#E7E0D3]">
+                        <div key={i} className="p-4 bg-white rounded-xl border border-[var(--ci-border)]">
                           <div className="flex items-center justify-between mb-2">
                             <h4 className="font-medium text-[#0B1B2B] text-sm">{trigger.name}</h4>
                             <span className={`px-2 py-0.5 text-[10px] rounded ${
@@ -909,7 +909,7 @@ export default function TargetingSpecPage() {
             {activeTab === 'channels' && channels && (
               <div className="space-y-6">
                 {/* Channel Map Header */}
-                <div className="bg-gradient-to-r from-[#0B1B2B] to-[#10263B] rounded-2xl p-6 text-white">
+                <div className="bg-[var(--ci-sidebar-shell)] rounded-xl p-6 text-white">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       {isEditing ? (
@@ -943,7 +943,7 @@ export default function TargetingSpecPage() {
                 {isEditing && (
                   <button
                     onClick={addChannel}
-                    className="w-full p-3 border-2 border-dashed border-[#E7E0D3] rounded-xl text-slate-400 hover:border-emerald-400 hover:text-emerald-500 transition-colors flex items-center justify-center gap-2"
+                    className="w-full p-3 border-2 border-dashed border-[var(--ci-border)] rounded-xl text-slate-400 hover:border-emerald-400 hover:text-emerald-500 transition-colors flex items-center justify-center gap-2"
                   >
                     <Plus size={16} />
                     添加渠道
@@ -963,7 +963,7 @@ export default function TargetingSpecPage() {
                     return (
                       <div 
                         key={i}
-                        className="bg-[#FFFCF6] rounded-2xl border border-[#E7E0D3] p-5 hover:border-emerald-200 transition-colors"
+                        className="bg-[#FFFCF6] rounded-xl border border-[var(--ci-border)] p-5 hover:border-emerald-200 transition-colors"
                       >
                         <div className="flex items-start gap-4">
                           <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${config.bg}`}>

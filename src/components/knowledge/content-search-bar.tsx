@@ -41,7 +41,7 @@ export function ContentSearchBar({ onSearch, placeholder = '搜索素材内容..
         value={value}
         onChange={handleChange}
         placeholder={placeholder}
-        className="w-full pl-9 pr-8 py-2 text-sm bg-white border border-[#E7E0D3] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/30 focus:border-[#D4AF37] placeholder:text-slate-400 text-[#0B1B2B]"
+        className="w-full pl-9 pr-8 py-2 text-sm bg-white border border-[var(--ci-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--ci-accent)]/30 focus:border-[var(--ci-accent)] placeholder:text-slate-400 text-[#0B1B2B]"
       />
       {value && (
         <button onClick={handleClear} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">

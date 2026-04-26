@@ -52,22 +52,22 @@ function PipelineStepper({
 
   const getStepIcon = (status: StepStatus, isCurrentStep: boolean) => {
     if (status === 'DONE') {
-      return <CheckCircle2 size={14} style={{ color: '#22C55E' }} />;
+      return <CheckCircle2 size={14} style={{ color: 'var(--ci-success)' }} />;
     }
     if (status === 'BLOCKED') {
-      return <AlertCircle size={14} style={{ color: '#EF4444' }} />;
+      return <AlertCircle size={14} style={{ color: 'var(--ci-danger)' }} />;
     }
     if (isCurrentStep) {
       return (
         <div
           className="w-3.5 h-3.5 rounded-full flex items-center justify-center"
           style={{
-            background: 'rgba(212,175,55,0.2)',
-            border: '1.5px solid #D4AF37',
-            boxShadow: '0 0 6px rgba(212,175,55,0.4)',
+            background: 'var(--ci-accent-soft)',
+            border: '1.5px solid var(--ci-accent)',
+            boxShadow: '0 0 0 3px rgba(79,141,246,0.12)',
           }}
         >
-          <div className="w-1.5 h-1.5 rounded-full bg-[#D4AF37]" />
+          <div className="w-1.5 h-1.5 rounded-full bg-[var(--ci-accent)]" />
         </div>
       );
     }
@@ -94,8 +94,8 @@ function PipelineStepper({
               style={
                 isCurrentStep
                   ? {
-                      background: 'rgba(212,175,55,0.1)',
-                      border: '1px solid rgba(212,175,55,0.2)',
+                      background: 'var(--ci-accent-soft)',
+                      border: '1px solid rgba(79,141,246,0.22)',
                     }
                   : {
                       background: 'transparent',
@@ -109,12 +109,12 @@ function PipelineStepper({
                 className="text-[11px] whitespace-nowrap font-medium transition-colors"
                 style={{
                   color: isDone
-                    ? '#22C55E'
+                    ? 'var(--ci-success)'
                     : step.status === 'BLOCKED'
-                    ? '#EF4444'
+                    ? 'var(--ci-danger)'
                     : isCurrentStep
-                    ? '#D4AF37'
-                    : 'rgba(255,255,255,0.35)',
+                    ? 'var(--ci-accent-strong)'
+                    : 'var(--ci-text-muted)',
                 }}
               >
                 {step.label}
@@ -124,7 +124,7 @@ function PipelineStepper({
             {!isLast && (
               <ChevronRight
                 size={11}
-                style={{ color: 'rgba(255,255,255,0.15)', margin: '0 1px' }}
+                style={{ color: 'rgba(126,146,172,0.46)', margin: '0 1px' }}
               />
             )}
           </div>
@@ -170,32 +170,32 @@ export function EngineHeader({
     <div
       className="px-5 py-3 sticky top-0 z-10"
       style={{
-        background: 'rgba(11,18,32,0.95)',
+        background: 'rgba(249,251,254,0.94)',
         backdropFilter: 'blur(16px)',
         WebkitBackdropFilter: 'blur(16px)',
-        borderBottom: '1px solid rgba(212,175,55,0.1)',
-        boxShadow: '0 1px 0 rgba(255,255,255,0.02), 0 4px 20px -4px rgba(0,0,0,0.4)',
+        borderBottom: '1px solid var(--ci-border)',
+        boxShadow: '0 12px 30px -28px rgba(15,23,38,0.38)',
       }}
     >
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between xl:gap-4">
         {/* Left: Title + Description */}
-        <div className="shrink-0">
+        <div className="min-w-0 shrink-0">
           <div className="flex items-center gap-2">
-            <BookOpen size={18} style={{ color: '#D4AF37' }} />
-            <h1 className="text-[15px] font-bold text-white">{title}</h1>
+            <BookOpen size={18} style={{ color: 'var(--ci-accent-strong)' }} />
+            <h1 className="text-[15px] font-bold text-[var(--ci-text)]">{title}</h1>
           </div>
-          <p className="text-[11px] ml-[26px] mt-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>
+          <p className="text-[11px] ml-[26px] mt-0.5" style={{ color: 'var(--ci-text-muted)' }}>
             {description}
           </p>
         </div>
 
         {/* Center: Stepper */}
-        <div className="flex-1 flex justify-center">
+        <div className="-mx-1 flex min-w-0 flex-1 overflow-x-auto px-1 xl:justify-center">
           <PipelineStepper steps={steps} currentStep={currentStep} />
         </div>
 
         {/* Right: CTA + Meta */}
-        <div className="shrink-0 flex items-center gap-2.5 max-w-[40%] min-w-0">
+        <div className="flex w-full shrink-0 items-center justify-between gap-2.5 xl:w-auto xl:max-w-[40%]">
           <div className="flex items-center gap-2.5">
             {/* Processing Indicator */}
             {processingHint && (
@@ -203,7 +203,7 @@ export function EngineHeader({
                 className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] whitespace-nowrap"
                 style={{
                   background: 'rgba(245,158,11,0.1)',
-                  color: '#F59E0B',
+                  color: 'var(--ci-warning)',
                   border: '1px solid rgba(245,158,11,0.2)',
                 }}
               >
@@ -232,17 +232,17 @@ export function EngineHeader({
                   style={
                     primaryAction.disabled
                       ? {
-                          background: 'rgba(255,255,255,0.05)',
-                          color: 'rgba(255,255,255,0.25)',
+                          background: 'var(--ci-surface-muted)',
+                          color: 'var(--ci-text-muted)',
                           cursor: 'not-allowed',
                           pointerEvents: 'none',
-                          border: '1px solid rgba(255,255,255,0.06)',
+                          border: '1px solid var(--ci-border)',
                         }
                       : {
-                          background: 'linear-gradient(135deg, #D4AF37 0%, #C4A028 100%)',
-                          color: '#0B1220',
-                          boxShadow: '0 2px 12px -2px rgba(212,175,55,0.4)',
-                          border: '1px solid rgba(212,175,55,0.3)',
+                          background: 'var(--ci-accent)',
+                          color: '#FFFFFF',
+                          boxShadow: '0 12px 24px -18px rgba(29,78,216,0.58)',
+                          border: '1px solid rgba(29,78,216,0.18)',
                         }
                   }
                 >
@@ -257,16 +257,16 @@ export function EngineHeader({
                   style={
                     primaryAction.disabled
                       ? {
-                          background: 'rgba(255,255,255,0.05)',
-                          color: 'rgba(255,255,255,0.25)',
+                          background: 'var(--ci-surface-muted)',
+                          color: 'var(--ci-text-muted)',
                           cursor: 'not-allowed',
-                          border: '1px solid rgba(255,255,255,0.06)',
+                          border: '1px solid var(--ci-border)',
                         }
                       : {
-                          background: 'linear-gradient(135deg, #D4AF37 0%, #C4A028 100%)',
-                          color: '#0B1220',
-                          boxShadow: '0 2px 12px -2px rgba(212,175,55,0.4)',
-                          border: '1px solid rgba(212,175,55,0.3)',
+                          background: 'var(--ci-accent)',
+                          color: '#FFFFFF',
+                          boxShadow: '0 12px 24px -18px rgba(29,78,216,0.58)',
+                          border: '1px solid rgba(29,78,216,0.18)',
                         }
                   }
                 >
@@ -324,16 +324,17 @@ export function NextStepBanner({
 
   return (
     <div
-      className="mx-5 mb-5 px-5 py-4 rounded-2xl flex items-center justify-between"
+      className="mx-5 mb-5 px-5 py-4 rounded-[var(--ci-radius-panel)] flex items-center justify-between"
       style={{
-        background: 'rgba(212,175,55,0.04)',
-        border: '1px solid rgba(212,175,55,0.15)',
+        background: 'rgba(255,255,255,0.82)',
+        border: '1px solid var(--ci-border)',
+        boxShadow: 'var(--ci-shadow-soft)',
       }}
     >
       <div className="flex items-center gap-3">
-        <CheckCircle2 size={18} style={{ color: '#22C55E' }} />
+        <CheckCircle2 size={18} style={{ color: 'var(--ci-success)' }} />
         <div>
-          <p className="text-sm font-semibold text-[#0B1220]">
+          <p className="text-sm font-semibold text-[var(--ci-text)]">
             当前步骤已完成：{currentStepData.label}
           </p>
           <p className="text-xs mt-0.5" style={{ color: 'rgba(0,0,0,0.4)' }}>
@@ -345,9 +346,9 @@ export function NextStepBanner({
         href={nextStepData.href}
         className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
         style={{
-          background: 'linear-gradient(135deg, #D4AF37 0%, #C4A028 100%)',
-          color: '#0B1220',
-          boxShadow: '0 2px 12px -2px rgba(212,175,55,0.4)',
+          background: 'var(--ci-accent)',
+          color: '#FFFFFF',
+          boxShadow: '0 12px 24px -18px rgba(29,78,216,0.58)',
         }}
       >
         继续下一步
@@ -374,22 +375,22 @@ export function EmptyStateGuide({ currentStep, steps, blocker }: EmptyStateGuide
   return (
     <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
       <div
-        className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5"
+        className="w-16 h-16 rounded-xl flex items-center justify-center mb-5"
         style={{
-          background: 'rgba(212,175,55,0.08)',
-          border: '1px solid rgba(212,175,55,0.2)',
-          boxShadow: '0 0 24px rgba(212,175,55,0.1)',
+          background: 'var(--ci-accent-soft)',
+          border: '1px solid rgba(79,141,246,0.22)',
+          boxShadow: '0 16px 30px -24px rgba(29,78,216,0.46)',
         }}
       >
-        <AlertCircle size={28} style={{ color: '#D4AF37' }} />
+        <AlertCircle size={28} style={{ color: 'var(--ci-accent-strong)' }} />
       </div>
 
-      <h3 className="text-lg font-bold mb-2" style={{ color: '#0B1B2B' }}>
+      <h3 className="text-lg font-bold mb-2" style={{ color: 'var(--ci-text)' }}>
         当前处于第 {currentStep} 步：{currentStepData?.label}
       </h3>
 
       {blocker ? (
-        <p className="text-sm mb-5" style={{ color: '#EF4444' }}>{blocker}</p>
+        <p className="text-sm mb-5" style={{ color: 'var(--ci-danger)' }}>{blocker}</p>
       ) : (
         <p className="text-sm mb-5" style={{ color: 'rgba(0,0,0,0.45)' }}>
           完成此步骤后，可以继续{nextStepData?.label || '下一步'}
@@ -401,9 +402,9 @@ export function EmptyStateGuide({ currentStep, steps, blocker }: EmptyStateGuide
           href={currentStepData.href}
           className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all"
           style={{
-            background: 'linear-gradient(135deg, #D4AF37 0%, #C4A028 100%)',
-            color: '#0B1220',
-            boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)',
+            background: 'var(--ci-accent)',
+            color: '#FFFFFF',
+            boxShadow: '0 12px 24px -18px rgba(29,78,216,0.58)',
           }}
         >
           {currentStep === 1 ? <Upload size={15} /> : <Sparkles size={15} />}

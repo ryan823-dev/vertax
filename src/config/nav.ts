@@ -46,7 +46,7 @@ export type NavItemKey =
   | 'hub'
   | 'knowledge';
 
-export type BadgeType = 'count' | 'status' | 'premium';
+export type BadgeType = 'count' | 'status' | 'highlight';
 export type HealthStatus = 'healthy' | 'warning' | 'critical' | 'inactive';
 
 export interface NavBadgeConfig {
@@ -176,8 +176,8 @@ export const navConfig: NavItem[] = [
       { key: 'briefs', label: '内容简报', href: '/customer/marketing/briefs', icon: FileEdit, order: 2 },
       { key: 'contents', label: '内容库', href: '/customer/marketing/contents', icon: FileStack, order: 3 },
       { key: 'strategy', label: '发布策略', href: '/customer/marketing/strategy', icon: Zap, order: 4 },
-      { key: 'seo-aeo', label: 'SEO/AEO 优化', href: '/customer/marketing/seo-aeo', icon: SearchCheck, order: 5, badge: { type: 'premium', text: 'NEW' } },
-      { key: 'geo-center', label: 'GEO 发布中心', href: '/customer/marketing/geo-center', icon: BrainCircuit, order: 6, badge: { type: 'premium', text: 'NEW' } },
+      { key: 'seo-aeo', label: 'SEO/AEO 优化', href: '/customer/marketing/seo-aeo', icon: SearchCheck, order: 5, badge: { type: 'highlight', text: 'NEW' } },
+      { key: 'geo-center', label: 'GEO 发布中心', href: '/customer/marketing/geo-center', icon: BrainCircuit, order: 6, badge: { type: 'highlight', text: 'NEW' } },
     ],
   },
 

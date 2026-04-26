@@ -314,7 +314,7 @@ export default function TopicClustersPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 text-[#D4AF37] animate-spin" />
+        <Loader2 className="w-8 h-8 text-[var(--ci-accent)] animate-spin" />
       </div>
     );
   }
@@ -322,7 +322,7 @@ export default function TopicClustersPage() {
   // 如果没有 TopicCluster，显示启动向导（即使 pipeline 加载失败也显示）
   if (!hasTopicCluster && pipelineLoaded) {
     return (
-      <div className="min-h-screen bg-[#0B1018]">
+      <div className="min-h-screen bg-[var(--ci-bg)]">
         {/* Growth Header - 只在 pipeline 数据可用时显示 */}
         {pipelineStatus && (
           <GrowthHeader
@@ -349,7 +349,7 @@ export default function TopicClustersPage() {
         )}
         
         {/* 启动向导 */}
-        <div className="max-w-4xl mx-auto p-6">
+        <div className="mx-auto max-w-4xl px-4 py-5 sm:px-6">
           <TopicClusterStarter 
             counts={pipelineStatus?.counts} 
             onSuccess={() => {
@@ -362,7 +362,7 @@ export default function TopicClustersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0B1018]">
+    <div className="min-h-screen bg-[var(--ci-bg)]">
       {/* Growth Header - 有数据时显示 */}
       {pipelineStatus && (
         <GrowthHeader
@@ -377,16 +377,16 @@ export default function TopicClustersPage() {
         />
       )}
       
-      <div className="flex gap-6 p-6">
+      <div className="flex flex-col gap-6 px-4 py-5 sm:px-6 lg:flex-row">
         {/* Main Content */}
-        <div className={`flex-1 space-y-6 ${showShell ? 'max-w-[calc(100%-600px)]' : ''}`}>
+        <div className={`flex-1 space-y-6 ${showShell ? 'lg:max-w-[calc(100%-600px)]' : ''}`}>
           {/* 操作工具栏 - 深蓝舞台风格 */}
-          <div className="rounded-2xl overflow-hidden" style={{
-            background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)',
-            boxShadow: '0 8px 32px -8px rgba(0,0,0,0.45)',
+          <div className="rounded-xl overflow-hidden" style={{
+            background: 'var(--ci-sidebar-shell)',
+            boxShadow: 'var(--ci-shadow-soft)',
           }}>
             <div className="absolute inset-x-0 top-0 h-0 pointer-events-none" style={{
-              background: 'radial-gradient(ellipse 70% 60% at 50% -20%, rgba(212,175,55,0.14) 0%, transparent 65%)',
+              background: 'transparent',
             }} />
             <div className="flex items-center justify-between p-3">
             <div className="flex items-center gap-3">
@@ -396,22 +396,22 @@ export default function TopicClustersPage() {
                     onClick={() => setShowShell(!showShell)}
                     className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
                       showShell 
-                        ? 'bg-[#D4AF37] text-[#0B1220]' 
-                        : 'text-slate-400 hover:text-[#D4AF37]'
+                        ? 'bg-[var(--ci-accent)] text-white'
+                        : 'text-slate-400 hover:text-[var(--ci-accent)]'
                     }`}
                   >
                     协作
                   </button>
                   <button
                     onClick={() => setShowVersionHistory(!showVersionHistory)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-400 hover:text-[#D4AF37] transition-colors rounded-lg"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-400 hover:text-[var(--ci-accent)] transition-colors rounded-lg"
                   >
                     <History size={14} />
                     v{currentVersion.version}
                   </button>
                   <button
                     onClick={enterEditMode}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-400 hover:text-[#D4AF37] transition-colors rounded-lg"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-400 hover:text-[var(--ci-accent)] transition-colors rounded-lg"
                   >
                     <Pencil size={14} />
                     编辑
@@ -432,7 +432,7 @@ export default function TopicClustersPage() {
                     onClick={saveEdit}
                     disabled={isSaving}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
-                    style={{ background: '#D4AF37', color: '#0B1220', boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)' }}
+                    style={{ background: 'var(--ci-accent)', color: '#FFFFFF', boxShadow: '0 4px 16px -2px rgba(79,141,246,0.35)' }}
                   >
                     {isSaving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
                     保存
@@ -444,14 +444,14 @@ export default function TopicClustersPage() {
                     onClick={handleRegenerate}
                     disabled={isSyncing}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
-                    style={{ background: '#D4AF37', color: '#0B1220', boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)' }}
+                    style={{ background: 'var(--ci-accent)', color: '#FFFFFF', boxShadow: '0 4px 16px -2px rgba(79,141,246,0.35)' }}
                   >
                     {isSyncing ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
                     重新生成
                   </button>
                   <button 
                     onClick={loadData}
-                    className="p-1.5 text-slate-400 hover:text-[#D4AF37] transition-colors"
+                    className="p-1.5 text-slate-400 hover:text-[var(--ci-accent)] transition-colors"
                     title="刷新数据"
                   >
                     <RefreshCw size={14} />
@@ -475,9 +475,9 @@ export default function TopicClustersPage() {
 
           {/* Version History Panel */}
           {showVersionHistory && versions.length > 0 && !isEditing && (
-            <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-4">
+            <div className="bg-[var(--ci-surface-strong)] rounded-xl border border-[var(--ci-border)] p-4">
               <h3 className="text-sm font-bold text-[#0B1B2B] mb-3 flex items-center gap-2">
-                <History size={14} className="text-[#D4AF37]" />
+                <History size={14} className="text-[var(--ci-accent)]" />
                 版本历史
               </h3>
               <div className="flex gap-2 overflow-x-auto pb-2">
@@ -486,8 +486,8 @@ export default function TopicClustersPage() {
                     key={v.id}
                     className={`shrink-0 px-3 py-2 rounded-lg border text-xs transition-all ${
                       currentVersion?.id === v.id
-                        ? 'border-[#D4AF37] bg-[#D4AF37]/10 text-[#0B1B2B]'
-                        : 'border-[#E8E0D0] hover:border-[#D4AF37]/50 text-slate-500'
+                        ? 'border-[var(--ci-accent)] bg-[var(--ci-accent)]/10 text-[#0B1B2B]'
+                        : 'border-[var(--ci-border)] hover:border-[var(--ci-accent)]/50 text-slate-500'
                     }`}
                   >
                     <div className="font-medium">v{v.version}</div>
@@ -503,7 +503,7 @@ export default function TopicClustersPage() {
           {topicCluster && (
             <>
               {/* Topic Cluster Header */}
-              <div className="bg-gradient-to-r from-[#0B1B2B] to-[#10263B] rounded-2xl p-6 text-white">
+              <div className="bg-[var(--ci-sidebar-shell)] rounded-xl p-6 text-white">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     {isEditing ? (
@@ -511,7 +511,7 @@ export default function TopicClustersPage() {
                         type="text"
                         value={topicCluster.name}
                         onChange={(e) => updateClusterName(e.target.value)}
-                        className="text-xl font-bold bg-white/10 border border-white/20 rounded-lg px-3 py-1 w-full max-w-md focus:outline-none focus:border-[#D4AF37]"
+                        className="text-xl font-bold bg-white/10 border border-white/20 rounded-lg px-3 py-1 w-full max-w-md focus:outline-none focus:border-[var(--ci-accent)]"
                       />
                     ) : (
                       <h2 className="text-xl font-bold">{topicCluster.name}</h2>
@@ -524,7 +524,7 @@ export default function TopicClustersPage() {
                   {displayContent?.confidence !== undefined && (
                     <div className="text-right">
                       <div className="text-[10px] text-slate-400 uppercase tracking-wider">置信度</div>
-                      <div className="text-2xl font-bold text-[#D4AF37]">
+                      <div className="text-2xl font-bold text-[var(--ci-accent)]">
                         {Math.round((displayContent.confidence || 0) * 100)}%
                       </div>
                     </div>
@@ -556,12 +556,12 @@ export default function TopicClustersPage() {
                 topicCluster.publishingDirections.length > 0) && (
                 <div className="grid gap-4 md:grid-cols-2">
                   {topicCluster.customerUnderstanding.length > 0 && (
-                    <div className="bg-white rounded-xl border border-[#E8E0D0] p-4">
+                    <div className="bg-white rounded-xl border border-[var(--ci-border)] p-4">
                       <h4 className="text-sm font-semibold text-[#0B1B2B] mb-2">客户认知</h4>
                       <ul className="space-y-1">
                         {topicCluster.customerUnderstanding.map((item, index) => (
                           <li key={index} className="text-xs text-slate-600 flex items-start gap-2">
-                            <span className="text-[#D4AF37]">•</span>
+                            <span className="text-[var(--ci-accent)]">•</span>
                             <span>{item}</span>
                           </li>
                         ))}
@@ -570,12 +570,12 @@ export default function TopicClustersPage() {
                   )}
 
                   {topicCluster.buyerUnderstanding.length > 0 && (
-                    <div className="bg-white rounded-xl border border-[#E8E0D0] p-4">
+                    <div className="bg-white rounded-xl border border-[var(--ci-border)] p-4">
                       <h4 className="text-sm font-semibold text-[#0B1B2B] mb-2">目标买家认知</h4>
                       <ul className="space-y-1">
                         {topicCluster.buyerUnderstanding.map((item, index) => (
                           <li key={index} className="text-xs text-slate-600 flex items-start gap-2">
-                            <span className="text-[#D4AF37]">•</span>
+                            <span className="text-[var(--ci-accent)]">•</span>
                             <span>{item}</span>
                           </li>
                         ))}
@@ -584,11 +584,11 @@ export default function TopicClustersPage() {
                   )}
 
                   {topicCluster.questionDirections.length > 0 && (
-                    <div className="bg-white rounded-xl border border-[#E8E0D0] p-4 md:col-span-2">
+                    <div className="bg-white rounded-xl border border-[var(--ci-border)] p-4 md:col-span-2">
                       <h4 className="text-sm font-semibold text-[#0B1B2B] mb-3">全局问题地图</h4>
                       <div className="grid gap-2">
                         {topicCluster.questionDirections.slice(0, 6).map((item, index) => (
-                          <div key={index} className="rounded-lg border border-[#F0EBD8] bg-[#FFFCF7] px-3 py-2">
+                          <div key={index} className="rounded-lg border border-[var(--ci-surface-muted)] bg-[#FFFFFF] px-3 py-2">
                             <div className="flex items-center gap-2 flex-wrap mb-1">
                               {item.stage && (
                                 <span className={`px-2 py-0.5 text-[10px] font-medium rounded ${FUNNEL_COLORS[item.stage].bg} ${FUNNEL_COLORS[item.stage].text}`}>
@@ -612,14 +612,14 @@ export default function TopicClustersPage() {
                   )}
 
                   {topicCluster.publishingDirections.length > 0 && (
-                    <div className="bg-white rounded-xl border border-[#E8E0D0] p-4 md:col-span-2">
+                    <div className="bg-white rounded-xl border border-[var(--ci-border)] p-4 md:col-span-2">
                       <h4 className="text-sm font-semibold text-[#0B1B2B] mb-3">建议发布方向</h4>
                       <div className="grid gap-3 md:grid-cols-2">
                         {topicCluster.publishingDirections.map((item, index) => (
-                          <div key={index} className="rounded-lg border border-[#F0EBD8] bg-[#FFFCF7] p-3">
+                          <div key={index} className="rounded-lg border border-[var(--ci-surface-muted)] bg-[#FFFFFF] p-3">
                             <div className="flex items-center gap-2 mb-1 flex-wrap">
                               <p className="text-sm font-medium text-[#0B1B2B]">{item.channel}</p>
-                              <span className={`px-2 py-0.5 text-[10px] rounded-full ${item.mode === 'integrated' ? 'bg-emerald-50 text-emerald-700' : 'bg-[#D4AF37]/10 text-[#8C6A00]'}`}>
+                              <span className={`px-2 py-0.5 text-[10px] rounded-full ${item.mode === 'integrated' ? 'bg-emerald-50 text-emerald-700' : 'bg-[var(--ci-accent)]/10 text-[var(--ci-accent-strong)]'}`}>
                                 {item.mode === 'integrated' ? '可执行主发布' : '建议分发'}
                               </span>
                             </div>
@@ -650,7 +650,7 @@ export default function TopicClustersPage() {
               {isEditing && (
                 <button
                   onClick={addCluster}
-                  className="w-full p-3 border-2 border-dashed border-[#E8E0D0] rounded-xl text-slate-400 hover:border-[#D4AF37] hover:text-[#D4AF37] transition-colors flex items-center justify-center gap-2"
+                  className="w-full p-3 border-2 border-dashed border-[var(--ci-border)] rounded-xl text-slate-400 hover:border-[var(--ci-accent)] hover:text-[var(--ci-accent)] transition-colors flex items-center justify-center gap-2"
                 >
                   <Plus size={16} />
                   添加内容支柱
@@ -662,10 +662,10 @@ export default function TopicClustersPage() {
                 {topicCluster.clusters?.map((cluster, idx) => (
                   <div 
                     key={idx}
-                    className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] overflow-hidden"
+                    className="bg-[var(--ci-surface-strong)] rounded-xl border border-[var(--ci-border)] overflow-hidden"
                   >
                     {/* Cluster Header */}
-                    <div className="flex items-center p-5 hover:bg-[#F0EBD8] transition-colors">
+                    <div className="flex items-center p-5 hover:bg-[var(--ci-surface-muted)] transition-colors">
                       {isEditing && (
                         <div className="mr-3 text-slate-300 cursor-move">
                           <GripVertical size={16} />
@@ -676,7 +676,7 @@ export default function TopicClustersPage() {
                         className="flex-1 flex items-center justify-between"
                       >
                         <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 bg-gradient-to-br from-[#D4AF37] to-[#D4AF37]/70 rounded-xl flex items-center justify-center">
+                          <div className="w-10 h-10 bg-[var(--ci-accent-soft)] rounded-xl flex items-center justify-center">
                             <Layers size={18} className="text-[#0B1B2B]" />
                           </div>
                           <div className="text-left">
@@ -686,7 +686,7 @@ export default function TopicClustersPage() {
                                 value={cluster.pillar}
                                 onChange={(e) => updatePillar(idx, 'pillar', e.target.value)}
                                 onClick={(e) => e.stopPropagation()}
-                                className="font-bold text-[#0B1B2B] bg-transparent border-b border-transparent hover:border-[#D4AF37] focus:border-[#D4AF37] focus:outline-none"
+                                className="font-bold text-[#0B1B2B] bg-transparent border-b border-transparent hover:border-[var(--ci-accent)] focus:border-[var(--ci-accent)] focus:outline-none"
                               />
                             ) : (
                               <h3 className="font-bold text-[#0B1B2B]">{cluster.pillar}</h3>
@@ -713,18 +713,18 @@ export default function TopicClustersPage() {
 
                     {/* Cluster Content Map */}
                     {expandedCluster === idx && cluster.contentMap && (
-                      <div className="border-t border-[#E8E0D0] p-5">
+                      <div className="border-t border-[var(--ci-border)] p-5">
                         {(cluster.questionMap.length > 0 ||
                           Boolean(cluster.primaryPublishTarget) ||
                           cluster.suggestedDistributionTargets.length > 0 ||
                           cluster.targetRoles.length > 0) && (
                           <div className="grid gap-3 md:grid-cols-2 mb-4">
                             {cluster.questionMap.length > 0 && (
-                              <div className="rounded-xl border border-[#E8E0D0] bg-white p-4 md:col-span-2">
+                              <div className="rounded-xl border border-[var(--ci-border)] bg-white p-4 md:col-span-2">
                                 <h4 className="text-sm font-semibold text-[#0B1B2B] mb-2">此支柱重点回答的问题</h4>
                                 <div className="grid gap-2">
                                   {cluster.questionMap.slice(0, 5).map((question, questionIdx) => (
-                                    <div key={questionIdx} className="rounded-lg bg-[#FFFCF7] border border-[#F0EBD8] px-3 py-2">
+                                    <div key={questionIdx} className="rounded-lg bg-[#FFFFFF] border border-[var(--ci-surface-muted)] px-3 py-2">
                                       <div className="flex items-center gap-2 flex-wrap mb-1">
                                         {question.stage && (
                                           <span className={`px-2 py-0.5 text-[10px] font-medium rounded ${FUNNEL_COLORS[question.stage].bg} ${FUNNEL_COLORS[question.stage].text}`}>
@@ -748,7 +748,7 @@ export default function TopicClustersPage() {
                             )}
 
                             {cluster.targetRoles.length > 0 && (
-                              <div className="rounded-xl border border-[#E8E0D0] bg-white p-4">
+                              <div className="rounded-xl border border-[var(--ci-border)] bg-white p-4">
                                 <h4 className="text-sm font-semibold text-[#0B1B2B] mb-2">优先服务角色</h4>
                                 <div className="flex flex-wrap gap-2">
                                   {cluster.targetRoles.map((role) => (
@@ -762,7 +762,7 @@ export default function TopicClustersPage() {
 
                             {(cluster.primaryPublishTarget ||
                               cluster.suggestedDistributionTargets.length > 0) && (
-                              <div className="rounded-xl border border-[#E8E0D0] bg-white p-4">
+                              <div className="rounded-xl border border-[var(--ci-border)] bg-white p-4">
                                 <h4 className="text-sm font-semibold text-[#0B1B2B] mb-2">发布方式</h4>
                                 {cluster.primaryPublishTarget && (
                                   <div className="mb-2">
@@ -777,7 +777,7 @@ export default function TopicClustersPage() {
                                     <p className="text-[11px] text-slate-500 mb-1">建议分发方向</p>
                                     <div className="flex flex-wrap gap-2">
                                       {cluster.suggestedDistributionTargets.map((target) => (
-                                        <span key={target} className="px-2 py-1 text-[11px] rounded-full bg-[#D4AF37]/10 text-[#8C6A00]">
+                                        <span key={target} className="px-2 py-1 text-[11px] rounded-full bg-[var(--ci-accent)]/10 text-[var(--ci-accent-strong)]">
                                           {target}
                                         </span>
                                       ))}
@@ -791,13 +791,13 @@ export default function TopicClustersPage() {
 
                         <div className="grid gap-3">
                           {cluster.contentMap.map((item, itemIdx) => {
-                            const typeColor = CONTENT_TYPE_COLORS[item.type] || { bg: 'bg-[#F7F3E8]', text: 'text-slate-600' };
+                            const typeColor = CONTENT_TYPE_COLORS[item.type] || { bg: 'bg-[var(--ci-surface-strong)]', text: 'text-slate-600' };
                             const funnelColor = FUNNEL_COLORS[item.funnel] || { bg: 'bg-slate-100', text: 'text-slate-700' };
                             
                             return (
                               <div 
                                 key={itemIdx}
-                                className={`flex items-start gap-4 p-4 bg-[#FFFCF7] rounded-xl border border-[#E8E0D0] ${isEditing ? '' : 'hover:border-[#D4AF37]/30'} transition-colors`}
+                                className={`flex items-start gap-4 p-4 bg-[#FFFFFF] rounded-xl border border-[var(--ci-border)] ${isEditing ? '' : 'hover:border-[var(--ci-accent)]/30'} transition-colors`}
                               >
                                 <div className="shrink-0">
                                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${typeColor.bg}`}>
@@ -817,21 +817,21 @@ export default function TopicClustersPage() {
                                         <select
                                           value={item.type}
                                           onChange={(e) => updateContentMapItem(idx, itemIdx, 'type', e.target.value)}
-                                          className="px-2 py-0.5 text-[10px] font-medium rounded border border-[#E8E0D0] bg-[#FFFCF7]"
+                                          className="px-2 py-0.5 text-[10px] font-medium rounded border border-[var(--ci-border)] bg-[#FFFFFF]"
                                         >
                                           {CONTENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                                         </select>
                                         <select
                                           value={item.funnel}
                                           onChange={(e) => updateContentMapItem(idx, itemIdx, 'funnel', e.target.value)}
-                                          className="px-2 py-0.5 text-[10px] font-medium rounded border border-[#E8E0D0] bg-[#FFFCF7]"
+                                          className="px-2 py-0.5 text-[10px] font-medium rounded border border-[var(--ci-border)] bg-[#FFFFFF]"
                                         >
                                           {FUNNEL_STAGES.map(f => <option key={f} value={f}>{f}</option>)}
                                         </select>
                                         <select
                                           value={item.intent}
                                           onChange={(e) => updateContentMapItem(idx, itemIdx, 'intent', e.target.value)}
-                                          className="px-2 py-0.5 text-[10px] font-medium rounded border border-[#E8E0D0] bg-[#FFFCF7]"
+                                          className="px-2 py-0.5 text-[10px] font-medium rounded border border-[var(--ci-border)] bg-[#FFFFFF]"
                                         >
                                           {INTENT_TYPES.map(i => <option key={i} value={i}>{i}</option>)}
                                         </select>
@@ -840,13 +840,13 @@ export default function TopicClustersPage() {
                                         type="text"
                                         value={item.title}
                                         onChange={(e) => updateContentMapItem(idx, itemIdx, 'title', e.target.value)}
-                                        className="w-full font-medium text-[#0B1B2B] text-sm bg-transparent border-b border-slate-200 focus:border-[#D4AF37] focus:outline-none"
+                                        className="w-full font-medium text-[#0B1B2B] text-sm bg-transparent border-b border-slate-200 focus:border-[var(--ci-accent)] focus:outline-none"
                                         placeholder="内容标题"
                                       />
                                       <textarea
                                         value={item.briefGoal}
                                         onChange={(e) => updateContentMapItem(idx, itemIdx, 'briefGoal', e.target.value)}
-                                        className="w-full text-xs text-slate-500 bg-transparent border border-slate-200 rounded p-2 focus:border-[#D4AF37] focus:outline-none resize-none"
+                                        className="w-full text-xs text-slate-500 bg-transparent border border-slate-200 rounded p-2 focus:border-[var(--ci-accent)] focus:outline-none resize-none"
                                         rows={2}
                                         placeholder="内容目标描述"
                                       />
@@ -892,7 +892,7 @@ export default function TopicClustersPage() {
                                       {item.suggestedDistributionTargets.length > 0 && (
                                         <div className="flex flex-wrap gap-1 mt-2">
                                           {item.suggestedDistributionTargets.map((target) => (
-                                            <span key={target} className="px-2 py-0.5 text-[10px] rounded bg-[#D4AF37]/10 text-[#8C6A00]">
+                                            <span key={target} className="px-2 py-0.5 text-[10px] rounded bg-[var(--ci-accent)]/10 text-[var(--ci-accent-strong)]">
                                               {target}
                                             </span>
                                           ))}
@@ -911,7 +911,7 @@ export default function TopicClustersPage() {
                                 ) : (
                                   <Link
                                     href="/customer/marketing/strategy"
-                                    className="shrink-0 px-3 py-1.5 text-xs text-[#D4AF37] hover:bg-[#D4AF37]/10 rounded-lg transition-colors"
+                                    className="shrink-0 px-3 py-1.5 text-xs text-[var(--ci-accent)] hover:bg-[var(--ci-accent)]/10 rounded-lg transition-colors"
                                   >
                                     生成内容
                                   </Link>
@@ -924,7 +924,7 @@ export default function TopicClustersPage() {
                           {isEditing && (
                             <button
                               onClick={() => addContentItem(idx)}
-                              className="p-3 border-2 border-dashed border-[#E8E0D0] rounded-xl text-slate-400 hover:border-[#D4AF37] hover:text-[#D4AF37] transition-colors flex items-center justify-center gap-2"
+                              className="p-3 border-2 border-dashed border-[var(--ci-border)] rounded-xl text-slate-400 hover:border-[var(--ci-accent)] hover:text-[var(--ci-accent)] transition-colors flex items-center justify-center gap-2"
                             >
                               <Plus size={14} />
                               添加内容项
@@ -934,7 +934,7 @@ export default function TopicClustersPage() {
 
                         {/* Required Evidence */}
                         {cluster.requiredEvidenceIds?.length > 0 && (
-                          <div className="mt-4 pt-4 border-t border-[#E8E0D0]">
+                          <div className="mt-4 pt-4 border-t border-[var(--ci-border)]">
                             <p className="text-[10px] text-slate-400 flex items-center gap-1">
                               <CheckCircle2 size={10} />
                               此支柱需要 {cluster.requiredEvidenceIds.length} 条证据支撑

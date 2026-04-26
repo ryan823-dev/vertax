@@ -277,7 +277,7 @@ export default function MarketingStrategyPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 text-[#D4AF37] animate-spin" />
+        <Loader2 className="w-8 h-8 text-[var(--ci-accent)] animate-spin" />
       </div>
     );
   }
@@ -285,18 +285,18 @@ export default function MarketingStrategyPage() {
   return (
     <div className="space-y-6">
       {/* Header - 指令台 深蓝舞台风格 */}
-      <div className="rounded-2xl p-6 relative overflow-hidden" style={{
-        background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)',
-        boxShadow: '0 8px 32px -8px rgba(0,0,0,0.45)',
+      <div className="rounded-xl p-6 relative overflow-hidden" style={{
+        background: 'var(--ci-sidebar-shell)',
+        boxShadow: 'var(--ci-shadow-soft)',
       }}>
         <div className="absolute inset-0 pointer-events-none" style={{
-          background: 'radial-gradient(ellipse 70% 60% at 50% -20%, rgba(212,175,55,0.14) 0%, transparent 65%)',
+          background: 'transparent',
         }} />
         <div className="relative flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link
               href="/customer/marketing"
-              className="p-2 text-slate-400 hover:text-[#D4AF37] transition-colors rounded-lg hover:bg-white/10"
+              className="p-2 text-slate-400 hover:text-[var(--ci-accent)] transition-colors rounded-lg hover:bg-white/10"
             >
               <ArrowLeft size={20} />
             </Link>
@@ -312,7 +312,7 @@ export default function MarketingStrategyPage() {
               onClick={handleRegenerate}
               disabled={isSyncing}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors disabled:opacity-50"
-              style={{ background: '#D4AF37', color: '#0B1220', boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)' }}
+              style={{ background: 'var(--ci-accent)', color: '#FFFFFF', boxShadow: '0 4px 16px -2px rgba(79,141,246,0.35)' }}
             >
               {isSyncing ? (
                 <Loader2 size={16} className="animate-spin" />
@@ -323,7 +323,7 @@ export default function MarketingStrategyPage() {
             </button>
             <button
               onClick={loadData}
-              className="p-2 text-slate-400 hover:text-[#D4AF37] transition-colors"
+              className="p-2 text-slate-400 hover:text-[var(--ci-accent)] transition-colors"
               title="刷新数据"
             >
               <RefreshCw size={18} />
@@ -345,12 +345,12 @@ export default function MarketingStrategyPage() {
 
       {/* No Data State */}
       {!topicCluster ? (
-        <div className="rounded-2xl p-12 text-center" style={{
-          background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)',
-          boxShadow: '0 8px 32px -8px rgba(0,0,0,0.45)',
+        <div className="rounded-xl p-12 text-center" style={{
+          background: 'var(--ci-sidebar-shell)',
+          boxShadow: 'var(--ci-shadow-soft)',
         }}>
-          <div className="w-16 h-16 mx-auto mb-4 rounded-xl flex items-center justify-center" style={{ background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.3)' }}>
-            <Target size={28} className="text-[#D4AF37]" />
+          <div className="w-16 h-16 mx-auto mb-4 rounded-xl flex items-center justify-center" style={{ background: 'rgba(79,141,246,0.12)', border: '1px solid rgba(79,141,246,0.3)' }}>
+            <Target size={28} className="text-[var(--ci-accent)]" />
           </div>
           <h3 className="text-lg font-bold text-slate-200 mb-2">尚未生成主题集群</h3>
           <p className="text-sm text-slate-400 mb-6">
@@ -359,7 +359,7 @@ export default function MarketingStrategyPage() {
           <Link
             href="/customer/knowledge/company"
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium"
-            style={{ background: '#D4AF37', color: '#0B1220', boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)' }}
+            style={{ background: 'var(--ci-accent)', color: '#FFFFFF', boxShadow: '0 4px 16px -2px rgba(79,141,246,0.35)' }}
           >
             前往知识引擎
             <ChevronRight size={16} />
@@ -368,16 +368,16 @@ export default function MarketingStrategyPage() {
       ) : (
         <>
           {/* Batch Action Bar */}
-          <div className="bg-gradient-to-r from-[#0B1B2B] to-[#10263B] rounded-2xl p-5">
+          <div className="bg-[var(--ci-sidebar-shell)] rounded-xl p-5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-[#D4AF37]/20 rounded-xl flex items-center justify-center">
-                  <Zap size={24} className="text-[#D4AF37]" />
+                <div className="w-12 h-12 bg-[var(--ci-accent)]/20 rounded-xl flex items-center justify-center">
+                  <Zap size={24} className="text-[var(--ci-accent)]" />
                 </div>
                 <div>
                   <h2 className="text-lg font-bold text-white">批量生成 Brief</h2>
                   <p className="text-sm text-slate-400">
-                    已选择 <span className="text-[#D4AF37] font-bold">{selectedItems.size}</span> / {totalItems} 个内容项
+                    已选择 <span className="text-[var(--ci-accent)] font-bold">{selectedItems.size}</span> / {totalItems} 个内容项
                   </p>
                 </div>
               </div>
@@ -389,7 +389,7 @@ export default function MarketingStrategyPage() {
                   className="px-3 py-2 text-sm text-slate-300 hover:text-white transition-colors flex items-center gap-2"
                 >
                   {selectedItems.size === totalItems ? (
-                    <CheckSquare size={16} className="text-[#D4AF37]" />
+                    <CheckSquare size={16} className="text-[var(--ci-accent)]" />
                   ) : (
                     <Square size={16} />
                   )}
@@ -400,7 +400,7 @@ export default function MarketingStrategyPage() {
                 <select
                   value={selectedPersonaId}
                   onChange={e => setSelectedPersonaId(e.target.value)}
-                  className="px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-sm text-white focus:outline-none focus:border-[#D4AF37]"
+                  className="px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-sm text-white focus:outline-none focus:border-[var(--ci-accent)]"
                 >
                   <option value="" className="text-slate-900">不指定 Persona</option>
                   {personas.map(p => (
@@ -414,7 +414,7 @@ export default function MarketingStrategyPage() {
                 <button
                   onClick={handleBatchCreate}
                   disabled={selectedItems.size === 0 || isCreating}
-                  className="px-4 py-2 bg-[#D4AF37] text-[#0B1B2B] rounded-xl text-sm font-bold hover:bg-[#D4AF37]/90 transition-colors disabled:opacity-50 flex items-center gap-2"
+                  className="px-4 py-2 bg-[var(--ci-accent)] text-[#0B1B2B] rounded-xl text-sm font-bold hover:bg-[var(--ci-accent)]/90 transition-colors disabled:opacity-50 flex items-center gap-2"
                 >
                   {isCreating ? (
                     <Loader2 size={16} className="animate-spin" />
@@ -436,14 +436,14 @@ export default function MarketingStrategyPage() {
                     <AlertCircle size={16} className="text-amber-400" />
                   )}
                   <span className="text-white">
-                    成功创建 <span className="font-bold text-[#D4AF37]">{batchResult.created}</span> 个 Brief
+                    成功创建 <span className="font-bold text-[var(--ci-accent)]">{batchResult.created}</span> 个 Brief
                     {batchResult.errors.length > 0 && (
                       <span className="text-amber-300">，{batchResult.errors.length} 个失败</span>
                     )}
                   </span>
                   <Link
                     href="/customer/marketing/briefs"
-                    className="ml-auto text-[#D4AF37] hover:underline flex items-center gap-1"
+                    className="ml-auto text-[var(--ci-accent)] hover:underline flex items-center gap-1"
                   >
                     查看 Briefs
                     <ArrowRight size={14} />
@@ -476,22 +476,22 @@ export default function MarketingStrategyPage() {
               return (
                 <div
                   key={clusterIdx}
-                  className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] overflow-hidden"
+                  className="bg-[var(--ci-surface-strong)] rounded-xl border border-[var(--ci-border)] overflow-hidden"
                 >
                   {/* Cluster Header */}
-                  <div className="flex items-center p-5 hover:bg-[#F0EBD8] transition-colors">
+                  <div className="flex items-center p-5 hover:bg-[var(--ci-surface-muted)] transition-colors">
                     {/* Checkbox */}
                     <button
                       onClick={() => toggleSelectAllInCluster(clusterIdx)}
-                      className="mr-4 p-1 text-slate-400 hover:text-[#D4AF37] transition-colors"
+                      className="mr-4 p-1 text-slate-400 hover:text-[var(--ci-accent)] transition-colors"
                     >
                       {allSelectedInCluster ? (
-                        <CheckSquare size={20} className="text-[#D4AF37]" />
+                        <CheckSquare size={20} className="text-[var(--ci-accent)]" />
                       ) : selectedInCluster > 0 ? (
                         <div className="relative">
                           <Square size={20} />
                           <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="w-2 h-2 bg-[#D4AF37] rounded-sm" />
+                            <div className="w-2 h-2 bg-[var(--ci-accent)] rounded-sm" />
                           </div>
                         </div>
                       ) : (
@@ -504,14 +504,14 @@ export default function MarketingStrategyPage() {
                       className="flex-1 flex items-center justify-between"
                     >
                       <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-gradient-to-br from-[#D4AF37] to-[#D4AF37]/70 rounded-xl flex items-center justify-center">
+                        <div className="w-10 h-10 bg-[var(--ci-accent-soft)] rounded-xl flex items-center justify-center">
                           <Layers size={18} className="text-[#0B1B2B]" />
                         </div>
                         <div className="text-left">
                           <h3 className="font-bold text-[#0B1B2B]">{cluster.pillar}</h3>
                           <p className="text-xs text-slate-500 mt-0.5">
                             {cluster.intent} ·
-                            <span className={selectedInCluster > 0 ? 'text-[#D4AF37]' : ''}>
+                            <span className={selectedInCluster > 0 ? 'text-[var(--ci-accent)]' : ''}>
                               {' '}{selectedInCluster}/{clusterItemCount} 已选
                             </span>
                           </p>
@@ -526,17 +526,17 @@ export default function MarketingStrategyPage() {
 
                   {/* Cluster Content Map */}
                   {isExpanded && cluster.contentMap && (
-                    <div className="border-t border-[#E8E0D0] p-5">
+                    <div className="border-t border-[var(--ci-border)] p-5">
                       {(cluster.questionMap.length > 0 ||
                         Boolean(cluster.primaryPublishTarget) ||
                         cluster.suggestedDistributionTargets.length > 0) && (
                         <div className="grid gap-3 md:grid-cols-2 mb-4">
                           {cluster.questionMap.length > 0 && (
-                            <div className="rounded-xl border border-[#E8E0D0] bg-white p-4 md:col-span-2">
+                            <div className="rounded-xl border border-[var(--ci-border)] bg-white p-4 md:col-span-2">
                               <h4 className="text-sm font-semibold text-[#0B1B2B] mb-2">这组内容要回答的问题</h4>
                               <div className="grid gap-2">
                                 {cluster.questionMap.slice(0, 4).map((question, questionIdx) => (
-                                  <div key={questionIdx} className="rounded-lg bg-[#FFFCF7] border border-[#F0EBD8] px-3 py-2">
+                                  <div key={questionIdx} className="rounded-lg bg-[#FFFFFF] border border-[var(--ci-surface-muted)] px-3 py-2">
                                     <div className="flex items-center gap-2 flex-wrap mb-1">
                                       {question.stage && (
                                         <span className={`px-2 py-0.5 text-[10px] font-medium rounded ${FUNNEL_COLORS[question.stage].bg} ${FUNNEL_COLORS[question.stage].text}`}>
@@ -561,7 +561,7 @@ export default function MarketingStrategyPage() {
 
                           {(cluster.primaryPublishTarget ||
                             cluster.suggestedDistributionTargets.length > 0) && (
-                            <div className="rounded-xl border border-[#E8E0D0] bg-white p-4 md:col-span-2">
+                            <div className="rounded-xl border border-[var(--ci-border)] bg-white p-4 md:col-span-2">
                               <h4 className="text-sm font-semibold text-[#0B1B2B] mb-2">发布方式</h4>
                               {cluster.primaryPublishTarget && (
                                 <div className="mb-2">
@@ -576,7 +576,7 @@ export default function MarketingStrategyPage() {
                                   <p className="text-[11px] text-slate-500 mb-1">建议分发方向</p>
                                   <div className="flex flex-wrap gap-2">
                                     {cluster.suggestedDistributionTargets.map((target) => (
-                                      <span key={target} className="px-2 py-1 text-[11px] rounded-full bg-[#D4AF37]/10 text-[#8C6A00]">
+                                      <span key={target} className="px-2 py-1 text-[11px] rounded-full bg-[var(--ci-accent)]/10 text-[#8C6A00]">
                                         {target}
                                       </span>
                                     ))}
@@ -591,7 +591,7 @@ export default function MarketingStrategyPage() {
                       <div className="grid gap-3">
                         {cluster.contentMap.map((item, itemIdx) => {
                           const isSelected = selectedItems.has(`${clusterIdx}-${itemIdx}`);
-                          const typeColor = CONTENT_TYPE_COLORS[item.type] || { bg: 'bg-[#F7F3E8]', text: 'text-slate-600' };
+                          const typeColor = CONTENT_TYPE_COLORS[item.type] || { bg: 'bg-[var(--ci-surface-strong)]', text: 'text-slate-600' };
                           const funnelColor = FUNNEL_COLORS[item.funnel] || { bg: 'bg-slate-100', text: 'text-slate-700' };
 
                           return (
@@ -600,14 +600,14 @@ export default function MarketingStrategyPage() {
                               onClick={() => toggleItemSelection(clusterIdx, itemIdx)}
                               className={`flex items-start gap-4 p-4 rounded-xl border cursor-pointer transition-all ${
                                 isSelected
-                                  ? 'bg-[#D4AF37]/10 border-[#D4AF37]'
-                                  : 'bg-[#FFFCF7] border-[#E8E0D0] hover:border-[#D4AF37]/30'
+                                  ? 'bg-[var(--ci-accent)]/10 border-[var(--ci-accent)]'
+                                  : 'bg-[#FFFFFF] border-[var(--ci-border)] hover:border-[var(--ci-accent)]/30'
                               }`}
                             >
                               {/* Checkbox */}
                               <div className="shrink-0 pt-0.5">
                                 {isSelected ? (
-                                  <CheckSquare size={18} className="text-[#D4AF37]" />
+                                  <CheckSquare size={18} className="text-[var(--ci-accent)]" />
                                 ) : (
                                   <Square size={18} className="text-slate-300" />
                                 )}
@@ -667,7 +667,7 @@ export default function MarketingStrategyPage() {
                                 {item.suggestedDistributionTargets.length > 0 && (
                                   <div className="flex flex-wrap gap-1 mt-2">
                                     {item.suggestedDistributionTargets.map((target) => (
-                                      <span key={target} className="px-2 py-0.5 text-[10px] rounded bg-[#D4AF37]/10 text-[#8C6A00]">
+                                      <span key={target} className="px-2 py-0.5 text-[10px] rounded bg-[var(--ci-accent)]/10 text-[#8C6A00]">
                                         {target}
                                       </span>
                                     ))}
@@ -681,7 +681,7 @@ export default function MarketingStrategyPage() {
 
                       {/* Required Evidence */}
                       {cluster.requiredEvidenceIds?.length > 0 && (
-                        <div className="mt-4 pt-4 border-t border-[#E8E0D0]">
+                        <div className="mt-4 pt-4 border-t border-[var(--ci-border)]">
                           <p className="text-[10px] text-slate-400 flex items-center gap-1">
                             <CheckCircle2 size={10} />
                             此支柱需要 {cluster.requiredEvidenceIds.length} 条证据支撑

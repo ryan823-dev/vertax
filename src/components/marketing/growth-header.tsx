@@ -3,7 +3,7 @@
 /**
  * 增长系统顶部工作台
  *
- * 深蓝金设计系统：#0B1220 背景 · #D4AF37 金色强调
+ * 深蓝金设计系统：#0B1220 背景 · var(--ci-accent) 金色强调
  * 7步 Stepper + StatCard + SecretaryPanel
  */
 
@@ -91,9 +91,9 @@ function GrowthStepper({
       };
     if (isCurrent)
       return {
-        bg: "rgba(212,175,55,0.15)",
-        border: "1px solid rgba(212,175,55,0.6)",
-        shadow: "0 0 12px rgba(212,175,55,0.25)",
+        bg: "rgba(79,141,246,0.15)",
+        border: "1px solid rgba(79,141,246,0.6)",
+        shadow: "0 0 12px rgba(79,141,246,0.25)",
       };
     return {
       bg: "rgba(255,255,255,0.05)",
@@ -104,14 +104,14 @@ function GrowthStepper({
   const getIconColor = (step: StepState, isCurrent: boolean) => {
     if (step.status === "DONE") return "text-emerald-400";
     if (step.status === "BLOCKED") return "text-red-400";
-    if (isCurrent) return "text-[#D4AF37]";
+    if (isCurrent) return "text-[var(--ci-accent)]";
     return "text-slate-500";
   };
 
   const getLabelColor = (step: StepState, isCurrent: boolean) => {
     if (step.status === "DONE") return "text-emerald-400";
     if (step.status === "BLOCKED") return "text-red-400";
-    if (isCurrent) return "text-[#D4AF37] font-semibold";
+    if (isCurrent) return "text-[var(--ci-accent)] font-semibold";
     return "text-slate-500";
   };
 
@@ -159,9 +159,9 @@ function GrowthStepper({
                     background:
                       step.status === "DONE"
                         ? "rgba(16,185,129,0.15)"
-                        : "rgba(212,175,55,0.12)",
+                        : "rgba(79,141,246,0.12)",
                     color:
-                      step.status === "DONE" ? "#34d399" : "#D4AF37",
+                      step.status === "DONE" ? "#34d399" : "var(--ci-accent)",
                   }}
                 >
                   {step.count}
@@ -256,10 +256,9 @@ export function GrowthHeader({
 
   return (
     <div
-      className="sticky top-0 z-20 px-6 py-3 border-b border-[rgba(212,175,55,0.15)]"
+      className="sticky top-0 z-20 px-6 py-3 border-b border-[rgba(79,141,246,0.15)]"
       style={{
-        background:
-          "linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)",
+        background: "var(--ci-sidebar-shell)",
         boxShadow: "0 4px 24px -4px rgba(0,0,0,0.5)",
       }}
     >
@@ -272,7 +271,7 @@ export function GrowthHeader({
           right: 0,
           height: "1px",
           background:
-            "linear-gradient(90deg, transparent, rgba(212,175,55,0.4) 40%, rgba(212,175,55,0.4) 60%, transparent)",
+            "linear-gradient(90deg, transparent, rgba(79,141,246,0.4) 40%, rgba(79,141,246,0.4) 60%, transparent)",
           pointerEvents: "none",
         }}
       />
@@ -283,11 +282,11 @@ export function GrowthHeader({
           <div
             className="w-8 h-8 rounded-lg flex items-center justify-center"
             style={{
-              background: "rgba(212,175,55,0.12)",
-              border: "1px solid rgba(212,175,55,0.3)",
+              background: "rgba(79,141,246,0.12)",
+              border: "1px solid rgba(79,141,246,0.3)",
             }}
           >
-            <TrendingUp size={16} className="text-[#D4AF37]" />
+            <TrendingUp size={16} className="text-[var(--ci-accent)]" />
           </div>
           <div>
             <h1 className="text-sm font-bold text-white leading-none">
@@ -339,14 +338,14 @@ export function GrowthHeader({
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all whitespace-nowrap ${
                   primaryCTA.disabled
                     ? "bg-white/5 text-slate-500 cursor-not-allowed pointer-events-none"
-                    : "text-[#0B1220] hover:opacity-90 hover:shadow-lg"
+                    : "text-white hover:opacity-90 "
                 }`}
                 style={
                   primaryCTA.disabled
                     ? {}
                     : {
-                        background: "#D4AF37",
-                        boxShadow: "0 2px 12px -2px rgba(212,175,55,0.4)",
+                        background: "var(--ci-accent)",
+                        boxShadow: "0 2px 12px -2px rgba(79,141,246,0.4)",
                       }
                 }
                 onClick={(e) => primaryCTA.disabled && e.preventDefault()}
@@ -402,10 +401,10 @@ export function GrowthStatCard({
       }`}
       style={{
         background: highlight
-          ? "linear-gradient(135deg, #0B1220 0%, #0A1018 70%, #0D1525 100%)"
+          ? "var(--ci-sidebar-shell)"
           : "#FFFCF7",
         border: highlight
-          ? "1px solid rgba(212,175,55,0.3)"
+          ? "1px solid rgba(79,141,246,0.3)"
           : "1px solid #E8E0D0",
         boxShadow: highlight
           ? "0 4px 24px -4px rgba(0,0,0,0.3)"
@@ -417,10 +416,10 @@ export function GrowthStatCard({
           className="p-2 rounded-lg"
           style={{
             background: highlight
-              ? "rgba(212,175,55,0.12)"
+              ? "rgba(79,141,246,0.12)"
               : "rgba(11,18,32,0.06)",
             border: highlight
-              ? "1px solid rgba(212,175,55,0.25)"
+              ? "1px solid rgba(79,141,246,0.25)"
               : "1px solid rgba(11,18,32,0.06)",
           }}
         >
@@ -431,15 +430,15 @@ export function GrowthStatCard({
             size={12}
             className={`transition-colors ${
               highlight
-                ? "text-[#D4AF37] opacity-40 group-hover:opacity-100"
-                : "text-slate-300 group-hover:text-[#D4AF37]"
+                ? "text-[var(--ci-accent)] opacity-40 group-hover:opacity-100"
+                : "text-slate-300 group-hover:text-[var(--ci-accent)]"
             }`}
           />
         )}
       </div>
       <div
         className={`text-2xl font-bold mb-0.5 ${
-          highlight ? "text-[#D4AF37]" : "text-[#0B1B2B]"
+          highlight ? "text-[var(--ci-accent)]" : "text-[#0B1B2B]"
         }`}
       >
         {value}
@@ -547,9 +546,9 @@ export function GrowthSecretaryPanel({ counts }: SecretaryPanelProps) {
       dotBg: "rgba(245,158,11,0.15)",
     },
     action: {
-      iconColor: "text-[#D4AF37]",
+      iconColor: "text-[var(--ci-accent)]",
       Icon: Sparkles,
-      dotBg: "rgba(212,175,55,0.12)",
+      dotBg: "rgba(79,141,246,0.12)",
     },
     info: {
       iconColor: "text-slate-400",
@@ -563,16 +562,16 @@ export function GrowthSecretaryPanel({ counts }: SecretaryPanelProps) {
       className="rounded-xl overflow-hidden"
       style={{
         background:
-          "linear-gradient(135deg, #0B1220 0%, #0A1018 70%, #0D1525 100%)",
-        border: "1px solid rgba(212,175,55,0.15)",
+          "var(--ci-sidebar-shell)",
+        border: "1px solid rgba(79,141,246,0.15)",
         boxShadow: "0 4px 24px -4px rgba(0,0,0,0.3)",
       }}
     >
       <div
-        className="px-4 py-3 border-b border-[rgba(212,175,55,0.12)]"
-        style={{ background: "rgba(212,175,55,0.04)" }}
+        className="px-4 py-3 border-b border-[rgba(79,141,246,0.12)]"
+        style={{ background: "rgba(79,141,246,0.04)" }}
       >
-        <h3 className="text-xs font-semibold text-[#D4AF37] uppercase tracking-wider">
+        <h3 className="text-xs font-semibold text-[var(--ci-accent)] uppercase tracking-wider">
           待办事项
         </h3>
       </div>
@@ -589,7 +588,7 @@ export function GrowthSecretaryPanel({ counts }: SecretaryPanelProps) {
                 <Icon size={12} className={cfg.iconColor} />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-xs font-medium text-slate-200 group-hover:text-[#D4AF37] transition-colors">
+                <div className="text-xs font-medium text-slate-200 group-hover:text-[var(--ci-accent)] transition-colors">
                   {item.title}
                 </div>
                 <div className="text-[10px] text-slate-500 mt-0.5 line-clamp-2">
@@ -599,7 +598,7 @@ export function GrowthSecretaryPanel({ counts }: SecretaryPanelProps) {
               {item.href && (
                 <ChevronRight
                   size={12}
-                  className="text-slate-600 group-hover:text-[#D4AF37] transition-colors mt-0.5 shrink-0"
+                  className="text-slate-600 group-hover:text-[var(--ci-accent)] transition-colors mt-0.5 shrink-0"
                 />
               )}
             </div>

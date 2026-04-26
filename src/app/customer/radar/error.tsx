@@ -25,12 +25,12 @@ export default function RadarError({
   const isTimeout = error.message?.includes("timeout") || error.message?.includes("超时");
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#FDFBF7_0%,#F9F5EC_100%)] px-6 py-10">
+    <div className="min-h-screen bg-[var(--ci-bg)] px-6 py-10">
       <div className="mx-auto flex min-h-[70vh] max-w-[720px] items-center justify-center">
-        <div className="w-full rounded-[28px] border border-[#E8E0D0] bg-white/90 p-8 shadow-[0_24px_60px_-36px_rgba(11,27,43,0.45)] backdrop-blur-sm">
+        <div className="w-full rounded-xl border border-[var(--ci-border)] bg-white/90 p-8 shadow-[var(--ci-shadow-soft)] backdrop-blur-sm">
           <div className="mb-6 flex items-center justify-center">
             <div className="relative">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-50">
+              <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-amber-50">
                 <Radar className="h-8 w-8 text-amber-500" />
               </div>
               <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-500">
@@ -54,7 +54,7 @@ export default function RadarError({
           </p>
 
           {error.digest && (
-            <div className="mt-6 rounded-2xl bg-slate-50 px-4 py-3">
+            <div className="mt-6 rounded-xl bg-slate-50 px-4 py-3">
               <p className="text-center text-xs text-slate-400">
                 <span className="font-medium">错误追踪码</span>{" "}
                 <code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono">{error.digest}</code>
@@ -65,7 +65,7 @@ export default function RadarError({
           <div className="mt-6 space-y-3">
             <button
               onClick={reset}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#0B1B2B] px-5 py-3 text-sm font-medium text-[#D4AF37] transition-colors hover:bg-[#10263B]"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#0B1B2B] px-5 py-3 text-sm font-medium text-[var(--ci-accent)] transition-colors hover:bg-[#10263B]"
             >
               <RefreshCw size={16} />
               重新加载
@@ -81,15 +81,15 @@ export default function RadarError({
           </div>
 
           <div className="mt-6 flex items-center justify-center gap-4 border-t border-slate-100 pt-4 text-xs text-slate-400">
-            <Link href="/customer/home" className="transition-colors hover:text-[#D4AF37]">
+            <Link href="/customer/home" className="transition-colors hover:text-[var(--ci-accent)]">
               工作台
             </Link>
             <span>·</span>
-            <Link href="/customer/radar/search" className="transition-colors hover:text-[#D4AF37]">
+            <Link href="/customer/radar/search" className="transition-colors hover:text-[var(--ci-accent)]">
               自动搜索
             </Link>
             <span>·</span>
-            <button onClick={() => window.location.reload()} className="transition-colors hover:text-[#D4AF37]">
+            <button onClick={() => window.location.reload()} className="transition-colors hover:text-[var(--ci-accent)]">
               刷新页面
             </button>
           </div>

@@ -442,13 +442,13 @@ export default function SocialPage() {
 
   // 获取平台信息
   const getPlatformInfo = (platformId: string) => {
-    return PLATFORMS.find(p => p.id === platformId) || { id: platformId, name: platformId, color: 'bg-[#F7F3E8]0', textColor: 'text-slate-500' };
+    return PLATFORMS.find(p => p.id === platformId) || { id: platformId, name: platformId, color: 'bg-[var(--ci-surface-strong)]0', textColor: 'text-slate-500' };
   };
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 text-[#D4AF37] animate-spin" />
+        <Loader2 className="w-8 h-8 text-[var(--ci-accent)] animate-spin" />
       </div>
     );
   }
@@ -457,16 +457,16 @@ export default function SocialPage() {
     return (
       <div className="space-y-8">
         <div
-          className="rounded-2xl p-6 relative overflow-hidden"
+          className="rounded-xl p-6 relative overflow-hidden"
           style={{
-            background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)',
-            boxShadow: '0 8px 32px -8px rgba(0,0,0,0.45)',
+            background: 'var(--ci-sidebar-shell)',
+            boxShadow: 'var(--ci-shadow-soft)',
           }}
         >
           <div
             className="absolute inset-0 pointer-events-none"
             style={{
-              background: 'radial-gradient(ellipse 70% 60% at 50% -20%, rgba(212,175,55,0.14) 0%, transparent 65%)',
+              background: 'transparent',
             }}
           />
           <div className="relative flex items-center justify-between">
@@ -478,14 +478,14 @@ export default function SocialPage() {
               <Link
                 href="/customer/social/accounts"
                 className="px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors"
-                style={{ background: '#D4AF37', color: '#0B1220', boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)' }}
+                style={{ background: 'var(--ci-accent)', color: '#FFFFFF', boxShadow: '0 4px 16px -2px rgba(79,141,246,0.35)' }}
               >
                 <KeyRound size={16} />
                 去接通发布渠道
               </Link>
               <button
                 onClick={loadData}
-                className="p-2 text-slate-400 hover:text-[#D4AF37] transition-colors"
+                className="p-2 text-slate-400 hover:text-[var(--ci-accent)] transition-colors"
               >
                 <RefreshCw size={18} />
               </button>
@@ -503,7 +503,7 @@ export default function SocialPage() {
           </div>
         )}
 
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6">
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-start gap-3">
               <Globe size={20} className="text-amber-600 shrink-0 mt-0.5" />
@@ -525,7 +525,7 @@ export default function SocialPage() {
             <Link
               href="/customer/social/accounts"
               className="px-4 py-2 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-1.5 shrink-0"
-              style={{ background: '#D4AF37', color: '#0B1220', boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)' }}
+              style={{ background: 'var(--ci-accent)', color: '#FFFFFF', boxShadow: '0 4px 16px -2px rgba(79,141,246,0.35)' }}
             >
               去接通发布渠道
             </Link>
@@ -533,7 +533,7 @@ export default function SocialPage() {
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-          <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
+          <div className="bg-[var(--ci-surface-strong)] rounded-xl border border-[var(--ci-border)] p-6">
             <h2 className="text-lg font-bold text-[#0B1B2B]">先完成这 3 步</h2>
             <div className="mt-5 space-y-4">
               {[
@@ -550,8 +550,8 @@ export default function SocialPage() {
                   desc: '完成后可直接进入创建、预览、立即发布或定时发布。',
                 },
               ].map((step, index) => (
-                <div key={step.title} className="flex gap-3 rounded-xl border border-[#E8E0D0] bg-[#FFFCF7] p-4">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#0B1220] text-sm font-semibold text-[#D4AF37]">
+                <div key={step.title} className="flex gap-3 rounded-xl border border-[var(--ci-border)] bg-[#FFFFFF] p-4">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#0B1220] text-sm font-semibold text-[var(--ci-accent)]">
                     {index + 1}
                   </div>
                   <div>
@@ -563,11 +563,11 @@ export default function SocialPage() {
             </div>
           </div>
 
-          <div className="rounded-2xl p-6" style={{
-            background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)',
-            boxShadow: '0 8px 32px -8px rgba(0,0,0,0.45)',
+          <div className="rounded-xl p-6" style={{
+            background: 'var(--ci-sidebar-shell)',
+            boxShadow: 'var(--ci-shadow-soft)',
           }}>
-            <p className="text-xs font-semibold tracking-[0.18em] text-[#D4AF37] uppercase">接通后即可推进</p>
+            <p className="text-xs font-semibold tracking-[0.18em] text-[var(--ci-accent)] uppercase">接通后即可推进</p>
             <div className="mt-5 space-y-4">
               {[
                 { icon: Sparkles, title: 'AI 多平台内容生成', desc: '按平台生成适配文案，减少重复编辑。' },
@@ -576,7 +576,7 @@ export default function SocialPage() {
               ].map((item) => (
                 <div key={item.title} className="rounded-xl border border-white/10 bg-white/5 p-4">
                   <div className="flex items-center gap-2">
-                    <item.icon size={16} className="text-[#D4AF37]" />
+                    <item.icon size={16} className="text-[var(--ci-accent)]" />
                     <p className="text-sm font-semibold text-white">{item.title}</p>
                   </div>
                   <p className="mt-2 text-xs leading-6 text-slate-400">{item.desc}</p>
@@ -592,12 +592,12 @@ export default function SocialPage() {
   return (
     <div className="space-y-8">
       {/* Header - 指令台 深蓝舞台风格 */}
-      <div className="rounded-2xl p-6 relative overflow-hidden" style={{
-        background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)',
-        boxShadow: '0 8px 32px -8px rgba(0,0,0,0.45)',
+      <div className="rounded-xl p-6 relative overflow-hidden" style={{
+        background: 'var(--ci-sidebar-shell)',
+        boxShadow: 'var(--ci-shadow-soft)',
       }}>
         <div className="absolute inset-0 pointer-events-none" style={{
-          background: 'radial-gradient(ellipse 70% 60% at 50% -20%, rgba(212,175,55,0.14) 0%, transparent 65%)',
+          background: 'transparent',
         }} />
         <div className="relative flex items-center justify-between">
           <div>
@@ -619,7 +619,7 @@ export default function SocialPage() {
               <button 
                 onClick={handleStartCreate}
                 className="px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors"
-                style={{ background: '#D4AF37', color: '#0B1220', boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)' }}
+                style={{ background: 'var(--ci-accent)', color: '#FFFFFF', boxShadow: '0 4px 16px -2px rgba(79,141,246,0.35)' }}
               >
                 <Plus size={16} />
                 创建内容
@@ -632,14 +632,14 @@ export default function SocialPage() {
                   setGeneratedContents({});
                 }}
                 className="px-4 py-2 rounded-xl text-sm font-medium transition-colors"
-                style={{ background: '#0B1220', color: '#D4AF37' }}
+                style={{ background: '#0B1220', color: 'var(--ci-accent)' }}
               >
                 返回列表
               </button>
             )}
             <button 
               onClick={loadData}
-              className="p-2 text-slate-400 hover:text-[#D4AF37] transition-colors"
+              className="p-2 text-slate-400 hover:text-[var(--ci-accent)] transition-colors"
             >
               <RefreshCw size={18} />
             </button>
@@ -669,7 +669,7 @@ export default function SocialPage() {
           <Link
             href="/customer/social/accounts"
             className="px-4 py-2 rounded-xl text-sm font-medium transition-colors flex items-center gap-1.5 shrink-0"
-            style={{ background: '#D4AF37', color: '#0B1220', boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)' }}
+            style={{ background: 'var(--ci-accent)', color: '#FFFFFF', boxShadow: '0 4px 16px -2px rgba(79,141,246,0.35)' }}
           >
             前往授权
           </Link>
@@ -679,12 +679,12 @@ export default function SocialPage() {
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: '内容数', value: stats.totalPosts, icon: Calendar, color: 'text-[#D4AF37]' },
+          { label: '内容数', value: stats.totalPosts, icon: Calendar, color: 'text-[var(--ci-accent)]' },
           { label: '已发布', value: stats.published, icon: CheckCircle2, color: 'text-emerald-500' },
           { label: '总互动', value: stats.totalEngagement, icon: Heart, color: 'text-pink-500' },
           { label: '已授权账号', value: stats.accountCount, icon: Globe, color: 'text-blue-500' },
         ].map((stat) => (
-          <div key={stat.label} className="bg-[#F7F3E8] rounded-xl border border-[#E8E0D0] p-4">
+          <div key={stat.label} className="bg-[var(--ci-surface-strong)] rounded-xl border border-[var(--ci-border)] p-4">
             <div className="flex items-center gap-2 mb-2">
               <stat.icon size={16} className={stat.color} />
               <span className="text-xs text-slate-500">{stat.label}</span>
@@ -698,19 +698,19 @@ export default function SocialPage() {
       {viewMode === 'create' ? (
         <div className="grid grid-cols-2 gap-6">
           {/* Step 1: Generate Content */}
-          <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
+          <div className="bg-[var(--ci-surface-strong)] rounded-xl border border-[var(--ci-border)] p-6">
             <h3 className="font-bold text-[#0B1B2B] mb-4 flex items-center gap-2">
-              <span className="w-6 h-6 bg-[#0B1220] text-[#D4AF37] rounded-full text-xs flex items-center justify-center">1</span>
+              <span className="w-6 h-6 bg-[#0B1220] text-[var(--ci-accent)] rounded-full text-xs flex items-center justify-center">1</span>
               AI生成多平台内容
             </h3>
             
             <div className="space-y-4">
               {/* 输入模式 Tab */}
-              <div className="flex rounded-lg border border-[#E8E0D0] overflow-hidden mb-1">
+              <div className="flex rounded-lg border border-[var(--ci-border)] overflow-hidden mb-1">
                 <button
                   onClick={() => setInputMode('manual')}
                   className={`flex-1 py-1.5 text-xs font-medium transition-colors ${
-                    inputMode === 'manual' ? 'bg-[#0B1220] text-[#D4AF37]' : 'text-slate-500 hover:bg-slate-50'
+                    inputMode === 'manual' ? 'bg-[#0B1220] text-[var(--ci-accent)]' : 'text-slate-500 hover:bg-slate-50'
                   }`}
                 >
                   手动输入
@@ -718,7 +718,7 @@ export default function SocialPage() {
                 <button
                   onClick={() => { setInputMode('library'); loadLibrary(); }}
                   className={`flex-1 py-1.5 text-xs font-medium transition-colors flex items-center justify-center gap-1 ${
-                    inputMode === 'library' ? 'bg-[#0B1220] text-[#D4AF37]' : 'text-slate-500 hover:bg-slate-50'
+                    inputMode === 'library' ? 'bg-[#0B1220] text-[var(--ci-accent)]' : 'text-slate-500 hover:bg-slate-50'
                   }`}
                 >
                   <Library size={11} />
@@ -732,7 +732,7 @@ export default function SocialPage() {
                     onChange={(e) => setTopic(e.target.value)}
                     placeholder="例如：发布新产品上线公告、分享行业洞察、公司活动回顾..."
                     rows={3}
-                    className="w-full px-4 py-2.5 border border-[#E8E0D0] rounded-xl text-sm focus:outline-none focus:border-[#D4AF37] resize-none bg-[#FFFCF7]"
+                    className="w-full px-4 py-2.5 border border-[var(--ci-border)] rounded-xl text-sm focus:outline-none focus:border-[var(--ci-accent)] resize-none bg-[#FFFFFF]"
                   />
                 ) : (
                   <div className="space-y-1 max-h-[140px] overflow-y-auto">
@@ -750,7 +750,7 @@ export default function SocialPage() {
                             setTopic(item.excerpt ? `${item.title}\n\n${item.excerpt}` : item.title);
                             setInputMode('manual');
                           }}
-                          className="w-full text-left px-3 py-2 rounded-lg border border-[#E8E0D0] hover:border-[#D4AF37] hover:bg-[#FFFDF5] transition-colors"
+                          className="w-full text-left px-3 py-2 rounded-lg border border-[var(--ci-border)] hover:border-[var(--ci-accent)] hover:bg-[#FFFDF5] transition-colors"
                         >
                           <p className="text-xs font-medium text-[#0B1B2B] truncate">{item.title}</p>
                           {item.excerpt && (
@@ -790,7 +790,7 @@ export default function SocialPage() {
               </div>
 
               {selectedPlatforms.includes('tiktok') && (
-                <div className="rounded-xl border border-[#E8E0D0] bg-[#FFFCF7] p-4 space-y-3">
+                <div className="rounded-xl border border-[var(--ci-border)] bg-[#FFFFFF] p-4 space-y-3">
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
                       <Video size={16} className="text-neutral-900" />
@@ -815,7 +815,7 @@ export default function SocialPage() {
                         <select
                           value={tiktokOptions.privacyLevel}
                           onChange={(e) => setTikTokOptions(prev => ({ ...prev, privacyLevel: e.target.value }))}
-                          className="mt-1 w-full rounded-lg border border-[#E8E0D0] bg-white px-3 py-2 text-xs text-slate-700"
+                          className="mt-1 w-full rounded-lg border border-[var(--ci-border)] bg-white px-3 py-2 text-xs text-slate-700"
                         >
                           {tiktokCreator.privacy_level_options.map(option => (
                             <option key={option} value={option}>{formatTikTokPrivacy(option)}</option>
@@ -824,14 +824,14 @@ export default function SocialPage() {
                       </label>
                       <div className="text-xs text-slate-500">
                         Account
-                        <p className="mt-1 rounded-lg border border-[#E8E0D0] bg-white px-3 py-2 text-xs text-slate-700">
+                        <p className="mt-1 rounded-lg border border-[var(--ci-border)] bg-white px-3 py-2 text-xs text-slate-700">
                           {tiktokCreator.creator_username || tiktokCreator.creator_nickname || 'TikTok creator'}
                         </p>
                       </div>
                     </div>
                   )}
 
-                  <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-[#D4AF37]/60 bg-[#D4AF37]/10 px-4 py-3 text-xs font-medium text-[#0B1220]">
+                  <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-[var(--ci-accent)]/60 bg-[var(--ci-accent)]/10 px-4 py-3 text-xs font-medium text-[var(--ci-text)]">
                     {isUploadingTikTok ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
                     {isUploadingTikTok ? '上传中...' : tiktokMedia ? '更换视频' : '上传 TikTok 视频'}
                     <input
@@ -871,7 +871,7 @@ export default function SocialPage() {
                       ['brandOrganicToggle', '品牌自营内容', false],
                       ['brandContentToggle', '付费合作内容', false],
                     ].map(([key, label, locked]) => (
-                      <label key={String(key)} className="flex items-center gap-2 rounded-lg border border-[#E8E0D0] bg-white px-3 py-2 text-[11px] text-slate-600">
+                      <label key={String(key)} className="flex items-center gap-2 rounded-lg border border-[var(--ci-border)] bg-white px-3 py-2 text-[11px] text-slate-600">
                         <input
                           type="checkbox"
                           disabled={Boolean(locked)}
@@ -883,7 +883,7 @@ export default function SocialPage() {
                     ))}
                   </div>
 
-                  <label className="flex items-start gap-2 rounded-lg border border-[#E8E0D0] bg-white px-3 py-2 text-[11px] leading-5 text-slate-600">
+                  <label className="flex items-start gap-2 rounded-lg border border-[var(--ci-border)] bg-white px-3 py-2 text-[11px] leading-5 text-slate-600">
                     <input
                       type="checkbox"
                       checked={tiktokOptions.userConsent}
@@ -898,7 +898,7 @@ export default function SocialPage() {
               <button
                 onClick={handleGenerate}
                 disabled={!topic.trim() || selectedPlatforms.length === 0 || isGenerating}
-                className="w-full py-3 bg-gradient-to-r from-[#0B1B2B] to-[#152942] text-[#D4AF37] rounded-xl font-medium text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full py-3 bg-[var(--ci-accent)] text-white rounded-xl font-medium text-sm flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {isGenerating ? (
                   <>
@@ -916,9 +916,9 @@ export default function SocialPage() {
           </div>
 
           {/* Step 2: Preview & Publish */}
-          <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
+          <div className="bg-[var(--ci-surface-strong)] rounded-xl border border-[var(--ci-border)] p-6">
             <h3 className="font-bold text-[#0B1B2B] mb-4 flex items-center gap-2">
-              <span className="w-6 h-6 bg-[#0B1220] text-[#D4AF37] rounded-full text-xs flex items-center justify-center">2</span>
+              <span className="w-6 h-6 bg-[#0B1220] text-[var(--ci-accent)] rounded-full text-xs flex items-center justify-center">2</span>
               预览与发布
             </h3>
 
@@ -929,7 +929,7 @@ export default function SocialPage() {
                   {Object.entries(generatedContents).map(([platform, content]) => {
                     const info = getPlatformInfo(platform);
                     return (
-                      <div key={platform} className="border border-[#E8E0D0] rounded-xl p-4 bg-[#FFFCF7]">
+                      <div key={platform} className="border border-[var(--ci-border)] rounded-xl p-4 bg-[#FFFFFF]">
                         <div className="flex items-center gap-2 mb-2">
                           <div className={`w-6 h-6 ${info.color} rounded flex items-center justify-center`}>
                             <span className="text-white text-[10px] font-bold">
@@ -962,22 +962,22 @@ export default function SocialPage() {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex gap-3 pt-4 border-t border-[#E8E0D0] w-full">
+                <div className="flex gap-3 pt-4 border-t border-[var(--ci-border)] w-full">
                   <button
                     onClick={() => handleSavePost(false)}
                     className="flex-1 min-w-0 py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2 truncate"
-                    style={{ background: '#0B1220', color: '#D4AF37' }}
+                    style={{ background: '#0B1220', color: 'var(--ci-accent)' }}
                   >
                     <Edit2 size={14} className="shrink-0" />
                     <span className="truncate">保存草稿</span>
                   </button>
                   <div className="flex-1 space-y-2">
                     {/* 发布模式切换 */}
-                    <div className="flex rounded-lg overflow-hidden border border-[#D4AF37]/40">
+                    <div className="flex rounded-lg overflow-hidden border border-[var(--ci-accent)]/40">
                       <button
                         onClick={() => setPublishMode('now')}
                         className={`flex-1 py-1.5 text-xs font-medium transition-colors ${
-                          publishMode === 'now' ? 'bg-[#D4AF37] text-[#0B1220]' : 'text-slate-400 hover:bg-slate-800/30'
+                          publishMode === 'now' ? 'bg-[var(--ci-accent)] text-white' : 'text-slate-400 hover:bg-slate-800/30'
                         }`}
                       >
                         立即发布
@@ -985,7 +985,7 @@ export default function SocialPage() {
                       <button
                         onClick={() => setPublishMode('scheduled')}
                         className={`flex-1 py-1.5 text-xs font-medium transition-colors flex items-center justify-center gap-1 ${
-                          publishMode === 'scheduled' ? 'bg-[#D4AF37] text-[#0B1220]' : 'text-slate-400 hover:bg-slate-800/30'
+                          publishMode === 'scheduled' ? 'bg-[var(--ci-accent)] text-white' : 'text-slate-400 hover:bg-slate-800/30'
                         }`}
                       >
                         <CalendarClock size={11} />
@@ -998,14 +998,14 @@ export default function SocialPage() {
                         value={scheduledAt}
                         onChange={(e) => setScheduledAt(e.target.value)}
                         min={new Date(Date.now() + 5 * 60000).toISOString().slice(0, 16)}
-                        className="w-full px-3 py-2 border border-[#D4AF37]/40 rounded-xl text-xs bg-[#0B1220]/60 text-slate-200 focus:outline-none focus:border-[#D4AF37]"
+                        className="w-full px-3 py-2 border border-[var(--ci-accent)]/40 rounded-xl text-xs bg-[#0B1220]/60 text-slate-200 focus:outline-none focus:border-[var(--ci-accent)]"
                       />
                     )}
                     <button
                       onClick={() => handleSavePost(publishMode === 'now')}
                       disabled={isPublishing || !hasConnectedAccounts || (publishMode === 'scheduled' && !scheduledAt)}
                       className="w-full py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50"
-                      style={{ background: '#D4AF37', color: '#0B1220', boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)' }}
+                      style={{ background: 'var(--ci-accent)', color: '#FFFFFF', boxShadow: '0 4px 16px -2px rgba(79,141,246,0.35)' }}
                     >
                       {isPublishing ? (
                         <><Loader2 size={14} className="animate-spin" />发布中...</>
@@ -1020,8 +1020,8 @@ export default function SocialPage() {
               </div>
             ) : (
               <div className="text-center py-16">
-                <div className="w-16 h-16 mx-auto mb-3 rounded-xl flex items-center justify-center" style={{ background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.3)' }}>
-                  <MessageSquare size={28} className="text-[#D4AF37]" />
+                <div className="w-16 h-16 mx-auto mb-3 rounded-xl flex items-center justify-center" style={{ background: 'rgba(79,141,246,0.12)', border: '1px solid rgba(79,141,246,0.3)' }}>
+                  <MessageSquare size={28} className="text-[var(--ci-accent)]" />
                 </div>
                 <p className="text-sm text-slate-500">输入主题并选择平台</p>
                 <p className="text-xs text-slate-400 mt-1">AI将为每个平台生成定制化内容</p>
@@ -1032,24 +1032,24 @@ export default function SocialPage() {
       ) : (
         <div className="grid grid-cols-3 gap-6">
           {/* Post List */}
-          <div className="col-span-2 bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0]">
-            <div className="px-6 py-4 border-b border-[#E8E0D0]" style={{ background: '#F0EBD8' }}>
+          <div className="col-span-2 bg-[var(--ci-surface-strong)] rounded-xl border border-[var(--ci-border)]">
+            <div className="px-6 py-4 border-b border-[var(--ci-border)]" style={{ background: 'var(--ci-surface-muted)' }}>
               <h3 className="font-bold text-[#0B1B2B]">内容列表</h3>
             </div>
             <div className="p-6">
             {posts.length === 0 ? (
-              <div className="rounded-2xl p-12 text-center" style={{
-                background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)',
-                boxShadow: '0 8px 32px -8px rgba(0,0,0,0.45)',
+              <div className="rounded-xl p-12 text-center" style={{
+                background: 'var(--ci-sidebar-shell)',
+                boxShadow: 'var(--ci-shadow-soft)',
               }}>
-                <div className="w-16 h-16 mx-auto mb-4 rounded-xl flex items-center justify-center" style={{ background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.3)' }}>
-                  <Calendar size={28} className="text-[#D4AF37]" />
+                <div className="w-16 h-16 mx-auto mb-4 rounded-xl flex items-center justify-center" style={{ background: 'rgba(79,141,246,0.12)', border: '1px solid rgba(79,141,246,0.3)' }}>
+                  <Calendar size={28} className="text-[var(--ci-accent)]" />
                 </div>
                 <p className="text-slate-400 mb-4">暂无社媒内容</p>
                 <button
                   onClick={handleStartCreate}
                   className="px-4 py-2 rounded-xl text-sm font-medium"
-                  style={{ background: '#D4AF37', color: '#0B1220', boxShadow: '0 4px 16px -2px rgba(212,175,55,0.35)' }}
+                  style={{ background: 'var(--ci-accent)', color: '#FFFFFF', boxShadow: '0 4px 16px -2px rgba(79,141,246,0.35)' }}
                 >
                   创建第一条内容
                 </button>
@@ -1064,8 +1064,8 @@ export default function SocialPage() {
                       onClick={() => setSelectedPost(post)}
                       className={`p-4 border rounded-xl cursor-pointer transition-all ${
                         selectedPost?.id === post.id
-                          ? 'border-[#D4AF37] bg-[#D4AF37]/5'
-                          : 'border-[#E8E0D0] hover:border-[#D4AF37]/50 bg-[#FFFCF7]'
+                          ? 'border-[var(--ci-accent)] bg-[var(--ci-accent)]/5'
+                          : 'border-[var(--ci-border)] hover:border-[var(--ci-accent)]/50 bg-[#FFFFFF]'
                       }`}
                     >
                       <div className="flex items-start justify-between">
@@ -1112,7 +1112,7 @@ export default function SocialPage() {
           <div className="col-span-1 space-y-4">
             {selectedPost ? (
               <>
-                <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
+                <div className="bg-[var(--ci-surface-strong)] rounded-xl border border-[var(--ci-border)] p-6">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="font-bold text-[#0B1B2B]">内容详情</h3>
                     <button
@@ -1132,7 +1132,7 @@ export default function SocialPage() {
                     {selectedPost.versions.map((version) => {
                       const info = getPlatformInfo(version.platform);
                       return (
-                        <div key={version.id} className="p-3 bg-[#F0EBD8] rounded-xl">
+                        <div key={version.id} className="p-3 bg-[var(--ci-surface-muted)] rounded-xl">
                           <div className="flex items-center gap-2 mb-2">
                             <div className={`w-5 h-5 ${info.color} rounded flex items-center justify-center`}>
                               <span className="text-white text-[8px] font-bold">
@@ -1205,7 +1205,7 @@ export default function SocialPage() {
                   </div>
 
                   {/* Timestamps */}
-                  <div className="mt-4 pt-4 border-t border-[#E8E0D0] text-[10px] text-slate-400 space-y-1">
+                  <div className="mt-4 pt-4 border-t border-[var(--ci-border)] text-[10px] text-slate-400 space-y-1">
                     <p>创建：{new Date(selectedPost.createdAt).toLocaleString('zh-CN')}</p>
                     {selectedPost.publishedAt && (
                       <p>发布：{new Date(selectedPost.publishedAt).toLocaleString('zh-CN')}</p>
@@ -1220,12 +1220,12 @@ export default function SocialPage() {
                 </div>
               </>
             ) : (
-              <div className="rounded-2xl p-8 text-center" style={{
-                background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)',
-                boxShadow: '0 8px 32px -8px rgba(0,0,0,0.45)',
+              <div className="rounded-xl p-8 text-center" style={{
+                background: 'var(--ci-sidebar-shell)',
+                boxShadow: 'var(--ci-shadow-soft)',
               }}>
-                <div className="w-16 h-16 mx-auto mb-3 rounded-xl flex items-center justify-center" style={{ background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.3)' }}>
-                  <Eye size={28} className="text-[#D4AF37]" />
+                <div className="w-16 h-16 mx-auto mb-3 rounded-xl flex items-center justify-center" style={{ background: 'rgba(79,141,246,0.12)', border: '1px solid rgba(79,141,246,0.3)' }}>
+                  <Eye size={28} className="text-[var(--ci-accent)]" />
                 </div>
                 <p className="text-sm text-slate-400">选择内容查看详情</p>
               </div>
@@ -1236,7 +1236,7 @@ export default function SocialPage() {
 
       {/* Connected Accounts Summary */}
       {hasConnectedAccounts && (
-        <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
+        <div className="bg-[var(--ci-surface-strong)] rounded-xl border border-[var(--ci-border)] p-6">
           <h3 className="font-bold text-[#0B1B2B] mb-4">已授权账号</h3>
           <div className="flex flex-wrap gap-3">
             {activeAccounts.map((account) => {
@@ -1244,7 +1244,7 @@ export default function SocialPage() {
               return (
                 <div
                   key={account.id}
-                  className="flex items-center gap-2 px-3 py-2 bg-[#FFFCF7] border border-[#E8E0D0] rounded-lg"
+                  className="flex items-center gap-2 px-3 py-2 bg-[#FFFFFF] border border-[var(--ci-border)] rounded-lg"
                 >
                   <div className={`w-6 h-6 ${info.color} rounded flex items-center justify-center`}>
                     <span className="text-white text-[10px] font-bold">

@@ -56,7 +56,7 @@ export default function ScoringProfilePage() {
             href="/customer/knowledge/profiles"
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all mb-6"
             style={{ background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.5)', border: '1px solid rgba(255,255,255,0.08)' }}
-            onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => { e.currentTarget.style.color = '#D4AF37'; e.currentTarget.style.borderColor = 'rgba(212,175,55,0.3)'; }}
+            onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => { e.currentTarget.style.color = 'var(--ci-accent)'; e.currentTarget.style.borderColor = 'rgba(79,141,246,0.3)'; }}
             onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => { e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}
           >
             <ArrowLeft size={13} />
@@ -93,8 +93,8 @@ export default function ScoringProfilePage() {
               className="flex items-start gap-3 p-4 rounded-xl transition-all"
               style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
             >
-              <div className="p-2 rounded-lg" style={{ background: 'rgba(212,175,55,0.12)' }}>
-                <BookOpen size={16} style={{ color: '#D4AF37' }} />
+              <div className="p-2 rounded-lg" style={{ background: 'rgba(79,141,246,0.12)' }}>
+                <BookOpen size={16} style={{ color: 'var(--ci-accent)' }} />
               </div>
               <div>
                 <p className="text-sm font-medium text-white">层级阈值</p>
@@ -106,10 +106,10 @@ export default function ScoringProfilePage() {
           {/* Info Banner */}
           <div
             className="mb-6 p-4 rounded-xl"
-            style={{ background: 'rgba(212,175,55,0.04)', border: '1px solid rgba(212,175,55,0.15)' }}
+            style={{ background: 'rgba(79,141,246,0.04)', border: '1px solid rgba(79,141,246,0.15)' }}
           >
             <div className="flex items-start gap-3">
-              <Info size={18} style={{ color: '#D4AF37' }} className="shrink-0 mt-0.5" />
+              <Info size={18} style={{ color: 'var(--ci-accent)' }} className="shrink-0 mt-0.5" />
               <div>
                 <p className="text-sm font-semibold text-white mb-1.5">为什么要配置评分规则？</p>
                 <ul className="space-y-1 text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>
@@ -140,9 +140,9 @@ export default function ScoringProfilePage() {
                 <div key={i} className="text-center">
                   <div
                     className="w-12 h-12 mx-auto mb-3 rounded-full flex items-center justify-center"
-                    style={{ background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.2)' }}
+                    style={{ background: 'rgba(79,141,246,0.1)', border: '1px solid rgba(79,141,246,0.2)' }}
                   >
-                    <span className="font-bold" style={{ color: '#D4AF37' }}>{i + 1}</span>
+                    <span className="font-bold" style={{ color: 'var(--ci-accent)' }}>{i + 1}</span>
                   </div>
                   <p className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>{text}</p>
                 </div>

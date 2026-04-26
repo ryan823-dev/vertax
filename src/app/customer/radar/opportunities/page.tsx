@@ -149,7 +149,7 @@ export default function RadarOpportunitiesPage() {
     if (days < 0) return { label: '已过期', color: 'text-red-600 bg-red-50' };
     if (days <= 3) return { label: `${days}天后截止`, color: 'text-red-600 bg-red-50' };
     if (days <= 7) return { label: `${days}天后截止`, color: 'text-amber-600 bg-amber-50' };
-    return { label: `${days}天后截止`, color: 'text-slate-600 bg-[#F0EBD8]' };
+    return { label: `${days}天后截止`, color: 'text-slate-600 bg-[var(--ci-surface-muted)]' };
   };
 
   // 按阶段分组（看板视图）
@@ -162,7 +162,7 @@ export default function RadarOpportunitiesPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 text-[#D4AF37] animate-spin" />
+        <Loader2 className="w-8 h-8 text-[var(--ci-accent)] animate-spin" />
       </div>
     );
   }
@@ -170,8 +170,8 @@ export default function RadarOpportunitiesPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div style={{background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)', boxShadow: '0 8px 32px -8px rgba(0,0,0,0.45)'}} className="rounded-2xl p-6 relative overflow-hidden">
-        <div style={{background: 'radial-gradient(ellipse 70% 60% at 50% -20%, rgba(212,175,55,0.14) 0%, transparent 65%)'}} className="absolute inset-0 pointer-events-none" />
+      <div style={{background: 'var(--ci-sidebar-shell)', boxShadow: 'var(--ci-shadow-soft)'}} className="rounded-xl p-6 relative overflow-hidden">
+        <div style={{background: 'transparent'}} className="absolute inset-0 pointer-events-none" />
         <div className="relative flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-white">采购机会</h1>
@@ -181,7 +181,7 @@ export default function RadarOpportunitiesPage() {
             <select
               value={filterStage}
               onChange={(e) => setFilterStage(e.target.value as OpportunityStage | '')}
-              className="px-3 py-2 border border-white/20 bg-white/10 text-white rounded-lg text-sm focus:outline-none focus:border-[#D4AF37]"
+              className="px-3 py-2 border border-white/20 bg-white/10 text-white rounded-lg text-sm focus:outline-none focus:border-[var(--ci-accent)]"
             >
               <option value="" className="bg-[#0B1220] text-white">全部阶段</option>
               {STAGE_ORDER.map(stage => (
@@ -190,7 +190,7 @@ export default function RadarOpportunitiesPage() {
             </select>
             <button 
               onClick={loadData}
-              className="p-2 text-slate-400 hover:text-[#D4AF37] transition-colors"
+              className="p-2 text-slate-400 hover:text-[var(--ci-accent)] transition-colors"
             >
               <RefreshCw size={18} />
             </button>
@@ -232,16 +232,16 @@ export default function RadarOpportunitiesPage() {
 
       <div className="grid grid-cols-3 gap-6">
         {/* Opportunities List */}
-        <div className="col-span-2 bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
+        <div className="col-span-2 bg-[var(--ci-surface-strong)] rounded-xl border border-[var(--ci-border)] p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-bold text-[#0B1B2B]">机会列表</h3>
             <span className="text-xs text-slate-400">{opportunities.length} / {total} 条</span>
           </div>
           
           {opportunities.length === 0 ? (
-            <div className="text-center py-16 rounded-2xl" style={{background: 'linear-gradient(135deg, #0B1220 0%, #0A1018 60%, #0D1525 100%)'}}>
-              <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.3)'}}>
-                <FileText size={28} className="text-[#D4AF37]" />
+            <div className="text-center py-16 rounded-xl" style={{background: 'var(--ci-sidebar-shell)'}}>
+              <div className="w-16 h-16 rounded-xl flex items-center justify-center mx-auto mb-4" style={{background: 'rgba(79,141,246,0.12)', border: '1px solid rgba(79,141,246,0.3)'}}>
+                <FileText size={28} className="text-[var(--ci-accent)]" />
               </div>
               <p className="text-slate-400">暂无采购机会</p>
               <p className="text-xs text-slate-500 mt-2">从候选池中单独沉淀采购 / 招投标对象</p>
@@ -260,15 +260,15 @@ export default function RadarOpportunitiesPage() {
                     onClick={() => setSelectedOpportunity(isSelected ? null : opp)}
                     className={`p-4 border rounded-xl cursor-pointer transition-all ${
                       isSelected 
-                        ? 'border-[#D4AF37] bg-[#D4AF37]/5' 
-                        : 'border-[#E8E0D0] hover:border-[#D4AF37]/50 bg-[#FFFCF7]'
+                        ? 'border-[var(--ci-accent)] bg-[var(--ci-accent)]/5'
+                        : 'border-[var(--ci-border)] hover:border-[var(--ci-accent)]/50 bg-[#FFFFFF]'
                     }`}
                   >
                     <div className="flex items-start gap-3">
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${stageConfig.bgColor}`}>
                         <StageIcon size={18} className={stageConfig.color} />
                       </div>
-                      
+
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <h4 className="font-medium text-[#0B1B2B] truncate">{opp.title}</h4>
@@ -319,14 +319,14 @@ export default function RadarOpportunitiesPage() {
           {selectedOpportunity ? (
             <>
               {/* Basic Info */}
-              <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
+              <div className="bg-[var(--ci-surface-strong)] rounded-xl border border-[var(--ci-border)] p-6">
                 <h3 className="font-bold text-[#0B1B2B] mb-3 line-clamp-2">
                   {selectedOpportunity.title}
                 </h3>
                 
                 {selectedOpportunity.company && (
-                  <div className="flex items-center gap-2 mb-3 p-2 bg-[#F0EBD8] rounded-lg">
-                    <Building2 size={14} className="text-[#D4AF37]" />
+                  <div className="flex items-center gap-2 mb-3 p-2 bg-[var(--ci-surface-muted)] rounded-lg">
+                    <Building2 size={14} className="text-[var(--ci-accent)]" />
                     <span className="text-sm text-[#0B1B2B] font-medium">
                       {selectedOpportunity.company.name}
                     </span>
@@ -370,12 +370,12 @@ export default function RadarOpportunitiesPage() {
                 </div>
 
                 {selectedOpportunity.sourceUrl && (
-                  <div className="mt-4 pt-4 border-t border-[#E8E0D0]">
+                  <div className="mt-4 pt-4 border-t border-[var(--ci-border)]">
                     <a 
                       href={selectedOpportunity.sourceUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-xs text-[#D4AF37] hover:underline"
+                      className="flex items-center gap-2 text-xs text-[var(--ci-accent)] hover:underline"
                     >
                       <ExternalLink size={12} />
                       查看原文
@@ -386,7 +386,7 @@ export default function RadarOpportunitiesPage() {
 
               {/* Description */}
               {selectedOpportunity.description && (
-                <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
+                <div className="bg-[var(--ci-surface-strong)] rounded-xl border border-[var(--ci-border)] p-6">
                   <h4 className="font-bold text-[#0B1B2B] text-sm mb-2">描述</h4>
                   <p className="text-xs text-slate-600 leading-relaxed line-clamp-8">
                     {selectedOpportunity.description}
@@ -395,7 +395,7 @@ export default function RadarOpportunitiesPage() {
               )}
 
               {/* Stage Management */}
-              <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
+              <div className="bg-[var(--ci-surface-strong)] rounded-xl border border-[var(--ci-border)] p-6">
                 <h4 className="font-bold text-[#0B1B2B] text-sm mb-3">阶段管理</h4>
                 
                 <div className="space-y-2">
@@ -411,7 +411,7 @@ export default function RadarOpportunitiesPage() {
                         className={`w-full flex items-center gap-3 p-2.5 rounded-lg text-sm transition-all ${
                           isCurrent
                             ? `${config.bgColor} ${config.color} ring-2 ring-current`
-                            : 'bg-[#F0EBD8] text-slate-600 hover:bg-[#E8E0D0]'
+                            : 'bg-[var(--ci-surface-muted)] text-slate-600 hover:bg-[var(--ci-border)]'
                         }`}
                       >
                         <Icon size={16} />
@@ -425,7 +425,7 @@ export default function RadarOpportunitiesPage() {
 
               {/* Notes */}
               {selectedOpportunity.notes && (
-                <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-6">
+                <div className="bg-[var(--ci-surface-strong)] rounded-xl border border-[var(--ci-border)] p-6">
                   <h4 className="font-bold text-[#0B1B2B] text-sm mb-2">备注</h4>
                   <p className="text-xs text-slate-600 whitespace-pre-wrap">
                     {selectedOpportunity.notes}
@@ -434,9 +434,9 @@ export default function RadarOpportunitiesPage() {
               )}
             </>
           ) : (
-            <div className="bg-[#F7F3E8] rounded-2xl border border-[#E8E0D0] p-8 text-center">
-              <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3" style={{background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.3)'}}>
-                <Target size={24} className="text-[#D4AF37]" />
+            <div className="bg-[var(--ci-surface-strong)] rounded-xl border border-[var(--ci-border)] p-8 text-center">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3" style={{background: 'rgba(79,141,246,0.12)', border: '1px solid rgba(79,141,246,0.3)'}}>
+                <Target size={24} className="text-[var(--ci-accent)]" />
               </div>
               <p className="text-sm text-slate-500">选择机会查看详情</p>
             </div>

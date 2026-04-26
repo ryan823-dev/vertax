@@ -350,12 +350,12 @@ export function CreateDiscoveryWizard({
       />
       
       {/* Modal */}
-      <div className="relative w-full max-w-3xl max-h-[90vh] bg-white rounded-2xl shadow-2xl overflow-hidden">
+      <div className="relative w-full max-w-3xl max-h-[90vh] bg-white rounded-xl shadow-[var(--ci-shadow-strong)] overflow-hidden">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-[#F7F3EA]">
+        <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-[var(--ci-surface-muted)]">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-[#0B1B2B] flex items-center justify-center">
-              <Search size={20} className="text-[#D4AF37]" />
+              <Search size={20} className="text-[var(--ci-accent)]" />
             </div>
             <div>
               <h2 className="font-bold text-[#0B1B2B]">创建发现任务</h2>
@@ -373,7 +373,7 @@ export function CreateDiscoveryWizard({
         {/* Progress Bar */}
         <div className="h-1 bg-slate-200">
           <div 
-            className="h-full bg-[#D4AF37] transition-all duration-300"
+            className="h-full bg-[var(--ci-accent)] transition-all duration-300"
             style={{ width: `${(step / 3) * 100}%` }}
           />
         </div>
@@ -382,7 +382,7 @@ export function CreateDiscoveryWizard({
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 size={32} className="text-[#D4AF37] animate-spin" />
+              <Loader2 size={32} className="text-[var(--ci-accent)] animate-spin" />
             </div>
           ) : (
             <>
@@ -395,11 +395,11 @@ export function CreateDiscoveryWizard({
                       <button
                         key={template.type}
                         onClick={() => handleTemplateSelect(template)}
-                        className="p-4 rounded-xl border border-slate-200 hover:border-[#D4AF37] hover:bg-[#F7F3EA] transition-all text-left group"
+                        className="p-4 rounded-xl border border-slate-200 hover:border-[var(--ci-accent)] hover:bg-[var(--ci-surface-muted)] transition-all text-left group"
                       >
                         <div className="flex items-center gap-3 mb-2">
-                          <div className="w-10 h-10 rounded-lg bg-slate-100 group-hover:bg-[#D4AF37]/20 flex items-center justify-center transition-colors">
-                            <template.icon size={20} className="text-slate-500 group-hover:text-[#D4AF37]" />
+                          <div className="w-10 h-10 rounded-lg bg-slate-100 group-hover:bg-[var(--ci-accent)]/20 flex items-center justify-center transition-colors">
+                            <template.icon size={20} className="text-slate-500 group-hover:text-[var(--ci-accent)]" />
                           </div>
                           <h4 className="font-medium text-[#0B1B2B]">{template.label}</h4>
                         </div>
@@ -423,7 +423,7 @@ export function CreateDiscoveryWizard({
                       value={formData.name}
                       onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                       placeholder="输入任务名称"
-                      className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-[#D4AF37] text-sm"
+                      className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-[var(--ci-accent)] text-sm"
                     />
                   </div>
 
@@ -459,7 +459,7 @@ export function CreateDiscoveryWizard({
                             onChange={(e) => setNewKeyword(prev => ({ ...prev, en: e.target.value }))}
                             onKeyDown={(e) => e.key === 'Enter' && handleAddKeyword('en')}
                             placeholder="添加英文关键词"
-                            className="flex-1 px-3 py-1.5 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-[#D4AF37]"
+                            className="flex-1 px-3 py-1.5 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-[var(--ci-accent)]"
                           />
                           <button
                             onClick={() => handleAddKeyword('en')}
@@ -495,7 +495,7 @@ export function CreateDiscoveryWizard({
                             onChange={(e) => setNewKeyword(prev => ({ ...prev, zh: e.target.value }))}
                             onKeyDown={(e) => e.key === 'Enter' && handleAddKeyword('zh')}
                             placeholder="添加中文关键词"
-                            className="flex-1 px-3 py-1.5 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-[#D4AF37]"
+                            className="flex-1 px-3 py-1.5 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-[var(--ci-accent)]"
                           />
                           <button
                             onClick={() => handleAddKeyword('zh')}
@@ -520,7 +520,7 @@ export function CreateDiscoveryWizard({
                           onClick={() => toggleCountry(country.code)}
                           className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                             formData.targetCountries?.includes(country.code)
-                              ? 'bg-[#D4AF37] text-white'
+                              ? 'bg-[var(--ci-accent)] text-white'
                               : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                           }`}
                         >
@@ -542,7 +542,7 @@ export function CreateDiscoveryWizard({
                           onClick={() => toggleRegion(region.code)}
                           className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                             formData.targetRegions?.includes(region.code)
-                              ? 'bg-[#0B1B2B] text-[#D4AF37]'
+                              ? 'bg-[var(--ci-accent)] text-white'
                               : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                           }`}
                         >
@@ -565,12 +565,12 @@ export function CreateDiscoveryWizard({
                             onClick={() => toggleSource(source.id)}
                             className={`flex items-center gap-2 p-2 rounded-lg text-left transition-all ${
                               formData.sourceIds?.includes(source.id)
-                                ? 'bg-[#D4AF37]/20 border border-[#D4AF37]'
+                                ? 'bg-[var(--ci-accent)]/20 border border-[var(--ci-accent)]'
                                 : 'bg-white border border-slate-200 hover:border-slate-300'
                             }`}
                           >
                             {formData.sourceIds?.includes(source.id) ? (
-                              <CheckCircle2 size={16} className="text-[#D4AF37] shrink-0" />
+                              <CheckCircle2 size={16} className="text-[var(--ci-accent)] shrink-0" />
                             ) : (
                               <div className="w-4 h-4 rounded-full border border-slate-300 shrink-0" />
                             )}
@@ -609,12 +609,12 @@ export function CreateDiscoveryWizard({
                           onClick={() => setFormData(prev => ({ ...prev, scheduleRule: option.value }))}
                           className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${
                             formData.scheduleRule === option.value
-                              ? 'border-[#D4AF37] bg-[#F7F3EA]'
+                              ? 'border-[var(--ci-accent)] bg-[var(--ci-surface-muted)]'
                               : 'border-slate-200 hover:border-slate-300'
                           }`}
                         >
                           {formData.scheduleRule === option.value ? (
-                            <CheckCircle2 size={18} className="text-[#D4AF37] shrink-0" />
+                            <CheckCircle2 size={18} className="text-[var(--ci-accent)] shrink-0" />
                           ) : (
                             <Clock size={18} className="text-slate-400 shrink-0" />
                           )}
@@ -638,7 +638,7 @@ export function CreateDiscoveryWizard({
                           type="checkbox"
                           checked={formData.autoQualify}
                           onChange={(e) => setFormData(prev => ({ ...prev, autoQualify: e.target.checked }))}
-                          className="w-4 h-4 rounded border-slate-300 text-[#D4AF37] focus:ring-[#D4AF37]"
+                          className="w-4 h-4 rounded border-slate-300 text-[var(--ci-accent)] focus:ring-[var(--ci-accent)]"
                         />
                         <div>
                           <div className="text-sm font-medium text-[#0B1B2B]">自动合格化</div>
@@ -650,7 +650,7 @@ export function CreateDiscoveryWizard({
                           type="checkbox"
                           checked={formData.autoEnrich}
                           onChange={(e) => setFormData(prev => ({ ...prev, autoEnrich: e.target.checked }))}
-                          className="w-4 h-4 rounded border-slate-300 text-[#D4AF37] focus:ring-[#D4AF37]"
+                          className="w-4 h-4 rounded border-slate-300 text-[var(--ci-accent)] focus:ring-[var(--ci-accent)]"
                         />
                         <div>
                           <div className="text-sm font-medium text-[#0B1B2B]">自动补全详情</div>
@@ -685,7 +685,7 @@ export function CreateDiscoveryWizard({
                   </div>
 
                   {/* Summary */}
-                  <div className="bg-[#F7F3EA] rounded-xl p-4">
+                  <div className="bg-[var(--ci-surface-muted)] rounded-xl p-4">
                     <h4 className="text-sm font-medium text-[#0B1B2B] mb-3">任务摘要</h4>
                     <div className="space-y-2 text-xs">
                       <div className="flex justify-between">
@@ -728,7 +728,7 @@ export function CreateDiscoveryWizard({
             <button
               onClick={() => setStep(step + 1)}
               disabled={step === 1 && !selectedTemplate}
-              className="flex items-center gap-2 px-6 py-2 bg-[#0B1B2B] text-[#D4AF37] rounded-xl font-medium hover:bg-[#10263B] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-6 py-2 bg-[var(--ci-accent)] text-white rounded-xl font-medium hover:bg-[#10263B] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               下一步
               <ChevronRight size={16} />
@@ -737,7 +737,7 @@ export function CreateDiscoveryWizard({
             <button
               onClick={handleSubmit}
               disabled={isSubmitting}
-              className="flex items-center gap-2 px-6 py-2 bg-[#D4AF37] text-[#0B1B2B] rounded-xl font-medium hover:bg-[#E0C04A] transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 px-6 py-2 bg-[var(--ci-accent)] text-[#0B1B2B] rounded-xl font-medium hover:bg-[var(--ci-accent-strong)] transition-colors disabled:opacity-50"
             >
               {isSubmitting ? (
                 <>

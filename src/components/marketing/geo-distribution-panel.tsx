@@ -179,15 +179,15 @@ export function GeoDistributionPanel({
 
   return (
     <div
-      className="rounded-2xl border border-[rgba(212,175,55,0.2)] overflow-hidden"
+      className="rounded-xl border border-[rgba(79,141,246,0.2)] overflow-hidden"
       style={{
         background: "linear-gradient(135deg, #0B1220 0%, #0A1018 70%, #0D1525 100%)",
       }}
     >
       {/* Header */}
-      <div className="p-4 border-b border-[rgba(212,175,55,0.12)] flex items-center justify-between">
+      <div className="p-4 border-b border-[rgba(79,141,246,0.12)] flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Globe size={16} className="text-[#D4AF37]" />
+          <Globe size={16} className="text-[var(--ci-accent)]" />
           <span className="text-sm font-medium text-white">AI 引擎分发追踪</span>
           <span className="text-xs text-slate-500">
             {records.length} / {ALL_CHANNELS.length} 渠道
@@ -200,9 +200,9 @@ export function GeoDistributionPanel({
               disabled={isRegistering}
               className="text-xs px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors disabled:opacity-50"
               style={{
-                background: "rgba(212,175,55,0.1)",
-                border: "1px solid rgba(212,175,55,0.2)",
-                color: "#D4AF37",
+                background: "rgba(79,141,246,0.1)",
+                border: "1px solid rgba(79,141,246,0.2)",
+                color: "var(--ci-accent)",
               }}
             >
               {isRegistering ? (
@@ -216,7 +216,7 @@ export function GeoDistributionPanel({
           <button
             onClick={loadRecords}
             disabled={isLoading}
-            className="text-slate-400 hover:text-[#D4AF37] transition-colors p-1"
+            className="text-slate-400 hover:text-[var(--ci-accent)] transition-colors p-1"
           >
             <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />
           </button>
@@ -227,7 +227,7 @@ export function GeoDistributionPanel({
       <div className="p-4">
         {isLoading && records.length === 0 ? (
           <div className="flex items-center justify-center py-6">
-            <Loader2 size={20} className="text-[#D4AF37] animate-spin" />
+            <Loader2 size={20} className="text-[var(--ci-accent)] animate-spin" />
           </div>
         ) : records.length > 0 ? (
           <div className="space-y-2">
@@ -244,9 +244,9 @@ export function GeoDistributionPanel({
                 <div
                   className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0"
                   style={{
-                    background: "rgba(212,175,55,0.12)",
-                    border: "1px solid rgba(212,175,55,0.2)",
-                    color: "#D4AF37",
+                    background: "rgba(79,141,246,0.12)",
+                    border: "1px solid rgba(79,141,246,0.2)",
+                    color: "var(--ci-accent)",
                   }}
                 >
                   {channelIcon(record.channel)}
@@ -282,7 +282,7 @@ export function GeoDistributionPanel({
                     href={record.citationUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[#D4AF37] hover:text-[#E5C040] p-1"
+                    className="text-[var(--ci-accent)] hover:text-[#E5C040] p-1"
                   >
                     <ExternalLink size={12} />
                   </a>
@@ -312,7 +312,7 @@ export function GeoDistributionPanel({
               disabled={isRegistering}
               className="px-4 py-2 rounded-xl text-xs font-medium inline-flex items-center gap-2 transition-colors disabled:opacity-50"
               style={{
-                background: "#D4AF37",
+                background: "var(--ci-accent)",
                 color: "#0B1220",
               }}
             >
@@ -340,8 +340,8 @@ export function GeoDistributionPanel({
                   className="text-[10px] px-2 py-1 rounded-lg flex items-center gap-1 transition-colors"
                   style={{
                     background: "rgba(255,255,255,0.03)",
-                    border: "1px dashed rgba(212,175,55,0.2)",
-                    color: "rgba(212,175,55,0.6)",
+                    border: "1px dashed rgba(79,141,246,0.2)",
+                    color: "rgba(79,141,246,0.6)",
                   }}
                 >
                   <Plus size={8} />
