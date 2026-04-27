@@ -450,7 +450,7 @@ export default function TargetingSpecPage() {
               className={`flex items-center gap-2 px-4 py-2 text-sm rounded-xl transition-colors disabled:opacity-50 ${
                 isSyncing
                   ? 'bg-emerald-100 text-emerald-600'
-                  : 'bg-[#0B1B2B] text-emerald-400 hover:bg-[#10263B]'
+                  : 'bg-[var(--ci-accent)] text-white hover:bg-[var(--ci-accent-strong)]'
               }`}
               title="从知识引擎同步最新目标客户画像"
             >
@@ -508,7 +508,7 @@ export default function TargetingSpecPage() {
                 <button
                   onClick={saveEdit}
                   disabled={isSaving}
-                  className="flex items-center gap-2 px-4 py-2 bg-[#0B1B2B] text-emerald-400 rounded-xl text-sm font-medium hover:bg-[#10263B] transition-colors disabled:opacity-50"
+                  className="flex items-center gap-2 px-4 py-2 bg-[var(--ci-accent)] text-white rounded-xl text-sm font-medium hover:bg-[var(--ci-accent-strong)] transition-colors disabled:opacity-50"
                 >
                   {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                   保存
@@ -519,7 +519,7 @@ export default function TargetingSpecPage() {
                 <button
                   onClick={handleRegenerate}
                   disabled={isSyncing}
-                  className="flex items-center gap-2 px-4 py-2 bg-[#0B1B2B] text-emerald-400 rounded-xl text-sm font-medium hover:bg-[#10263B] transition-colors disabled:opacity-50"
+                  className="flex items-center gap-2 px-4 py-2 bg-[var(--ci-accent)] text-white rounded-xl text-sm font-medium hover:bg-[var(--ci-accent-strong)] transition-colors disabled:opacity-50"
                 >
                   {isSyncing ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
                   重新生成
@@ -576,7 +576,7 @@ export default function TargetingSpecPage() {
 
         {/* No Data State */}
         {!spec && !channels ? (
-          <div className="bg-[#FFFCF6] rounded-xl border border-[var(--ci-border)] p-12 text-center">
+          <div className="bg-[var(--ci-surface-muted)] rounded-xl border border-[var(--ci-border)] p-12 text-center">
             <Target size={48} className="text-slate-300 mx-auto mb-4" />
             <h3 className="text-lg font-bold text-[#0B1B2B] mb-2">尚未生成目标客户画像</h3>
             <p className="text-sm text-slate-500 mb-6 max-w-md mx-auto">
@@ -586,7 +586,7 @@ export default function TargetingSpecPage() {
               <button
                 onClick={handleRegenerate}
                 disabled={isSyncing}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#0B1B2B] text-emerald-400 rounded-xl text-sm font-medium hover:bg-[#10263B] transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-[var(--ci-accent)] text-white rounded-xl text-sm font-medium hover:bg-[var(--ci-accent-strong)] transition-colors disabled:opacity-50"
               >
                 {isSyncing ? (
                   <>
@@ -645,7 +645,7 @@ export default function TargetingSpecPage() {
             {activeTab === 'targeting' && spec && (
               <div className="space-y-6">
                 {/* ICP Header */}
-                <div className="bg-[var(--ci-success)] rounded-xl p-6 text-white">
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       {isEditing ? (
@@ -653,12 +653,12 @@ export default function TargetingSpecPage() {
                           type="text"
                           value={spec.icpName}
                           onChange={(e) => updateIcpName(e.target.value)}
-                          className="text-xl font-bold bg-white/10 border border-white/20 rounded-lg px-3 py-1 w-full max-w-md focus:outline-none focus:border-white"
+                          className="w-full max-w-md rounded-lg border border-emerald-200 bg-white px-3 py-1 text-xl font-bold text-[#0B1B2B] focus:outline-none focus:border-emerald-400"
                         />
                       ) : (
-                        <h2 className="text-xl font-bold">{spec.icpName}</h2>
+                        <h2 className="text-xl font-bold text-[#0B1B2B]">{spec.icpName}</h2>
                       )}
-                      <p className="text-sm text-emerald-100 mt-1">
+                      <p className="text-sm text-emerald-700 mt-1">
                         {spec.segmentation?.firmographic?.industries?.length || 0} 个行业 · 
                         {spec.segmentation?.firmographic?.countries?.length || 0} 个地区 · 
                         {spec.segmentation?.triggers?.length || 0} 个触发器
@@ -666,8 +666,8 @@ export default function TargetingSpecPage() {
                     </div>
                     {targetingSpec?.content?.confidence !== undefined && (
                       <div className="text-right">
-                        <div className="text-[10px] text-emerald-200 uppercase tracking-wider">置信度</div>
-                        <div className="text-2xl font-bold">
+                        <div className="text-[10px] text-emerald-700 uppercase tracking-wider">置信度</div>
+                        <div className="text-2xl font-bold text-emerald-800">
                           {Math.round((targetingSpec.content.confidence || 0) * 100)}%
                         </div>
                       </div>
@@ -695,7 +695,7 @@ export default function TargetingSpecPage() {
 
                 {/* Firmographic & Technographic */}
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-[#FFFCF6] rounded-xl border border-[var(--ci-border)] p-5">
+                  <div className="bg-[var(--ci-surface-muted)] rounded-xl border border-[var(--ci-border)] p-5">
                     <h3 className="font-bold text-[#0B1B2B] mb-4 flex items-center gap-2">
                       <Building2 size={16} className="text-emerald-500" />
                       企业画像
@@ -745,7 +745,7 @@ export default function TargetingSpecPage() {
                     </div>
                   </div>
 
-                  <div className="bg-[#FFFCF6] rounded-xl border border-[var(--ci-border)] p-5">
+                  <div className="bg-[var(--ci-surface-muted)] rounded-xl border border-[var(--ci-border)] p-5">
                     <h3 className="font-bold text-[#0B1B2B] mb-4 flex items-center gap-2">
                       <Cpu size={16} className="text-purple-500" />
                       技术画像
@@ -798,7 +798,7 @@ export default function TargetingSpecPage() {
                 </div>
 
                 {/* Decision Unit */}
-                <div className="bg-[#FFFCF6] rounded-xl border border-[var(--ci-border)] p-5">
+                <div className="bg-[var(--ci-surface-muted)] rounded-xl border border-[var(--ci-border)] p-5">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="font-bold text-[#0B1B2B] flex items-center gap-2">
                       <Users size={16} className="text-blue-500" />
@@ -867,7 +867,7 @@ export default function TargetingSpecPage() {
 
                 {/* Triggers (Read-only for now) */}
                 {spec.segmentation?.triggers?.length > 0 && !isEditing && (
-                  <div className="bg-[#FFFCF6] rounded-xl border border-[var(--ci-border)] p-5">
+                  <div className="bg-[var(--ci-surface-muted)] rounded-xl border border-[var(--ci-border)] p-5">
                     <h3 className="font-bold text-[#0B1B2B] mb-4 flex items-center gap-2">
                       <Zap size={16} className="text-amber-500" />
                       购买触发器
@@ -909,7 +909,7 @@ export default function TargetingSpecPage() {
             {activeTab === 'channels' && channels && (
               <div className="space-y-6">
                 {/* Channel Map Header */}
-                <div className="bg-[var(--ci-sidebar-shell)] rounded-xl p-6 text-white">
+                <div className="rounded-xl border border-[var(--ci-border)] bg-[#FFFFFF] p-6 shadow-[var(--ci-shadow-soft)]">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       {isEditing ? (
@@ -917,12 +917,12 @@ export default function TargetingSpecPage() {
                           type="text"
                           value={channels.personaName}
                           onChange={(e) => updateChannelMapPersona(e.target.value)}
-                          className="text-xl font-bold bg-white/10 border border-white/20 rounded-lg px-3 py-1 w-full max-w-md focus:outline-none focus:border-emerald-400"
+                          className="w-full max-w-md rounded-lg border border-[var(--ci-border)] bg-white px-3 py-1 text-xl font-bold text-[#0B1B2B] focus:outline-none focus:border-[var(--ci-accent)]"
                         />
                       ) : (
                         <>
-                          <h2 className="text-xl font-bold">系统推导参考</h2>
-                          <p className="text-sm text-slate-400 mt-1">
+                          <h2 className="text-xl font-bold text-[#0B1B2B]">系统推导参考</h2>
+                          <p className="text-sm text-slate-500 mt-1">
                             基于 {channels.personaName} 推导出的执行能力线索 · {channels.channels?.length || 0} 项
                           </p>
                         </>
@@ -930,8 +930,8 @@ export default function TargetingSpecPage() {
                     </div>
                     {channelMap?.content?.confidence !== undefined && (
                       <div className="text-right">
-                        <div className="text-[10px] text-slate-400 uppercase tracking-wider">置信度</div>
-                        <div className="text-2xl font-bold text-emerald-400">
+                        <div className="text-[10px] text-slate-500 uppercase tracking-wider">置信度</div>
+                        <div className="text-2xl font-bold text-emerald-600">
                           {Math.round((channelMap.content.confidence || 0) * 100)}%
                         </div>
                       </div>
@@ -963,7 +963,7 @@ export default function TargetingSpecPage() {
                     return (
                       <div 
                         key={i}
-                        className="bg-[#FFFCF6] rounded-xl border border-[var(--ci-border)] p-5 hover:border-emerald-200 transition-colors"
+                        className="bg-[var(--ci-surface-muted)] rounded-xl border border-[var(--ci-border)] p-5 hover:border-emerald-200 transition-colors"
                       >
                         <div className="flex items-start gap-4">
                           <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${config.bg}`}>

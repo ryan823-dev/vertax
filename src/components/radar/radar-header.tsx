@@ -66,10 +66,10 @@ function getStepBadge(status: StepStatus, isCurrent: boolean) {
   return (
     <span
       className={`flex h-3.5 w-3.5 items-center justify-center rounded-full border ${
-        isCurrent ? "border-[var(--ci-accent)] bg-[var(--ci-accent)]/15" : "border-white/20 bg-transparent"
+        isCurrent ? "border-[var(--ci-accent)] bg-[var(--ci-accent)]/15" : "border-slate-300 bg-transparent"
       }`}
     >
-      <span className={`h-1.5 w-1.5 rounded-full ${isCurrent ? "bg-[var(--ci-accent)]" : "bg-white/40"}`} />
+      <span className={`h-1.5 w-1.5 rounded-full ${isCurrent ? "bg-[var(--ci-accent)]" : "bg-slate-300"}`} />
     </span>
   );
 }
@@ -335,7 +335,7 @@ export function RadarEmptyGuide({ currentStep, steps, primaryCTA }: RadarEmptyGu
           className={`mt-6 inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-all ${
             primaryCTA.disabled
               ? "pointer-events-none cursor-not-allowed bg-slate-100 text-slate-400"
-              : "bg-[var(--ci-accent)] text-white shadow-[0_12px_24px_-16px_rgba(11,18,32,0.75)] hover:bg-[#132036]"
+              : "bg-[var(--ci-accent)] text-white shadow-[0_12px_24px_-16px_rgba(79,141,246,0.75)] hover:bg-[var(--ci-accent-strong)]"
           }`}
           onClick={(event) => primaryCTA.disabled && event.preventDefault()}
         >

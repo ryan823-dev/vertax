@@ -190,7 +190,7 @@ export default function SocialPage() {
           disableStitch: info.stitch_disabled || prev.disableStitch,
         }));
       })
-      .catch((err) => {
+      .catch(() => {
         if (!cancelled) {
           setError('TikTok 创作者信息读取失败，请稍后重试');
         }
@@ -456,25 +456,13 @@ export default function SocialPage() {
   if (isPendingSetup) {
     return (
       <div className="space-y-8">
-        <div
-          className="rounded-xl p-6 relative overflow-hidden"
-          style={{
-            background: 'var(--ci-sidebar-shell)',
-            boxShadow: 'var(--ci-shadow-soft)',
-          }}
-        >
-          <div
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              background: 'transparent',
-            }}
-          />
-          <div className="relative flex items-center justify-between">
+        <div className="rounded-xl border border-[var(--ci-border)] bg-[#FFFFFF] p-6 shadow-[var(--ci-shadow-soft)]">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-white">声量枢纽</h1>
-              <p className="text-sm text-slate-400 mt-1">先确认发布渠道可用，再进入内容创建与发布动作，减少空跑。</p>
+              <h1 className="text-2xl font-bold text-[#0B1B2B]">声量枢纽</h1>
+              <p className="text-sm text-slate-500 mt-1">先确认发布渠道可用，再进入内容创建与发布动作，减少空跑。</p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <Link
                 href="/customer/social/accounts"
                 className="px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors"
@@ -485,7 +473,7 @@ export default function SocialPage() {
               </Link>
               <button
                 onClick={loadData}
-                className="p-2 text-slate-400 hover:text-[var(--ci-accent)] transition-colors"
+                className="p-2 text-slate-500 hover:text-[var(--ci-accent)] transition-colors"
               >
                 <RefreshCw size={18} />
               </button>
@@ -551,7 +539,7 @@ export default function SocialPage() {
                 },
               ].map((step, index) => (
                 <div key={step.title} className="flex gap-3 rounded-xl border border-[var(--ci-border)] bg-[#FFFFFF] p-4">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#0B1220] text-sm font-semibold text-[var(--ci-accent)]">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--ci-accent)]/12 text-sm font-semibold text-[var(--ci-accent)] ring-1 ring-[var(--ci-accent)]/20">
                     {index + 1}
                   </div>
                   <div>
@@ -563,10 +551,7 @@ export default function SocialPage() {
             </div>
           </div>
 
-          <div className="rounded-xl p-6" style={{
-            background: 'var(--ci-sidebar-shell)',
-            boxShadow: 'var(--ci-shadow-soft)',
-          }}>
+          <div className="rounded-xl border border-[var(--ci-border)] bg-[#FFFFFF] p-6 shadow-[var(--ci-shadow-soft)]">
             <p className="text-xs font-semibold tracking-[0.18em] text-[var(--ci-accent)] uppercase">接通后即可推进</p>
             <div className="mt-5 space-y-4">
               {[
@@ -574,12 +559,12 @@ export default function SocialPage() {
                 { icon: CalendarClock, title: '立即发布与定时发布', desc: '避免内容生成后找不到发布出口。' },
                 { icon: CheckCircle2, title: '统一发布状态追踪', desc: '集中查看已发布、排期中和失败内容。' },
               ].map((item) => (
-                <div key={item.title} className="rounded-xl border border-white/10 bg-white/5 p-4">
+                <div key={item.title} className="rounded-xl border border-[var(--ci-border)] bg-[var(--ci-surface-muted)] p-4">
                   <div className="flex items-center gap-2">
                     <item.icon size={16} className="text-[var(--ci-accent)]" />
-                    <p className="text-sm font-semibold text-white">{item.title}</p>
+                    <p className="text-sm font-semibold text-[#0B1B2B]">{item.title}</p>
                   </div>
-                  <p className="mt-2 text-xs leading-6 text-slate-400">{item.desc}</p>
+                  <p className="mt-2 text-xs leading-6 text-slate-500">{item.desc}</p>
                 </div>
               ))}
             </div>
@@ -591,25 +576,19 @@ export default function SocialPage() {
 
   return (
     <div className="space-y-8">
-      {/* Header - 指令台 深蓝舞台风格 */}
-      <div className="rounded-xl p-6 relative overflow-hidden" style={{
-        background: 'var(--ci-sidebar-shell)',
-        boxShadow: 'var(--ci-shadow-soft)',
-      }}>
-        <div className="absolute inset-0 pointer-events-none" style={{
-          background: 'transparent',
-        }} />
-        <div className="relative flex items-center justify-between">
+      {/* Header */}
+      <div className="rounded-xl border border-[var(--ci-border)] bg-[#FFFFFF] p-6 shadow-[var(--ci-shadow-soft)]">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-white">声量枢纽</h1>
-            <p className="text-sm text-slate-400 mt-1">社交媒体管理与品牌传播</p>
+            <h1 className="text-2xl font-bold text-[#0B1B2B]">声量枢纽</h1>
+            <p className="text-sm text-slate-500 mt-1">社交媒体管理与品牌传播</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             {viewMode === 'list' && (
               <button 
                 onClick={handleExport}
                 className="px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors border"
-                style={{ borderColor: 'rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.7)' }}
+                style={{ borderColor: 'var(--ci-border)', color: 'var(--ci-text-muted)' }}
               >
                 <Download size={16} />
                 导出 CSV
@@ -632,14 +611,14 @@ export default function SocialPage() {
                   setGeneratedContents({});
                 }}
                 className="px-4 py-2 rounded-xl text-sm font-medium transition-colors"
-                style={{ background: '#0B1220', color: 'var(--ci-accent)' }}
+                style={{ background: 'var(--ci-surface-muted)', color: 'var(--ci-accent)' }}
               >
                 返回列表
               </button>
             )}
             <button 
               onClick={loadData}
-              className="p-2 text-slate-400 hover:text-[var(--ci-accent)] transition-colors"
+              className="p-2 text-slate-500 hover:text-[var(--ci-accent)] transition-colors"
             >
               <RefreshCw size={18} />
             </button>
@@ -700,7 +679,7 @@ export default function SocialPage() {
           {/* Step 1: Generate Content */}
           <div className="bg-[var(--ci-surface-strong)] rounded-xl border border-[var(--ci-border)] p-6">
             <h3 className="font-bold text-[#0B1B2B] mb-4 flex items-center gap-2">
-              <span className="w-6 h-6 bg-[#0B1220] text-[var(--ci-accent)] rounded-full text-xs flex items-center justify-center">1</span>
+              <span className="w-6 h-6 rounded-full bg-[var(--ci-accent)]/12 text-[var(--ci-accent)] ring-1 ring-[var(--ci-accent)]/20 text-xs flex items-center justify-center">1</span>
               AI生成多平台内容
             </h3>
             
@@ -710,7 +689,7 @@ export default function SocialPage() {
                 <button
                   onClick={() => setInputMode('manual')}
                   className={`flex-1 py-1.5 text-xs font-medium transition-colors ${
-                    inputMode === 'manual' ? 'bg-[#0B1220] text-[var(--ci-accent)]' : 'text-slate-500 hover:bg-slate-50'
+                    inputMode === 'manual' ? 'bg-[var(--ci-accent)] text-white' : 'text-slate-500 hover:bg-slate-50'
                   }`}
                 >
                   手动输入
@@ -718,7 +697,7 @@ export default function SocialPage() {
                 <button
                   onClick={() => { setInputMode('library'); loadLibrary(); }}
                   className={`flex-1 py-1.5 text-xs font-medium transition-colors flex items-center justify-center gap-1 ${
-                    inputMode === 'library' ? 'bg-[#0B1220] text-[var(--ci-accent)]' : 'text-slate-500 hover:bg-slate-50'
+                    inputMode === 'library' ? 'bg-[var(--ci-accent)] text-white' : 'text-slate-500 hover:bg-slate-50'
                   }`}
                 >
                   <Library size={11} />
@@ -918,7 +897,7 @@ export default function SocialPage() {
           {/* Step 2: Preview & Publish */}
           <div className="bg-[var(--ci-surface-strong)] rounded-xl border border-[var(--ci-border)] p-6">
             <h3 className="font-bold text-[#0B1B2B] mb-4 flex items-center gap-2">
-              <span className="w-6 h-6 bg-[#0B1220] text-[var(--ci-accent)] rounded-full text-xs flex items-center justify-center">2</span>
+              <span className="w-6 h-6 rounded-full bg-[var(--ci-accent)]/12 text-[var(--ci-accent)] ring-1 ring-[var(--ci-accent)]/20 text-xs flex items-center justify-center">2</span>
               预览与发布
             </h3>
 
@@ -977,7 +956,7 @@ export default function SocialPage() {
                       <button
                         onClick={() => setPublishMode('now')}
                         className={`flex-1 py-1.5 text-xs font-medium transition-colors ${
-                          publishMode === 'now' ? 'bg-[var(--ci-accent)] text-white' : 'text-slate-400 hover:bg-slate-800/30'
+                          publishMode === 'now' ? 'bg-[var(--ci-accent)] text-white' : 'text-slate-500 hover:bg-slate-50'
                         }`}
                       >
                         立即发布
@@ -985,7 +964,7 @@ export default function SocialPage() {
                       <button
                         onClick={() => setPublishMode('scheduled')}
                         className={`flex-1 py-1.5 text-xs font-medium transition-colors flex items-center justify-center gap-1 ${
-                          publishMode === 'scheduled' ? 'bg-[var(--ci-accent)] text-white' : 'text-slate-400 hover:bg-slate-800/30'
+                          publishMode === 'scheduled' ? 'bg-[var(--ci-accent)] text-white' : 'text-slate-500 hover:bg-slate-50'
                         }`}
                       >
                         <CalendarClock size={11} />
@@ -998,7 +977,7 @@ export default function SocialPage() {
                         value={scheduledAt}
                         onChange={(e) => setScheduledAt(e.target.value)}
                         min={new Date(Date.now() + 5 * 60000).toISOString().slice(0, 16)}
-                        className="w-full px-3 py-2 border border-[var(--ci-accent)]/40 rounded-xl text-xs bg-[#0B1220]/60 text-slate-200 focus:outline-none focus:border-[var(--ci-accent)]"
+                        className="w-full px-3 py-2 border border-[var(--ci-border)] rounded-xl text-xs bg-[#FFFFFF] text-[#0B1B2B] focus:outline-none focus:border-[var(--ci-accent)]"
                       />
                     )}
                     <button
@@ -1038,10 +1017,7 @@ export default function SocialPage() {
             </div>
             <div className="p-6">
             {posts.length === 0 ? (
-              <div className="rounded-xl p-12 text-center" style={{
-                background: 'var(--ci-sidebar-shell)',
-                boxShadow: 'var(--ci-shadow-soft)',
-              }}>
+              <div className="rounded-xl border border-dashed border-[var(--ci-border)] bg-[#FFFFFF] p-12 text-center">
                 <div className="w-16 h-16 mx-auto mb-4 rounded-xl flex items-center justify-center" style={{ background: 'rgba(79,141,246,0.12)', border: '1px solid rgba(79,141,246,0.3)' }}>
                   <Calendar size={28} className="text-[var(--ci-accent)]" />
                 </div>
@@ -1220,10 +1196,7 @@ export default function SocialPage() {
                 </div>
               </>
             ) : (
-              <div className="rounded-xl p-8 text-center" style={{
-                background: 'var(--ci-sidebar-shell)',
-                boxShadow: 'var(--ci-shadow-soft)',
-              }}>
+              <div className="rounded-xl border border-dashed border-[var(--ci-border)] bg-[#FFFFFF] p-8 text-center">
                 <div className="w-16 h-16 mx-auto mb-3 rounded-xl flex items-center justify-center" style={{ background: 'rgba(79,141,246,0.12)', border: '1px solid rgba(79,141,246,0.3)' }}>
                   <Eye size={28} className="text-[var(--ci-accent)]" />
                 </div>

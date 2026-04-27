@@ -278,20 +278,14 @@ export default function MarketingPage() {
 
   return (
     <div className="space-y-8">
-      {/* Header - 指令台 */}
-      <div className="rounded-xl p-6 relative overflow-hidden" style={{
-        background: 'var(--ci-sidebar-shell)',
-        boxShadow: 'var(--ci-shadow-soft)',
-      }}>
-        <div className="absolute inset-0 pointer-events-none" style={{
-          background: 'transparent',
-        }} />
-        <div className="relative flex items-center justify-between">
+      {/* Header */}
+      <div className="rounded-xl border border-[var(--ci-border)] bg-[#FFFFFF] p-6 shadow-[var(--ci-shadow-soft)]">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-white">增长系统</h1>
-            <p className="text-sm text-slate-400 mt-1">SEO内容生产与分发</p>
+            <h1 className="text-2xl font-bold text-[#0B1B2B]">增长系统</h1>
+            <p className="text-sm text-slate-500 mt-1">SEO内容生产与分发</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             {viewMode === 'list' ? (
               <button 
                 onClick={() => setViewMode('create')}
@@ -310,14 +304,14 @@ export default function MarketingPage() {
                   setGeneratedContent(null);
                 }}
                 className="px-4 py-2 rounded-xl text-sm font-medium transition-colors"
-                style={{ background: '#0B1220', color: 'var(--ci-accent)' }}
+                style={{ background: 'var(--ci-surface-muted)', color: 'var(--ci-accent)' }}
               >
                 返回列表
               </button>
             )}
             <button 
               onClick={loadData}
-              className="p-2 text-slate-400 hover:text-[var(--ci-accent)] transition-colors"
+              className="p-2 text-slate-500 hover:text-[var(--ci-accent)] transition-colors"
             >
               <RefreshCw size={18} />
             </button>
@@ -337,26 +331,22 @@ export default function MarketingPage() {
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
         {[
-          { label: '内容资产', value: stats.totalContents, icon: FileText, color: 'text-[var(--ci-accent)]', href: undefined, dark: false },
-          { label: '已发布', value: stats.published, icon: CheckCircle2, color: 'text-emerald-500', href: undefined, dark: false },
-          { label: '草稿', value: stats.draft, icon: Edit2, color: 'text-slate-500', href: undefined, dark: false },
-          { label: '已排期', value: stats.scheduled, icon: Clock, color: 'text-blue-500', href: undefined, dark: false },
-          { label: 'SEO 健康分', value: seoHealthScore, icon: BarChart3, color: 'text-[var(--ci-accent)]', href: '/customer/marketing/seo-aeo', dark: true },
-          { label: 'GEO 版本', value: geoCount, icon: Globe, color: 'text-[var(--ci-accent)]', href: '/customer/marketing/geo-center', dark: true },
+          { label: '内容资产', value: stats.totalContents, icon: FileText, color: 'text-[var(--ci-accent)]', href: undefined },
+          { label: '已发布', value: stats.published, icon: CheckCircle2, color: 'text-emerald-500', href: undefined },
+          { label: '草稿', value: stats.draft, icon: Edit2, color: 'text-slate-500', href: undefined },
+          { label: '已排期', value: stats.scheduled, icon: Clock, color: 'text-blue-500', href: undefined },
+          { label: 'SEO 健康分', value: seoHealthScore, icon: BarChart3, color: 'text-[var(--ci-accent)]', href: '/customer/marketing/seo-aeo' },
+          { label: 'GEO 版本', value: geoCount, icon: Globe, color: 'text-[var(--ci-accent)]', href: '/customer/marketing/geo-center' },
         ].map((stat) => {
           const content = (
-            <div key={stat.label} className="rounded-xl p-4 border transition-all hover:scale-[1.01]" style={
-              stat.dark
-                ? { background: 'var(--ci-sidebar-shell)', border: '1px solid rgba(79,141,246,0.25)', boxShadow: 'var(--ci-shadow-soft)' }
-                : { background: 'var(--ci-surface-strong)', border: '1px solid var(--ci-border)' }
-            }>
+            <div key={stat.label} className="rounded-xl p-4 border transition-all hover:scale-[1.01]" style={{ background: 'var(--ci-surface-strong)', border: '1px solid var(--ci-border)' }}>
               <div className="flex items-center gap-2 mb-2">
                 <stat.icon size={16} className={stat.color} />
-                <span className={`text-xs ${stat.dark ? 'text-slate-400' : 'text-slate-500'}`}>{stat.label}</span>
+                <span className="text-xs text-slate-500">{stat.label}</span>
               </div>
-              <p className={`text-2xl font-bold ${stat.dark ? 'text-[var(--ci-accent)]' : 'text-[#0B1B2B]'}`}>{stat.value}</p>
+              <p className="text-2xl font-bold text-[#0B1B2B]">{stat.value}</p>
             </div>
           );
           return stat.href
@@ -371,7 +361,7 @@ export default function MarketingPage() {
           {/* Step 1: Keyword Research */}
           <div className="bg-[var(--ci-surface-strong)] rounded-xl border border-[var(--ci-border)] p-6">
             <h3 className="font-bold text-[#0B1B2B] mb-4 flex items-center gap-2">
-              <span className="w-6 h-6 bg-[#0B1B2B] text-[var(--ci-accent)] rounded-full text-xs flex items-center justify-center">1</span>
+              <span className="w-6 h-6 rounded-full bg-[var(--ci-accent)]/12 text-[var(--ci-accent)] ring-1 ring-[var(--ci-accent)]/20 text-xs flex items-center justify-center">1</span>
               关键词规划
             </h3>
             
@@ -389,7 +379,7 @@ export default function MarketingPage() {
                   <button
                     onClick={handleGenerateKeywords}
                     disabled={!keywordTopic.trim() || isGeneratingKeywords}
-                    className="px-4 py-2.5 bg-[#0B1B2B] text-[var(--ci-accent)] rounded-xl text-sm font-medium disabled:opacity-50 flex items-center gap-2"
+                    className="px-4 py-2.5 bg-[var(--ci-accent)] text-white rounded-xl text-sm font-medium disabled:opacity-50 flex items-center gap-2"
                   >
                     {isGeneratingKeywords ? (
                       <Loader2 size={14} className="animate-spin" />
@@ -452,7 +442,7 @@ export default function MarketingPage() {
                         onClick={() => setContentType(type.value as 'article' | 'product' | 'case')}
                         className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${
                           contentType === type.value
-                            ? 'bg-[#0B1B2B] text-[var(--ci-accent)]'
+                            ? 'bg-[var(--ci-accent)] text-white'
                             : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                         }`}
                       >
@@ -480,7 +470,7 @@ export default function MarketingPage() {
           {/* Step 2: Content Preview */}
           <div className="bg-[var(--ci-surface-strong)] rounded-xl border border-[var(--ci-border)] p-6">
             <h3 className="font-bold text-[#0B1B2B] mb-4 flex items-center gap-2">
-              <span className="w-6 h-6 bg-[#0B1B2B] text-[var(--ci-accent)] rounded-full text-xs flex items-center justify-center">2</span>
+              <span className="w-6 h-6 rounded-full bg-[var(--ci-accent)]/12 text-[var(--ci-accent)] ring-1 ring-[var(--ci-accent)]/20 text-xs flex items-center justify-center">2</span>
               内容预览与发布
             </h3>
 
@@ -509,7 +499,7 @@ export default function MarketingPage() {
                 <div className="flex gap-3 pt-4 border-t border-[var(--ci-border)]">
                   <button
                     onClick={() => handleSaveContent('draft')}
-                    className="flex-1 py-2.5 bg-[#0B1220] text-[var(--ci-accent)] rounded-xl text-sm font-medium hover:opacity-90 flex items-center justify-center gap-2"
+                    className="flex-1 py-2.5 bg-[var(--ci-surface-muted)] text-[var(--ci-accent)] rounded-xl text-sm font-medium hover:bg-slate-200 flex items-center justify-center gap-2"
                   >
                     <Edit2 size={14} />
                     保存草稿
@@ -544,11 +534,11 @@ export default function MarketingPage() {
             </div>
             <div className="p-6">
             {contents.length === 0 ? (
-              <div className="rounded-xl p-12 text-center" style={{ background: 'var(--ci-sidebar-shell)', boxShadow: 'var(--ci-shadow-soft)' }}>
+                <div className="rounded-xl border border-dashed border-[var(--ci-border)] bg-[#FFFFFF] p-12 text-center">
                 <div className="w-16 h-16 mx-auto mb-4 rounded-xl flex items-center justify-center" style={{ background: 'rgba(79,141,246,0.12)', border: '1px solid rgba(79,141,246,0.3)' }}>
                   <FileText size={28} className="text-[var(--ci-accent)]" />
                 </div>
-                <p className="text-slate-400 mb-4">暂无内容资产</p>
+                <p className="text-slate-500 mb-4">暂无内容资产</p>
                 <button
                   onClick={() => setViewMode('create')}
                   className="px-4 py-2 rounded-xl text-sm font-medium"
@@ -814,7 +804,7 @@ export default function MarketingPage() {
                               <button
                                 onClick={() => handleRetryPush(pushRecord.id)}
                                 disabled={isPushing}
-                                className="flex-1 py-2 bg-[#0B1B2B] text-[var(--ci-accent)] rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 disabled:opacity-50 hover:bg-[#10263B] transition-colors"
+                                className="flex-1 py-2 bg-[var(--ci-surface-muted)] text-[var(--ci-accent)] rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 disabled:opacity-50 hover:bg-slate-200 transition-colors"
                               >
                                 <RotateCcw size={12} />
                                 重新推送
@@ -843,11 +833,11 @@ export default function MarketingPage() {
               </>
             ) : (
               <div className="space-y-4">
-                <div className="rounded-xl p-8 text-center" style={{ background: 'var(--ci-sidebar-shell)', boxShadow: 'var(--ci-shadow-soft)' }}>
+                <div className="rounded-xl border border-dashed border-[var(--ci-border)] bg-[#FFFFFF] p-8 text-center">
                   <div className="w-16 h-16 mx-auto mb-3 rounded-xl flex items-center justify-center" style={{ background: 'rgba(79,141,246,0.12)', border: '1px solid rgba(79,141,246,0.3)' }}>
                     <Eye size={28} className="text-[var(--ci-accent)]" />
                   </div>
-                  <p className="text-sm text-slate-400">选择内容查看详情</p>
+                  <p className="text-sm text-slate-500">选择内容查看详情</p>
                 </div>
                 {/* Quick verify — run on the most recent unpublished content */}
                 {contents.filter((c) => c.status !== 'published').slice(0, 1).map((c) => (

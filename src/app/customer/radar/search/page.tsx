@@ -228,13 +228,13 @@ export default function RadarSearchPage() {
 
   return (
     <div className="space-y-6">
-      <section className="relative overflow-hidden rounded-xl border border-[rgba(79,141,246,0.18)] p-6 text-white" style={{ background: "var(--ci-sidebar-shell)" }}>
+      <section className="relative overflow-hidden rounded-xl border border-[var(--ci-border)] bg-[#FFFFFF] p-6 shadow-[var(--ci-shadow-soft)]">
         <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[rgba(79,141,246,0.18)] bg-[rgba(79,141,246,0.08)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--ci-accent)]"><Radar size={12} />画像驱动自动执行</div>
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">自动搜索</h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">系统会按目标客户画像自动找客户、补全信息、评估价值并沉淀结果。你只需要决定何时启动，确认系统按什么找，审核结果，然后推进跟进。</p>
-            <div className="mt-5 flex flex-wrap gap-3 text-xs text-slate-300">
+            <h1 className="text-3xl font-bold tracking-tight text-[#0B1B2B]">自动搜索</h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500">系统会按目标客户画像自动找客户、补全信息、评估价值并沉淀结果。你只需要决定何时启动，确认系统按什么找，审核结果，然后推进跟进。</p>
+            <div className="mt-5 flex flex-wrap gap-3 text-xs">
               <Pill label="当前画像" value={targetingSpec?.icpName || "尚未同步"} />
               <Pill label="自动搜索状态" value={searchStarted ? "已启动" : "未启动"} tone={searchStarted ? "success" : "warning"} />
               <Pill label="最近运行" value={formatRelative(pipeline?.counts.lastScanAt || null)} />
@@ -245,7 +245,7 @@ export default function RadarSearchPage() {
             <ActionCard label="开始自动搜索" hint="按当前画像立即执行一轮" icon={Play} active={actionState === "start"} disabled={!canStartSearch} onClick={() => runSearch("start")} primary />
             <ActionCard label="按最新画像重新搜索" hint="用当前画像摘要再跑一轮" icon={RefreshCw} active={actionState === "restart"} disabled={!canStartSearch} onClick={() => runSearch("restart")} />
             <ActionCard label={activeProfiles.length ? "暂停自动搜索" : "继续自动执行"} hint={activeProfiles.length ? "暂停当前持续执行策略" : "恢复一个已有策略"} icon={activeProfiles.length ? Pause : Play} active={actionState === "pause" || actionState === "resume"} disabled={!activeProfiles.length && !pausedProfiles.length} onClick={() => toggleAutomation(activeProfiles.length ? "pause" : "resume")} />
-            <Link href="/customer/radar/candidates" className="rounded-xl border border-white/10 bg-white/5 px-4 py-4 transition-colors hover:bg-white/10"><div className="flex items-center justify-between gap-3"><div><div className="text-sm font-semibold">查看候选结果</div><div className="mt-1 text-xs text-slate-400">直接进入候选池审核系统发现的对象</div></div><ChevronRight size={18} className="text-[var(--ci-accent)]" /></div></Link>
+            <Link href="/customer/radar/candidates" className="rounded-xl border border-[var(--ci-border)] bg-[#FFFFFF] px-4 py-4 transition-colors hover:border-[var(--ci-accent)]/35 hover:bg-[var(--ci-surface-muted)]"><div className="flex items-center justify-between gap-3"><div><div className="text-sm font-semibold text-[#0B1B2B]">查看候选结果</div><div className="mt-1 text-xs text-slate-500">直接进入候选池审核系统发现的对象</div></div><ChevronRight size={18} className="text-[var(--ci-accent)]" /></div></Link>
           </div>
         </div>
       </section>
@@ -278,14 +278,14 @@ export default function RadarSearchPage() {
             {capabilities.map((item) => {
               const Icon = item.icon;
               return (
-                <div key={item.key} className={`rounded-xl border p-4 ${item.active ? "border-[var(--ci-accent)]/35 bg-[var(--ci-surface-strong)]" : "border-[var(--ci-border)] bg-[#FCFAF4]"}`}>
-                  <div className="mb-3 flex items-center gap-3"><div className={`flex h-10 w-10 items-center justify-center rounded-xl ${item.active ? "bg-[var(--ci-accent)]/15 text-[#9A7A1C]" : "bg-[var(--ci-surface-muted)] text-slate-500"}`}><Icon size={18} /></div><div><div className="text-sm font-semibold text-[#0B1B2B]">{item.label}</div><div className="text-xs text-slate-500">{item.active ? "已纳入当前自动执行" : "当前画像暂无明确命中"}</div></div></div>
+                <div key={item.key} className={`rounded-xl border p-4 ${item.active ? "border-[var(--ci-accent)]/35 bg-[var(--ci-surface-strong)]" : "border-[var(--ci-border)] bg-[var(--ci-surface-muted)]"}`}>
+                  <div className="mb-3 flex items-center gap-3"><div className={`flex h-10 w-10 items-center justify-center rounded-xl ${item.active ? "bg-[var(--ci-accent)]/15 text-[var(--ci-accent)]" : "bg-[#FFFFFF] text-slate-500"}`}><Icon size={18} /></div><div><div className="text-sm font-semibold text-[#0B1B2B]">{item.label}</div><div className="text-xs text-slate-500">{item.active ? "已纳入当前自动执行" : "当前画像暂无明确命中"}</div></div></div>
                   <p className="text-sm leading-6 text-slate-600">{item.description}</p>
                 </div>
               );
             })}
           </div>
-          {channelMapVersion?.content?.channelMap?.channels?.length ? <div className="mt-4 rounded-xl border border-[var(--ci-border)] bg-[#FCFAF4] px-4 py-3 text-sm text-slate-600"><span className="font-semibold text-[#0B1B2B]">系统推导来源：</span>{channelMapVersion.content.channelMap.channels.slice(0, 4).map((channel) => channel.name).filter(Boolean).join("、") || "自动聚合"}</div> : null}
+          {channelMapVersion?.content?.channelMap?.channels?.length ? <div className="mt-4 rounded-xl border border-[var(--ci-border)] bg-[var(--ci-surface-muted)] px-4 py-3 text-sm text-slate-600"><span className="font-semibold text-[#0B1B2B]">系统推导来源：</span>{channelMapVersion.content.channelMap.channels.slice(0, 4).map((channel) => channel.name).filter(Boolean).join("、") || "自动聚合"}</div> : null}
           {sourceSummary.total ? (
             <div className="mt-4 space-y-4">
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -296,7 +296,7 @@ export default function RadarSearchPage() {
               </div>
               <div className="grid gap-3 md:grid-cols-2">
                 {sourceCoverage.map((item) => (
-                  <div key={item.key} className="rounded-xl border border-[var(--ci-border)] bg-[#FCFAF4] p-4">
+                  <div key={item.key} className="rounded-xl border border-[var(--ci-border)] bg-[var(--ci-surface-muted)] p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <div className="text-sm font-semibold text-[#0B1B2B]">{item.label}</div>
@@ -336,7 +336,7 @@ export default function RadarSearchPage() {
       <section className="rounded-xl border border-[var(--ci-border)] bg-[#FFFFFF] p-6">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
 <SectionHeader eyebrow="D. 本轮画像校准" title="把专家判断临时叠加到本轮匹配" description="这里不是让客户改成搜索员，而是在长期画像之上补一层本轮优先级，帮助系统更接近客户的行业判断。" compact />
-          <button onClick={() => setShowPreferences((value) => !value)} className="inline-flex items-center gap-2 self-start rounded-xl border border-[var(--ci-border)] bg-[#FCFAF4] px-4 py-2 text-sm font-medium text-[#0B1B2B] transition-colors hover:border-[var(--ci-accent)]/35 hover:bg-[var(--ci-surface-muted)]">{showPreferences ? "收起校准" : "补充本轮校准（可选）"}<ChevronRight className={`h-4 w-4 transition-transform ${showPreferences ? "rotate-90" : ""}`} /></button>
+          <button onClick={() => setShowPreferences((value) => !value)} className="inline-flex items-center gap-2 self-start rounded-xl border border-[var(--ci-border)] bg-[#FFFFFF] px-4 py-2 text-sm font-medium text-[#0B1B2B] transition-colors hover:border-[var(--ci-accent)]/35 hover:bg-[var(--ci-surface-muted)]">{showPreferences ? "收起校准" : "补充本轮校准（可选）"}<ChevronRight className={`h-4 w-4 transition-transform ${showPreferences ? "rotate-90" : ""}`} /></button>
         </div>
         {showPreferences ? (
           <div className="mt-4 space-y-4">
@@ -347,7 +347,7 @@ export default function RadarSearchPage() {
               <TextField label="想排除的特殊对象" value={preferences.excludedTargets} placeholder="例如：贸易商、维修服务商" onChange={(value) => setPreferences((prev) => ({ ...prev, excludedTargets: value }))} />
             </div>
             <TextField label="一句补充说明" value={preferences.note} placeholder="例如：本轮优先看德国本地制造企业，先不要看渠道商。" onChange={(value) => setPreferences((prev) => ({ ...prev, note: value }))} textarea />
-            <div className="rounded-xl border border-[var(--ci-border)] bg-[#FCFAF4] px-4 py-3 text-sm text-slate-600">本轮会把 <span className="font-semibold text-[#0B1B2B]">国家 / 行业 / 关键词优先级</span> 临时叠加到画像匹配里。需要长期生效的行业判断，请回到总览页用 <span className="font-semibold text-[#0B1B2B]">画像校正助手</span> 写入目标客户画像。</div>
+            <div className="rounded-xl border border-[var(--ci-border)] bg-[var(--ci-surface-muted)] px-4 py-3 text-sm text-slate-600">本轮会把 <span className="font-semibold text-[#0B1B2B]">国家 / 行业 / 关键词优先级</span> 临时叠加到画像匹配里。需要长期生效的行业判断，请回到总览页用 <span className="font-semibold text-[#0B1B2B]">画像校正助手</span> 写入目标客户画像。</div>
           </div>
         ) : null}
       </section>
@@ -358,7 +358,7 @@ export default function RadarSearchPage() {
           {tasks.length ? (
             <div className="space-y-3">
               {tasks.slice(0, 5).map((task) => (
-                <div key={task.id} className="rounded-xl border border-[var(--ci-border)] bg-[#FCFAF4] px-4 py-4">
+                <div key={task.id} className="rounded-xl border border-[var(--ci-border)] bg-[var(--ci-surface-muted)] px-4 py-4">
                   <div className="flex items-start justify-between gap-3"><div><div className="text-sm font-semibold text-[#0B1B2B]">{task.name || "自动搜索任务"}</div><div className="mt-1 text-xs text-slate-500">{formatTaskStatus(task.status)} · {task.source.name}</div></div><div className="text-xs text-slate-400">{formatRelative(task.completedAt ?? task.startedAt ?? task.createdAt)}</div></div>
                   {parseTaskStats(task.stats) ? <div className="mt-3 flex flex-wrap gap-2 text-xs">{renderTaskBadge("抓取", parseTaskStats(task.stats)?.fetched)}{renderTaskBadge("新增", parseTaskStats(task.stats)?.created)}{renderTaskBadge("去重", parseTaskStats(task.stats)?.duplicates)}</div> : null}
                 </div>
@@ -382,7 +382,7 @@ export default function RadarSearchPage() {
           {profiles.length ? (
             <div className="space-y-3">
               {profiles.slice(0, 5).map((profile) => (
-                <div key={profile.id} className="rounded-xl border border-[var(--ci-border)] bg-[#FCFAF4] px-4 py-4">
+                <div key={profile.id} className="rounded-xl border border-[var(--ci-border)] bg-[var(--ci-surface-muted)] px-4 py-4">
                   <div className="flex items-start justify-between gap-3"><div><div className="text-sm font-semibold text-[#0B1B2B]">{profile.name}</div><div className="mt-1 text-xs text-slate-500">{profile.segment?.name || "未关联画像分群"} · {profile.enabledChannels.length} 个渠道 · {formatScheduleRule(profile.scheduleRule)}</div></div><span className={`rounded-full px-2 py-1 text-[11px] font-medium ${profile.isActive ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>{profile.isActive ? "运行中" : "暂停中"}</span></div>
                   <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-500">
                     {summarizeProfileKeywords(profile).map((item) => (
@@ -416,28 +416,28 @@ export default function RadarSearchPage() {
 }
 
 function SectionHeader({ eyebrow, title, description, compact = false }: { eyebrow: string; title: string; description: string; compact?: boolean }) {
-  return <div className={compact ? "" : "mb-5"}><div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#9A7A1C]">{eyebrow}</div><h2 className="mt-2 text-xl font-bold tracking-tight text-[#0B1B2B]">{title}</h2><p className="mt-2 text-sm leading-6 text-slate-500">{description}</p></div>;
+  return <div className={compact ? "" : "mb-5"}><div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--ci-accent-strong)]">{eyebrow}</div><h2 className="mt-2 text-xl font-bold tracking-tight text-[#0B1B2B]">{title}</h2><p className="mt-2 text-sm leading-6 text-slate-500">{description}</p></div>;
 }
 
 function InfoCard({ title, value, lines }: { title: string; value: string; lines: string[] }) {
-  return <div className="rounded-xl border border-[var(--ci-border)] bg-[#FCFAF4] p-4"><div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">{title}</div><div className="mt-3 text-sm font-semibold leading-6 text-[#0B1B2B]">{value}</div><div className="mt-3 space-y-2 text-sm text-slate-500">{lines.filter(Boolean).map((line) => <div key={line}>{line}</div>)}</div></div>;
+  return <div className="rounded-xl border border-[var(--ci-border)] bg-[var(--ci-surface-muted)] p-4"><div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">{title}</div><div className="mt-3 text-sm font-semibold leading-6 text-[#0B1B2B]">{value}</div><div className="mt-3 space-y-2 text-sm text-slate-500">{lines.filter(Boolean).map((line) => <div key={line}>{line}</div>)}</div></div>;
 }
 
 function MetricCard({ label, value, compact = false }: { label: string; value: string | number; compact?: boolean }) {
-  return <div className="rounded-xl border border-[var(--ci-border)] bg-[#FCFAF4] px-4 py-4"><div className="text-xs font-medium text-slate-500">{label}</div><div className={`font-bold tracking-tight text-[#0B1B2B] ${compact ? "mt-2 text-xl" : "mt-3 text-2xl"}`}>{value}</div></div>;
+  return <div className="rounded-xl border border-[var(--ci-border)] bg-[var(--ci-surface-muted)] px-4 py-4"><div className="text-xs font-medium text-slate-500">{label}</div><div className={`font-bold tracking-tight text-[#0B1B2B] ${compact ? "mt-2 text-xl" : "mt-3 text-2xl"}`}>{value}</div></div>;
 }
 
 function EmptyCard({ title, description, href, cta }: { title: string; description: string; href?: string; cta?: string }) {
-  return <div className="flex min-h-[220px] flex-col items-center justify-center rounded-xl border border-dashed border-[var(--ci-border)] bg-[#FCFAF4] px-6 text-center"><div className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-[var(--ci-surface-muted)] text-[var(--ci-accent)]"><ShieldX size={22} /></div><div className="text-lg font-bold text-[#0B1B2B]">{title}</div><div className="mt-2 max-w-md text-sm leading-6 text-slate-500">{description}</div>{href && cta ? <Link href={href} className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[var(--ci-accent)] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#152030]">{cta}<ChevronRight size={14} /></Link> : null}</div>;
+  return <div className="flex min-h-[220px] flex-col items-center justify-center rounded-xl border border-dashed border-[var(--ci-border)] bg-[var(--ci-surface-muted)] px-6 text-center"><div className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-[#FFFFFF] text-[var(--ci-accent)]"><ShieldX size={22} /></div><div className="text-lg font-bold text-[#0B1B2B]">{title}</div><div className="mt-2 max-w-md text-sm leading-6 text-slate-500">{description}</div>{href && cta ? <Link href={href} className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[var(--ci-accent)] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--ci-accent-strong)]">{cta}<ChevronRight size={14} /></Link> : null}</div>;
 }
 
 function TextField({ label, value, onChange, placeholder, textarea = false }: { label: string; value: string; onChange: (value: string) => void; placeholder: string; textarea?: boolean }) {
-  return <div><label className="mb-2 block text-sm font-medium text-[#0B1B2B]">{label}</label>{textarea ? <textarea value={value} onChange={(event) => onChange(event.target.value)} rows={3} placeholder={placeholder} className="w-full rounded-xl border border-[var(--ci-border)] bg-[#FCFAF4] px-4 py-3 text-sm text-[#0B1B2B] placeholder:text-slate-400 focus:border-[var(--ci-accent)]/45 focus:outline-none" /> : <input value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} className="w-full rounded-xl border border-[var(--ci-border)] bg-[#FCFAF4] px-4 py-3 text-sm text-[#0B1B2B] placeholder:text-slate-400 focus:border-[var(--ci-accent)]/45 focus:outline-none" />}</div>;
+  return <div><label className="mb-2 block text-sm font-medium text-[#0B1B2B]">{label}</label>{textarea ? <textarea value={value} onChange={(event) => onChange(event.target.value)} rows={3} placeholder={placeholder} className="w-full rounded-xl border border-[var(--ci-border)] bg-[#FFFFFF] px-4 py-3 text-sm text-[#0B1B2B] placeholder:text-slate-400 focus:border-[var(--ci-accent)]/45 focus:outline-none" /> : <input value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} className="w-full rounded-xl border border-[var(--ci-border)] bg-[#FFFFFF] px-4 py-3 text-sm text-[#0B1B2B] placeholder:text-slate-400 focus:border-[var(--ci-accent)]/45 focus:outline-none" />}</div>;
 }
 
 function Pill({ label, value, tone = "default" }: { label: string; value: string; tone?: "default" | "success" | "warning" }) {
-  const toneClass = tone === "success" ? "border-emerald-400/25 bg-emerald-500/10 text-emerald-300" : tone === "warning" ? "border-amber-400/25 bg-amber-500/10 text-amber-200" : "border-white/10 bg-white/5 text-slate-200";
-  return <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 ${toneClass}`}><span className="text-[11px] uppercase tracking-[0.14em] text-slate-400">{label}</span><span className="text-xs font-semibold text-white">{value}</span></div>;
+  const toneClass = tone === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : tone === "warning" ? "border-amber-200 bg-amber-50 text-amber-700" : "border-[var(--ci-border)] bg-[var(--ci-surface-muted)] text-slate-700";
+  return <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 ${toneClass}`}><span className="text-[11px] uppercase tracking-[0.14em] text-slate-400">{label}</span><span className="text-xs font-semibold text-[#0B1B2B]">{value}</span></div>;
 }
 
 function ActionCard({ label, hint, icon: Icon, onClick, active, disabled, primary = false }: { label: string; hint: string; icon: LucideIcon; onClick: () => void; active: boolean; disabled: boolean; primary?: boolean }) {
@@ -448,13 +448,13 @@ function ActionCard({ label, hint, icon: Icon, onClick, active, disabled, primar
       className={`rounded-xl border px-4 py-4 text-left transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
         primary
           ? "border-[var(--ci-accent)]/35 bg-[var(--ci-accent)] text-white shadow-[var(--ci-shadow-soft)] hover:bg-[var(--ci-accent-strong)]"
-          : "border-white/10 bg-white/5 text-white hover:border-[var(--ci-accent)]/30 hover:bg-white/10"
+          : "border-[var(--ci-border)] bg-[#FFFFFF] text-[#0B1B2B] hover:border-[var(--ci-accent)]/30 hover:bg-[var(--ci-surface-muted)]"
       }`}
     >
       <div className="flex items-center justify-between gap-3">
         <div>
           <div className="text-sm font-semibold">{label}</div>
-          <div className={`mt-1 text-xs ${primary ? "text-[#2A2208]/80" : "text-slate-400"}`}>{hint}</div>
+          <div className={`mt-1 text-xs ${primary ? "text-blue-50" : "text-slate-500"}`}>{hint}</div>
         </div>
         {active ? <Loader2 size={18} className="animate-spin" /> : <Icon size={18} />}
       </div>

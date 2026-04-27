@@ -236,32 +236,26 @@ export default function SocialAccountsPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="rounded-xl p-6 relative overflow-hidden" style={{
-        background: 'var(--ci-sidebar-shell)',
-        boxShadow: 'var(--ci-shadow-soft)',
-      }}>
-        <div className="absolute inset-0 pointer-events-none" style={{
-          background: 'transparent',
-        }} />
-        <div className="relative flex items-center justify-between">
+      <div className="rounded-xl border border-[var(--ci-border)] bg-[#FFFFFF] p-6 shadow-[var(--ci-shadow-soft)]">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-white flex items-center gap-3">
+            <h1 className="text-2xl font-bold text-[#0B1B2B] flex items-center gap-3">
               <KeyRound size={24} className="text-[var(--ci-accent)]" />
               发布通道接入
             </h1>
-            <p className="text-sm text-slate-400 mt-1">先让关键渠道可用，再回到声量枢纽持续推进发布。</p>
+            <p className="text-sm text-slate-500 mt-1">先让关键渠道可用，再回到声量枢纽持续推进发布。</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <Link
               href="/customer/social"
-              className="px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors text-slate-400 hover:text-[var(--ci-accent)]"
+              className="px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors text-slate-500 hover:text-[var(--ci-accent)]"
             >
               <ArrowLeft size={16} />
               返回声量枢纽
             </Link>
             <button
               onClick={loadAccounts}
-              className="p-2 text-slate-400 hover:text-[var(--ci-accent)] transition-colors"
+              className="p-2 text-slate-500 hover:text-[var(--ci-accent)] transition-colors"
             >
               <RefreshCw size={18} />
             </button>
@@ -387,7 +381,7 @@ export default function SocialAccountsPage() {
                     onClick={() => handleStartConfig(platform.id)}
                     className="w-full py-2.5 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2"
                     style={connected
-                      ? { background: '#0B1220', color: 'var(--ci-accent)' }
+                      ? { background: 'var(--ci-surface-muted)', color: 'var(--ci-accent)', border: '1px solid var(--ci-border)' }
                       : { background: 'var(--ci-accent)', color: '#FFFFFF', boxShadow: '0 4px 16px -2px rgba(79,141,246,0.35)' }
                     }
                   >
@@ -413,7 +407,7 @@ export default function SocialAccountsPage() {
                   <a
                     href={`/api/oauth/${platform.id}/authorize`}
                     className="w-full py-2.5 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 block"
-                    style={{ background: '#0B1220', color: 'var(--ci-accent)' }}
+                    style={{ background: 'var(--ci-surface-muted)', color: 'var(--ci-accent)', border: '1px solid var(--ci-border)' }}
                   >
                     <RefreshCw size={14} />
                     重新接通
@@ -502,7 +496,7 @@ export default function SocialAccountsPage() {
                         onClick={handleTest}
                         disabled={!isFormComplete() || isTesting}
                         className="px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 disabled:opacity-50 transition-colors"
-                        style={{ background: '#0B1220', color: 'var(--ci-accent)' }}
+                        style={{ background: 'var(--ci-surface-muted)', color: 'var(--ci-accent)', border: '1px solid var(--ci-border)' }}
                       >
                         {isTesting ? (
                           <>
@@ -552,24 +546,18 @@ export default function SocialAccountsPage() {
       </div>
 
       {/* Help Section */}
-      <div className="rounded-xl p-6 relative overflow-hidden" style={{
-        background: 'var(--ci-sidebar-shell)',
-        boxShadow: 'var(--ci-shadow-soft)',
-      }}>
-        <div className="absolute inset-0 pointer-events-none" style={{
-          background: 'transparent',
-        }} />
-        <div className="relative">
-            <h3 className="font-bold text-white mb-3 flex items-center gap-2">
+      <div className="rounded-xl border border-[var(--ci-border)] bg-[#FFFFFF] p-6 shadow-[var(--ci-shadow-soft)]">
+        <div>
+            <h3 className="font-bold text-[#0B1B2B] mb-3 flex items-center gap-2">
               <Globe size={18} className="text-[var(--ci-accent)]" />
               快速上手
             </h3>
-            <div className="space-y-2 text-xs text-slate-400">
+            <div className="space-y-2 text-xs text-slate-500">
               <p>1. 先确认目标平台的发布方式：OAuth 直连或 API 直发。</p>
               <p>2. 完成接入并校验成功后，即可在首页继续推进发布。</p>
               <p>3. 将内容推进到该渠道后，先看“发布结果”再决定是否扩量到下一个渠道。</p>
             </div>
-            <p className="text-[10px] text-slate-500 mt-4">
+            <p className="text-[10px] text-slate-400 mt-4">
               说明：凭证仅用于已授权内容发布，并会安全存储。
             </p>
           </div>
