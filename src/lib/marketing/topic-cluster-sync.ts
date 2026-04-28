@@ -20,6 +20,11 @@ type CompanyProfilePayload = {
   buyerPersonas: Array<{ role: string; title: string; concerns: string[] }>;
   painPoints: Array<{ pain: string; howWeHelp: string }>;
   buyingTriggers: string[];
+  contentGuardrails?: {
+    preferredTerms: string[];
+    allowedCoatingUsage: string;
+    weakOrExcludedTopics: string[];
+  };
 };
 
 type PersonaPayload = {
@@ -219,6 +224,46 @@ function buildPublishingHints(
   ];
 }
 
+function buildContentGuardrails(sectionEdits: unknown) {
+  const edits =
+    sectionEdits && typeof sectionEdits === "object"
+      ? (sectionEdits as Record<string, unknown>)
+      : {};
+
+  if (!edits.tdPaintPaintAutomationIcp && !edits.tdPaintOverseasIcpOverride) {
+    return undefined;
+  }
+
+  return {
+    preferredTerms: [
+      "robotic painting system",
+      "spray painting automation",
+      "industrial paint automation",
+      "automatic paint spraying system",
+      "robotic spray painting cell",
+      "paint booth automation",
+      "liquid paint finishing",
+      "paint finishing line",
+    ],
+    allowedCoatingUsage:
+      "Only use coating when it is explicitly paint-specific: paint coating, industrial painting, spray painting, or liquid paint finishing.",
+    weakOrExcludedTopics: [
+      "adhesive dispensing",
+      "glue dispensing",
+      "sealant dispensing",
+      "battery slurry coating",
+      "medical coating",
+      "functional film coating",
+      "powder coating only",
+      "generic coating equipment",
+      "electroplating",
+      "anodizing",
+      "PVD coating",
+      "thermal spray",
+    ],
+  };
+}
+
 async function loadCompanyProfile(
   tenantId: string
 ): Promise<CompanyProfilePayload | null> {
@@ -273,6 +318,7 @@ async function loadCompanyProfile(
       })
     ),
     buyingTriggers: normalizeStrings(profile.buyingTriggers),
+    contentGuardrails: buildContentGuardrails(profile.sectionEdits),
   };
 }
 

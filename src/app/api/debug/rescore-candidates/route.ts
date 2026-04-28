@@ -15,7 +15,11 @@ function scoreCandidate(
   // 负向信号
   const excludeKeywords = [
     'supply', 'supplier', 'store', 'shop', 'warehouse',
-    'paints', 'colors', 'parts',
+    'paints', 'colors', 'parts', 'paint distributor', 'coating materials supplier',
+    'powder coating only', 'battery slurry coating', 'medical coating',
+    'functional film coating', 'adhesive dispensing', 'glue dispensing',
+    'sealant dispensing', 'electroplating', 'anodizing', 'pvd coating',
+    'thermal spray', 'surface treatment only', 'generic coating equipment',
     'repair', 'autobody', 'auto body', 'collision', 'restoration',
     'art studio', 'gallery', 'retail',
   ];
@@ -29,7 +33,18 @@ function scoreCandidate(
   // 制造商信号
   if (['manufacturing', 'manufacturer', 'factory', 'mfg'].some(kw => text.includes(kw))) score += 5;
   // 工业涂装信号
-  if (['industrial', 'powder coating', 'surface treatment', 'finishing', 'coating system'].some(kw => text.includes(kw))) score += 4;
+  if ([
+    'robotic painting system',
+    'spray painting automation',
+    'industrial paint automation',
+    'automatic paint spraying system',
+    'robotic spray painting cell',
+    'paint booth automation',
+    'liquid paint finishing',
+    'paint finishing line',
+    'paint coating',
+    'industrial painting',
+  ].some(kw => text.includes(kw))) score += 4;
   // 汽车相关
   if (text.includes('automotive')) score += 3;
   // 金属相关

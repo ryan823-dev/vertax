@@ -19,6 +19,8 @@ const eslintConfig = defineConfig([
     ".vercel-tmp/**",
     "playwright-report/**",
     "test-results/**",
+    "tmp_*",
+    "tmp_*/**",
     ".qoder/**",
     "export-candidates.cjs",
   ]),

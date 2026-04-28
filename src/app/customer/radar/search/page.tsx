@@ -343,7 +343,7 @@ export default function RadarSearchPage() {
             <div className="grid gap-4 md:grid-cols-2">
               <TextField label="优先国家" value={preferences.priorityCountries} placeholder="例如：DE, US, MX" onChange={(value) => setPreferences((prev) => ({ ...prev, priorityCountries: value }))} />
               <TextField label="优先行业" value={preferences.priorityIndustries} placeholder="例如：汽车零部件、工业涂装" onChange={(value) => setPreferences((prev) => ({ ...prev, priorityIndustries: value }))} />
-              <TextField label="额外关注关键词" value={preferences.extraKeywords} placeholder="例如：powder coating, robotic painting" onChange={(value) => setPreferences((prev) => ({ ...prev, extraKeywords: value }))} />
+              <TextField label="额外关注关键词" value={preferences.extraKeywords} placeholder="例如：robotic spray painting cell, paint booth automation" onChange={(value) => setPreferences((prev) => ({ ...prev, extraKeywords: value }))} />
               <TextField label="想排除的特殊对象" value={preferences.excludedTargets} placeholder="例如：贸易商、维修服务商" onChange={(value) => setPreferences((prev) => ({ ...prev, excludedTargets: value }))} />
             </div>
             <TextField label="一句补充说明" value={preferences.note} placeholder="例如：本轮优先看德国本地制造企业，先不要看渠道商。" onChange={(value) => setPreferences((prev) => ({ ...prev, note: value }))} textarea />

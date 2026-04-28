@@ -147,7 +147,7 @@ export async function generateOutreachEmail(options: {
 
 【Core Principles】
 1. Write like a peer, not a vendor: Use contractions, conversational tone. Read aloud — if it sounds like marketing, rewrite.
-2. Subject line: 2-4 words, lowercase, internal-looking (e.g., "coating efficiency", "pricing info")
+2. Subject line: 2-4 words, lowercase, internal-looking (e.g., "paint line", "pricing info")
 3. Personalization must connect to the problem: If removing the personalized opening leaves the email intact, it's not working
 4. One ask, low friction: "Worth exploring?" beats "Can we schedule a call?"
 5. Every sentence must earn its place: Cut anything that doesn't move toward a reply
@@ -485,7 +485,7 @@ export async function sendOutreachBatch(options: {
           complianceNote: contactProfile?.complianceNote || undefined,
           senderName: tenant.companyProfile?.companyName || 'VertaX',
           senderCompany: tenant.companyProfile?.companyName || 'VertaX',
-          valueProposition: 'We help manufacturers optimize their coating processes with advanced automation solutions.',
+          valueProposition: 'We help manufacturers upgrade manual or semi-automatic spray painting into robotic paint automation.',
           evidencePoints: tenant.evidences.slice(0, 3).map(e => `${e.title}: ${e.content?.slice(0, 100)}...`),
           language: 'en',
           tone: inferTone(candidate.industry || undefined),

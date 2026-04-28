@@ -66,7 +66,7 @@ export const WHATSAPP_TEMPLATES: Record<string, WhatsAppTemplate> = {
     languages: ['en', 'zh'],
     variables: ['{{1}}', '{{2}}', '{{3}}'], // 收件人姓名, 公司名, 发送者名字
     status: 'approved',
-    sampleText: 'Hello {{1}}, this is {{3}} from {{2}}. We provide industrial coating solutions...',
+    sampleText: 'Hello {{1}}, this is {{3}} from {{2}}. We provide industrial paint automation solutions...',
   },
   'follow_up': {
     name: 'follow_up',

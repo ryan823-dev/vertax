@@ -97,6 +97,8 @@ export interface PipelineContext {
     products: string[];
     advantages: string[];
     targetMarket: string;
+    positioningRules?: string[];
+    excludedTopics?: string[];
   };
   /** Optional buyer/searcher context derived from briefs and personas */
   buyerContext?: {
@@ -159,6 +161,12 @@ export async function step1KeywordResearch(ctx: PipelineContext): Promise<Keywor
   const companyContext = ctx.companyContext
     ? `${ctx.companyContext.name} sells ${ctx.companyContext.products.join(', ')} to ${ctx.companyContext.targetMarket}`
     : 'B2B manufacturing / industrial products for global buyers';
+  const positioningContext = ctx.companyContext?.positioningRules?.length
+    ? ` Positioning rules: ${ctx.companyContext.positioningRules.join(' ')}`
+    : '';
+  const excludedContext = ctx.companyContext?.excludedTopics?.length
+    ? ` Avoid expanding into: ${ctx.companyContext.excludedTopics.join(', ')}.`
+    : '';
   const buyerContext = ctx.buyerContext
     ? ` Buyer/searcher context: ${ctx.buyerContext.personaName || 'target buyer'}${
         ctx.buyerContext.title ? ` (${ctx.buyerContext.title})` : ''
@@ -166,7 +174,7 @@ export async function step1KeywordResearch(ctx: PipelineContext): Promise<Keywor
         ctx.buyerContext.notes ? ` Brief notes: ${ctx.buyerContext.notes.slice(0, 260)}` : ''
       }`
     : '';
-  const context = `${companyContext}${buyerContext}`;
+  const context = `${companyContext}${positioningContext}${excludedContext}${buyerContext}`;
 
   const prompt = STEP1_PROMPT
     .replace('{keyword}', ctx.keyword)
@@ -524,7 +532,15 @@ export async function step3ArticleWriting(
     : '';
 
   const companyBlock = ctx.companyContext
-    ? `\nCompany context (weave in naturally where relevant, don't force it):\n- Company: ${ctx.companyContext.name}\n- Products: ${ctx.companyContext.products.join(', ')}\n- Key advantages: ${ctx.companyContext.advantages.join(', ')}\n- Target market: ${ctx.companyContext.targetMarket}`
+    ? `\nCompany context (weave in naturally where relevant, don't force it):\n- Company: ${ctx.companyContext.name}\n- Products: ${ctx.companyContext.products.join(', ')}\n- Key advantages: ${ctx.companyContext.advantages.join(', ')}\n- Target market: ${ctx.companyContext.targetMarket}${
+        ctx.companyContext.positioningRules?.length
+          ? `\n- Positioning guardrails: ${ctx.companyContext.positioningRules.join(' ')}`
+          : ''
+      }${
+        ctx.companyContext.excludedTopics?.length
+          ? `\n- Avoid or clearly exclude these non-target topics: ${ctx.companyContext.excludedTopics.join(', ')}`
+          : ''
+      }`
     : '';
   const buyerBlock = ctx.buyerContext
     ? `\nBuyer/searcher context (this article should feel like it answers their actual questions):\n- Persona: ${ctx.buyerContext.personaName || 'Target buyer'}${
@@ -671,7 +687,11 @@ export async function step4FinalOutput(
 // Quality Check
 // ============================================================
 
-function runQualityCheck(pkg: ContentPackage, article: string): QualityCheckResult {
+function runQualityCheck(
+  pkg: ContentPackage,
+  article: string,
+  ctx?: PipelineContext
+): QualityCheckResult {
   const issues: string[] = [];
   const warnings: string[] = [];
 
@@ -715,6 +735,13 @@ function runQualityCheck(pkg: ContentPackage, article: string): QualityCheckResu
   for (const word of BANNED_WORDS) {
     if (articleLower.includes(word.toLowerCase())) {
       issues.push(`Banned word "${word}" found in article`);
+    }
+  }
+
+  const excludedTopics = ctx?.companyContext?.excludedTopics ?? [];
+  for (const topic of excludedTopics) {
+    if (articleLower.includes(topic.toLowerCase())) {
+      warnings.push(`Non-target topic "${topic}" appears; confirm it is framed as an exclusion`);
     }
   }
 
@@ -781,7 +808,7 @@ export async function runSeoGeoPipeline(ctx: PipelineContext): Promise<ContentPa
   };
 
   // Quality Check
-  const quality = runQualityCheck(result, article);
+  const quality = runQualityCheck(result, article, ctx);
   result.qualityCheck = quality;
 
   if (!quality.passed) {

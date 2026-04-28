@@ -6,6 +6,8 @@ import { executeSkill } from "@/lib/skills/runner";
 
 const TARGETING_SPEC_PROMPT = `You are a B2B outbound strategist. Generate a practical targeting specification from the company context below.
 
+Preserve the explicit ICP scope, vocabulary, and exclusions from the existing segments. Do not broaden a specific process ICP into a generic industry category.
+
 Return strict JSON:
 {
   "targetingSpec": {
@@ -81,7 +83,10 @@ export async function createTargetingSpecDraft(tenantId: string, userId: string)
     for (const segment of icpSegments) {
       context += `\n- ${segment.name}${segment.industry ? ` (${segment.industry})` : ""}${
         segment.regions.length > 0 ? ` regions: [${segment.regions.join(", ")}]` : ""
-      }`;
+      }${segment.description ? ` description: ${segment.description}` : ""}`;
+      if (segment.criteria) {
+        context += `\n  criteria: ${JSON.stringify(segment.criteria).slice(0, 900)}`;
+      }
       for (const persona of segment.personas) {
         context += `\n  - ${persona.name} / ${persona.title}${
           persona.seniority ? ` (${persona.seniority})` : ""

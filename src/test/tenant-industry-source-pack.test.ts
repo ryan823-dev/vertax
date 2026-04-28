@@ -14,9 +14,9 @@ describe('tenant industry source packs', () => {
       companyIntro:
         'Robotic painting systems, paint booth automation, paint supply systems, ABB FANUC KUKA integration, ATEX-ready site review.',
       targetIndustries: [
-        'automotive component painting',
-        'appliance coating automation',
-        'metal parts finishing',
+        'automotive component robotic painting line',
+        'appliance spray painting line automation',
+        'manual spray painting upgrade',
       ],
       buyingTriggers: ['manual spraying labor pressure', 'VOC compliance'],
     });
@@ -57,6 +57,13 @@ describe('tenant industry source packs', () => {
     expect(paintingHints.productModels).toEqual(['project']);
     expect(mroHints.productModels).toEqual(['procurement']);
     expect(paintingHints.buyerRoles).toContain('Paint Shop Manager');
+    expect(paintingHints.targetIndustries).toContain(
+      'manufacturers upgrading manual spray painting'
+    );
+    expect(paintingHints.targetIndustries).not.toContain('surface finishing');
+    expect(paintingHints.keywords).toContain('industrial paint automation');
+    expect(paintingHints.keywords).not.toContain('coating line automation project');
+    expect(paintingHints.negativeKeywords).toContain('battery slurry coating');
     expect(mroHints.buyerRoles).toContain('MRO Buyer');
   });
 
@@ -72,7 +79,8 @@ describe('tenant industry source packs', () => {
     );
 
     expect(merged.en[0]).toBe('existing keyword');
-    expect(merged.en).toContain('robotic painting system integrator');
+    expect(merged.en).toContain('robotic spray painting cell integration');
+    expect(merged.en).not.toContain('industrial coating plant automation');
     expect(merged.zh).toEqual(['robot spraying zh seed']);
   });
 });

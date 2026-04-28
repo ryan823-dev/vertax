@@ -32,7 +32,7 @@ describe('targeting refinement', () => {
         icpName: 'TD Paint ICP',
         segmentation: {
           firmographic: {
-            industries: ['industrial coating'],
+            industries: ['manufacturers upgrading manual spray painting'],
             countries: ['DE'],
             companySize: { label: 'Mid-market' },
             exclude: ['paint store'],
@@ -58,8 +58,8 @@ describe('targeting refinement', () => {
         {
           summary: '美国喷涂自动化客户',
           targetCountries: ['US'],
-          targetIndustries: ['automotive components'],
-          keywords: ['paint booth automation'],
+          targetIndustries: ['automotive component manufacturing'],
+          keywords: ['robotic spray painting cell'],
           negativeKeywords: ['residential painting'],
           useCases: ['paint booth retrofit'],
           triggers: ['VOC compliance upgrade'],
@@ -71,8 +71,12 @@ describe('targeting refinement', () => {
 
     expect(next.targetingSpec.icpName).toBe('TD Paint ICP');
     expect(next.targetingSpec.segmentation.firmographic.countries).toEqual(['DE', 'US']);
-    expect(next.targetingSpec.segmentation.firmographic.industries).toContain('automotive components');
-    expect(next.targetingSpec.segmentation.technographic.keywords).toContain('paint booth automation');
+    expect(next.targetingSpec.segmentation.firmographic.industries).toContain(
+      'automotive component manufacturing'
+    );
+    expect(next.targetingSpec.segmentation.technographic.keywords).toContain(
+      'robotic spray painting cell'
+    );
     expect(next.targetingSpec.segmentation.exclusionRules[0]).toEqual({
       rule: 'residential painting',
       why: '来自客户行业判断，用于降低无效候选噪音',
@@ -84,7 +88,7 @@ describe('targeting refinement', () => {
   it('keeps customer direction durable in the company profile source fields', () => {
     const patch = buildCompanyProfileRefinementPatch(
       {
-        targetIndustries: ['industrial coating'],
+        targetIndustries: ['manufacturers upgrading manual spray painting'],
         targetRegions: [{ region: 'Europe', countries: ['DE'], rationale: 'existing' }],
         sectionEdits: {
           radarExpertRefinements: {
@@ -96,15 +100,18 @@ describe('targeting refinement', () => {
         {
           summary: '美国喷涂自动化客户',
           targetCountries: ['US', 'DE'],
-          targetIndustries: ['automotive components'],
-          keywords: ['paint booth automation'],
+          targetIndustries: ['automotive component manufacturing'],
+          keywords: ['robotic spray painting cell'],
         },
         '美国喷涂自动化客户',
       ),
       { originalText: '美国喷涂自动化客户', submittedAt: '2026-04-26T00:00:00.000Z' },
     );
 
-    expect(patch.targetIndustries).toEqual(['industrial coating', 'automotive components']);
+    expect(patch.targetIndustries).toEqual([
+      'manufacturers upgrading manual spray painting',
+      'automotive component manufacturing',
+    ]);
     expect(patch.targetRegions).toEqual([
       { region: 'Europe', countries: ['DE'], rationale: 'existing' },
       {

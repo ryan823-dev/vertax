@@ -71,7 +71,7 @@ export async function GET(req: NextRequest) {
 
         // 模拟候选数据
         const mockCandidate = {
-          displayName: 'Automotive Coating Solutions GmbH',
+          displayName: 'Automotive Paint Automation GmbH',
           email: 'contact@autocoating.de',
           country: 'Germany',
           industry: 'Automotive Manufacturing',
@@ -86,7 +86,7 @@ export async function GET(req: NextRequest) {
           candidateWebsite: mockCandidate.website,
           senderName: tenant?.companyProfile?.companyName || 'VertaX',
           senderCompany: tenant?.companyProfile?.companyName || 'VertaX',
-          valueProposition: 'We help manufacturers optimize their coating processes with advanced automation solutions.',
+          valueProposition: 'We help manufacturers upgrade manual or semi-automatic spray painting into robotic paint automation.',
           evidencePoints: tenant?.evidences.slice(0, 3).map(e => `${e.title}: ${e.content?.slice(0, 100)}...`) || [],
           language: 'en',
         });
@@ -123,7 +123,7 @@ export async function GET(req: NextRequest) {
         candidateWebsite: candidate.website || undefined,
         senderName: tenant?.companyProfile?.companyName || 'VertaX',
         senderCompany: tenant?.companyProfile?.companyName || 'VertaX',
-        valueProposition: 'We help manufacturers optimize their coating processes with advanced automation solutions.',
+        valueProposition: 'We help manufacturers upgrade manual or semi-automatic spray painting into robotic paint automation.',
         evidencePoints: tenant?.evidences.slice(0, 3).map(e => `${e.title}: ${e.content?.slice(0, 100)}...`) || [],
         language: 'en',
       });

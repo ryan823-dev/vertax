@@ -577,7 +577,15 @@ export async function generateFullContentPackage(briefId: string): Promise<FullC
   // Load company profile for context injection
   const companyProfile = await prisma.companyProfile.findUnique({
     where: { tenantId: session.user.tenantId },
-    select: { companyName: true, coreProducts: true, techAdvantages: true, targetRegions: true, targetIndustries: true },
+    select: {
+      companyName: true,
+      companyIntro: true,
+      coreProducts: true,
+      techAdvantages: true,
+      targetRegions: true,
+      targetIndustries: true,
+      sectionEdits: true,
+    },
   });
 
   // Load relevant evidence
@@ -601,6 +609,37 @@ export async function generateFullContentPackage(briefId: string): Promise<FullC
     ? (companyProfile.techAdvantages as Array<{ title?: string }>).map(a => a?.title || '').filter(Boolean)
     : [];
 
+  const sectionEdits =
+    companyProfile?.sectionEdits && typeof companyProfile.sectionEdits === 'object'
+      ? (companyProfile.sectionEdits as Record<string, unknown>)
+      : {};
+  const hasPaintAutomationGuardrails = Boolean(
+    sectionEdits.tdPaintPaintAutomationIcp || sectionEdits.tdPaintOverseasIcpOverride
+  );
+  const positioningRules = hasPaintAutomationGuardrails
+    ? [
+        'Focus TD Paint content on liquid paint spray automation, robotic painting systems, spray painting automation, paint booth automation, automatic paint spraying systems, robotic spray painting cells, and paint finishing lines.',
+        'Use "coating" only with paint-specific qualifiers such as paint coating, industrial painting, spray painting, or liquid paint finishing.',
+        'Content should address paint booth/process issues: paint supply, color change, spray guns, atomization, film thickness, VOC, explosion-proof design, and ventilation.',
+      ]
+    : [];
+  const excludedTopics = hasPaintAutomationGuardrails
+    ? [
+        'adhesive dispensing',
+        'glue dispensing',
+        'sealant dispensing',
+        'battery slurry coating',
+        'medical coating',
+        'functional film coating',
+        'powder coating only',
+        'generic coating equipment',
+        'electroplating',
+        'anodizing',
+        'PVD coating',
+        'thermal spray',
+      ]
+    : [];
+
   const pipelineCtx = {
     keyword: primaryKeyword,
     companyContext: companyProfile ? {
@@ -612,6 +651,8 @@ export async function generateFullContentPackage(briefId: string): Promise<FullC
         : Array.isArray(companyProfile.targetIndustries)
           ? (companyProfile.targetIndustries as string[]).join(', ')
           : 'global B2B buyers',
+      positioningRules,
+      excludedTopics,
     } : undefined,
     buyerContext: brief.targetPersona || brief.notes
       ? {

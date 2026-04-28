@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
       complianceNote: contactProfile.complianceNote || undefined,
       senderName: tenant.companyProfile?.companyName || 'VertaX',
       senderCompany: tenant.companyProfile?.companyName || 'VertaX',
-      valueProposition: 'We provide advanced coating solutions for manufacturers.',
+      valueProposition: 'We provide robotic spray painting automation for manufacturers.',
       evidencePoints: evidences.map(e => `${e.title}: ${e.content?.slice(0, 100)}...`),
       language: language as 'en' | 'zh',
       // 追踪参数

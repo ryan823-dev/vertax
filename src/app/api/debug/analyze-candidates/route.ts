@@ -33,8 +33,12 @@ export async function GET(request: NextRequest) {
   const targetKeywords = [
     // 制造商/工厂
     'manufacturing', 'manufacturer', 'factory', 'industrial',
-    'automotive', 'metal', 'steel', 'coating', 'painting',
-    'powder coating', 'surface treatment', 'finishing',
+    'automotive', 'metal', 'steel',
+    'robotic painting system', 'spray painting automation',
+    'industrial paint automation', 'automatic paint spraying system',
+    'robotic spray painting cell', 'paint booth automation',
+    'liquid paint finishing', 'paint finishing line',
+    'paint coating', 'industrial painting',
     // 工程公司
     'engineering', 'technology', 'systems',
   ];
@@ -42,7 +46,12 @@ export async function GET(request: NextRequest) {
   const excludeKeywords = [
     // 零售/供应商
     'supply', 'supplier', 'store', 'shop', 'warehouse',
-    'parts', 'paints', 'colors',
+    'parts', 'paints', 'colors', 'paint distributor', 'coating materials supplier',
+    // 非油漆喷涂工艺
+    'powder coating only', 'battery slurry coating', 'medical coating',
+    'functional film coating', 'adhesive dispensing', 'glue dispensing',
+    'sealant dispensing', 'electroplating', 'anodizing', 'pvd coating',
+    'thermal spray', 'surface treatment only', 'generic coating equipment',
     // 维修服务
     'repair', 'service', 'autobody', 'auto body',
     'collision', 'restoration',

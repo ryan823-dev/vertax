@@ -266,6 +266,8 @@ Rules:
 - ALL output MUST be in English (this is for overseas customer acquisition)
 - Keywords should be terms global buyers would search on Google/LinkedIn
 - Title should be compelling for international B2B buyers
+- Do not broaden the scope beyond the persona's actual manufacturing process and buying concerns
+- If the persona is about paint or spray painting, prefer paint-specific terms such as robotic painting system, spray painting automation, paint booth automation, industrial paint automation, automatic paint spraying system, robotic spray painting cell, and liquid paint finishing; avoid generic coating automation unless it is clearly paint-specific
 - intent: informational=research, commercial=evaluation, transactional=purchase decision, navigational=brand search
 - Output ONLY valid JSON, no other text`;
 

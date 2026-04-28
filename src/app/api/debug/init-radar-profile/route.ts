@@ -47,16 +47,16 @@ export async function POST(req: NextRequest) {
         // 关键词：英文+中文
         keywords: {
           en: [
-            'painting robot',
-            'coating system',
-            'spray booth',
-            'paint shop',
-            'surface treatment',
-            'industrial painting',
-            'automotive paint',
-            'powder coating',
-            'wet paint',
-            'paint automation',
+            'robotic painting system',
+            'spray painting automation',
+            'industrial paint automation',
+            'automatic paint spraying system',
+            'robotic spray painting cell',
+            'paint booth automation',
+            'liquid paint finishing',
+            'paint finishing line',
+            'manual spray painting upgrade',
+            'semi automatic spray painting line upgrade',
           ],
           zh: [
             '喷涂机器人',
