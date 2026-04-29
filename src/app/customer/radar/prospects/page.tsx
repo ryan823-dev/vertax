@@ -32,9 +32,6 @@ import {
   Linkedin,
   Shield,
   TrendingUp,
-  Info,
-  ChevronDown,
-  ChevronUp,
   MessageCircle,
   PhoneCall,
   History,
@@ -439,7 +436,6 @@ export default function RadarProspectsPage() {
   // 背调简报 state
   const [dossierData, setDossierData] = useState<{ id: string; version: number; content: Record<string, unknown>; createdAt: Date } | null>(null);
   const [isGeneratingDossier, setIsGeneratingDossier] = useState(false);
-  const [dossierExpanded, setDossierExpanded] = useState<Record<string, boolean>>({});
   
   // 筛选条件
   const [filters, setFilters] = useState({
@@ -2411,11 +2407,6 @@ export default function RadarProspectsPage() {
                             <div key={idx} className="bg-[#FFFFFF] rounded-xl border border-[var(--ci-border)] p-4 group">
                               <p className="text-sm text-slate-700 leading-relaxed">{opening.text}</p>
                               <div className="flex items-center justify-between mt-3">
-                                {opening.evidenceIds.length > 0 && (
-                                  <span className="text-[10px] text-[var(--ci-accent)]">
-                                    引用: {opening.evidenceIds.join(', ')}
-                                  </span>
-                                )}
                                 <button
                                   onClick={() => handleCopy(opening.text, `opening-${idx}`)}
                                   className="ml-auto p-1.5 text-slate-400 hover:text-[var(--ci-accent)] transition-colors"
@@ -2532,11 +2523,6 @@ export default function RadarProspectsPage() {
                                 <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
                                   {email.body}
                                 </p>
-                                {email.evidenceIds.length > 0 && (
-                                  <p className="text-[10px] text-[var(--ci-accent)] mt-3 pt-3 border-t border-[var(--ci-border)]">
-                                    引用证据: {email.evidenceIds.join(', ')}
-                                  </p>
-                                )}
                               </div>
                             </div>
                           ))}
@@ -3182,17 +3168,9 @@ export default function RadarProspectsPage() {
                         const dossier = (dossierData.content as Record<string, unknown>).dossier as Record<string, unknown> | undefined
                           ?? dossierData.content as Record<string, unknown>;
 
-                        const renderDataGaps = (gaps: string[] | undefined) => {
-                          if (!gaps || gaps.length === 0) return null;
-                          return (
-                            <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-[var(--ci-border)]">
-                              {gaps.map((gap, i) => (
-                                <span key={i} className="text-[10px] px-2 py-0.5 rounded bg-amber-50 text-amber-600 border border-amber-200">
-                                  {gap}
-                                </span>
-                              ))}
-                            </div>
-                          );
+                        // dataGaps 是 AI 内部缺失标记，不向用户暴露
+                        const renderDataGaps = (_gaps: string[] | undefined) => {
+                          return null;
                         };
 
                         const companyOverview = dossier.companyOverview as { summary?: string; keyFacts?: Array<{ label: string; value: string }>; dataGaps?: string[] } | undefined;
@@ -3202,7 +3180,6 @@ export default function RadarProspectsPage() {
                         const matchAnalysis = dossier.matchAnalysis as { overallScore?: number | null; matchReasons?: string[]; relevanceInsights?: string[]; dataGaps?: string[] } | undefined;
                         const riskAlerts = dossier.riskAlerts as Array<{ risk: string; severity: string; basis: string }> | undefined;
                         const approach = dossier.recommendedApproach as { nextSteps?: Array<{ action: string; priority: string; rationale: string }>; talkingPoints?: string[]; avoidTopics?: string[] } | undefined;
-                        const dataSources = undefined as Array<{ field: string; source: string; status: string }> | undefined;
 
                         return (
                           <>
@@ -3326,15 +3303,7 @@ export default function RadarProspectsPage() {
                                 <div className="flex items-center gap-2 mb-3">
                                   <Star size={18} className="text-[var(--ci-accent)]" />
                                   <h4 className="font-bold text-[#0B1B2B]">匹配度分析</h4>
-                                  {matchAnalysis.overallScore != null && (
-                                    <span className="ml-auto text-lg font-bold text-[var(--ci-accent)]">{Math.round(matchAnalysis.overallScore * 100)}%</span>
-                                  )}
                                 </div>
-                                {matchAnalysis.overallScore != null && (
-                                  <div className="w-full bg-[var(--ci-border)] rounded-full h-2 mb-3">
-                                    <div className="bg-[var(--ci-accent)] h-2 rounded-full transition-all" style={{ width: `${Math.round(matchAnalysis.overallScore * 100)}%` }} />
-                                  </div>
-                                )}
                                 {matchAnalysis.matchReasons && matchAnalysis.matchReasons.length > 0 && (
                                   <div className="mb-2">
                                     <h5 className="text-xs font-medium text-slate-500 mb-1">匹配原因</h5>
@@ -3451,36 +3420,6 @@ export default function RadarProspectsPage() {
                               </div>
                             )}
 
-                            {/* 数据来源溯源 */}
-                            {dataSources && dataSources.length > 0 && (
-                              <div className="bg-[var(--ci-surface-strong)] rounded-xl border border-[var(--ci-border)] p-6">
-                                <button
-                                  onClick={() => setDossierExpanded(prev => ({ ...prev, sources: !prev.sources }))}
-                                  className="flex items-center gap-2 w-full text-left"
-                                >
-                                  <Info size={14} className="text-slate-400" />
-                                  <span className="text-xs font-medium text-slate-500">数据来源溯源</span>
-                                  <span className="text-[10px] text-slate-400 ml-1">
-                                    {dataSources.filter(s => s.status === 'available').length}/{dataSources.length} 项可用
-                                  </span>
-                                  {dossierExpanded.sources ? <ChevronUp size={14} className="text-slate-400 ml-auto" /> : <ChevronDown size={14} className="text-slate-400 ml-auto" />}
-                                </button>
-                                {dossierExpanded.sources && (
-                                  <div className="mt-3 space-y-1">
-                                    {dataSources.map((ds, i) => (
-                                      <div key={i} className="flex items-center gap-2 text-[11px] py-1">
-                                        <span className={`w-1.5 h-1.5 rounded-full ${ds.status === 'available' ? 'bg-emerald-500' : 'bg-amber-400'}`} />
-                                        <span className="text-slate-500 w-24 shrink-0">{ds.field}</span>
-                                        <span className="text-slate-400">{ds.source}</span>
-                                        <span className={`ml-auto text-[10px] px-1.5 py-0.5 rounded ${
-                                          ds.status === 'available' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
-                                        }`}>{ds.status === 'available' ? '已获取' : '待补充'}</span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            )}
                           </>
                         );
                       })()}
@@ -3531,7 +3470,7 @@ export default function RadarProspectsPage() {
           {selectedCompany ? (
             <div className="space-y-4">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-normal text-[var(--ci-muted)]">Action Workspace</p>
+                <p className="text-[11px] font-semibold uppercase tracking-normal text-[var(--ci-muted)]">快捷操作</p>
                 <h3 className="mt-1 text-sm font-semibold text-[var(--ci-ink)] line-clamp-2">{selectedCompany.name}</h3>
               </div>
 
@@ -3573,7 +3512,7 @@ export default function RadarProspectsPage() {
                 <div className="rounded-lg border border-[var(--ci-border)] bg-white p-3">
                   <div className="mb-2 flex items-center gap-2">
                     <Target size={13} className="text-[var(--ci-signal)]" />
-                    <p className="text-xs font-semibold text-[var(--ci-ink)]">Evidence Signals</p>
+                    <p className="text-xs font-semibold text-[var(--ci-ink)]">为什么推荐</p>
                   </div>
                   <div className="space-y-2">
                     {selectedMatchReasons.slice(0, 4).map((reason, idx) => (
