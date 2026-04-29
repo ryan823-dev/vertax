@@ -131,10 +131,12 @@ export function RadarHeader({
   onRefresh,
 }: RadarHeaderProps) {
   const hasErrors = errors.length > 0;
+  // 系统主动处理中（enriching）→ 旋转动画；待人工审核 → 静态提示
+  const isEnriching = counts.candidatesEnriching > 0;
   const pendingHint =
     counts.pendingReviewCount > 0
       ? `${counts.pendingReviewCount} 待审核`
-      : counts.candidatesEnriching > 0
+      : isEnriching
         ? `${counts.candidatesEnriching} 正在补全`
         : null;
 
@@ -181,7 +183,7 @@ export function RadarHeader({
               {!hasErrors && pendingHint && (
                 <StatusChip
                   tone="warning"
-                  icon={<Loader2 size={12} className="animate-spin" />}
+                  icon={isEnriching ? <Loader2 size={12} className="animate-spin" /> : <Clock size={12} />}
                   label={pendingHint}
                 />
               )}

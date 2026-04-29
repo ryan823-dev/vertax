@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { Sparkles, Loader2, ChevronRight, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Sparkles, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -121,59 +121,11 @@ export function SkillTrigger({
 
           {result && (
             <div className="flex-1 overflow-y-auto space-y-4 py-4">
-              {/* 置信度 */}
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-slate-500">置信度：</span>
-                <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-emerald-500 rounded-full"
-                    style={{ width: `${result.confidence * 100}%` }}
-                  />
-                </div>
-                <span className="text-sm font-medium">
-                  {Math.round(result.confidence * 100)}%
-                </span>
-              </div>
-
-              {/* 待确认问题 */}
-              {result.openQuestions.length > 0 && (
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                  <p className="text-sm font-medium text-amber-800 mb-2">
-                    待确认问题 ({result.openQuestions.length})
-                  </p>
-                  <ul className="space-y-1">
-                    {result.openQuestions.map((q, i) => (
-                      <li key={i} className="text-xs text-amber-700 flex items-start gap-2">
-                        <span className="text-amber-500">•</span>
-                        {q}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* 缺少证据 */}
-              {result.missingProof.length > 0 && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                  <p className="text-sm font-medium text-red-800 mb-2">
-                    缺少证据 ({result.missingProof.length})
-                  </p>
-                  <ul className="space-y-1">
-                    {result.missingProof.map((p, i) => (
-                      <li key={i} className="text-xs text-red-700 flex items-start gap-2">
-                        <span className="text-red-500">•</span>
-                        {p}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* 引用证据 */}
+              {/* 引用证据 - 让用户知道结论有据可依 */}
               {result.references.length > 0 && (
                 <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
                   <p className="text-sm font-medium text-emerald-800 mb-2">
-                    引用证据 ({result.references.length})
+                    参考了 {result.references.length} 条知识
                   </p>
                   <ul className="space-y-1">
                     {result.references.map((ref, i) => (
@@ -183,33 +135,6 @@ export function SkillTrigger({
                     ))}
                   </ul>
                 </div>
-              )}
-
-              {/* 推荐后续 Skill */}
-              {result.suggestedNextSkills.length > 0 && (
-                <div className="border border-slate-200 rounded-lg p-3">
-                  <p className="text-sm font-medium text-slate-700 mb-2">
-                    推荐后续步骤
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {result.suggestedNextSkills.map((skill, i) => (
-                      <span
-                        key={i}
-                        className="px-2 py-1 bg-slate-100 text-xs text-slate-600 rounded flex items-center gap-1"
-                      >
-                        <ChevronRight className="w-3 h-3" />
-                        {skill}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* 自动创建的任务 */}
-              {result.taskIds.length > 0 && (
-                <p className="text-xs text-slate-500">
-                  已自动创建 {result.taskIds.length} 个任务
-                </p>
               )}
             </div>
           )}

@@ -735,7 +735,9 @@ export default function RadarCandidatesPage() {
     outreachPackGenerated7d: 0, lastUpdatedAt: null,
   };
   const currentStep = pipelineStatus?.currentStep ?? 1;
-  const primaryCTA = pipelineStatus?.primaryCTA ?? undefined;
+  // 如果 CTA 指向当前页面（candidates），则不显示（避免自链接）
+  const rawCTA = pipelineStatus?.primaryCTA ?? undefined;
+  const primaryCTA = rawCTA?.href?.startsWith('/customer/radar/candidates') ? undefined : rawCTA;
   const errors = pipelineStatus?.errors ?? [];
 
   // 空态类型判断

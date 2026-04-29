@@ -4,13 +4,18 @@
  * Provides utilities for generating and verifying JWTs that work across
  * both Tower (Next.js) and Vertax (Express) systems.
  * 
- * Both systems must share the same JWT_SECRET environment variable.
+ * Both systems must share the same AUTH_SECRET (or JWT_SECRET) environment variable.
  */
 
 import * as jwt from "jsonwebtoken";
 
-// Shared JWT configuration
-const JWT_SECRET = process.env.JWT_SECRET || "vertax-jwt-secret-change-in-production";
+// Shared JWT configuration – AUTH_SECRET is the canonical variable;
+// JWT_SECRET is accepted as a backward-compatible alias.
+const _secret = process.env.AUTH_SECRET || process.env.JWT_SECRET;
+if (!_secret) {
+  throw new Error("Missing AUTH_SECRET (or JWT_SECRET) environment variable – cannot sign/verify JWTs.");
+}
+const JWT_SECRET: string = _secret;
 const JWT_ISSUER = "vertax.top";
 const JWT_AUDIENCE = "vertax-platform";
 

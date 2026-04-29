@@ -497,14 +497,6 @@ export function GrowthSecretaryPanel({ counts }: SecretaryPanelProps) {
       href: "/customer/marketing/briefs?status=ready",
     });
 
-  if (counts.missingProofCount > 0)
-    items.push({
-      type: "warning",
-      title: `${counts.missingProofCount} 条内容缺证据`,
-      description: "请补充证据引用以增强可信度",
-      href: "/customer/marketing/contents",
-    });
-
   if (counts.draftsPending > 0)
     items.push({
       type: "info",

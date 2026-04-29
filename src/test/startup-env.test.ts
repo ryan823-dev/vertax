@@ -20,7 +20,6 @@ describe("startup-env", () => {
   it("requires at least one auth secret alias", () => {
     vi.stubEnv("DATABASE_URL", "postgres://example");
     vi.stubEnv("AUTH_SECRET", "");
-    vi.stubEnv("NEXTAUTH_SECRET", "");
     vi.stubEnv("JWT_SECRET", "");
     vi.stubEnv("CRON_SECRET", "cron-secret");
     vi.stubEnv("DASHSCOPE_API_KEY", "dashscope-key");
@@ -28,7 +27,7 @@ describe("startup-env", () => {
     const validation = validateStartupEnv();
 
     expect(validation.missingRequired).toContain(
-      "AUTH_SECRET | NEXTAUTH_SECRET | JWT_SECRET",
+      "AUTH_SECRET | JWT_SECRET",
     );
   });
 });

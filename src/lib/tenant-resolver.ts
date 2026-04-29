@@ -123,7 +123,12 @@ export function getTenantCanonicalRedirectUrl({
     return null;
   }
 
-  const url = currentUrl instanceof URL ? new URL(currentUrl.toString()) : new URL(currentUrl);
+  let url: URL;
+  try {
+    url = currentUrl instanceof URL ? new URL(currentUrl.toString()) : new URL(currentUrl);
+  } catch {
+    return null;
+  }
   const currentHostname = normalizeHostname(url.hostname);
   const expectedHostname = getTenantHostname(normalizedTenantSlug, baseDomain);
 

@@ -28,7 +28,6 @@ function isConfigured(name: string) {
 function hasAuthSecret() {
   return (
     isConfigured("AUTH_SECRET") ||
-    isConfigured("NEXTAUTH_SECRET") ||
     isConfigured("JWT_SECRET")
   );
 }
@@ -41,7 +40,7 @@ function getRequiredStartupKeys() {
       requiredAtStartup: true,
     },
     {
-      name: "AUTH_SECRET | NEXTAUTH_SECRET | JWT_SECRET",
+      name: "AUTH_SECRET | JWT_SECRET",
       configured: hasAuthSecret(),
       requiredAtStartup: true,
     },

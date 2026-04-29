@@ -523,32 +523,23 @@ export default function TopicClustersPage() {
                   </div>
                   {displayContent?.confidence !== undefined && (
                     <div className="text-right">
-                      <div className="text-[10px] text-slate-400 uppercase tracking-wider">置信度</div>
-                      <div className="text-2xl font-bold text-[var(--ci-accent)]">
-                        {Math.round((displayContent.confidence || 0) * 100)}%
+                      <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        (displayContent.confidence || 0) >= 0.8
+                          ? 'bg-emerald-100 text-emerald-700'
+                          : (displayContent.confidence || 0) >= 0.5
+                            ? 'bg-amber-100 text-amber-700'
+                            : 'bg-slate-100 text-slate-600'
+                      }`}>
+                        {(displayContent.confidence || 0) >= 0.8
+                          ? '数据充分'
+                          : (displayContent.confidence || 0) >= 0.5
+                            ? '建议补充知识'
+                            : '知识不足'}
                       </div>
                     </div>
                   )}
                 </div>
               </div>
-
-              {/* Open Questions */}
-              {displayContent?.openQuestions && displayContent.openQuestions.length > 0 && (
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-                  <h4 className="text-sm font-medium text-amber-800 mb-2 flex items-center gap-2">
-                    <HelpCircle size={14} />
-                    待确认问题 ({displayContent.openQuestions.length})
-                  </h4>
-                  <ul className="space-y-1">
-                    {displayContent.openQuestions.map((q, i) => (
-                      <li key={i} className="text-xs text-amber-700 flex items-start gap-2">
-                        <span className="text-amber-400">•</span>
-                        {q}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
 
               {(topicCluster.customerUnderstanding.length > 0 ||
                 topicCluster.buyerUnderstanding.length > 0 ||

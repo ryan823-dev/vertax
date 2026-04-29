@@ -9,7 +9,6 @@ datasource db {
 }
 
 // ==================== TENANT & AUTH ====================
-// ==================== TENANT & AUTH ====================
 
 model Tenant {
   id          String    @id @default(cuid())
@@ -19,7 +18,7 @@ model Tenant {
   plan        String    @default("free")
   status      String    @default("active")
   settings    Json      @default("{}")
-  emailConfig Json? // 閭欢閰嶇疆锛氬钩鍙癒ey/鑷畾涔塊ey銆佸彂浠跺煙鍚嶇瓑
+  emailConfig Json? // 邮件配置：平台Key/自定义Key、发件域名等
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
@@ -62,23 +61,23 @@ model WebsiteConfig {
   id              String  @id @default(cuid())
   tenantId        String
   tenant          Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  siteName        String? // 鐩爣绔欏悕绉帮紙澶氱珯鍖哄垎锛?
+  siteName        String? // 目标站名称（多站区分）
   url             String?
   apiKey          String?
   publishEndpoint String?
   seoDefaults     Json    @default("{}")
 
-  // === Publishing Pipeline 鎵╁睍 ===
+  // === Publishing Pipeline 扩展 ===
   siteType             String  @default("supabase") // supabase | nextjs | wordpress | rest
   supabaseUrl          String? // [supabase] e.g. "https://xxx.supabase.co"
   functionName         String? // [supabase] e.g. "receive-content-push"
-  webhookUrl           String? // [nextjs | rest] 瀹㈡埛绔欐帴鏀?endpoint
-  wpUrl                String? // [wordpress] WP 绔欑偣鏍?URL
-  wpUsername           String? // [wordpress] WP 鐢ㄦ埛鍚?
+  webhookUrl           String? // [nextjs | rest] 客户站接收 endpoint
+  wpUrl                String? // [wordpress] WP 站点根 URL
+  wpUsername           String? // [wordpress] WP 用户名
   wpPassword           String? // [wordpress] Application Password
-  pushSecret           String? // 鍏变韩瀵嗛挜锛圚MAC绛惧悕 / Bearer token锛?
-  customHeaders        Json? // 鑷畾涔夎姹傚ご锛坮est/nextjs 鐢級
-  fieldMapping         Json    @default("{}") // Vertax 鈫?鐩爣绔欏瓧娈垫槧灏?
+  pushSecret           String? // 共享密钥（HMAC签名 / Bearer token）
+  customHeaders        Json? // 自定义请求头（rest/nextjs 用）
+  fieldMapping         Json    @default("{}") // Vertax → 目标站字段映射
   approvalTimeoutHours Int     @default(24)
   isActive             Boolean @default(true)
 
@@ -93,50 +92,50 @@ model WebsiteConfig {
 // ==================== CONTENT PUSH PIPELINE ====================
 
 enum PushStatus {
-  PENDING // 宸叉帹閫侊紝绛夊緟瀹㈡埛绔欑偣瀹℃牳
+  PENDING // 已推送，等待客户站点审核
   CONFIRMED // 瀹㈡埛绔欑偣宸茬‘璁ゅ彂甯?
-  TIMEOUT // 瓒呮椂鏈‘璁?
-  FAILED // 鎺ㄩ€佸け璐?
-  ESCALATED // 宸插崌绾у埌杩愯惀澶勭悊
+  TIMEOUT // 瓒呮椂鏈‘璁?
+  FAILED // 推送失败
+  ESCALATED // 已升级到运营处理
 }
 
 model PushRecord {
   id       String @id @default(cuid())
   tenantId String
 
-  // 鍏宠仈鍐呭
+  // 关联内容
   contentId String // SeoContent.id
   content   SeoContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
 
-  // 鐩爣绔欑偣
+  // 目标站点
   websiteConfigId String
   websiteConfig   WebsiteConfig @relation(fields: [websiteConfigId], references: [id], onDelete: Cascade)
 
-  // 鎺ㄩ€佺姸鎬?
+  // 推送状态
   status     PushStatus @default(PENDING)
-  remoteId   String? // 鐩爣绔欑偣杩斿洖鐨勮褰?ID
-  remoteSlug String? // 鐩爣绔欑偣鐨?slug
-  targetUrl  String? // 鐩爣绔欑偣涓婄殑瀹屾暣 URL
+  remoteId   String? // 目标站点返回的记录 ID
+  remoteSlug String? // 目标站点的 slug
+  targetUrl  String? // 目标站点上的完整 URL
 
-  // 瀛楁蹇収锛堟帹閫佹椂鐨勬槧灏勭粨鏋滐級
-  pushPayload     Json? // 瀹為檯鍙戦€佺殑 payload 蹇収
-  contentVersion  Int? // 鎺ㄩ€佹椂瀵瑰簲鐨?SeoContent.version
-  contentSnapshot Json? // { title, slug, excerpt, keywords } 蹇収
+  // 字段快照（推送时的映射结果）
+  pushPayload     Json? // 实际发送的 payload 快照
+  contentVersion  Int? // 推送时对应的 SeoContent.version
+  contentSnapshot Json? // { title, slug, excerpt, keywords } 蹇収
 
-  // 鏃堕棿杩借釜
+  // 时间追踪
   pushedAt    DateTime  @default(now())
   timeoutAt   DateTime // pushedAt + approvalTimeoutHours
   confirmedAt DateTime?
   escalatedAt DateTime?
 
-  // 閿欒澶勭悊
+  // 错误处理
   retryCount Int     @default(0)
   lastError  String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([contentId, websiteConfigId]) // 姣忎釜鍐呭姣忎釜绔欑偣鍙湁涓€鏉℃帹閫佽褰?
+  @@unique([contentId, websiteConfigId]) // 每个内容每个站点只有一条推送记录
 }
 
 model User {
@@ -349,27 +348,27 @@ model SeoContent {
   status          String          @default("draft")
   publishedAt     DateTime?
   scheduledAt     DateTime?
-  version         Int             @default(1) // 鍐呭鐗堟湰鍙凤紝姣忔淇濆瓨鑷姩 +1
+  version         Int             @default(1) // 内容版本号，每次保存自动 +1
   aiMetadata      Json            @default("{}")
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
   deletedAt       DateTime?
 
-  // Phase 3 鎵╁睍
+  // Phase 3 扩展
   briefId          String?
   brief            ContentBrief?           @relation(fields: [briefId], references: [id], onDelete: SetNull)
   outline          Json? // { sections: [{ heading, keyPoints }] }
-  evidenceRefs     String[] // 寮曠敤鐨?Evidence id
-  schemaJson       Json? // Schema.org 缁撴瀯鍖栨暟鎹?(FAQPage JSON-LD)
+  evidenceRefs     String[] // 引用的 Evidence id
+  schemaJson       Json? // Schema.org 结构化数据(FAQPage JSON-LD)
   geoVersion       String? // GEO-optimized short version (300-500 words, for AI citation)
 
   // Auto-publish grace period (24h window for AI-generated content)
   autoPublishAt    DateTime? // Non-null = awaiting publish, cron will auto-publish when reached
   generatedBy      String? // "ai" | "human" | null, marks content origin
 
-  pushRecords      PushRecord[] // 鎺ㄩ€佽褰?
-  contentLinks     RadarContentLink[] // 鑾峰闆疯揪鍐呭鑱斿姩
-  geoDistributions GeoDistributionRecord[] // GEO 鍒嗗彂杩借釜
+  pushRecords      PushRecord[] // 推送记录
+  contentLinks     RadarContentLink[] // 获客雷达内容联动
+  geoDistributions GeoDistributionRecord[] // GEO 分发追踪
 
   @@unique([tenantId, slug])
   @@index([status, autoPublishAt]) // For auto-publish cron query
@@ -507,7 +506,7 @@ model Activity {
   metadata   Json     @default("{}")
   createdAt  DateTime @default(now())
 
-  // Phase 3 鎵╁睍
+  // Phase 3 扩展
   eventCategory String? // "knowledge"|"marketing"|"review"|"chat"|"system"
   severity      String? // "info"|"warn"|"error"
   context       Json? // { versionId, briefId, previousStatus, ... }
@@ -540,7 +539,7 @@ enum ArtifactStatus {
   client_feedback
   revised
   approved
-  published // UI闅愯棌锛屽悗缁惎鐢?
+  published // UI隐藏，后续启用
   archived
 }
 
@@ -549,31 +548,31 @@ model CompanyProfile {
   tenantId String @unique
   tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
-  // 浼佷笟鍩烘湰淇℃伅锛圓I鎻愮偧锛?
+  // 企业基本信息（AI提炼）
   companyName  String?
   companyIntro String?
 
-  // 鏍稿績鑳藉姏鐢诲儚
-  coreProducts    Json @default("[]") // 鏍稿績浜у搧/鏈嶅姟鑳藉姏
-  techAdvantages  Json @default("[]") // 鎶€鏈紭鍔?
-  scenarios       Json @default("[]") // 閫傜敤鍦烘櫙/琛屼笟
-  differentiators Json @default("[]") // 宸紓鍖栧崠鐐?
+  // 核心能力画像
+  coreProducts    Json @default("[]") // 核心产品/服务能力
+  techAdvantages  Json @default("[]") // 技术优势
+  scenarios       Json @default("[]") // 适用场景/行业
+  differentiators Json @default("[]") // 差异化卖点
 
-  // 鐩爣瀹㈡埛鐢诲儚 (ICP)
-  targetIndustries Json @default("[]") // 鐩爣琛屼笟
-  targetRegions    Json @default("[]") // 鐩爣鍦板尯
-  buyerPersonas    Json @default("[]") // 涔板瑙掕壊
-  painPoints       Json @default("[]") // 瀹㈡埛鐥涚偣
-  buyingTriggers   Json @default("[]") // 璐拱瑙﹀彂鍥犵礌
+  // 目标客户画像 (ICP)
+  targetIndustries Json @default("[]") // 目标行业
+  targetRegions    Json @default("[]") // 目标地区
+  buyerPersonas    Json @default("[]") // 买家角色
+  painPoints       Json @default("[]") // 客户痛点
+  buyingTriggers   Json @default("[]") // 购买触发因素
   exploredRegions  Json @default("[]") // 已探索过的区域记录 [{ region, countries, exploredAt }]
 
-  // AI 鍒嗘瀽鍏冩暟鎹?
+  // AI 分析元数据
   lastAnalyzedAt DateTime?
-  analysisSource Json      @default("[]") // 鍒嗘瀽浣跨敤鐨勭礌鏉怚D鍒楄〃
-  aiModel        String? // 浣跨敤鐨凙I妯″瀷
-  rawAnalysis    String? // AI鍘熷鍒嗘瀽缁撴灉
+  analysisSource Json      @default("[]") // 分析使用的素材ID列表
+  aiModel        String? // 使用的AI模型
+  rawAnalysis    String? // AI原始分析结果
 
-  // Phase 2 鎵╁睍
+  // Phase 2 扩展
   sectionEdits Json @default("{}") // { sectionKey: { content, editedAt, editedBy } }
   evidenceRefs Json @default("{}") // { sectionKey: string[] }
 
@@ -611,24 +610,24 @@ model Asset {
   folderId     String?
   folder       AssetFolder? @relation(fields: [folderId], references: [id])
 
-  // 鏂囦欢淇℃伅
+  // 文件信息
   originalName String
   storageKey   String
   mimeType     String
   fileSize     BigInt
   extension    String
 
-  // 鍒嗙被
+  // 分类
   fileCategory String // video | image | document | audio | other
   purpose      String[] // knowledge | marketing | reference
   tags         String[]
 
-  // 鍐呭
+  // 内容
   title       String
   description String?
   metadata    Json    @default("{}")
 
-  // 鐘舵€?
+  // 状态
   status    String    @default("uploading") // uploading | active | archived | deleted
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -637,7 +636,7 @@ model Asset {
   chunks AssetChunk[]
 }
 
-// ==================== ASSET CHUNKS (鏂囨湰鍒嗗潡) ====================
+// ==================== ASSET CHUNKS (文本分块) ====================
 
 model AssetChunk {
   id       String @id @default(cuid())
@@ -658,7 +657,7 @@ model AssetChunk {
   evidences Evidence[]
 }
 
-// ==================== EVIDENCE (璇佹嵁搴? ====================
+// ==================== EVIDENCE (证据库) ====================
 
 model Evidence {
   id            String       @id @default(cuid())
@@ -681,7 +680,7 @@ model Evidence {
   deletedAt     DateTime?
 }
 
-// ==================== BRAND GUIDELINES (鍝佺墝瑙勮寖) ====================
+// ==================== BRAND GUIDELINES (品牌规范) ====================
 
 model BrandGuideline {
   id        String            @id @default(cuid())
@@ -697,7 +696,7 @@ model BrandGuideline {
   updatedAt DateTime          @updatedAt
 }
 
-// ==================== ICP & PERSONA (鐢诲儚涓績) ====================
+// ==================== ICP & PERSONA (画像中心) ====================
 
 model ICPSegment {
   id          String   @id @default(cuid())
@@ -758,9 +757,9 @@ model ArtifactVersion {
   tenant      Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   entityType  String // "CompanyProfile"|"Evidence"|"BrandGuideline"|"Persona"|"ContentBrief"|"SeoContent"
   entityId    String
-  version     Int // 浠?1 鑷
+  version     Int // 从 1 自增
   status      ArtifactStatus @default(draft)
-  content     Json // 瀹炰綋瀹屾暣蹇収
+  content     Json // 实体完整快照
   meta        Json           @default("{}") // { changeNote, generatedBy: "ai"|"human", wordCount }
   createdById String
   createdBy   User           @relation(fields: [createdById], references: [id])
@@ -784,7 +783,7 @@ model ContentBrief {
   targetKeywords  String[]
   intent          String // "informational"|"commercial"|"transactional"|"navigational"
   cta             String?
-  evidenceIds     String[] // 寮曠敤鐨?Evidence id 鍒楄〃
+  evidenceIds     String[] // 引用的 Evidence id 列表
   notes           String?
   status          String    @default("draft") // "draft"|"ready"|"in_progress"|"done"
   createdById     String
@@ -813,12 +812,12 @@ model ArtifactComment {
   createdAt  DateTime          @default(now())
   updatedAt  DateTime          @updatedAt
 
-  // Phase 3 鍗忎綔澹筹細閿氱偣瀹氫綅
+  // Phase 3 协作：锚点定位
   anchorType  String? // "jsonPath"|"textRange"|"blockId"|"rowId"
   anchorValue String? // e.g. "coreProducts[0]", "block-uuid-xxx"
-  anchorLabel String? // 浜虹被鍙鏍囩锛屽"鏍稿績浜у搧路绗?椤?
+  anchorLabel String? // 人类可读标签，如"核心产品·第1项"
 
-  // 璇勮杞换鍔″叧鑱?
+  // 评论转任务关联
   linkedTask ArtifactTask? @relation("CommentTask")
 }
 
@@ -838,7 +837,7 @@ model ArtifactTask {
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 
-  // Phase 3 鍗忎綔澹筹細鏉ユ簮璇勮鍏宠仈
+  // Phase 3 协作：来源评论关联
   sourceCommentId String?          @unique
   sourceComment   ArtifactComment? @relation("CommentTask", fields: [sourceCommentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
@@ -852,7 +851,7 @@ model ChatConversation {
   userId          String
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   title           String?
-  contextSnapshot Json? // debug 鐢細璁板綍鏋勫缓鏃剁殑涓婁笅鏂囨憳瑕?
+  contextSnapshot Json? // debug 用：记录构建时的上下文摘要
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -871,48 +870,48 @@ model ChatMessage {
   createdAt      DateTime         @default(now())
 }
 
-// ==================== MODULE 7: RADAR (鑾峰闆疯揪) ====================
+// ==================== MODULE 7: RADAR (获客雷达) ====================
 
 // ==================== ENUMS (Radar) ====================
 
 enum ChannelType {
-  TENDER // 鎷涙爣/閲囪喘
-  MAPS // 鍦板浘 POI
-  DIRECTORY // 琛屼笟鍚嶅綍/鍗忎細
-  TRADESHOW // 灞曚細
-  HIRING // 鎷涜仒淇″彿
-  ECOSYSTEM // 鐢熸€佷紮浼?
-  CUSTOM // 鑷畾涔?
+  TENDER // 招标/采购
+  MAPS // 地图 POI
+  DIRECTORY // 行业名录/协会
+  TRADESHOW // 展会
+  HIRING // 招聘信号
+  ECOSYSTEM // 生态伙伴
+  CUSTOM // 自定义
 }
 
 enum AdapterType {
-  API // 瀹樻柟 REST/GraphQL API
+  API // 官方 REST/GraphQL API
   RSS // RSS/Atom feed
-  AI_SEARCH // AI + 鎼滅储寮曟搸
-  CSV_IMPORT // CSV 瀵煎叆
-  MANUAL // 鎵嬪姩褰曞叆
+  AI_SEARCH // AI + 搜索引擎
+  CSV_IMPORT // CSV 导入
+  MANUAL // 手动录入
 }
 
 enum RadarStoragePolicy {
-  ID_ONLY // 鍙瓨 ID锛岃鎯呮寜闇€鎷夊彇
-  TTL_CACHE // 缂撳瓨 N 澶╁悗娓呯悊
-  SNAPSHOT_IMPORT // 瀵煎叆鏃跺揩鐓ф案涔呭瓨鍌?
+  ID_ONLY // 只存 ID，详情按需拉取
+  TTL_CACHE // 缓存 N 天后清理
+  SNAPSHOT_IMPORT // 导入时快照永久存储
 }
 
 enum CandidateType {
-  COMPANY // 鍏徃
-  OPPORTUNITY // 鏈轰細锛堟嫑鏍?椤圭洰锛?
-  CONTACT // 鑱旂郴浜?
+  COMPANY // 公司
+  OPPORTUNITY // 机会（招标/项目）
+  CONTACT // 联系人
 }
 
 enum CandidateStatus {
-  NEW // 鏂板彂鐜?
-  REVIEWING // 瀹℃牳涓?
-  QUALIFIED // 宸插悎鏍煎寲
-  IMPORTED // 宸插鍏ョ嚎绱㈠簱
-  EXCLUDED // 宸叉帓闄?
-  EXPIRED // 宸茶繃鏈?
-  ENRICHING // 绛夊緟 getDetails() 琛ュ叏
+  NEW // 新发现
+  REVIEWING // 审核中
+  QUALIFIED // 已合格化
+  IMPORTED // 已导入线索库
+  EXCLUDED // 已排除
+  EXPIRED // 已过期
+  ENRICHING // 等待 getDetails() 补全
 }
 
 enum RadarTaskStatus {
@@ -924,56 +923,56 @@ enum RadarTaskStatus {
 }
 
 enum OpportunityStage {
-  IDENTIFIED // 宸茶瘑鍒?
-  QUALIFYING // 璧勬牸璇勪及涓?
-  PURSUING // 璺熻繘涓?
-  PROPOSAL // 宸叉彁妗?
-  NEGOTIATION // 璋堝垽涓?
-  WON // 璧㈠崟
-  LOST // 涓㈠崟
+  IDENTIFIED // 已识别
+  QUALIFYING // 资格评估中
+  PURSUING // 跟进中
+  PROPOSAL // 已提案
+  NEGOTIATION // 谈判中
+  WON // 赢单
+  LOST // 丢单
 }
 
-// ==================== 鏁版嵁婧愮洰褰?====================
+// ==================== 数据源目录====================
 
 model RadarSource {
   id       String  @id @default(cuid())
-  tenantId String? // null = 绯荤粺绾у叕鍏辨簮
+  tenantId String? // null = 系统级公共源
 
-  // 鍒嗙被
+  // 分类
   channelType ChannelType
 
-  // 鍩虹淇℃伅
+  // 基础信息
   name        String
   code        String  @unique
   description String?
   logoUrl     String?
   websiteUrl  String?
 
-  // 瑕嗙洊鑼冨洿
-  countries String[] // ISO codes, 绌?= 鍏ㄧ悆
-  regions   String[] // EU | LATAM | MENA | APAC 绛?
+  // 覆盖范围
+  countries String[] // ISO codes, 空 = 全球
+  regions   String[] // EU | LATAM | MENA | APAC 等
 
-  // 鎺ュ叆閰嶇疆
+  // 接入配置
   adapterType   AdapterType
-  adapterConfig Json        @default("{}") // API endpoint, auth, field mapping 绛?
+  adapterConfig Json        @default("{}") // API endpoint, auth, field mapping 等
 
-  // 鍚堣涓庣瓥鐣?
-  isOfficial          Boolean            @default(false) // 鏄惁瀹樻柟婧?
+  // 合规与策略
+  isOfficial          Boolean            @default(false) // 是否官方源
   requiresAuth        Boolean            @default(false)
   termsUrl            String?
   storagePolicy       RadarStoragePolicy @default(TTL_CACHE)
   ttlDays             Int                @default(90)
   attributionRequired Boolean            @default(true)
 
-  // 閫熺巼闄愬埗
+  // 速率限制
   rateLimit Json @default("{}") // { requests, windowMs }
 
-  // 鐘舵€?
+  // 状态
   isEnabled  Boolean   @default(true)
   lastSyncAt DateTime?
   syncStats  Json? // { totalFetched, lastError, avgResponseTime }
 
-  // 鍏崇郴
+  // 关系
   candidates RadarCandidate[]
   tasks      RadarTask[]
 
@@ -981,68 +980,68 @@ model RadarSource {
   updatedAt DateTime @updatedAt
 }
 
-// ==================== 鍙戠幇浠诲姟 ====================
+// ==================== 发现任务 ====================
 
 model RadarTask {
   id       String @id @default(cuid())
   tenantId String
 
-  // 浠诲姟閰嶇疆
+  // 任务配置
   name     String?
   sourceId String
   source   RadarSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
 
-  // 鐢诲儚寮曠敤锛堝彲杩芥函锛?
+  // 画像引用（可追溯）
   targetingRef  Json? // { segmentId?, personaId?, specVersionId? }
-  channelMapRef String? // 寮曠敤 ArtifactVersion id
+  channelMapRef String? // 引用 ArtifactVersion id
 
-  // 鏌ヨ璁″垝
-  queryConfig Json // 鎼滅储鍙傛暟锛歬eywords, categories, regions, dateRange
+  // 查询计划
+  queryConfig Json // 搜索参数：keywords, categories, regions, dateRange
 
-  // 鎵ц鐘舵€?
+  // 执行状态
   status      RadarTaskStatus @default(PENDING)
   startedAt   DateTime?
   completedAt DateTime?
   cancelToken String?
 
-  // 缁熻
+  // 统计
   stats        Json? // { fetched, new, duplicate, errors, duration }
   errorMessage String?
 
-  // 瑙﹀彂鏂瑰紡
+  // 触发方式
   triggeredBy  String // userId | "scheduler" | "manual"
   scheduleRule String? // cron expression for recurring
 
-  // 鍏崇郴
+  // 关系
   candidates RadarCandidate[]
 
   createdAt DateTime @default(now())
 }
 
-// ==================== 缁熶竴鍊欓€夋睜 ====================
+// ==================== 统一候选池 ====================
 
 model RadarCandidate {
   id       String @id @default(cuid())
   tenantId String
 
-  // 鏉ユ簮杩芥函锛堝繀椤伙級
+  // 来源杩芥函锛堝繀椤伙級
   sourceId String
   source   RadarSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
   taskId   String?
   task     RadarTask?  @relation(fields: [taskId], references: [id], onDelete: SetNull)
 
-  // 鍊欓€夌被鍨?
+  // 候选类型
   candidateType CandidateType
 
-  // 澶栭儴鏍囪瘑
+  // 外部标识
   externalId String // place_id, notice_id, etc.
   sourceUrl  String // 蹇呴』鏈夛紝鐢ㄤ簬杩芥函
 
-  // 閫氱敤瀛楁
+  // 通用字段
   displayName String
   description String?
 
-  // 鍏徃瀛楁锛坈andidateType=COMPANY锛?
+  // 公司字段（candidateType=COMPANY）
   website     String?
   phone       String?
   email       String?
@@ -1052,7 +1051,7 @@ model RadarCandidate {
   industry    String?
   companySize String?
 
-  // 鏈轰細瀛楁锛坈andidateType=OPPORTUNITY锛屽嵆鎷涙爣锛?
+  // 机会字段（candidateType=OPPORTUNITY，即招标）
   deadline       DateTime?
   estimatedValue Float?
   currency       String?
@@ -1062,56 +1061,56 @@ model RadarCandidate {
   categoryCode   String? // CPV / UNSPSC
   categoryName   String?
 
-  // 鑱旂郴浜哄瓧娈碉紙candidateType=CONTACT锛?
+  // 联系人字段（candidateType=CONTACT）
   contactRole       String?
-  linkedInUrl       String? // 鍏徃 LinkedIn 椤礬uff08Exa 涓板瘜鍖栧啓鍏uff09
-  linkedCandidateId String? // 鍏宠仈鍒板摢涓叕鍙稿€欓€?
+  linkedInUrl       String? // 公司 LinkedIn 页（Exa 丰富化写入）
+  linkedCandidateId String? // 关联到哪个公司候选
 
-  // ICP 鍖归厤锛堟牳蹇冿級
+  // ICP 匹配（核心）
   matchScore   Float?
   matchExplain Json? // { rules: [...], reasons: [...], query, channel }
 
-  // AI 澶勭悊
+  // AI 处理
   aiSummary   String?
   aiRelevance Json? // { score, reasons[], matchedKeywords[] }
 
-  // 鐘舵€?
+  // 状态
   status        CandidateStatus @default(NEW)
   qualifyTier   String? // A | B | C | excluded
   qualifyReason String?
   qualifiedAt   DateTime?
   qualifiedBy   String?
 
-  // 瀵煎叆杩借釜
+  // 导入追踪
   importedToType String? // ProspectCompany | Opportunity
   importedToId   String?
   importedAt     DateTime?
   importedBy     String?
 
-  // 鎸佺画鎵弿鍏宠仈
-  profileId   String? // 瑙﹀彂璇ュ€欓€夌殑 SearchProfile
-  publishedAt DateTime? // 鎷涙爣鍙戝竷鏃堕棿锛堜粠 source 鑾峰彇锛?
-  enrichedAt  DateTime? // 璇︽儏琛ュ叏瀹屾垚鏃堕棿
+  // 持续扫描关联
+  profileId   String? // 触发该候选的 SearchProfile
+  publishedAt DateTime? // 招标发布时间（从 source 获取）
+  enrichedAt  DateTime? // 详情补全完成时间
 
-  // TTL 绛栫暐
+  // TTL 策略
   rawData  Json?
   expireAt DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  contentLinks RadarContentLink[] // 鑾峰闆疯揪鍐呭鑱斿姩
+  contentLinks RadarContentLink[] // 获客雷达内容联动
 
   @@unique([sourceId, externalId])
 }
 
-// ==================== 姝ｅ紡绾跨储鍏徃 ====================
+// ==================== 正式线索公司 ====================
 
 model ProspectCompany {
   id       String @id @default(cuid())
   tenantId String
 
-  // 鍏徃淇℃伅
+  // 公司信息
   name        String
   website     String?
   phone       String?
@@ -1133,23 +1132,23 @@ model ProspectCompany {
   outreachArtifacts Json? // 持久化外联方案 { email: { subject, body }, whatsapp: { message }, ... }
 
 
-  // 鍒嗙被涓庢爣绛?
+  // 分类与标签
   tier String? // A | B | C
   tags String[]
 
-  // 鏉ユ簮杩芥函
+  // 来源杩芥函
   sourceType        String? // tender | maps | directory | tradeshow | hiring | manual
-  sourceCandidateId String? // 鏉ヨ嚜鍝釜鍊欓€?
+  sourceCandidateId String? // 来自哪个候选
   sourceUrl         String?
 
-  // 璺熻繘鐘舵€?
+  // 跟进状态
   status          String    @default("new") // new | contacted | qualified | converted | lost
   assignedTo      String?
   lastContactedAt DateTime?
   nextActionDate  DateTime?
   notes           String?
 
-  // 鍏崇郴
+  // 关系
   contacts      ProspectContact[]
   opportunities Opportunity[]
 
@@ -1158,17 +1157,17 @@ model ProspectCompany {
   deletedAt DateTime?
 }
 
-// ==================== 姝ｅ紡鑱旂郴浜?====================
+// ==================== 正式联系人====================
 
 model ProspectContact {
   id       String @id @default(cuid())
   tenantId String
 
-  // 鍏宠仈鍏徃
+  // 关联公司
   companyId String?
   company   ProspectCompany? @relation(fields: [companyId], references: [id], onDelete: SetNull)
 
-  // 鑱旂郴浜轰俊鎭?
+  // 联系人信息
   name        String
   email       String?
   phone       String?
@@ -1177,11 +1176,11 @@ model ProspectContact {
   seniority   String? // C-level | VP | Director | Manager | Staff
   linkedInUrl String?
 
-  // 鏉ユ簮
+  // 来源
   sourceCandidateId String?
   sourceUrl         String?
 
-  // 鐘舵€?
+  // 状态
   status String  @default("new")
   notes  String?
 
@@ -1190,42 +1189,42 @@ model ProspectContact {
   deletedAt DateTime?
 }
 
-// ==================== 姝ｅ紡鏈轰細锛堟嫑鏍囪浆鍖栧悗锛?====================
+// ==================== 正式机会（招标转化后）====================
 
 model Opportunity {
   id       String @id @default(cuid())
   tenantId String
 
-  // 鍏宠仈鍏徃
+  // 关联公司
   companyId String?
   company   ProspectCompany? @relation(fields: [companyId], references: [id], onDelete: SetNull)
 
-  // 鏉ユ簮
+  // 来源
   sourceType        String // tender | project | referral | inbound
   sourceCandidateId String?
   sourceUrl         String?
 
-  // 鏍稿績淇℃伅
+  // 核心信息
   title       String
   description String?
 
-  // 鏃堕棿涓庨噾棰?
+  // 时间与金额
   deadline       DateTime?
   estimatedValue Float?
   currency       String?
 
-  // 鍒嗙被
+  // 分类
   categoryCode String?
   categoryName String?
 
-  // 闃舵绠＄悊
+  // 阶段管理
   stage       OpportunityStage @default(IDENTIFIED)
   probability Int? // 0-100
   lostReason  String?
   wonAt       DateTime?
   lostAt      DateTime?
 
-  // 璺熻繘
+  // 跟进
   assignedTo     String?
   nextAction     String?
   nextActionDate DateTime?
@@ -1236,7 +1235,7 @@ model Opportunity {
   deletedAt DateTime?
 }
 
-// ==================== 鎼滅储閰嶇疆锛堝畾鏃剁洃鎺э級 ====================
+// ==================== 搜索配置（定时监控） ====================
 
 model RadarSearchProfile {
   id       String @id @default(cuid())
@@ -1245,57 +1244,57 @@ model RadarSearchProfile {
   name        String
   description String?
 
-  // 鍏宠仈鐢诲儚
-  segmentId String? // 鍏宠仈 ICPSegment
-  personaId String? // 鍏宠仈 Persona
+  // 关联画像
+  segmentId String? // 关联 ICPSegment
+  personaId String? // 关联 Persona
 
-  // 鎼滅储閰嶇疆
+  // 搜索配置
   keywords         Json  @default("{}") // { en: [], zh: [], es: [], ar: [] }
-  negativeKeywords Json? // 鎺掗櫎璇?
+  negativeKeywords Json? // 排除词
 
-  // 鐩爣鍖哄煙
+  // 目标区域
   targetCountries String[]
   targetRegions   String[]
 
-  // 琛屼笟/鍒嗙被杩囨护
+  // 行业/分类过滤
   industryCodes   String[]
   categoryFilters String[] // CPV/UNSPSC codes
 
-  // 娓犻亾閰嶇疆
+  // 渠道配置
   enabledChannels ChannelType[]
-  sourceIds       String[] // 鎸囧畾鐨?source ids
+  sourceIds       String[] // 指定的 source ids
 
-  // 璋冨害
+  // 调度
   isActive     Boolean   @default(true)
-  scheduleRule String    @default("0 6 * * *") // 榛樿姣忓ぉ鏃?鐐?
+  scheduleRule String    @default("0 6 * * *") // 默认每天早6点
   lastRunAt    DateTime?
 
-  // === 鎸佺画鎵弿寮曟搸 ===
-  nextRunAt      DateTime? // 棰勮绠椾笅娆¤繍琛屾椂闂达紙绱㈠紩鏌ヨ锛?
-  lockToken      String? // 涔愯閿?UUID
-  lockedAt       DateTime? // 閿佸畾鏃堕棿锛?鍒嗛挓瓒呮椂閲婃斁锛?
-  lockedBy       String? // Vercel 瀹炰緥鏍囪瘑
-  maxRunSeconds  Int       @default(45) // 鍗曟鎵弿棰勭畻锛堢暀15s缁?0s timeout锛?
-  autoQualify    Boolean   @default(true) // 鑷姩瑙﹀彂 AI 鍚堟牸鍖?
-  autoEnrich     Boolean   @default(false) // 鑷姩瑙﹀彂璇︽儏琛ュ叏
+  // === 持续扫描引擎 ===
+  nextRunAt      DateTime? // 预计算下次运行时间（索引查询）
+  lockToken      String? // 乐观锁 UUID
+  lockedAt       DateTime? // 锁定时间（5分钟超时释放）
+  lockedBy       String? // Vercel 实例标识
+  maxRunSeconds  Int       @default(45) // 单次扫描预算（留15s给60s timeout）
+  autoQualify    Boolean   @default(true) // 自动触发 AI 合格化
+  autoEnrich     Boolean   @default(false) // 自动触发详情补全
   runStats       Json? // { totalRuns, totalNew, lastError, avgDurationMs }
-  exclusionRules Json? // 浠?rejected 鍙嶅悜瀛︿範鐨勬帓闄よ瘝
+  exclusionRules Json? // 从 rejected 反向学习的排除词
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-// ==================== 鎵弿娓告爣锛堟寔缁閲忥級 ====================
+// ==================== 扫描游标（持续增量） ====================
 
 model RadarScanCursor {
   id        String @id @default(cuid())
   profileId String
   sourceId  String
 
-  // 娓告爣鐘舵€?
+  // 游标状态
   cursorState Json // { nextPage, nextPageToken, since, queryIndex, exhausted }
 
-  // 缁熻
+  // 统计
   lastScanAt   DateTime?
   scanCount    Int       @default(0)
   totalFetched Int       @default(0)
@@ -1308,61 +1307,61 @@ model RadarScanCursor {
   @@unique([profileId, sourceId])
 }
 
-// ==================== 鎰忓浘淇″彿杩借釜 ====================
+// ==================== 意图信号追踪 ====================
 
 model IntentSignal {
   id       String @id @default(cuid())
   tenantId String
 
-  // 鍏宠仈瀹炰綋
-  candidateId String? // 鍏宠仈 RadarCandidate
-  companyId   String? // 鍏宠仈 ProspectCompany
-  contactId   String? // 鍏宠仈 ProspectContact
+  // 关联实体
+  candidateId String? // 关联 RadarCandidate
+  companyId   String? // 关联 ProspectCompany
+  contactId   String? // 关联 ProspectContact
 
-  // 淇″彿绫诲瀷
+  // 信号类型
   signalType String // email_open, email_click, website_visit, pricing_view, demo_request
 
-  // 淇″彿寮哄害
+  // 信号强度
   intensity Float @default(1.0) // 0.0 - 1.0
-  score     Int   @default(0) // 璁＄畻鍚庣殑鎰忓浘鍒嗘暟
+  score     Int   @default(0) // 计算后的意图分数
 
-  // 淇″彿璇︽儏
+  // 信号详情
   metadata  Json? // { emailId, link, page, duration, ip, userAgent }
   ipAddress String?
   userAgent String?
-  page      String? // 璁块棶鐨勯〉闈?
-  referrer  String? // 鏉ユ簮椤甸潰
+  page      String? // 访问的页面
+  referrer  String? // 来源页面
 
-  // 鏃堕棿鎴?
+  // 时间戳
   occurredAt DateTime @default(now())
   createdAt  DateTime @default(now())
 
   @@map("intent_signals")
 }
 
-// ==================== Webhook闆嗘垚 ====================
+// ==================== Webhook集成 ====================
 
 model WebhookConfig {
   id       String @id @default(cuid())
   tenantId String
 
-  // Webhook閰嶇疆
+  // Webhook配置
   name     String
   url      String
   method   String  @default("POST") // POST, PUT, PATCH
-  headers  Json? // 鑷畾涔夎姹傚ご
+  headers  Json? // 自定义请求头
   authType String  @default("none") // none, basic, bearer
-  secret   String? // 绛惧悕瀵嗛挜锛堢敤浜庨獙璇侊級
+  secret   String? // 签名密钥（用于验证）
 
-  // 瑙﹀彂浜嬩欢
+  // 触发事件
   events String[] // candidate_qualified, candidate_imported, email_sent, etc.
 
-  // 鎵ц閰嶇疆
+  // 执行配置
   isActive   Boolean @default(true)
   retryCount Int     @default(3)
-  timeout    Int     @default(5000) // 姣
+  timeout    Int     @default(5000) // 毫秒
 
-  // 鍏冩暟鎹?
+  // 元数据
   lastTriggeredAt DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -1377,19 +1376,19 @@ model WebhookLog {
   tenantId  String
   webhookId String
 
-  // 瑙﹀彂浜嬩欢
+  // 触发事件
   event   String
   payload Json?
 
-  // 鎵ц缁撴灉
+  // 执行结果
   success       Boolean
   statusCode    Int?
-  response      String? // JSON鍝嶅簲
+  response      String? // JSON响应
   error         String?
-  executionTime Int // 姣
+  executionTime Int // 毫秒
   retryAttempt  Int     @default(0)
 
-  // 鏃堕棿鎴?
+  // 时间戳
   createdAt DateTime @default(now())
 
   webhook WebhookConfig @relation(fields: [webhookId], references: [id], onDelete: Cascade)
@@ -1397,55 +1396,55 @@ model WebhookLog {
   @@map("webhook_logs")
 }
 
-// ==================== API璋冪敤鏃ュ織锛堟垚鏈拷韪級 ====================
+// ==================== API调用日志（成本追踪） ====================
 
 model ApiCallLog {
   id String @id @default(cuid())
 
-  // 鏈嶅姟淇℃伅
+  // 服务信息
   service   String // google_places, apollo, skrapp, hunter, brave_search
   operation String // search, enrich, verify
 
-  // 鎴愭湰
+  // 成本
   cost    Float @default(0) // USD
-  credits Int   @default(0) // 绉垎锛堝彲閫夛級
+  credits Int   @default(0) // 积分（可选）
 
-  // 缁撴灉
+  // 结果
   success   Boolean @default(true)
   errorCode String?
   metadata  Json? // { query, resultCount, duration }
 
-  // 鏃堕棿鎴?
+  // 时间戳
   createdAt DateTime @default(now())
 
   @@map("api_call_logs")
 }
 
-// ==================== 缁熶竴API瀵嗛挜绠＄悊锛圱ower鍚庡彴锛?====================
+// ==================== 统一API密钥管理（Tower后台）====================
 
 model ApiKeyConfig {
   id String @id @default(cuid())
 
-  // 鏈嶅姟鍚嶇О
+  // 服务名称
   service String @unique // google_places, apollo, skrapp, hunter, brave_search, firecrawl, tavily, exa
 
-  // 鍒嗙被
-  category String @default("other") // AI Provider, 鎼滅储 API, 浼佷笟鏁版嵁, 鏀垮簻閲囪喘
+  // 分类
+  category String @default("other") // AI Provider, 搜索 API, 企业数据, 政府采购
 
-  // 瀵嗛挜锛堝姞瀵嗗瓨鍌級
+  // 密钥（加密存储）
   apiKey    String?
-  apiSecret String? // 閮ㄥ垎鏈嶅姟闇€瑕佷袱涓瘑閽?
+  apiSecret String? // 部分服务需要两个密钥
 
-  // 鐘舵€?
+  // 状态
   isEnabled  Boolean   @default(true)
   lastUsedAt DateTime?
 
-  // 閰嶉杩借釜
-  monthlyLimit Int? // 鏈堝害璋冪敤涓婇檺
-  currentUsage Int       @default(0) // 褰撳墠鐢ㄩ噺
-  usageResetAt DateTime? // 鐢ㄩ噺閲嶇疆鏃堕棿
+  // 配额追踪
+  monthlyLimit Int? // 月度调用上限
+  currentUsage Int       @default(0) // 当前用量
+  usageResetAt DateTime? // 用量重置时间
 
-  // 鍏冩暟鎹?
+  // 元数据
   notes     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1488,38 +1487,38 @@ model OutreachRecord {
   id       String @id @default(cuid())
   tenantId String
 
-  // 鍏宠仈鍊欓€?
+  // 关联候选
   candidateId String?
   profileId   String? // RadarSearchProfile
 
-  // 鏀朵欢浜轰俊鎭?
+  // 收件人信息
   toEmail String
   toName  String?
 
-  // 閭欢鍐呭
+  // 邮件内容
   subject  String
   bodyText String?
   bodyHtml String?
 
-  // 娓犻亾 & 鍙戦€佺姸鎬?
+  // 渠道 & 发送状态
   channel   String  @default("email") // email, linkedin, whatsapp, phone
   messageId String? @unique // Resend message ID
   status    String  @default("pending") // pending, sent, delivered, opened, clicked, bounced, failed, draft_copied, manual_sent
 
-  // 杩借釜鏁版嵁
+  // 追踪数据
   sentAt      DateTime?
   deliveredAt DateTime?
   openedAt    DateTime?
   clickedAt   DateTime?
   repliedAt   DateTime?
 
-  // 閫氳瘽缁撴灉 (phone channel)
+  // 通话结果 (phone channel)
   callResult  String? // connected, no_answer, voicemail, meeting_booked, not_interested, callback
 
-  // 閿欒淇℃伅
+  // 错误信息
   error String?
 
-  // 鍏冩暟鎹?
+  // 元数据
   metadata Json?
 
   createdAt DateTime @default(now())
@@ -1528,35 +1527,35 @@ model OutreachRecord {
   @@map("outreach_records")
 }
 
-// ==================== 閭欢澶栬仈搴忓垪 ====================
+// ==================== 邮件外联序列 ====================
 
 model SequenceInstance {
   id       String @id @default(cuid())
   tenantId String
 
-  // 搴忓垪淇℃伅
+  // 序列信息
   sequenceName   String
-  sequenceConfig Json // 搴忓垪閰嶇疆 JSON
-  candidateIds   String[] // 鐩爣鍊欓€変汉 IDs
+  sequenceConfig Json // 序列配置 JSON
+  candidateIds   String[] // 目标候选人 IDs
 
-  // 鐘舵€?
+  // 状态
   status      String @default("draft") // draft, active, paused, completed, cancelled, failed
-  currentStep Int    @default(1) // 褰撳墠姝ラ
-  totalSteps  Int // 鎬绘楠ゆ暟
+  currentStep Int    @default(1) // 当前步骤
+  totalSteps  Int // 总步骤数
 
-  // 缁熻
+  // 统计
   sentCount    Int @default(0)
   failedCount  Int @default(0)
   repliedCount Int @default(0)
 
-  // 鏃堕棿璋冨害
+  // 时间调度
   nextSendAt     DateTime?
   scheduledAt    DateTime?
   startedAt      DateTime?
   completedAt    DateTime?
   lastActivityAt DateTime?
 
-  // 鍏冩暟鎹?
+  // 元数据
   metadata Json?
 
   createdAt DateTime @default(now())
@@ -1567,22 +1566,22 @@ model SequenceInstance {
   @@map("sequence_instances")
 }
 
-// ==================== 鑾峰闆疯揪閿欒鏃ュ織 ====================
+// ==================== 获客雷达错误日志 ====================
 
 model RadarError {
   id       String @id @default(cuid())
   tenantId String
 
-  // 閿欒鏉ユ簮
+  // 错误来源
   adapter   String // ted, ungm, brave, hunter, etc.
   operation String // search, enrich, validate, etc.
-  error     String // 閿欒淇℃伅
+  error     String // 错误信息
 
-  // 鍏宠仈鏁版嵁
+  // 关联数据
   candidateId String?
   query       String?
 
-  // 鏃堕棿鎴?
+  // 时间戳
   timestamp DateTime @default(now())
 
   @@index([adapter, timestamp])
@@ -1590,35 +1589,35 @@ model RadarError {
   @@map("radar_errors")
 }
 
-// ==================== 鑾峰闆疯揪 鈫?钀ラ攢鍐呭鑱斿姩 ====================
+// ==================== 获客雷达 → 营销内容联动 ====================
 
 enum ContentLinkType {
-  KEYWORD_MATCH // 鍏抽敭璇嶅尮閰?
-  INDUSTRY_MATCH // 琛屼笟鍖归厤
-  OUTREACH_EMBED // 澶栬仈宓屽叆
-  MANUAL // 鎵嬪姩鍏宠仈
+  KEYWORD_MATCH // 关键词匹配
+  INDUSTRY_MATCH // 行业匹配
+  OUTREACH_EMBED // 外联嵌入
+  MANUAL // 手动关联
 }
 
 model RadarContentLink {
   id       String @id @default(cuid())
   tenantId String
 
-  // 鍙屽悜鍏宠仈
+  // 双向关联
   candidateId String
   candidate   RadarCandidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
   contentId   String
   content     SeoContent     @relation(fields: [contentId], references: [id], onDelete: Cascade)
 
-  // 鍏宠仈绫诲瀷涓庣粏鑺?
+  // 关联类型与细节
   linkType     ContentLinkType
-  matchScore   Float? // 鍖归厤搴?0-100
+  matchScore   Float? // 匹配度 0-100
   matchDetails Json? // { matchedKeywords[], reasons[], matchMethod }
 
-  // 澶栬仈鐘舵€佽拷韪?
+  // 外联状态追踪
   outreachStatus   String? // pending | sent | opened | replied
-  outreachRecordId String? // 鍏宠仈 OutreachRecord id
+  outreachRecordId String? // 关联 OutreachRecord id
 
-  // 鏁堟灉杩借釜
+  // 效果追踪
   clickCount     Int     @default(0)
   leadGenerated  Boolean @default(false)
   conversionNote String?
@@ -1633,7 +1632,7 @@ model RadarContentLink {
   @@map("radar_content_links")
 }
 
-// ==================== GEO 鍒嗗彂杩借釜 ====================
+// ==================== GEO 分发追踪 ====================
 
 enum GeoChannel {
   CHATGPT // ChatGPT / ChatGPT Search
@@ -1641,41 +1640,41 @@ enum GeoChannel {
   CLAUDE // Claude
   GEMINI // Gemini / Google AI Overviews
   BING_COPILOT // Bing Copilot
-  CUSTOM_SITE // 瀹㈡埛鐙珛绔?
+  CUSTOM_SITE // 客户独立站
 }
 
 enum CitationStatus {
-  PENDING // 寰呮娴?
-  CITED // 宸茶寮曠敤
-  NOT_CITED // 鏈寮曠敤
-  PARTIAL // 閮ㄥ垎寮曠敤
-  ERROR // 妫€娴嬪け璐?
+  PENDING // 待检测
+  CITED // 已被引用
+  NOT_CITED // 未被引用
+  PARTIAL // 部分引用
+  ERROR // 检测失败
 }
 
 model GeoDistributionRecord {
   id       String @id @default(cuid())
   tenantId String
 
-  // 鍏宠仈鍐呭
+  // 关联内容
   contentId String
   content   SeoContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
 
-  // 鍒嗗彂娓犻亾
+  // 分发渠道
   channel       GeoChannel
   channelDetail String? // e.g. "ChatGPT Search", "Google AI Overviews"
 
-  // 鍒嗗彂鍐呭蹇収
-  distributedVersion String? // 鍒嗗彂鏃剁殑 geoVersion 蹇収锛堝墠200瀛楋級
-  queryKeywords      String[] // 鐢ㄤ簬妫€娴嬪紩鐢ㄧ殑鏌ヨ璇?
+  // 分发内容快照
+  distributedVersion String? // 分发时的 geoVersion 快照（前200字）
+  queryKeywords      String[] // 用于检测引用的查询词
 
-  // 寮曠敤杩借釜
+  // 引用追踪
   citationStatus  CitationStatus @default(PENDING)
-  citationUrl     String? // AI 寮曟搸寮曠敤鐨?URL
-  citationSnippet String? // AI 寮曟搸寮曠敤鐨勭墖娈?
-  citationScore   Float? // 寮曠敤璐ㄩ噺璇勫垎 0-100
+  citationUrl     String? // AI 引擎引用的 URL
+  citationSnippet String? // AI 引擎引用的片段
+  citationScore   Float? // 引用质量评分 0-100
   lastCheckedAt   DateTime?
 
-  // 妫€娴嬪巻鍙?
+  // 检测历史
   checkCount   Int   @default(0)
   checkHistory Json? // [{ checkedAt, status, snippet }]
 
@@ -1743,20 +1742,20 @@ model CrawlQueue {
   id       String  @id @default(cuid())
   tenantId String
   tenant   Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  userId   String // 鍙戣捣鐢ㄦ埛 ID
-  batchId  String  @unique // 鐢ㄤ簬鍓嶇杞
-  rootUrl  String // 鏍?URL
-  folderId String? // 鍙€夌殑鏂囦欢澶?ID
+  userId   String // 发起用户 ID
+  batchId  String  @unique // 用于前端轮询
+  rootUrl  String // 根 URL
+  folderId String? // 可选的文件夹 ID
 
-  // 杩涘害璺熻釜
+  // 进度跟踪
   totalPages     Int
   processedPages Int    @default(0)
   status         String @default("pending") // pending | processing | completed | failed
 
-  // URL 闃熷垪 (JSON 鏁扮粍)
+  // URL 队列 (JSON 数组)
   urls Json // [{ url, status, priority, assetId?, error?, processedAt? }]
 
-  // 鍏冩暟鎹?
+  // 元数据
   metadata Json? // { discoveryMethod, requestedAt, maxPagesRequested, lastProcessedAt, lastStats, completedAt, lastError }
 
   createdAt DateTime @default(now())
@@ -1770,29 +1769,29 @@ model CrawlQueue {
 }
 
 // ==================== ASSET PROCESSING QUEUE ====================
-// 鍚庡彴澶勭悊澶ф枃浠舵枃鏈彁鍙栧拰鍒嗗潡
+// 后台处理大文件文本提取和分块
 
 model AssetProcessQueue {
   id       String @id @default(cuid())
   tenantId String
   tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  userId   String // 鍙戣捣鐢ㄦ埛 ID
-  batchId  String @unique // 鐢ㄤ簬鍓嶇杞
+  userId   String // 发起用户 ID
+  batchId  String @unique // 用于前端轮询
 
-  // 鍏宠仈璧勪骇
+  // 关联资产
   assetId    String
   storageKey String
   mimeType   String
 
-  // 杩涘害璺熻釜
+  // 进度跟踪
   status      String  @default("pending") // pending | extracting | chunking | completed | failed
-  progress    Int     @default(0) // 0-100 鐧惧垎姣?
+  progress    Int     @default(0) // 0-100 百分比
   currentStep String? // "extracting_text" | "splitting_chunks" | "creating_records"
 
-  // 閿欒淇℃伅
+  // 错误信息
   errorMessage String?
 
-  // 鍏冩暟鎹?
+  // 元数据
   metadata Json? // { fileName, fileSize, chunkCount?, textLength?, startedAt?, completedAt? }
 
   createdAt DateTime @default(now())
@@ -1806,7 +1805,7 @@ model AssetProcessQueue {
   @@map("asset_process_queue")
 }
 
-// 鍟嗗姟鍜ㄨ鐣欒█锛堟潵鑷櫥褰曢〉"鑾峰彇浣跨敤璧勬牸"鍏ュ彛锛?
+// 商务咨询留言（来自登录页"获取使用资格"入口）
 model Inquiry {
   id        String   @id @default(cuid())
   name      String

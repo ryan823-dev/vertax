@@ -171,7 +171,7 @@ export async function getPendingActions(): Promise<PendingAction[]> {
     prisma.lead.count({ where: { tenantId, deletedAt: null, priority: 'high', status: 'new' } }),
     prisma.seoContent.count({ where: { tenantId, deletedAt: null, status: 'draft' } }),
     // Radar: QUALIFIED Tier A/B candidates not yet imported
-    (prisma as unknown as Record<string, { count: (args: unknown) => Promise<number> }>).radarCandidate.count({
+    prisma.radarCandidate.count({
       where: {
         tenantId,
         status: 'QUALIFIED',

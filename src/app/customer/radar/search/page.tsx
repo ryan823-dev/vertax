@@ -36,6 +36,7 @@ import {
   type RadarSourceData,
 } from "@/actions/radar-v2";
 import type { RadarSearchQuery } from "@/lib/radar/adapters/types";
+import { normalizeCountryCode } from "@/lib/radar/country-utils";
 
 interface ArtifactVersion<T> {
   id: string;
@@ -463,8 +464,12 @@ function ActionCard({ label, hint, icon: Icon, onClick, active, disabled, primar
 }
 
 function buildQuery(targetingSpec: TargetingSpecContent["targetingSpec"], preferences: Preferences): RadarSearchQuery {
+  const rawCountries = mergeLists(targetingSpec?.segmentation?.firmographic?.countries, splitText(preferences.priorityCountries, true));
+  const isoCountries = rawCountries
+    ?.map((c) => normalizeCountryCode(c))
+    .filter((c): c is string => c !== null);
   return {
-    countries: mergeLists(targetingSpec?.segmentation?.firmographic?.countries, splitText(preferences.priorityCountries, true)) || undefined,
+    countries: isoCountries?.length ? isoCountries : undefined,
     targetIndustries: mergeLists(targetingSpec?.segmentation?.firmographic?.industries, splitText(preferences.priorityIndustries)) || undefined,
     keywords: mergeLists(targetingSpec?.segmentation?.technographic?.keywords, splitText(preferences.extraKeywords)) || undefined,
     maxResults: 40,

@@ -572,51 +572,9 @@ async function postProcessPipeline(input: PostProcessInput): Promise<{
     console.error('[Skill] Failed to log activity:', err);
   }
   
-  // c. openQuestions → Tasks
-  const taskIds: string[] = [];
-  const openQuestions = (output.openQuestions as string[]) || [];
-  const missingProof = (output.missingProof as string[]) || [];
-  
-  for (const question of openQuestions) {
-    try {
-      const task = await prisma.artifactTask.create({
-        data: {
-          tenantId,
-          versionId: version.id,
-          title: `[待确认] ${question.slice(0, 100)}`,
-          status: 'open',
-          priority: 'normal',
-          createdById: userId,
-        },
-      });
-      taskIds.push(task.id);
-    } catch (err) {
-      console.error('[Skill] Failed to create task for openQuestion:', err);
-    }
-  }
-  
-  // d. missingProof → urgent Tasks
-  for (const proof of missingProof) {
-    try {
-      const task = await prisma.artifactTask.create({
-        data: {
-          tenantId,
-          versionId: version.id,
-          title: `[缺证据] ${proof.slice(0, 100)}`,
-          status: 'open',
-          priority: 'urgent',
-          createdById: userId,
-        },
-      });
-      taskIds.push(task.id);
-    } catch (err) {
-      console.error('[Skill] Failed to create task for missingProof:', err);
-    }
-  }
-  
   return {
     versionId: version.id,
-    taskIds,
+    taskIds: [],
   };
 }
 

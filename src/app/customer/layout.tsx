@@ -18,7 +18,14 @@ export default async function CustomerLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth();
+  let session;
+  try {
+    session = await auth();
+  } catch (error) {
+    console.error("[CustomerLayout] auth() failed:", error);
+    redirect("/login");
+  }
+
   if (!session?.user) {
     redirect("/login");
   }
@@ -36,21 +43,28 @@ export default async function CustomerLayout({
     redirect("/login");
   }
 
-  const headersList = await headers();
-  const host =
-    headersList.get("x-forwarded-host") ??
-    headersList.get("host") ??
-    "localhost:3000";
-  const protocol = headersList.get("x-forwarded-proto") ?? "https";
-  const currentPath = headersList.get("x-vertax-current-path") ?? "/customer/home";
-  const currentSearch = headersList.get("x-vertax-current-search") ?? "";
+  let canonicalTenantUrl: string | null = null;
+  try {
+    const headersList = await headers();
+    const host =
+      headersList.get("x-forwarded-host") ??
+      headersList.get("host") ??
+      "localhost:3000";
+    const protocol = headersList.get("x-forwarded-proto") ?? "https";
+    const currentPath =
+      headersList.get("x-vertax-current-path") ?? "/customer/home";
+    const currentSearch =
+      headersList.get("x-vertax-current-search") ?? "";
 
-  const canonicalTenantUrl = !isPlatformAdminUser
-    ? getTenantCanonicalRedirectUrl({
-        currentUrl: `${protocol}://${host}${currentPath}${currentSearch}`,
-        sessionTenantSlug: session.user.tenantSlug,
-      })
-    : null;
+    canonicalTenantUrl = !isPlatformAdminUser
+      ? getTenantCanonicalRedirectUrl({
+          currentUrl: `${protocol}://${host}${currentPath}${currentSearch}`,
+          sessionTenantSlug: session.user.tenantSlug,
+        })
+      : null;
+  } catch (error) {
+    console.error("[CustomerLayout] redirect check failed:", error);
+  }
 
   if (canonicalTenantUrl) {
     redirect(canonicalTenantUrl);

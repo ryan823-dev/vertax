@@ -3,9 +3,9 @@ import Credentials from "next-auth/providers/credentials";
 import { shouldIgnoreStaticAuthOriginInDev } from "@/lib/app-origin";
 
 // Cross-platform JWT configuration (shared with Vertax)
-// Both Tower and Vertax must use the same JWT_SECRET
+// AUTH_SECRET is the canonical variable; JWT_SECRET is accepted as a backward-compatible alias.
 export const CROSS_PLATFORM_JWT_CONFIG = {
-  secret: process.env.JWT_SECRET,
+  secret: process.env.AUTH_SECRET || process.env.JWT_SECRET,
   issuer: "vertax.top",
   audience: "vertax-platform",
 };
@@ -20,7 +20,7 @@ for (const envKey of ["AUTH_URL", "NEXTAUTH_URL"] as const) {
 // The actual authorize logic is in auth.ts
 export const authConfig: NextAuthConfig = {
   trustHost: true, // Trust x-forwarded-host header for custom domains
-  secret: process.env.AUTH_SECRET || process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET,
+  secret: process.env.AUTH_SECRET || process.env.JWT_SECRET,
   session: { strategy: "jwt" },
   pages: {
     signIn: "/login",
