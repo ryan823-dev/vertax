@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { chatCompletion } from "@/lib/ai-client";
 
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 // TargetingSpec prompt (simplified for faster response)
 const TARGETING_SPEC_PROMPT = `你是B2B出海获客专家。根据输入的企业信息，产出"可执行筛选规则 Targeting Spec"。
