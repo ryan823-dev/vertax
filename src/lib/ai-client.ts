@@ -128,18 +128,94 @@ function execCurl(args: string[], timeoutMs: number): Promise<{ stdout: string; 
 }
 
 /**
- * 调用 DashScope AI 模型
- * 使用异步 curl + stream:true 绕过 Node.js TLS 和空闲连接超时问题
+ * 通过原生 fetch 调用 DashScope（用于 Vercel serverless 环境）
+ * 不依赖 curl 和临时文件，更可靠
  */
-export async function chatCompletion(
+async function chatCompletionViaFetch(
+  apiKey: string,
   messages: ChatMessage[],
-  options: ChatCompletionOptions = {}
+  options: ChatCompletionOptions
 ): Promise<ChatCompletionResponse> {
-  const apiKey = process.env.DASHSCOPE_API_KEY;
-  if (!apiKey) {
-    throw new Error("DASHSCOPE_API_KEY is not configured");
-  }
+  const {
+    model = "qwen-plus",
+    temperature = 0.3,
+    maxTokens = 4096,
+    topP = 0.8,
+    timeout = 300,
+  } = options;
 
+  const ts = Date.now();
+  console.log(`[chatCompletion] fetch (non-stream), model=${model}, maxTokens=${maxTokens}`);
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeout * 1000);
+
+  try {
+    const response = await fetch(DASHSCOPE_BASE_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages,
+        temperature,
+        max_tokens: maxTokens,
+        top_p: topP,
+        stream: false,
+      }),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`DashScope HTTP ${response.status}: ${text.slice(0, 500)}`);
+    }
+
+    const data = (await response.json()) as {
+      model?: string;
+      error?: unknown;
+      choices?: Array<{ message?: { content?: string } }>;
+      usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
+    };
+
+    if (data.error) {
+      throw new Error(`DashScope error: ${JSON.stringify(data.error)}`);
+    }
+
+    const content = data.choices?.[0]?.message?.content || "";
+    if (!content) {
+      throw new Error("DashScope returned empty content");
+    }
+
+    console.log(
+      `[chatCompletion] done: ${content.length} chars, model=${data.model || model}, ${Date.now() - ts}ms`
+    );
+
+    return {
+      content,
+      model: data.model || model,
+      usage: {
+        promptTokens: data.usage?.prompt_tokens || 0,
+        completionTokens: data.usage?.completion_tokens || 0,
+        totalTokens: data.usage?.total_tokens || 0,
+      },
+    };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
+ * 通过 curl + stream 调用 DashScope（用于 Windows 本地开发）
+ * 绕过 Windows Node.js TLS 30s+ ECONNRESET 问题
+ */
+async function chatCompletionViaCurl(
+  apiKey: string,
+  messages: ChatMessage[],
+  options: ChatCompletionOptions
+): Promise<ChatCompletionResponse> {
   const {
     model = "qwen-plus",
     temperature = 0.3,
@@ -217,6 +293,27 @@ export async function chatCompletion(
       /* ignore */
     }
   }
+}
+
+/**
+ * 调用 DashScope AI 模型
+ * - Vercel 环境：使用原生 fetch（更可靠，无需 curl）
+ * - Windows 本地：使用 curl + stream 绕过 Node.js TLS 问题
+ */
+export async function chatCompletion(
+  messages: ChatMessage[],
+  options: ChatCompletionOptions = {}
+): Promise<ChatCompletionResponse> {
+  const apiKey = process.env.DASHSCOPE_API_KEY;
+  if (!apiKey) {
+    throw new Error("DASHSCOPE_API_KEY is not configured");
+  }
+
+  if (process.env.VERCEL) {
+    return chatCompletionViaFetch(apiKey, messages, options);
+  }
+
+  return chatCompletionViaCurl(apiKey, messages, options);
 }
 
 /**

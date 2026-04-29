@@ -142,32 +142,70 @@ export default function TargetingSpecPage() {
   const handleRegenerate = async () => {
     setIsSyncing(true);
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 120000);
-      
       const res = await fetch('/api/radar/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
-        signal: controller.signal,
       });
-      clearTimeout(timeoutId);
-      
-      const result = await res.json() as { success?: boolean; error?: string; targetingSpecVersionId?: string; channelMapVersionId?: string };
-      if (result.success) {
-        toast.success('同步成功', { 
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` })) as { error?: string };
+        toast.error('同步失败', { description: err.error || `HTTP ${res.status}` });
+        return;
+      }
+
+      // 读取 SSE 流式响应
+      const reader = res.body?.getReader();
+      if (!reader) {
+        toast.error('同步失败', { description: '无法读取响应流' });
+        return;
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let success = false;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const parts = buffer.split('\n\n');
+        buffer = parts.pop() || '';
+
+        for (const part of parts) {
+          if (!part.startsWith('data: ')) continue;
+          try {
+            const event = JSON.parse(part.slice(6)) as {
+              type: string;
+              success?: boolean;
+              error?: string;
+              message?: string;
+            };
+            if (event.type === 'done' && event.success) {
+              success = true;
+            } else if (event.type === 'error') {
+              toast.error('同步失败', { description: event.error });
+              return;
+            }
+            // heartbeat 和 progress 事件保持连接活跃，无需处理
+          } catch {
+            /* skip malformed event */
+          }
+        }
+      }
+
+      if (success) {
+        toast.success('同步成功', {
           description: '已从知识引擎生成最新目标客户画像',
           duration: 4000,
         });
         await loadData();
-      } else {
-        toast.error('同步失败', { description: result.error });
       }
     } catch (err) {
-      const errMsg = err instanceof Error && err.name === 'AbortError'
-        ? '请求超时，AI分析时间过长'
-        : (err instanceof Error ? err.message : '未知错误');
-      toast.error('同步失败', { description: errMsg });
+      toast.error('同步失败', {
+        description: err instanceof Error ? err.message : '未知错误',
+      });
     } finally {
       setIsSyncing(false);
     }

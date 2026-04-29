@@ -277,22 +277,41 @@ export default function ProfilesPage() {
   const handleSyncToRadar = async () => {
     setIsSyncing(true);
     try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 55000);
       const resp = await fetch('/api/radar/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
-        signal: controller.signal,
       });
-      clearTimeout(timer);
       if (!resp.ok) {
-        const err = await resp.json().catch(() => ({ error: 'Unknown error' }));
+        const err = await resp.json().catch(() => ({ error: 'Unknown error' })) as { error?: string };
         throw new Error(err.error || `HTTP ${resp.status}`);
       }
-      setToast({ message: '已同步到获客雷达', type: 'success' });
+      // 读取 SSE 流式响应
+      const reader = resp.body?.getReader();
+      if (!reader) throw new Error('无法读取响应流');
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let success = false;
+      let errorMsg = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const parts = buffer.split('\n\n');
+        buffer = parts.pop() || '';
+        for (const part of parts) {
+          if (!part.startsWith('data: ')) continue;
+          try {
+            const event = JSON.parse(part.slice(6)) as { type: string; success?: boolean; error?: string };
+            if (event.type === 'done' && event.success) success = true;
+            if (event.type === 'error') errorMsg = event.error || '同步失败';
+          } catch { /* skip */ }
+        }
+      }
+      if (errorMsg) throw new Error(errorMsg);
+      if (success) setToast({ message: '已同步到获客雷达', type: 'success' });
     } catch (e) {
-      const errMsg = e instanceof Error && e.name === 'AbortError' ? '同步超时' : (e instanceof Error ? e.message : 'Unknown error');
+      const errMsg = e instanceof Error ? e.message : 'Unknown error';
       setToast({ message: `同步失败: ${errMsg}`, type: 'error' });
     } finally {
       setIsSyncing(false);
