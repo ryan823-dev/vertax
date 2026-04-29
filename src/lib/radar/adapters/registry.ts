@@ -29,6 +29,7 @@ import { GoogleAlertsAdapter } from './google-alerts';
 import { MultiSourceSearchAdapter } from './multi-search';
 import { BatchDiscoveryAdapter } from './batch-discovery';
 import { CompetitiveDiscoveryAdapter, CompetitiveDiscoveryRegistration } from './competitive-discovery';
+import { ApolloOrganizationSearchAdapter, ApolloPeopleSearchAdapter } from './apollo-search';
 
 // ==================== 数据源可靠性定义 ====================
 
@@ -193,6 +194,27 @@ const SOURCE_RELIABILITY: Record<string, SourceReliability> = {
     coverageNote: '神经语义搜索，理解意图而非关键词',
     limitations: ['免费额度: 1000次/月', '最便宜的搜索API'],
     docUrl: 'https://docs.exa.ai/',
+  },
+  // === Apollo B2B 数据库 ===
+  apollo_org_search: {
+    dataType: 'OFFICIAL_API',
+    qualityLevel: 'HIGH',
+    requiresAuth: true,
+    authMethod: 'API Key',
+    updateFrequency: 'REAL_TIME',
+    coverageNote: '全球3000万+公司画像，结构化行业/规模/营收数据',
+    limitations: ['按信用点计费', '每页最多100条', '最多500页'],
+    docUrl: 'https://docs.apollo.io/reference/organization-search',
+  },
+  apollo_people_search: {
+    dataType: 'OFFICIAL_API',
+    qualityLevel: 'HIGH',
+    requiresAuth: true,
+    authMethod: 'API Key',
+    updateFrequency: 'REAL_TIME',
+    coverageNote: '全球2.75亿+联系人，含职位/层级/部门',
+    limitations: ['搜索不返回邮箱电话，需额外enrichment', '按信用点计费'],
+    docUrl: 'https://docs.apollo.io/reference/people-api-search',
   },
 };
 
@@ -925,6 +947,70 @@ export function ensureAdaptersInitialized(): void {
     (config) => new CompetitiveDiscoveryAdapter(config)
   );
 
+  // ==================== Apollo B2B 数据库 ====================
+
+  // 注册 Apollo Organization Search 适配器
+  registerAdapter(
+    {
+      code: 'apollo_org_search',
+      name: 'Apollo 公司搜索 - B2B数据库',
+      channelType: 'DIRECTORY',
+      adapterType: 'API',
+      description: '通过Apollo结构化B2B数据库搜索目标公司，按行业/地区/规模精确过滤，数据质量远高于网页搜索',
+      features: {
+        supportsKeywordSearch: true,
+        supportsCategoryFilter: true,
+        supportsDateFilter: false,
+        supportsRegionFilter: true,
+        supportsPagination: true,
+        supportsDetails: false,
+        maxResultsPerQuery: 100,
+        rateLimit: { requests: 5, windowMs: 60000 },
+      },
+      defaultConfig: {
+        timeout: 30000,
+      },
+      storagePolicy: 'TTL_CACHE',
+      ttlDays: 30,
+      attributionRequired: false,
+      isOfficial: true,
+      websiteUrl: 'https://www.apollo.io',
+      reliability: SOURCE_RELIABILITY.apollo_org_search,
+    },
+    (config) => new ApolloOrganizationSearchAdapter(config)
+  );
+
+  // 注册 Apollo People Search 适配器
+  registerAdapter(
+    {
+      code: 'apollo_people_search',
+      name: 'Apollo 决策人搜索 - 联系人发现',
+      channelType: 'DIRECTORY',
+      adapterType: 'API',
+      description: '按职位/层级/部门搜索目标公司的决策人，用于获取采购、运营、工程、管理层联系人',
+      features: {
+        supportsKeywordSearch: true,
+        supportsCategoryFilter: false,
+        supportsDateFilter: false,
+        supportsRegionFilter: true,
+        supportsPagination: true,
+        supportsDetails: false,
+        maxResultsPerQuery: 50,
+        rateLimit: { requests: 5, windowMs: 60000 },
+      },
+      defaultConfig: {
+        timeout: 30000,
+      },
+      storagePolicy: 'TTL_CACHE',
+      ttlDays: 30,
+      attributionRequired: false,
+      isOfficial: true,
+      websiteUrl: 'https://www.apollo.io',
+      reliability: SOURCE_RELIABILITY.apollo_people_search,
+    },
+    (config) => new ApolloPeopleSearchAdapter(config)
+  );
+
   initialized = true;
 }
 
@@ -956,6 +1042,9 @@ export const ADAPTER_CODES = {
   BATCH_DISCOVERY: 'batch_discovery',
   // 竞品发现
   COMPETITIVE_DISCOVERY: 'competitive_discovery',
+  // Apollo B2B 数据库
+  APOLLO_ORG_SEARCH: 'apollo_org_search',
+  APOLLO_PEOPLE_SEARCH: 'apollo_people_search',
   // 后续扩展
   CSV_IMPORT: 'csv_import',
 } as const;

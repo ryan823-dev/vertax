@@ -14,6 +14,7 @@ import { BraveSearchAdapter } from './brave-search';
 import { ExaAdapter } from './exa';
 import { TavilyAdapter } from './tavily';
 import { GooglePlacesAdapter } from './google-places';
+import { ApolloOrganizationSearchAdapter } from './apollo-search';
 import { getCountryMatchPriority } from '../country-utils';
 import { isRadarSearchEngineEnabled, type RadarPolicyControlledSearchEngine } from '../enrichment-policy';
 
@@ -56,6 +57,13 @@ const SEARCH_ENGINES: SearchEngineConfig[] = [
     adapter: GooglePlacesAdapter,
     weight: 0.8,  // 企业信息为主
     maxResults: 50,
+    enabled: true,
+  },
+  {
+    name: 'Apollo Organization',
+    adapter: ApolloOrganizationSearchAdapter,
+    weight: 1.5,  // 结构化B2B数据，质量最高
+    maxResults: 25,
     enabled: true,
   },
 ];
