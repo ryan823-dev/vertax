@@ -457,7 +457,7 @@ export default function RadarPage() {
                 </div>
                 <div className="animate-slide-up-delay-1">
                   <StatCard
-                    label="高质量候选"
+                    label="AI 高评分"
                     value={counts.candidatesQualifiedAB7d}
                     icon={<TrendingUp size={18} className="text-emerald-500" />}
                     href="/customer/radar/candidates?tier=A,B"
@@ -466,7 +466,7 @@ export default function RadarPage() {
                 </div>
                 <div className="animate-slide-up-delay-2">
                   <StatCard
-                    label="待审核"
+                    label="新发现"
                     value={counts.pendingReviewCount}
                     icon={<FileSearch size={18} className="text-amber-500" />}
                     href="/customer/radar/candidates?status=NEW"
@@ -475,7 +475,7 @@ export default function RadarPage() {
                 </div>
                 <div className="animate-slide-up-delay-3">
                   <StatCard
-                    label="已导入"
+                    label="已跟进"
                     value={counts.candidatesImported7d}
                     icon={<CheckCircle2 size={18} className="text-[var(--ci-accent)]" />}
                     href="/customer/radar/prospects"

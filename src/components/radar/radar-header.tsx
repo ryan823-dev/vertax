@@ -131,11 +131,11 @@ export function RadarHeader({
   onRefresh,
 }: RadarHeaderProps) {
   const hasErrors = errors.length > 0;
-  // 系统主动处理中（enriching）→ 旋转动画；待人工审核 → 静态提示
+  // 系统主动处理中（enriching）→ 旋转动画；新发现 → 静态提示
   const isEnriching = counts.candidatesEnriching > 0;
   const pendingHint =
     counts.pendingReviewCount > 0
-      ? `${counts.pendingReviewCount} 待审核`
+      ? `${counts.pendingReviewCount} 新发现`
       : isEnriching
         ? `${counts.candidatesEnriching} 正在补全`
         : null;
@@ -162,9 +162,9 @@ export function RadarHeader({
             <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-500">{description}</p>
 
             <div className="mt-4 flex flex-wrap gap-2">
-              <MiniStat label="待审核" value={counts.pendingReviewCount} tone={counts.pendingReviewCount > 0 ? "warning" : "neutral"} />
-              <MiniStat label="高质量" value={counts.candidatesQualifiedAB7d} tone={counts.candidatesQualifiedAB7d > 0 ? "success" : "neutral"} />
-              <MiniStat label="已导入" value={counts.prospectCompanyCount} tone="neutral" />
+              <MiniStat label="新发现" value={counts.pendingReviewCount} tone={counts.pendingReviewCount > 0 ? "warning" : "neutral"} />
+              <MiniStat label="AI 高评分" value={counts.candidatesQualifiedAB7d} tone={counts.candidatesQualifiedAB7d > 0 ? "success" : "neutral"} />
+              <MiniStat label="已跟进" value={counts.prospectCompanyCount} tone="neutral" />
               <MiniStat label="最后扫描" value={formatRelativeTime(counts.lastScanAt)} tone="neutral" />
             </div>
           </div>
@@ -373,8 +373,8 @@ export function SecretaryPanel({ counts, errors }: SecretaryPanelProps) {
   if (counts.pendingReviewCount > 0) {
     items.push({
       type: "action",
-      title: `${counts.pendingReviewCount} 个候选待审核`,
-      description: "这些候选已经被系统发现，但还需要你做最后一层筛选。",
+      title: `${counts.pendingReviewCount} 个新发现的潜在客户`,
+      description: "系统刚刚发现的新匹配公司，AI 正在评估中。",
       href: "/customer/radar/candidates?status=NEW",
     });
   }
@@ -382,8 +382,8 @@ export function SecretaryPanel({ counts, errors }: SecretaryPanelProps) {
   if (counts.candidatesQualifiedAB7d > 0) {
     items.push({
       type: "info",
-      title: `${counts.candidatesQualifiedAB7d} 个高质量候选`,
-      description: "过去 7 天里被评为 A/B 的高价值目标，可继续导入线索池。",
+      title: `${counts.candidatesQualifiedAB7d} 个 AI 推荐客户`,
+      description: "过去 7 天 AI 评为 A/B 的高匹配目标，建议优先跟进。",
       href: "/customer/radar/candidates?tier=A,B",
     });
   }

@@ -175,10 +175,10 @@ const STATUS_FILTERS: Array<{
   value: CandidateStatus | '';
   label: string;
 }> = [
-  { value: '', label: '全部公司候选' },
-  { value: 'NEW', label: '待审核' },
-  { value: 'QUALIFIED', label: '已分层' },
-  { value: 'IMPORTED', label: '已导入' },
+  { value: '', label: '全部推荐' },
+  { value: 'QUALIFIED', label: 'AI 已评估' },
+  { value: 'NEW', label: '新发现' },
+  { value: 'IMPORTED', label: '已跟进' },
   { value: 'EXCLUDED', label: '已排除' },
 ];
 
@@ -753,8 +753,8 @@ export default function RadarCandidatesPage() {
     <div className="space-y-6">
       {/* RadarHeader with Stepper */}
       <RadarHeader
-        title="候选池"
-        description="审核、分层并导入潜在客户"
+        title="AI 推荐"
+        description="系统为您筛选的高匹配潜在客户"
         steps={steps}
         counts={counts}
         currentStep={currentStep}
@@ -779,13 +779,13 @@ export default function RadarCandidatesPage() {
         <div className="rounded-xl border border-[var(--ci-border)] bg-[#FFFFFF] p-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#9A7A1C]">候选池默认语义</div>
-              <h2 className="mt-2 text-lg font-bold text-[#0B1B2B]">当前只展示公司候选，先回答“为什么是它”</h2>
-              <p className="mt-2 text-sm leading-6 text-slate-500">采购机会已迁到采购机会页统一管理，联系人不再作为一级列表对象，而是在候选详情中承接。</p>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#9A7A1C]">AI 智能筛选</div>
+              <h2 className="mt-2 text-lg font-bold text-[#0B1B2B]">以下公司由 AI 从全球数据源中为您筛选</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-500">系统持续扫描、评估并推荐最匹配的潜在客户，您只需决定是否跟进。</p>
             </div>
             <div className="flex flex-wrap gap-3">
               <div className="rounded-xl border border-[var(--ci-border)] bg-[#FCFAF4] px-4 py-3 text-sm">
-                <div className="text-xs text-slate-500">公司候选</div>
+                <div className="text-xs text-slate-500">AI 推荐</div>
                 <div className="mt-1 font-semibold text-[#0B1B2B]">{total}</div>
               </div>
               <Link
@@ -864,7 +864,7 @@ export default function RadarCandidatesPage() {
               disabled={isBatchImporting}
               className="px-3 py-1.5 bg-[var(--ci-accent)]/20 text-[var(--ci-accent)] rounded-lg text-xs font-medium hover:bg-[var(--ci-accent)]/30 transition-colors disabled:opacity-50"
             >
-              {isBatchImporting ? '导入中...' : '批量导入线索库'}
+              {isBatchImporting ? '跟进中...' : '批量开始跟进'}
             </button>
             <button
               onClick={handleBatchEnrich}
@@ -1642,7 +1642,7 @@ export default function RadarCandidatesPage() {
                   {/* Qualify Tier */}
                   {selectedCandidate.status !== 'IMPORTED' && (
                     <div className="mb-4">
-                      <p className="text-xs text-slate-500 mb-2">分层评级</p>
+                      <p className="text-xs text-slate-500 mb-2">AI 评级（可调整）</p>
                       <div className="flex gap-2 w-full">
                         {(['A', 'B', 'C', 'excluded'] as const).map((tier) => {
                           const isActive = selectedCandidate.qualifyTier === tier || 
@@ -1677,7 +1677,7 @@ export default function RadarCandidatesPage() {
                       className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#0B1B2B] text-[var(--ci-accent)] rounded-xl text-sm font-medium hover:bg-[#10263B] transition-colors"
                     >
                       <Download size={16} />
-                      导入线索库并继续跟进
+                      开始跟进
                     </button>
                   )}
 

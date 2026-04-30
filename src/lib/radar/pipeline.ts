@@ -88,7 +88,7 @@ const STATS_WINDOW_DAYS = 7;
 const STEP_CONFIG = [
   { key: 'targeting', label: '目标客户画像', href: '/customer/radar/targeting' },
   { key: 'search', label: '自动搜索', href: '/customer/radar/search' },
-  { key: 'candidates', label: '候选池', href: '/customer/radar/candidates' },
+  { key: 'candidates', label: 'AI 推荐', href: '/customer/radar/candidates' },
   { key: 'prospects', label: '线索库', href: '/customer/radar/prospects' },
   { key: 'opportunities', label: '采购机会', href: '/customer/radar/opportunities' },
 ] as const;
@@ -530,15 +530,15 @@ function getPrimaryCTA(counts: RadarPipelineCounts): PrimaryCTA {
 
   if (counts.pendingReviewCount > 0) {
     return {
-      label: '去审核候选',
-      href: '/customer/radar/candidates?status=NEW',
+      label: '查看推荐客户',
+      href: '/customer/radar/candidates?status=QUALIFIED&tier=A,B',
       disabled: false,
     };
   }
 
   if (readyToImport > 0) {
     return {
-      label: '导入线索库',
+      label: '跟进高优客户',
       href: '/customer/radar/candidates?status=QUALIFIED&tier=A,B',
       disabled: false,
     };
