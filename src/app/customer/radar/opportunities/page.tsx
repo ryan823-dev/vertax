@@ -244,7 +244,7 @@ export default function RadarOpportunitiesPage() {
                 <FileText size={28} className="text-[var(--ci-accent)]" />
               </div>
               <p className="text-slate-400">暂无采购机会</p>
-              <p className="text-xs text-slate-500 mt-2">从候选池中单独沉淀采购 / 招投标对象</p>
+              <p className="text-xs text-slate-500 mt-2">从 AI 推荐中单独沉淀采购 / 招投标对象</p>
             </div>
           ) : (
             <div className="space-y-3 max-h-[600px] overflow-y-auto">

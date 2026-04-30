@@ -152,7 +152,7 @@ export const navConfig: NavItem[] = [
       { key: 'overview', label: '总览', href: '/customer/radar', icon: Home, order: 1 },
       { key: 'targeting', label: '目标客户画像', href: '/customer/radar/targeting', icon: Target, order: 2 },
       { key: 'search', label: '自动搜索', href: '/customer/radar/search', icon: Search, order: 3 },
-      { key: 'candidates', label: '候选池', href: '/customer/radar/candidates', icon: Users, order: 4 },
+      { key: 'candidates', label: 'AI 推荐', href: '/customer/radar/candidates', icon: Users, order: 4 },
       { key: 'prospects', label: '线索库', href: '/customer/radar/prospects', icon: Building2, order: 5 },
       { key: 'opportunities', label: '采购机会', href: '/customer/radar/opportunities', icon: ClipboardCheck, order: 6 },
     ],

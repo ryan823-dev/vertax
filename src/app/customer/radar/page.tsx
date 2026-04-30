@@ -40,7 +40,7 @@ import { RadarHeader, StatCard, SecretaryPanel, RadarEmptyGuide } from '@/compon
 const radarModules = [
   { label: '目标客户画像', href: '/customer/radar/targeting', icon: Target, description: '确认系统按什么画像找客户', badge: null },
   { label: '自动搜索', href: '/customer/radar/search', icon: Search, description: '一键启动并观察系统执行状态', badge: null },
-  { label: '候选池', href: '/customer/radar/candidates', icon: Users, description: '审核和分层候选', badge: 'pendingReviewCount' },
+  { label: 'AI 推荐', href: '/customer/radar/candidates', icon: Users, description: '查看 AI 筛选的高匹配客户', badge: 'pendingReviewCount' },
   { label: '线索库', href: '/customer/radar/prospects', icon: Building2, description: '沉淀已确认值得跟进的线索', badge: null },
   { label: '采购机会', href: '/customer/radar/opportunities', icon: Radar, description: '单独管理采购与招投标商机', badge: null },
 ];
@@ -211,7 +211,7 @@ export default function RadarPage() {
               {[
                 { step: 1, label: '目标客户画像', href: '/customer/radar/targeting', icon: Target },
                 { step: 2, label: '自动搜索', href: '/customer/radar/search', icon: Search },
-                { step: 3, label: '候选池', href: '/customer/radar/candidates', icon: Users },
+                { step: 3, label: 'AI 推荐', href: '/customer/radar/candidates', icon: Users },
                 { step: 4, label: '线索库', href: '/customer/radar/prospects', icon: Building2 },
                 { step: 5, label: '采购机会', href: '/customer/radar/opportunities', icon: Radar },
               ].map((s) => (
@@ -562,7 +562,7 @@ export default function RadarPage() {
                 <div className="mt-2 flex items-center justify-between text-[10px] text-slate-500">
                   <span>目标客户画像</span>
                   <span>自动搜索</span>
-                  <span>候选池</span>
+                  <span>AI 推荐</span>
                   <span>线索库</span>
                   <span>采购机会</span>
                 </div>

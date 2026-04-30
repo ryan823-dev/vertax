@@ -426,7 +426,7 @@ function calculateSteps(
     step3Blocker = '请先开始自动搜索';
   } else if (counts.pendingReviewCount > 0) {
     step3Status = 'IN_PROGRESS';
-    step3Blocker = `有 ${counts.pendingReviewCount} 个候选待审核`;
+    step3Blocker = `有 ${counts.pendingReviewCount} 个新发现待评估`;
   } else if (counts.candidateTotalCount > 0 || counts.candidatesQualifiedAB7d > 0) {
     step3Status = 'DONE';
   } else {

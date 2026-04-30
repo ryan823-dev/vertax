@@ -1428,7 +1428,7 @@ export default function RadarProspectsPage() {
           {/* 外联记录列表 */}
           {outreachRecords.length === 0 ? (
             <div className="text-center py-12 text-slate-400 text-sm">
-              {outreachFilter === 'all' ? '暂无外联记录，去候选池发送开发信吧' : '该分类暂无记录'}
+              {outreachFilter === 'all' ? '暂无外联记录' : '该分类暂无记录'}
             </div>
           ) : (
             <div className="space-y-2">
@@ -1720,12 +1720,12 @@ export default function RadarProspectsPage() {
                   <Building2 size={32} className="text-[var(--ci-accent)]" />
                 </div>
                 <p className="text-slate-300">暂无线索数据</p>
-                <p className="text-xs text-slate-500 mt-2">前往「候选池」导入线索</p>
+                <p className="text-xs text-slate-500 mt-2">前往「AI 推荐」开始跟进线索</p>
                 <Link 
                   href="/customer/radar/candidates"
                   className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-[var(--ci-accent)] text-white rounded-xl text-sm font-medium hover:bg-[var(--ci-accent-strong)] transition-colors"
                 >
-                  前往候选池
+                  前往 AI 推荐
                   <ChevronRight size={14} />
                 </Link>
               </div>
@@ -2203,7 +2203,7 @@ export default function RadarProspectsPage() {
                         <p className="text-xs text-slate-500 mt-1">
                           {contactSnapshotPanel
                             ? '导入快照已可用于外联，后续可继续补录命名联系人。'
-                            : '添加决策者联系人，或从候选池导入时自动提取'}
+                            : '添加决策者联系人，或从 AI 推荐导入时自动提取'}
                         </p>
                       </div>
                     </div>

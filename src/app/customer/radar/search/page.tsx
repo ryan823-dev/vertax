@@ -246,7 +246,7 @@ export default function RadarSearchPage() {
             <ActionCard label="开始自动搜索" hint="按当前画像立即执行一轮" icon={Play} active={actionState === "start"} disabled={!canStartSearch} onClick={() => runSearch("start")} primary />
             <ActionCard label="按最新画像重新搜索" hint="用当前画像摘要再跑一轮" icon={RefreshCw} active={actionState === "restart"} disabled={!canStartSearch} onClick={() => runSearch("restart")} />
             <ActionCard label={activeProfiles.length ? "暂停自动搜索" : "继续自动执行"} hint={activeProfiles.length ? "暂停当前持续执行策略" : "恢复一个已有策略"} icon={activeProfiles.length ? Pause : Play} active={actionState === "pause" || actionState === "resume"} disabled={!activeProfiles.length && !pausedProfiles.length} onClick={() => toggleAutomation(activeProfiles.length ? "pause" : "resume")} />
-            <Link href="/customer/radar/candidates" className="rounded-xl border border-[var(--ci-border)] bg-[#FFFFFF] px-4 py-4 transition-colors hover:border-[var(--ci-accent)]/35 hover:bg-[var(--ci-surface-muted)]"><div className="flex items-center justify-between gap-3"><div><div className="text-sm font-semibold text-[#0B1B2B]">查看候选结果</div><div className="mt-1 text-xs text-slate-500">直接进入候选池审核系统发现的对象</div></div><ChevronRight size={18} className="text-[var(--ci-accent)]" /></div></Link>
+            <Link href="/customer/radar/candidates" className="rounded-xl border border-[var(--ci-border)] bg-[#FFFFFF] px-4 py-4 transition-colors hover:border-[var(--ci-accent)]/35 hover:bg-[var(--ci-surface-muted)]"><div className="flex items-center justify-between gap-3"><div><div className="text-sm font-semibold text-[#0B1B2B]">查看 AI 推荐</div><div className="mt-1 text-xs text-slate-500">查看 AI 为您筛选的潜在客户</div></div><ChevronRight size={18} className="text-[var(--ci-accent)]" /></div></Link>
           </div>
         </div>
       </section>
@@ -329,8 +329,8 @@ export default function RadarSearchPage() {
           <MetricCard label="最近运行" value={formatRelative(pipeline?.counts.lastScanAt || null)} />
           <MetricCard label="本轮抓取" value={latestTaskStats?.fetched ?? "—"} />
           <MetricCard label="去重数量" value={latestTaskStats?.duplicates ?? "—"} />
-          <MetricCard label="待审核候选" value={pipeline?.counts.pendingReviewCount ?? stats?.newCandidates ?? 0} />
-          <MetricCard label="已导入线索" value={pipeline?.counts.prospectCompanyCount ?? stats?.companies ?? 0} />
+          <MetricCard label="新发现" value={pipeline?.counts.pendingReviewCount ?? stats?.newCandidates ?? 0} />
+          <MetricCard label="已跟进线索" value={pipeline?.counts.prospectCompanyCount ?? stats?.companies ?? 0} />
         </div>
       </section>
 

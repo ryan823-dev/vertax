@@ -97,7 +97,7 @@ function getRadarSectionDescription(key: string) {
     case "search":
       return "启动并观察日常搜索生产线";
     case "candidates":
-      return "审核系统发现的目标客户";
+      return "查看 AI 为您筛选的潜在客户";
     case "prospects":
       return "沉淀正式线索并推进外联";
     case "daily":

@@ -86,7 +86,7 @@ export default function ScoringProfilePage() {
               </div>
               <div>
                 <p className="text-sm font-medium text-white">负向信号</p>
-                <p className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>匹配后直接排除，不进入候选池</p>
+                <p className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>匹配后直接排除，不进入推荐列表</p>
               </div>
             </div>
             <div
