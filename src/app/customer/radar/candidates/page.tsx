@@ -706,10 +706,10 @@ export default function RadarCandidatesPage() {
   // 获取状态标签
   const getStatusLabel = (status: CandidateStatus) => {
     const map: Record<CandidateStatus, { label: string; color: string }> = {
-      NEW: { label: '待审核', color: 'bg-blue-50 text-blue-600' },
-      REVIEWING: { label: '审核中', color: 'bg-amber-50 text-amber-600' },
-      QUALIFIED: { label: '已分层', color: 'bg-emerald-50 text-emerald-600' },
-      IMPORTED: { label: '已导入', color: 'bg-purple-50 text-purple-600' },
+      NEW: { label: '新发现', color: 'bg-blue-50 text-blue-600' },
+      REVIEWING: { label: '评估中', color: 'bg-amber-50 text-amber-600' },
+      QUALIFIED: { label: 'AI 已评估', color: 'bg-emerald-50 text-emerald-600' },
+      IMPORTED: { label: '已跟进', color: 'bg-purple-50 text-purple-600' },
       EXCLUDED: { label: '已排除', color: 'bg-red-50 text-red-600' },
       EXPIRED: { label: '已过期', color: 'bg-slate-50 text-slate-600' },
       ENRICHING: { label: '补全中', color: 'bg-cyan-50 text-cyan-600' },
