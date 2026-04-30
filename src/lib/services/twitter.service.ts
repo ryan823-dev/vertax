@@ -153,13 +153,19 @@ export async function getUserInfo(accessToken: string): Promise<TwitterUserInfo>
 export async function publishTweet(params: {
   accessToken: string;
   text: string;
+  mediaIds?: string[];
 }): Promise<TwitterPublishResult> {
   if (isDemoMode) {
     return { tweetId: `demo_tw_${Date.now()}` };
   }
 
-  if (params.text.length > 280) {
+  if (tweetWeightedLength(params.text) > 280) {
     throw new Error("Tweet exceeds 280 character limit");
+  }
+
+  const body: Record<string, unknown> = { text: params.text };
+  if (params.mediaIds && params.mediaIds.length > 0) {
+    body.media = { media_ids: params.mediaIds };
   }
 
   const res = await fetch(`${TWITTER_API_BASE}/tweets`, {
@@ -168,7 +174,7 @@ export async function publishTweet(params: {
       Authorization: `Bearer ${params.accessToken}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ text: params.text }),
+    body: JSON.stringify(body),
   });
 
   const data = await res.json();
@@ -311,12 +317,13 @@ export async function publishTweetWithApiKeys(params: {
   accessToken: string;
   accessTokenSecret: string;
   text: string;
+  mediaIds?: string[];
 }): Promise<TwitterPublishResult> {
   if (isDemoMode) {
     return { tweetId: `demo_tw_${Date.now()}` };
   }
 
-  if (params.text.length > 280) {
+  if (tweetWeightedLength(params.text) > 280) {
     throw new Error("Tweet exceeds 280 character limit");
   }
 
@@ -330,13 +337,18 @@ export async function publishTweetWithApiKeys(params: {
     accessTokenSecret: params.accessTokenSecret,
   });
 
+  const body: Record<string, unknown> = { text: params.text };
+  if (params.mediaIds && params.mediaIds.length > 0) {
+    body.media = { media_ids: params.mediaIds };
+  }
+
   const res = await fetch(url, {
     method: 'POST',
     headers: {
       Authorization: authHeader,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ text: params.text }),
+    body: JSON.stringify(body),
   });
 
   const data = await res.json();
@@ -346,4 +358,76 @@ export async function publishTweetWithApiKeys(params: {
   }
 
   return { tweetId: data.data.id };
+}
+
+// --- Media Upload (OAuth 1.0a, v1.1 endpoint) ---
+
+const TWITTER_UPLOAD_BASE = "https://upload.twitter.com/1.1";
+
+export async function uploadMediaWithApiKeys(params: {
+  apiKey: string;
+  apiKeySecret: string;
+  accessToken: string;
+  accessTokenSecret: string;
+  mediaData: Buffer;
+  mimeType: string;
+}): Promise<string> {
+  if (isDemoMode) {
+    return `demo_media_${Date.now()}`;
+  }
+
+  const url = `${TWITTER_UPLOAD_BASE}/media/upload.json`;
+  const base64Data = params.mediaData.toString("base64");
+
+  const authHeader = generateOAuth1Header({
+    method: "POST",
+    url,
+    apiKey: params.apiKey,
+    apiKeySecret: params.apiKeySecret,
+    accessToken: params.accessToken,
+    accessTokenSecret: params.accessTokenSecret,
+    extraParams: { media_data: base64Data },
+  });
+
+  const formBody = new URLSearchParams({ media_data: base64Data });
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: authHeader,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: formBody.toString(),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(
+      data?.errors?.[0]?.message || `Twitter media upload failed: ${res.status}`
+    );
+  }
+
+  return data.media_id_string;
+}
+
+// --- Tweet length helpers ---
+
+const URL_PATTERN = /https?:\/\/[^\s]+/g;
+const TWITTER_SHORT_URL_LENGTH = 23;
+
+/**
+ * Calculate weighted tweet length where URLs are counted as 23 characters
+ * (Twitter's t.co shortener) regardless of actual length.
+ */
+function tweetWeightedLength(text: string): number {
+  let length = text.length;
+  const urls = text.match(URL_PATTERN);
+  if (urls) {
+    for (const url of urls) {
+      length -= url.length;
+      length += TWITTER_SHORT_URL_LENGTH;
+    }
+  }
+  return length;
 }

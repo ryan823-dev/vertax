@@ -49,13 +49,13 @@ const PLATFORMS: PlatformDef[] = [
     textColor: 'text-slate-800',
     available: true,
     fields: [
-      { key: 'apiKey', label: 'API Key（开发者公钥）', placeholder: 'xxxxxxxxxxxxxxxxxxx' },
-      { key: 'apiKeySecret', label: 'API Key Secret（密钥）', placeholder: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' },
-      { key: 'accessToken', label: '访问令牌', placeholder: 'xxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxx' },
-      { key: 'accessTokenSecret', label: '访问令牌 Secret', placeholder: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' },
+      { key: 'apiKey', label: 'Consumer Key（API Key）', placeholder: 'GAm3C2rPfB7KVUxxxxxxx' },
+      { key: 'apiKeySecret', label: 'Consumer Key Secret（API Secret）', placeholder: 'hF2wOSl2pIIZU8io856At9yDa5ISKOxxxxxxx' },
+      { key: 'accessToken', label: 'Access Token', placeholder: '2034919454526906371-gAWrLmd6psxxxxxxx' },
+      { key: 'accessTokenSecret', label: 'Access Token Secret', placeholder: '7faywSKYDuAPBTOVwdy9oheREFfxxxxxxx' },
     ],
     helpUrl: 'https://developer.x.com/en/portal/dashboard',
-    helpText: '前往 X 开发者平台创建应用并获取发布所需凭证。',
+    helpText: '前往 X 开发者后台 → 你的应用 → Keys and Tokens 获取以上 4 个凭证（Bearer Token 不需要）。',
   },
   {
     id: 'facebook',
@@ -64,11 +64,11 @@ const PLATFORMS: PlatformDef[] = [
     textColor: 'text-blue-600',
     available: true,
     fields: [
-      { key: 'pageId', label: '页面 ID', placeholder: '123456789012345' },
-      { key: 'pageAccessToken', label: '页面访问令牌', placeholder: 'EAAxxxxxxxxxxxxxxxxxx...' },
+      { key: 'pageId', label: '页面 ID（Page ID）', placeholder: '123456789012345' },
+      { key: 'pageAccessToken', label: '页面长期访问令牌（Page Access Token）', placeholder: 'EAAxxxxxxxxxxxxxxxxxx...' },
     ],
     helpUrl: 'https://developers.facebook.com/tools/explorer/',
-    helpText: '在 Graph API Explorer 生成长期有效的页面访问令牌。',
+    helpText: '在 Graph API Explorer 中选择页面 → 获取 Page Access Token → 用"延长令牌"功能转为长期令牌（约60天有效）。',
   },
   {
     id: 'linkedin',

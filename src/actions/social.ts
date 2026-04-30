@@ -20,6 +20,7 @@ type PostVersionInput = {
   content: string;
   media?: string[];
   metrics?: Record<string, unknown>;
+  link?: string;
 };
 
 type PublishResult = {
@@ -219,7 +220,10 @@ export async function createSocialPost(data: {
           platform: version.platform,
           content: version.content,
           media: version.media || [],
-          metrics: (version.metrics || {}) as Prisma.InputJsonValue,
+          metrics: ({
+            ...(version.metrics || {}),
+            ...(version.link ? { _link: version.link } : {}),
+          }) as Prisma.InputJsonValue,
         })),
       },
     },
@@ -268,7 +272,10 @@ export async function updateSocialPost(
         platform: version.platform,
         content: version.content,
         media: version.media || [],
-        metrics: (version.metrics || {}) as Prisma.InputJsonValue,
+        metrics: ({
+          ...(version.metrics || {}),
+          ...(version.link ? { _link: version.link } : {}),
+        }) as Prisma.InputJsonValue,
       })),
     });
   }
@@ -356,7 +363,12 @@ export async function publishSocialPostForTenant(
     }
 
     if (version.platform === "linkedin") {
-      const shareText = encodeURIComponent(version.content);
+      const vMetrics = toObjectRecord(version.metrics);
+      const linkedinLink = typeof vMetrics._link === "string" ? vMetrics._link : undefined;
+      const fullText = linkedinLink
+        ? `${version.content}\n\n${linkedinLink}`
+        : version.content;
+      const shareText = encodeURIComponent(fullText);
       const shareUrl = `https://www.linkedin.com/feed/?shareActive=true&text=${shareText}`;
       const linkedinPostId = `linkedin_share_${Date.now()}`;
       await db.postVersion.update({
@@ -406,6 +418,8 @@ export async function publishSocialPostForTenant(
       let nextMetrics: Record<string, unknown> | undefined;
       const metadata = toStringRecord(account.metadata);
       const isApiKeys = metadata.authMethod === "api_keys";
+      const versionMetrics = toObjectRecord(version.metrics);
+      const attachedLink = typeof versionMetrics._link === "string" ? versionMetrics._link : undefined;
 
       if (version.platform === "facebook") {
         if (!isApiKeys) {
@@ -422,20 +436,40 @@ export async function publishSocialPostForTenant(
           }
         }
 
+        // Resolve image URL from media refs (first image asset)
+        const fbImageUrl = await resolveFirstImageUrl(tenantId, version.media);
+
         const result = await facebookService.publishToPage({
           pageAccessToken: account.accessToken!,
           pageId: metadata.pageId || account.accountId,
           message: version.content,
+          link: attachedLink,
+          imageUrl: fbImageUrl,
         });
         platformPostId = result.postId;
       } else if (version.platform === "x") {
+        // Resolve image for Twitter (upload via media API)
+        const twitterMediaIds = await resolveTwitterMediaIds(
+          tenantId,
+          version.media,
+          account,
+          metadata,
+          isApiKeys
+        );
+
+        // Append link to tweet text if provided (Twitter auto-expands URLs)
+        const tweetText = attachedLink
+          ? `${version.content}\n\n${attachedLink}`
+          : version.content;
+
         if (isApiKeys) {
           const result = await twitterService.publishTweetWithApiKeys({
             apiKey: metadata.apiKey,
             apiKeySecret: metadata.apiKeySecret,
             accessToken: account.accessToken!,
             accessTokenSecret: account.refreshToken!,
-            text: version.content,
+            text: tweetText,
+            mediaIds: twitterMediaIds,
           });
           platformPostId = result.tweetId;
         } else {
@@ -454,7 +488,8 @@ export async function publishSocialPostForTenant(
 
           const result = await twitterService.publishTweet({
             accessToken: account.accessToken!,
-            text: version.content,
+            text: tweetText,
+            mediaIds: twitterMediaIds,
           });
           platformPostId = result.tweetId;
         }
@@ -935,4 +970,65 @@ function getTikTokStoredState(metrics: unknown): tiktokService.TikTokPublishStat
   const state = toObjectRecord(metrics)[tiktokService.TIKTOK_PUBLISH_STATE_KEY];
   if (!state || typeof state !== "object" || Array.isArray(state)) return null;
   return state as tiktokService.TikTokPublishState;
+}
+
+// --- Image helpers for social publish ---
+
+async function resolveFirstImageUrl(
+  tenantId: string,
+  mediaRefs: string[]
+): Promise<string | undefined> {
+  for (const ref of mediaRefs) {
+    if (!ref.startsWith("asset:")) continue;
+    const assetId = ref.slice("asset:".length);
+    const asset = await db.asset.findFirst({
+      where: { id: assetId, tenantId, deletedAt: null },
+    });
+    if (asset && asset.fileCategory === "image") {
+      return generatePresignedGetUrl(asset.storageKey, 3600);
+    }
+  }
+  return undefined;
+}
+
+async function resolveTwitterMediaIds(
+  tenantId: string,
+  mediaRefs: string[],
+  account: { accessToken: string | null; refreshToken: string | null },
+  metadata: Record<string, string>,
+  isApiKeys: boolean
+): Promise<string[] | undefined> {
+  const imageRefs = mediaRefs.filter((r) => r.startsWith("asset:"));
+  if (imageRefs.length === 0) return undefined;
+
+  // Only process first image for now (Twitter allows up to 4, but keep simple)
+  const assetId = imageRefs[0].slice("asset:".length);
+  const asset = await db.asset.findFirst({
+    where: { id: assetId, tenantId, deletedAt: null },
+  });
+  if (!asset || asset.fileCategory !== "image") return undefined;
+
+  const imageUrl = await generatePresignedGetUrl(asset.storageKey, 3600);
+  const imageRes = await fetch(imageUrl);
+  if (!imageRes.ok) return undefined;
+
+  const imageBuffer = Buffer.from(await imageRes.arrayBuffer());
+
+  // Twitter media upload only works with OAuth 1.0a (API keys mode)
+  if (!isApiKeys) return undefined;
+
+  try {
+    const mediaId = await twitterService.uploadMediaWithApiKeys({
+      apiKey: metadata.apiKey,
+      apiKeySecret: metadata.apiKeySecret,
+      accessToken: account.accessToken!,
+      accessTokenSecret: account.refreshToken!,
+      mediaData: imageBuffer,
+      mimeType: asset.mimeType,
+    });
+    return [mediaId];
+  } catch (err) {
+    console.warn("[resolveTwitterMediaIds] Media upload failed:", err);
+    return undefined;
+  }
 }

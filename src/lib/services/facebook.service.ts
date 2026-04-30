@@ -104,36 +104,71 @@ export async function publishToPage(params: {
   pageAccessToken: string;
   pageId: string;
   message: string;
+  link?: string;
+  imageUrl?: string;
 }): Promise<FacebookPublishResult> {
   if (isDemoMode) {
     return { postId: `demo_fb_${Date.now()}` };
   }
 
+  // If an image is provided, publish as a photo post
+  if (params.imageUrl) {
+    const url = `${GRAPH_API_BASE}/${params.pageId}/photos`;
+    const body: Record<string, string> = {
+      url: params.imageUrl,
+      caption: params.link
+        ? `${params.message}\n\n${params.link}`
+        : params.message,
+      access_token: params.pageAccessToken,
+    };
+
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    const data = await res.json();
+    if (data.error) {
+      handleFacebookError(data.error);
+    }
+    return { postId: data.post_id || data.id };
+  }
+
+  // Otherwise publish as a feed post (optionally with link)
   const url = `${GRAPH_API_BASE}/${params.pageId}/feed`;
+  const body: Record<string, string> = {
+    message: params.message,
+    access_token: params.pageAccessToken,
+  };
+  if (params.link) {
+    body.link = params.link;
+  }
 
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      message: params.message,
-      access_token: params.pageAccessToken,
-    }),
+    body: JSON.stringify(body),
   });
 
   const data = await res.json();
 
   if (data.error) {
-    const errorCode = data.error.code;
-    if (errorCode === 190) {
-      throw new Error("Facebook access token expired. Please reconnect your account.");
-    }
-    if (errorCode === 32) {
-      throw new Error("Facebook API rate limit reached. Please try again later.");
-    }
-    throw new Error(`Facebook publish error: ${data.error.message}`);
+    handleFacebookError(data.error);
   }
 
   return { postId: data.id };
+}
+
+function handleFacebookError(error: { code?: number; message?: string }): never {
+  const errorCode = error.code;
+  if (errorCode === 190) {
+    throw new Error("Facebook access token expired. Please reconnect your account.");
+  }
+  if (errorCode === 32) {
+    throw new Error("Facebook API rate limit reached. Please try again later.");
+  }
+  throw new Error(`Facebook publish error: ${error.message}`);
 }
 
 export async function refreshTokenIfNeeded(account: {

@@ -27,6 +27,7 @@ import {
   Download,
   Upload,
   Video,
+  ExternalLink,
 } from 'lucide-react';
 import {
   getSocialPosts,
@@ -42,6 +43,7 @@ import { downloadCSV } from '@/lib/utils/download';
 import { getContentPieces } from '@/actions/contents';
 
 type ViewMode = 'list' | 'create';
+type CreateMode = 'ai' | 'manual';
 
 // Platform icons and info
 const PLATFORMS = [
@@ -70,6 +72,13 @@ type TikTokMediaState = {
   fileSize: number;
   mimeType: string;
   durationSec?: number;
+  previewUrl?: string;
+};
+
+type ImageMediaState = {
+  assetId: string;
+  fileName: string;
+  fileSize: number;
   previewUrl?: string;
 };
 
@@ -111,6 +120,7 @@ export default function SocialPage() {
   const [selectedPost, setSelectedPost] = useState<SocialPost | null>(null);
 
   // Create post state
+  const [createMode, setCreateMode] = useState<CreateMode>('ai');
   const [topic, setTopic] = useState('');
   const [inputMode, setInputMode] = useState<'manual' | 'library'>('manual');
   const [contentItems, setContentItems] = useState<Array<{ id: string; title: string; excerpt?: string | null }>>([]);
@@ -118,6 +128,10 @@ export default function SocialPage() {
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(['linkedin', 'x']);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContents, setGeneratedContents] = useState<Record<string, string>>({});
+  const [manualContents, setManualContents] = useState<Record<string, string>>({});
+  const [attachedLink, setAttachedLink] = useState('');
+  const [imageMedia, setImageMedia] = useState<ImageMediaState | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishMode, setPublishMode] = useState<'now' | 'scheduled'>('now');
   const [scheduledAt, setScheduledAt] = useState('');
@@ -330,11 +344,80 @@ export default function SocialPage() {
     }
   };
 
+  // 图片上传（通用，非 TikTok 视频）
+  const handleImageUpload = async (file: File | null) => {
+    if (!file) return;
+    const supportedTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+    if (!supportedTypes.includes(file.type)) {
+      setError('仅支持 PNG、JPG、WebP、GIF 格式图片。');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setError('图片不超过 5 MB。');
+      return;
+    }
+    setIsUploadingImage(true);
+    setError(null);
+    try {
+      const createRes = await fetch('/api/assets/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          files: [{ originalName: file.name, mimeType: file.type, fileSize: file.size }],
+        }),
+      });
+      const createData = await createRes.json();
+      if (!createRes.ok || !createData?.sessions?.[0]) {
+        throw new Error(createData?.error || '未能创建图片上传会话');
+      }
+      const session = createData.sessions[0] as { assetId: string; presignedUrl: string };
+      const uploadRes = await fetch(session.presignedUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': file.type },
+        body: file,
+      });
+      if (!uploadRes.ok) throw new Error(`图片上传失败：${uploadRes.status}`);
+
+      const confirmRes = await fetch('/api/assets/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'confirm', assetId: session.assetId }),
+      });
+      if (!confirmRes.ok) {
+        const confirmData = await confirmRes.json().catch(() => ({}));
+        throw new Error(confirmData?.error || '未能确认已上传图片');
+      }
+
+      setImageMedia({
+        assetId: session.assetId,
+        fileName: file.name,
+        fileSize: file.size,
+        previewUrl: URL.createObjectURL(file),
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '图片上传失败');
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  // 获取当前有效内容（AI 模式用 generatedContents，手动模式用 manualContents）
+  const getActiveContents = (): Record<string, string> => {
+    if (createMode === 'manual') return manualContents;
+    return generatedContents;
+  };
+
+  const hasActiveContents = () => {
+    const contents = getActiveContents();
+    return Object.keys(contents).length > 0 && Object.values(contents).some(c => c.trim().length > 0);
+  };
+
   // 保存帖子
   const handleSavePost = async (publish: boolean = false) => {
-    if (Object.keys(generatedContents).length === 0) return;
+    const contents = getActiveContents();
+    if (!hasActiveContents()) return;
 
-    const includesTikTok = Object.keys(generatedContents).includes('tiktok');
+    const includesTikTok = Object.keys(contents).includes('tiktok');
     if (includesTikTok) {
       if (!hasTikTokAccount) {
         setError('先接通 TikTok 发布通道，再发起 TikTok 发布。');
@@ -351,30 +434,48 @@ export default function SocialPage() {
     }
     
     try {
-      const versions = Object.entries(generatedContents).map(([platform, content]) => ({
-        platform,
-        content,
-        media: platform === 'tiktok' && tiktokMedia ? [`asset:${tiktokMedia.assetId}`] : [],
-        metrics: platform === 'tiktok' && tiktokMedia ? {
-          [TIKTOK_PUBLISH_CONFIG_KEY]: {
-            privacyLevel: tiktokOptions.privacyLevel,
-            disableComment: tiktokOptions.disableComment,
-            disableDuet: tiktokOptions.disableDuet,
-            disableStitch: tiktokOptions.disableStitch,
-            brandContentToggle: tiktokOptions.brandContentToggle,
-            brandOrganicToggle: tiktokOptions.brandOrganicToggle,
-            isAigc: tiktokOptions.isAigc,
-            videoDurationSec: tiktokMedia.durationSec,
-            sourceAssetId: tiktokMedia.assetId,
-            sourceFileName: tiktokMedia.fileName,
-            userConsentAt: new Date().toISOString(),
-          },
-        } : {},
-      }));
+      const versions = Object.entries(contents)
+        .filter(([, content]) => content.trim().length > 0)
+        .map(([platform, content]) => {
+          const mediaRefs: string[] = [];
+          // TikTok: video asset
+          if (platform === 'tiktok' && tiktokMedia) {
+            mediaRefs.push(`asset:${tiktokMedia.assetId}`);
+          }
+          // Other platforms: image asset
+          if (platform !== 'tiktok' && imageMedia) {
+            mediaRefs.push(`asset:${imageMedia.assetId}`);
+          }
+
+          return {
+            platform,
+            content,
+            media: mediaRefs,
+            link: attachedLink.trim() || undefined,
+            metrics: platform === 'tiktok' && tiktokMedia ? {
+              [TIKTOK_PUBLISH_CONFIG_KEY]: {
+                privacyLevel: tiktokOptions.privacyLevel,
+                disableComment: tiktokOptions.disableComment,
+                disableDuet: tiktokOptions.disableDuet,
+                disableStitch: tiktokOptions.disableStitch,
+                brandContentToggle: tiktokOptions.brandContentToggle,
+                brandOrganicToggle: tiktokOptions.brandOrganicToggle,
+                isAigc: tiktokOptions.isAigc,
+                videoDurationSec: tiktokMedia.durationSec,
+                sourceAssetId: tiktokMedia.assetId,
+                sourceFileName: tiktokMedia.fileName,
+                userConsentAt: new Date().toISOString(),
+              },
+            } : {},
+          };
+        });
 
       const isScheduling = publishMode === 'scheduled' && scheduledAt;
+      const postTitle = createMode === 'manual'
+        ? (topic.trim() || Object.values(contents).find(c => c.trim())?.slice(0, 40) || '手动发布')
+        : topic;
       const post = await createSocialPost({
-        title: topic,
+        title: postTitle,
         status: 'draft',
         versions,
         scheduledAt: isScheduling ? new Date(scheduledAt) : undefined,
@@ -390,6 +491,9 @@ export default function SocialPage() {
       setViewMode('list');
       setTopic('');
       setGeneratedContents({});
+      setManualContents({});
+      setAttachedLink('');
+      setImageMedia(null);
       setTikTokMedia(null);
       setTikTokOptions(prev => ({ ...prev, userConsent: false }));
       setPublishMode('now');
@@ -609,6 +713,9 @@ export default function SocialPage() {
                   setViewMode('list');
                   setTopic('');
                   setGeneratedContents({});
+                  setManualContents({});
+                  setAttachedLink('');
+                  setImageMedia(null);
                 }}
                 className="px-4 py-2 rounded-xl text-sm font-medium transition-colors"
                 style={{ background: 'var(--ci-surface-muted)', color: 'var(--ci-accent)' }}
@@ -676,83 +783,54 @@ export default function SocialPage() {
       {/* Content Area */}
       {viewMode === 'create' ? (
         <div className="grid grid-cols-2 gap-6">
-          {/* Step 1: Generate Content */}
+          {/* Step 1: Create Content */}
           <div className="bg-[var(--ci-surface-strong)] rounded-xl border border-[var(--ci-border)] p-6">
             <h3 className="font-bold text-[#0B1B2B] mb-4 flex items-center gap-2">
               <span className="w-6 h-6 rounded-full bg-[var(--ci-accent)]/12 text-[var(--ci-accent)] ring-1 ring-[var(--ci-accent)]/20 text-xs flex items-center justify-center">1</span>
-              AI生成多平台内容
+              创建内容
             </h3>
             
             <div className="space-y-4">
-              {/* 输入模式 Tab */}
-              <div className="flex rounded-lg border border-[var(--ci-border)] overflow-hidden mb-1">
+              {/* 创建模式切换：AI 生成 / 手动编辑 */}
+              <div className="flex rounded-lg border border-[var(--ci-border)] overflow-hidden">
                 <button
-                  onClick={() => setInputMode('manual')}
-                  className={`flex-1 py-1.5 text-xs font-medium transition-colors ${
-                    inputMode === 'manual' ? 'bg-[var(--ci-accent)] text-white' : 'text-slate-500 hover:bg-slate-50'
+                  onClick={() => setCreateMode('ai')}
+                  className={`flex-1 py-2 text-xs font-medium transition-colors flex items-center justify-center gap-1.5 ${
+                    createMode === 'ai' ? 'bg-[var(--ci-accent)] text-white' : 'text-slate-500 hover:bg-slate-50'
                   }`}
                 >
-                  手动输入
+                  <Sparkles size={12} />
+                  AI 生成
                 </button>
                 <button
-                  onClick={() => { setInputMode('library'); loadLibrary(); }}
-                  className={`flex-1 py-1.5 text-xs font-medium transition-colors flex items-center justify-center gap-1 ${
-                    inputMode === 'library' ? 'bg-[var(--ci-accent)] text-white' : 'text-slate-500 hover:bg-slate-50'
+                  onClick={() => setCreateMode('manual')}
+                  className={`flex-1 py-2 text-xs font-medium transition-colors flex items-center justify-center gap-1.5 ${
+                    createMode === 'manual' ? 'bg-[var(--ci-accent)] text-white' : 'text-slate-500 hover:bg-slate-50'
                   }`}
                 >
-                  <Library size={11} />
-                  从内容库导入
+                  <Edit2 size={12} />
+                  手动编辑
                 </button>
-              </div>
-              <div>
-                {inputMode === 'manual' ? (
-                  <textarea
-                    value={topic}
-                    onChange={(e) => setTopic(e.target.value)}
-                    placeholder="例如：发布新产品上线公告、分享行业洞察、公司活动回顾..."
-                    rows={3}
-                    className="w-full px-4 py-2.5 border border-[var(--ci-border)] rounded-xl text-sm focus:outline-none focus:border-[var(--ci-accent)] resize-none bg-[#FFFFFF]"
-                  />
-                ) : (
-                  <div className="space-y-1 max-h-[140px] overflow-y-auto">
-                    {loadingLibrary ? (
-                      <div className="flex items-center justify-center py-6">
-                        <Loader2 size={16} className="animate-spin text-slate-400" />
-                      </div>
-                    ) : contentItems.length === 0 ? (
-                      <p className="text-xs text-slate-400 text-center py-4">暂无内容</p>
-                    ) : (
-                      contentItems.map(item => (
-                        <button
-                          key={item.id}
-                          onClick={() => {
-                            setTopic(item.excerpt ? `${item.title}\n\n${item.excerpt}` : item.title);
-                            setInputMode('manual');
-                          }}
-                          className="w-full text-left px-3 py-2 rounded-lg border border-[var(--ci-border)] hover:border-[var(--ci-accent)] hover:bg-[#FFFDF5] transition-colors"
-                        >
-                          <p className="text-xs font-medium text-[#0B1B2B] truncate">{item.title}</p>
-                          {item.excerpt && (
-                            <p className="text-[10px] text-slate-500 mt-0.5 line-clamp-1">{item.excerpt}</p>
-                          )}
-                        </button>
-                      ))
-                    )}
-                  </div>
-                )}
               </div>
 
+              {/* 平台选择（两种模式共用） */}
               <div>
                 <label className="text-xs text-slate-500 mb-2 block">选择目标平台</label>
                 <div className="flex flex-wrap gap-2">
                   {PLATFORMS.map((platform) => (
                     <button
                       key={platform.id}
-                      onClick={() => setSelectedPlatforms(prev =>
-                        prev.includes(platform.id)
-                          ? prev.filter(p => p !== platform.id)
-                          : [...prev, platform.id]
-                      )}
+                      onClick={() => {
+                        setSelectedPlatforms(prev =>
+                          prev.includes(platform.id)
+                            ? prev.filter(p => p !== platform.id)
+                            : [...prev, platform.id]
+                        );
+                        // 手动模式下自动初始化该平台文本框
+                        if (createMode === 'manual' && !manualContents[platform.id]) {
+                          setManualContents(prev => ({ ...prev, [platform.id]: '' }));
+                        }
+                      }}
                       className={`px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${
                         selectedPlatforms.includes(platform.id)
                           ? `${platform.color} text-white`
@@ -768,6 +846,201 @@ export default function SocialPage() {
                 </div>
               </div>
 
+              {/* ====== AI 生成模式 ====== */}
+              {createMode === 'ai' && (
+                <>
+                  {/* 输入来源 Tab */}
+                  <div className="flex rounded-lg border border-[var(--ci-border)] overflow-hidden">
+                    <button
+                      onClick={() => setInputMode('manual')}
+                      className={`flex-1 py-1.5 text-xs font-medium transition-colors ${
+                        inputMode === 'manual' ? 'bg-slate-700 text-white' : 'text-slate-500 hover:bg-slate-50'
+                      }`}
+                    >
+                      输入话题
+                    </button>
+                    <button
+                      onClick={() => { setInputMode('library'); loadLibrary(); }}
+                      className={`flex-1 py-1.5 text-xs font-medium transition-colors flex items-center justify-center gap-1 ${
+                        inputMode === 'library' ? 'bg-slate-700 text-white' : 'text-slate-500 hover:bg-slate-50'
+                      }`}
+                    >
+                      <Library size={11} />
+                      从内容库导入
+                    </button>
+                  </div>
+                  <div>
+                    {inputMode === 'manual' ? (
+                      <textarea
+                        value={topic}
+                        onChange={(e) => setTopic(e.target.value)}
+                        placeholder="例如：发布新产品上线公告、分享行业洞察、公司活动回顾..."
+                        rows={3}
+                        className="w-full px-4 py-2.5 border border-[var(--ci-border)] rounded-xl text-sm focus:outline-none focus:border-[var(--ci-accent)] resize-none bg-[#FFFFFF]"
+                      />
+                    ) : (
+                      <div className="space-y-1 max-h-[140px] overflow-y-auto">
+                        {loadingLibrary ? (
+                          <div className="flex items-center justify-center py-6">
+                            <Loader2 size={16} className="animate-spin text-slate-400" />
+                          </div>
+                        ) : contentItems.length === 0 ? (
+                          <p className="text-xs text-slate-400 text-center py-4">暂无内容</p>
+                        ) : (
+                          contentItems.map(item => (
+                            <button
+                              key={item.id}
+                              onClick={() => {
+                                setTopic(item.excerpt ? `${item.title}\n\n${item.excerpt}` : item.title);
+                                setInputMode('manual');
+                              }}
+                              className="w-full text-left px-3 py-2 rounded-lg border border-[var(--ci-border)] hover:border-[var(--ci-accent)] hover:bg-[#FFFDF5] transition-colors"
+                            >
+                              <p className="text-xs font-medium text-[#0B1B2B] truncate">{item.title}</p>
+                              {item.excerpt && (
+                                <p className="text-[10px] text-slate-500 mt-0.5 line-clamp-1">{item.excerpt}</p>
+                              )}
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={handleGenerate}
+                    disabled={!topic.trim() || selectedPlatforms.length === 0 || isGenerating}
+                    className="w-full py-3 bg-[var(--ci-accent)] text-white rounded-xl font-medium text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {isGenerating ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" />
+                        AI生成中...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles size={16} />
+                        生成多平台内容
+                      </>
+                    )}
+                  </button>
+                </>
+              )}
+
+              {/* ====== 手动编辑模式 ====== */}
+              {createMode === 'manual' && (
+                <>
+                  <div>
+                    <label className="text-xs text-slate-500 mb-1 block">标题（可选，用于内容列表标识）</label>
+                    <input
+                      value={topic}
+                      onChange={(e) => setTopic(e.target.value)}
+                      placeholder="例如：新品发布、行业洞察..."
+                      className="w-full px-4 py-2 border border-[var(--ci-border)] rounded-xl text-sm focus:outline-none focus:border-[var(--ci-accent)] bg-[#FFFFFF]"
+                    />
+                  </div>
+
+                  {/* 各平台文本编辑区 */}
+                  <div className="space-y-3 max-h-[320px] overflow-y-auto">
+                    {selectedPlatforms.length === 0 && (
+                      <p className="text-xs text-slate-400 text-center py-4">请先选择至少一个目标平台</p>
+                    )}
+                    {selectedPlatforms.map((platformId) => {
+                      const info = getPlatformInfo(platformId);
+                      return (
+                        <div key={platformId} className="rounded-xl border border-[var(--ci-border)] bg-[#FFFFFF] p-3">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className={`w-5 h-5 ${info.color} rounded flex items-center justify-center`}>
+                              <span className="text-white text-[9px] font-bold">
+                                {info.name.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                            <span className={`text-xs font-medium ${info.textColor}`}>{info.name}</span>
+                            {platformId === 'x' && (
+                              <span className="text-[10px] text-slate-400 ml-auto">
+                                {(manualContents[platformId] || '').length}/280
+                              </span>
+                            )}
+                          </div>
+                          <textarea
+                            value={manualContents[platformId] || ''}
+                            onChange={(e) => setManualContents(prev => ({ ...prev, [platformId]: e.target.value }))}
+                            placeholder={`输入 ${info.name} 发布内容...`}
+                            rows={3}
+                            className="w-full px-3 py-2 border border-[var(--ci-border)] rounded-lg text-xs focus:outline-none focus:border-[var(--ci-accent)] resize-none bg-[var(--ci-surface-muted)]"
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+
+              {/* ====== 公共区域：链接 + 图片 + TikTok ====== */}
+
+              {/* 附加链接（两种模式共用） */}
+              <div>
+                <label className="text-xs text-slate-500 mb-1 block flex items-center gap-1">
+                  <ExternalLink size={11} />
+                  附加链接（可选）
+                </label>
+                <input
+                  value={attachedLink}
+                  onChange={(e) => setAttachedLink(e.target.value)}
+                  placeholder="https://example.com/your-page"
+                  className="w-full px-4 py-2 border border-[var(--ci-border)] rounded-xl text-sm focus:outline-none focus:border-[var(--ci-accent)] bg-[#FFFFFF] font-mono text-xs"
+                />
+                <p className="text-[10px] text-slate-400 mt-1">发布时自动附加到内容中，社媒会自动展开为链接卡片预览。</p>
+              </div>
+
+              {/* 图片上传（非 TikTok 平台共用） */}
+              {selectedPlatforms.some(p => p !== 'tiktok') && (
+                <div className="rounded-xl border border-[var(--ci-border)] bg-[#FFFFFF] p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Upload size={14} className="text-[var(--ci-accent)]" />
+                    <div>
+                      <p className="text-xs font-semibold text-[#0B1B2B]">附加图片（可选）</p>
+                      <p className="text-[10px] text-slate-500">支持 PNG、JPG、WebP、GIF，最大 5MB。图片将附加到 X、Facebook 等平台帖子。</p>
+                    </div>
+                  </div>
+
+                  <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-[var(--ci-accent)]/60 bg-[var(--ci-accent)]/10 px-4 py-3 text-xs font-medium text-[var(--ci-text)]">
+                    {isUploadingImage ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                    {isUploadingImage ? '上传中...' : imageMedia ? '更换图片' : '上传图片'}
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/gif"
+                      className="hidden"
+                      disabled={isUploadingImage}
+                      onChange={(e) => handleImageUpload(e.target.files?.[0] || null)}
+                    />
+                  </label>
+
+                  {imageMedia && (
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          {imageMedia.previewUrl && (
+                            <img src={imageMedia.previewUrl} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0" />
+                          )}
+                          <div className="min-w-0">
+                            <p className="text-xs font-medium text-emerald-900 truncate">{imageMedia.fileName}</p>
+                            <p className="text-[10px] text-emerald-700">{formatFileSize(imageMedia.fileSize)}</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => setImageMedia(null)}
+                          className="p-1 text-slate-400 hover:text-red-500 transition-colors shrink-0"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* TikTok 视频区域 */}
               {selectedPlatforms.includes('tiktok') && (
                 <div className="rounded-xl border border-[var(--ci-border)] bg-[#FFFFFF] p-4 space-y-3">
                   <div className="flex items-center justify-between gap-3">
@@ -873,24 +1146,6 @@ export default function SocialPage() {
                   </label>
                 </div>
               )}
-
-              <button
-                onClick={handleGenerate}
-                disabled={!topic.trim() || selectedPlatforms.length === 0 || isGenerating}
-                className="w-full py-3 bg-[var(--ci-accent)] text-white rounded-xl font-medium text-sm flex items-center justify-center gap-2 disabled:opacity-50"
-              >
-                {isGenerating ? (
-                  <>
-                    <Loader2 size={16} className="animate-spin" />
-                    AI生成中...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles size={16} />
-                    生成多平台内容
-                  </>
-                )}
-              </button>
             </div>
           </div>
 
@@ -901,11 +1156,13 @@ export default function SocialPage() {
               预览与发布
             </h3>
 
-            {Object.keys(generatedContents).length > 0 ? (
+            {hasActiveContents() ? (
               <div className="space-y-4">
                 {/* Platform Tabs Content */}
                 <div className="space-y-3 max-h-[400px] overflow-y-auto">
-                  {Object.entries(generatedContents).map(([platform, content]) => {
+                  {Object.entries(getActiveContents())
+                    .filter(([, content]) => content.trim().length > 0)
+                    .map(([platform, content]) => {
                     const info = getPlatformInfo(platform);
                     return (
                       <div key={platform} className="border border-[var(--ci-border)] rounded-xl p-4 bg-[#FFFFFF]">
@@ -920,9 +1177,23 @@ export default function SocialPage() {
                         <p className="text-xs text-slate-600 whitespace-pre-wrap line-clamp-6">
                           {content}
                         </p>
-                        <p className="text-[10px] text-slate-400 mt-2">
-                          {content.length} 字符
-                        </p>
+                        <div className="flex items-center gap-3 mt-2">
+                          <p className="text-[10px] text-slate-400">
+                            {content.length} 字符
+                          </p>
+                          {attachedLink.trim() && (
+                            <p className="text-[10px] text-[var(--ci-accent)] flex items-center gap-0.5">
+                              <ExternalLink size={9} />
+                              含链接
+                            </p>
+                          )}
+                          {imageMedia && platform !== 'tiktok' && (
+                            <p className="text-[10px] text-emerald-600 flex items-center gap-0.5">
+                              <Upload size={9} />
+                              含图片
+                            </p>
+                          )}
+                        </div>
                         {platform === 'linkedin' && (
                           <button
                             onClick={() => {
@@ -1002,8 +1273,12 @@ export default function SocialPage() {
                 <div className="w-16 h-16 mx-auto mb-3 rounded-xl flex items-center justify-center" style={{ background: 'rgba(79,141,246,0.12)', border: '1px solid rgba(79,141,246,0.3)' }}>
                   <MessageSquare size={28} className="text-[var(--ci-accent)]" />
                 </div>
-                <p className="text-sm text-slate-500">输入主题并选择平台</p>
-                <p className="text-xs text-slate-400 mt-1">AI将为每个平台生成定制化内容</p>
+                <p className="text-sm text-slate-500">
+                  {createMode === 'ai' ? '输入话题并生成内容' : '在左侧各平台文本框中编辑内容'}
+                </p>
+                <p className="text-xs text-slate-400 mt-1">
+                  {createMode === 'ai' ? 'AI将为每个平台生成定制化内容' : '编辑完成后可在此预览并发布'}
+                </p>
               </div>
             )}
           </div>
