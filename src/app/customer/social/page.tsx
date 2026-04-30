@@ -41,6 +41,7 @@ import {
 import { exportSocialPostsToCSV } from '@/actions/content-export';
 import { downloadCSV } from '@/lib/utils/download';
 import { getContentPieces } from '@/actions/contents';
+import { toast } from 'sonner';
 
 type ViewMode = 'list' | 'create';
 type CreateMode = 'ai' | 'manual';
@@ -483,8 +484,25 @@ export default function SocialPage() {
 
       if (publish && !isScheduling && post.id) {
         setIsPublishing(true);
-        await publishSocialPost(post.id);
+        const result = await publishSocialPost(post.id);
         setIsPublishing(false);
+
+        if (result.success) {
+          toast.success('发布成功！内容已推送至目标平台。');
+        } else {
+          const errors = result.results
+            .filter((r) => !r.success)
+            .map((r) => `${r.platform}: ${r.error}`);
+          if (result.results.some((r) => r.success)) {
+            toast.warning(`部分平台发布失败: ${errors.join('; ')}`);
+          } else {
+            toast.error(`发布失败: ${errors.join('; ')}`);
+          }
+        }
+      } else if (isScheduling) {
+        toast.success('内容已排期，将按设定时间自动发布。');
+      } else {
+        toast.success('草稿已保存。');
       }
 
       // 重置表单
@@ -498,9 +516,11 @@ export default function SocialPage() {
       setTikTokOptions(prev => ({ ...prev, userConsent: false }));
       setPublishMode('now');
       setScheduledAt('');
-      loadData();
+      await loadData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : '保存失败');
+      const msg = err instanceof Error ? err.message : '保存失败';
+      setError(msg);
+      toast.error(msg);
       setIsPublishing(false);
     }
   };

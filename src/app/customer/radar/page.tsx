@@ -41,7 +41,7 @@ const radarModules = [
   { label: '目标客户画像', href: '/customer/radar/targeting', icon: Target, description: '确认系统按什么画像找客户', badge: null },
   { label: '自动搜索', href: '/customer/radar/search', icon: Search, description: '一键启动并观察系统执行状态', badge: null },
   { label: 'AI 推荐', href: '/customer/radar/candidates', icon: Users, description: '查看 AI 筛选的高匹配客户', badge: 'pendingReviewCount' },
-  { label: '线索库', href: '/customer/radar/prospects', icon: Building2, description: '沉淀已确认值得跟进的线索', badge: null },
+  { label: '线索库', href: '/customer/radar/prospects', icon: Building2, description: '管理已确认跟进的线索', badge: null },
   { label: '采购机会', href: '/customer/radar/opportunities', icon: Radar, description: '单独管理采购与招投标商机', badge: null },
 ];
 
@@ -169,7 +169,7 @@ export default function RadarPage() {
             <Radar size={22} className="text-[var(--ci-accent)]" />
             <h1 className="text-xl font-bold text-[#0B1B2B]">获客雷达</h1>
           </div>
-          <p className="text-sm text-slate-500 ml-9">基于目标客户画像自动发现、补全并沉淀线索</p>
+          <p className="text-sm text-slate-500 ml-9">基于目标客户画像自动发现并跟进潜在客户</p>
           {error && (
             <div className="mt-4 flex items-center gap-2 px-4 py-2.5 bg-amber-50 border border-amber-200 rounded-xl">
               <AlertTriangle size={14} className="text-amber-500 shrink-0" />
@@ -336,7 +336,7 @@ export default function RadarPage() {
                       <div className="min-w-0 flex-1">
                         <div className="font-medium">{requestResult.message}</div>
                         {requestResult.success && requestResult.targetingSpec?.version ? (
-                          <div className="mt-1 text-xs text-emerald-700">TargetingSpec v{requestResult.targetingSpec.version} 已生成，后续自动匹配会按这版画像执行。</div>
+                          <div className="mt-1 text-xs text-emerald-700">画像版本 v{requestResult.targetingSpec.version} 已更新，后续搜索将使用最新画像。</div>
                         ) : null}
                       </div>
                       <button
@@ -580,10 +580,10 @@ export default function RadarPage() {
                     </div>
                     <div className="flex items-center gap-4 text-xs text-slate-500">
                       <span>
-                        已配置 {counts.profilesActiveCount} 个自动执行策略
+                        {counts.profilesActiveCount} 个搜索计划运行中
                       </span>
                       <span>
-                        可用 {counts.sourcesConfiguredCount} 个数据源
+                        覆盖 {counts.sourcesConfiguredCount} 个信息渠道
                       </span>
                       <Link 
                         href="/customer/radar/search" 
@@ -638,7 +638,7 @@ export default function RadarPage() {
                       <div className="flex items-center gap-2 text-xs">
                         <CalendarCheck size={14} className="text-slate-400" />
                         <span className="text-slate-600">
-                          过去7天发现 <strong>{counts.candidatesNew7d}</strong> 个新候选
+                          过去 7 天发现 <strong>{counts.candidatesNew7d}</strong> 家新公司
                         </span>
                       </div>
                       {counts.candidatesQualifiedAB7d > 0 && (
@@ -653,7 +653,7 @@ export default function RadarPage() {
                         <div className="flex items-center gap-2 text-xs">
                           <CheckCircle2 size={14} className="text-[var(--ci-accent)]" />
                           <span className="text-slate-600">
-                            已导入 <strong>{counts.candidatesImported7d}</strong> 个到线索库
+                            已跟进 <strong>{counts.candidatesImported7d}</strong> 家
                           </span>
                         </div>
                       )}
@@ -680,7 +680,7 @@ function RefinementSummary({ refinement }: { refinement?: RefinementPayload }) {
     { label: '需求关键词', values: refinement?.keywords },
     { label: '排除对象', values: refinement?.negativeKeywords },
     { label: '应用场景', values: refinement?.useCases },
-    { label: '购买触发器', values: refinement?.triggers },
+    { label: '采购信号', values: refinement?.triggers },
   ]
     .map((group) => ({ ...group, values: normalizePreviewValues(group.values) }))
     .filter((group) => group.values.length > 0);

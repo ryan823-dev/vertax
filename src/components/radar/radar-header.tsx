@@ -151,7 +151,7 @@ export function RadarHeader({
               </div>
               <div className="min-w-0">
                 <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--ci-accent-strong)]">
-                  Radar Workspace
+                  获客雷达
                 </div>
                 <h1 className="truncate text-[18px] font-bold tracking-tight text-[#0B1B2B] sm:text-[20px]">
                   {title}

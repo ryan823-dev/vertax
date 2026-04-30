@@ -113,7 +113,7 @@ function WorkspaceCard({
           </p>
         </div>
         <div className="rounded-xl bg-[#0B1B2B] px-3 py-2 text-right text-white">
-          <div className="text-[10px] uppercase tracking-[0.14em] text-slate-400">Ready Score</div>
+          <div className="text-[10px] uppercase tracking-[0.14em] text-slate-400">就绪度</div>
           <div className="text-xl font-semibold">{item.contactReadyScore}</div>
         </div>
       </div>
@@ -139,7 +139,7 @@ function WorkspaceCard({
                   </p>
                   {!item.recommendedContact.isPersisted && (
                     <span className="rounded-full bg-[var(--ci-accent)]/10 px-2 py-0.5 text-[10px] font-semibold text-[#9A7A1C]">
-                      导入快照
+                      系统发现
                     </span>
                   )}
                 </div>
@@ -251,7 +251,7 @@ export default function RadarDailyPage() {
           setLoaded(true);
         })
         .catch((loadError) => {
-          setError(loadError instanceof Error ? loadError.message : "加载 Daily Workspace 失败");
+          setError(loadError instanceof Error ? loadError.message : "加载今日工作台失败");
           setLoaded(true);
         });
     });
@@ -282,7 +282,7 @@ export default function RadarDailyPage() {
       {
         key: "pending",
         title: "今日待补全",
-        helper: `${workspace.pendingEnrichment.length} 条待继续富化`,
+        helper: `${workspace.pendingEnrichment.length} 条待补全信息`,
         items: workspace.pendingEnrichment,
       },
     ] as const;
@@ -306,7 +306,7 @@ export default function RadarDailyPage() {
                 <Sparkles size={18} />
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#9A7A1C]">Daily 200 Workspace</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#9A7A1C]">每日工作台</p>
                 <h1 className="text-2xl font-bold text-[#0B1B2B]">今日外联清单</h1>
               </div>
             </div>
@@ -345,14 +345,14 @@ export default function RadarDailyPage() {
             <MetricCard
               label="今日原始供给"
               value={metrics.today.rawCandidates}
-              helper={`近 7 天累计 ${metrics.trailing7d.rawCandidates} 条候选`}
+              helper={`近 7 天累计 ${metrics.trailing7d.rawCandidates} 家公司`}
               icon={<TrendingUp size={20} />}
               testId="daily-metric-raw-candidates"
             />
             <MetricCard
-              label="今日自动入池"
+              label="今日新增线索"
               value={metrics.today.importedProspects}
-              helper={`近 7 天累计 ${metrics.trailing7d.importedProspects} 家 Prospect`}
+              helper={`近 7 天累计 ${metrics.trailing7d.importedProspects} 家线索`}
               icon={<Building2 size={20} />}
               testId="daily-metric-imported-prospects"
             />
@@ -366,7 +366,7 @@ export default function RadarDailyPage() {
             <MetricCard
               label="当前可直接外联"
               value={workspace.summary.readyNowCount}
-              helper={`平均 ready score ${workspace.summary.avgReadyScore}`}
+              helper={`平均就绪度 ${workspace.summary.avgReadyScore}`}
               icon={<PhoneCall size={20} />}
               testId="daily-metric-ready-now"
             />
@@ -387,9 +387,9 @@ export default function RadarDailyPage() {
                         <p className="text-xs text-slate-500">Ready {point.readyCompanies}</p>
                       </div>
                       <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-600">
-                        <span>候选 {point.rawCandidates}</span>
-                        <span>合格 {point.qualifiedCompanies}</span>
-                        <span>入池 {point.importedProspects}</span>
+                        <span>发现 {point.rawCandidates}</span>
+                        <span>AI 推荐 {point.qualifiedCompanies}</span>
+                        <span>新增线索 {point.importedProspects}</span>
                         <span>联系人 {point.contactsAdded}</span>
                       </div>
                     </div>
@@ -413,7 +413,7 @@ export default function RadarDailyPage() {
                     <strong data-testid="daily-summary-pending" className="text-[#0B1B2B]">{workspace.summary.pendingCount}</strong>
                   </div>
                   <div className="flex items-center justify-between rounded-xl bg-[var(--ci-surface-strong)] px-4 py-3">
-                    <span>当前 Workspace 总量</span>
+                    <span>今日待办总量</span>
                     <strong data-testid="daily-summary-workspace-total" className="text-[#9A7A1C]">{workspace.summary.workspaceTotal}</strong>
                   </div>
                 </div>

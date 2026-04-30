@@ -374,10 +374,10 @@ export default function RadarCandidatesPage() {
 
       await loadData(true);
       toast.success('批量丰富情报完成', {
-        description: `成功更新 ${successCount} / ${ids.length} 个候选`,
+        description: `成功更新 ${successCount} / ${ids.length} 家公司`,
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : '批量丰富化失败');
+      setError(err instanceof Error ? err.message : '批量补全失败');
     } finally {
       setIsBatchEnriching(false);
     }
@@ -395,7 +395,7 @@ export default function RadarCandidatesPage() {
       .map((candidate) => candidate.id);
 
     if (companyIds.length === 0) {
-      setError('请先选择至少一个公司候选再导入线索库');
+      setError('请先选择至少一家公司');
       return;
     }
 
@@ -405,7 +405,7 @@ export default function RadarCandidatesPage() {
       setSelectedIds(new Set());
       await loadData(true);
       toast.success('批量导入线索库完成', {
-        description: `成功导入 ${result.imported} / ${companyIds.length} 个公司候选`,
+        description: `成功导入 ${result.imported} / ${companyIds.length} 家公司`,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : '批量导入线索库失败');
@@ -625,7 +625,7 @@ export default function RadarCandidatesPage() {
     setTimeout(() => setLinkedInCopied(false), 3000);
   };
 
-  // 手动立即丰富化（P3）
+  // 手动立即补全（P3）
   const handleEnrichNow = async (candidate: CandidateWithSource) => {
     setIsEnriching(true);
     setEnrichDone(false);
@@ -635,10 +635,10 @@ export default function RadarCandidatesPage() {
         setEnrichDone(true);
         loadData(true);
       } else {
-        setError(result.error || '丰富化失败');
+        setError(result.error || '补全失败');
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : '丰富化失败');
+      setError(err instanceof Error ? err.message : '补全失败');
     } finally {
       setIsEnriching(false);
     }
@@ -919,7 +919,7 @@ export default function RadarCandidatesPage() {
                   onChange={toggleSelectAll}
                   className="w-4 h-4 rounded border-slate-300 text-[var(--ci-accent)] focus:ring-[var(--ci-accent)]"
                 />
-                <span className="text-sm font-medium text-[#0B1B2B]">公司候选列表</span>
+                <span className="text-sm font-medium text-[#0B1B2B]">推荐列表</span>
                 <span className="text-xs text-slate-400">
                   {candidates.length} / {total}
                 </span>
@@ -942,9 +942,9 @@ export default function RadarCandidatesPage() {
                     <div className="w-16 h-16 rounded-xl bg-[var(--ci-surface-muted)] flex items-center justify-center mx-auto mb-4" style={{background: 'rgba(79,141,246,0.12)', border: '1px solid rgba(79,141,246,0.3)'}}>
                       <Search size={28} className="text-[var(--ci-accent)]" />
                     </div>
-                    <h3 className="text-lg font-bold text-[#0B1B2B] mb-2">暂无候选数据</h3>
+                    <h3 className="text-lg font-bold text-[#0B1B2B] mb-2">暂无推荐数据</h3>
                     <p className="text-sm text-slate-500 mb-4">
-                      还没有发现任何候选，请先开始自动搜索
+                      还没有发现匹配的公司，请先开始自动搜索
                     </p>
                     <Link 
                       href="/customer/radar/search"
@@ -961,9 +961,9 @@ export default function RadarCandidatesPage() {
                     <div className="w-16 h-16 rounded-xl flex items-center justify-center mx-auto mb-4" style={{background: 'rgba(79,141,246,0.12)', border: '1px solid rgba(79,141,246,0.3)'}}>
                       <Filter size={28} className="text-[var(--ci-accent)]" />
                     </div>
-                    <h3 className="text-lg font-bold text-[#0B1B2B] mb-2">当前没有公司候选</h3>
+                    <h3 className="text-lg font-bold text-[#0B1B2B] mb-2">当前没有推荐公司</h3>
                     <p className="text-sm text-slate-500 mb-4">
-                      系统目前沉淀的是采购机会对象，已经和公司候选分开呈现。
+                      采购机会已单独管理，请前往采购机会页面查看。
                     </p>
                     <Link
                       href="/customer/radar/opportunities"
@@ -982,7 +982,7 @@ export default function RadarCandidatesPage() {
                     </div>
                     <h3 className="text-lg font-bold text-[#0B1B2B] mb-2">无匹配结果</h3>
                     <p className="text-sm text-slate-500 mb-4">
-                      当前筛选条件下没有候选，请尝试调整筛选条件
+                      当前筛选条件下没有匹配结果，请尝试调整筛选条件
                     </p>
                     <button 
                       onClick={() => setFilters({ status: '', qualifyTier: '', search: '' })}
@@ -1149,7 +1149,7 @@ export default function RadarCandidatesPage() {
                     <DetailItem label="公司邮箱" value={getCandidateEmail(selectedCandidate).label} href={getCandidateEmail(selectedCandidate).href} />
                     <DetailItem label="公司 LinkedIn" value={getCandidateLinkedIn(selectedCandidate).label} href={getCandidateLinkedIn(selectedCandidate).href} />
                     <DetailItem label="ICP 分数" value={formatMatchScore(selectedCandidate.matchScore)} accent={getMatchScoreColor(selectedCandidate.matchScore)} />
-                    <DetailItem label="补全状态" value={getEnrichmentStatus(selectedCandidate)} />
+                    <DetailItem label="信息完整度" value={getEnrichmentStatus(selectedCandidate)} />
                   </div>
                   {selectedCandidate.description ? (
                     <div className="mt-4 rounded-xl border border-[var(--ci-border)] bg-[#FFFFFF] p-3 text-xs leading-6 text-slate-600">
@@ -1215,7 +1215,7 @@ export default function RadarCandidatesPage() {
                 <div className="bg-[var(--ci-surface-strong)] rounded-xl border border-[var(--ci-border)] p-5">
                   <h4 className="flex items-center gap-2 text-sm font-bold text-[#0B1B2B] mb-3">
                     <Target size={14} className="text-[var(--ci-accent)]" />
-                    为什么命中画像
+                    为什么推荐
                   </h4>
                   <div className="space-y-2">
                     {getCandidateReasons(selectedCandidate, 4).map((reason) => (
@@ -1238,9 +1238,9 @@ export default function RadarCandidatesPage() {
                   const tierSummary = isExcluded
                     ? '当前被判定为不建议进入外联主链路。'
                     : selectedCandidate.qualifyTier === 'A'
-                      ? '高匹配、高优先级，建议优先转入富化与外联。'
+                      ? '高匹配、高优先级，建议优先跟进。'
                       : selectedCandidate.qualifyTier === 'B'
-                        ? '匹配度明确，但还需要补足关键信息来提高命中率。'
+                        ? '匹配度明确，但还需要补全关键信息以便后续跟进。'
                         : selectedCandidate.qualifyTier === 'C'
                           ? '当前相关性偏弱，更适合低频跟进或继续观察。'
                           : '当前还没有形成最终分层结论。';
@@ -1302,7 +1302,7 @@ export default function RadarCandidatesPage() {
                   <div className="bg-[var(--ci-surface-strong)] rounded-xl border border-[var(--ci-border)] p-5">
                     <h4 className="flex items-center gap-2 text-sm font-bold text-[#0B1B2B] mb-3">
                       <Sparkles size={14} className="text-[var(--ci-accent)]" />
-                      enrichment 结果摘要
+                      信息补全结果
                     </h4>
                     <p className="text-xs text-slate-600 leading-relaxed">
                       {selectedCandidate.aiSummary}
@@ -1502,7 +1502,7 @@ export default function RadarCandidatesPage() {
                   <div className="flex items-center justify-between mb-3">
                     <h4 className="flex items-center gap-2 text-sm font-bold text-[#0B1B2B]">
                       <SearchCheck size={14} className="text-[var(--ci-accent)]" />
-                      AI 客户背调
+                      AI 深度分析
                     </h4>
                     {researchData && (
                       <span className="text-xs text-emerald-600 flex items-center gap-1">
@@ -1617,7 +1617,7 @@ export default function RadarCandidatesPage() {
                     <div className="text-center py-6">
                       <Loader2 size={20} className="text-[var(--ci-accent)] animate-spin mx-auto mb-2" />
                       <p className="text-xs text-slate-500">
-                        AI 正在自动背调中...
+                        AI 正在分析中...
                       </p>
                       {researchError && (
                         <p className="text-xs text-red-500 mt-2">{researchError}</p>
@@ -1687,13 +1687,13 @@ export default function RadarCandidatesPage() {
                   {/* v2.0: LinkedIn DM移至线索库 */}
                   {/* LinkedIn DM模块已隐藏 - 导入线索库后可继续跟进 */}
 
-                  {/* 立即丰富化（P3）*/}
+                  {/* 立即补全（P3）*/}
                   {selectedCandidate.status !== 'IMPORTED' && (
                     <div className="mt-3 pt-3 border-t border-[var(--ci-border)]">
                       {enrichDone ? (
                         <div className="flex items-center gap-2 py-2 text-emerald-600 text-xs">
                           <CheckCircle2 size={14} />
-                          情报丰富化完成，已更新数据
+                          信息补全完成
                         </div>
                       ) : (
                         <button
@@ -1702,7 +1702,7 @@ export default function RadarCandidatesPage() {
                           className="w-full flex items-center justify-center gap-2 py-2 border border-[var(--ci-border)] text-slate-500 rounded-xl text-xs hover:bg-[var(--ci-surface-strong)] hover:text-[#0B1B2B] transition-colors disabled:opacity-50"
                         >
                           {isEnriching ? (
-                            <><Loader2 size={13} className="animate-spin" />情报丰富化中...</>
+                            <><Loader2 size={13} className="animate-spin" />正在补全信息...</>
                           ) : (
                             <><Zap size={13} />立即丰富情报</>
                           )}
@@ -1726,9 +1726,9 @@ export default function RadarCandidatesPage() {
                 <div className="w-16 h-16 rounded-xl flex items-center justify-center mx-auto mb-4" style={{background: 'rgba(79,141,246,0.12)', border: '1px solid rgba(79,141,246,0.3)'}}>
                   <Search size={28} className="text-[var(--ci-accent)]" />
                 </div>
-                <h3 className="text-sm font-bold text-[#0B1B2B] mb-2">选择候选查看详情</h3>
+                <h3 className="text-sm font-bold text-[#0B1B2B] mb-2">选择公司查看详情</h3>
                 <p className="text-xs text-slate-500">
-                  点击左侧列表中的候选项，查看详细信息并进行操作
+                  点击左侧列表中的公司，查看详细信息并进行操作
                 </p>
               </div>
             )}
@@ -1744,9 +1744,9 @@ export default function RadarCandidatesPage() {
               <div className="w-16 h-16 rounded-xl bg-red-50 flex items-center justify-center mb-6">
                 <Trash2 size={32} className="text-red-500" />
               </div>
-              <h3 className="text-xl font-bold text-[#0B1B2B] mb-2">确认排除该候选？</h3>
+              <h3 className="text-xl font-bold text-[#0B1B2B] mb-2">确认排除该公司？</h3>
               <p className="text-sm text-slate-500 mb-8 leading-relaxed">
-                排除后，AI 将学习您的反馈，逐步优化推荐逻辑，减少此类“非目标”候选的出现。
+                排除后，AI 将学习您的反馈，逐步优化推荐逻辑，减少类似推荐。
               </p>
               
               <div className="space-y-4">

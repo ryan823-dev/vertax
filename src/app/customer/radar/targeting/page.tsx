@@ -540,7 +540,7 @@ export default function TargetingSpecPage() {
                     <p className="text-sm text-emerald-700 mt-1">
                       {spec.segmentation?.firmographic?.industries?.length || 0} 个行业 · 
                       {spec.segmentation?.firmographic?.countries?.length || 0} 个地区 · 
-                      {spec.segmentation?.triggers?.length || 0} 个触发器
+                      {spec.segmentation?.triggers?.length || 0} 个采购信号
                     </p>
                   </div>
                   {targetingSpec?.content?.confidence !== undefined && (
@@ -740,7 +740,7 @@ export default function TargetingSpecPage() {
                 <div className="bg-[var(--ci-surface-muted)] rounded-xl border border-[var(--ci-border)] p-5">
                   <h3 className="font-bold text-[#0B1B2B] mb-4 flex items-center gap-2">
                     <Zap size={16} className="text-amber-500" />
-                    购买触发器
+                    采购信号
                   </h3>
                   <div className="grid grid-cols-2 gap-3">
                     {spec.segmentation.triggers.map((trigger, i) => (
