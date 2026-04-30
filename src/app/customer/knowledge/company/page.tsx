@@ -201,7 +201,7 @@ export default function CompanyKnowledgePage() {
       if ((data.selection?.generatedEvidenceCount ?? 0) + (data.selection?.reusedEvidenceCount ?? 0) > 0) {
         toast.dismiss();
         toast.success(
-          `已综合 ${data.selection?.consideredCount ?? 0} 个素材，沉淀 ${data.selection?.generatedEvidenceCount ?? 0} 条新证据并复用 ${data.selection?.reusedEvidenceCount ?? 0} 条证据后完成分析`,
+          `已综合 ${data.selection?.consideredCount ?? 0} 个素材，生成 ${data.selection?.generatedEvidenceCount ?? 0} 条新证据并复用 ${data.selection?.reusedEvidenceCount ?? 0} 条证据后完成分析`,
         );
       }
       setSelectedAssetIds([]);

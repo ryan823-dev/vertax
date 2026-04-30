@@ -632,7 +632,7 @@ export default function RadarProspectsPage() {
       }
 
       const summary = summarizeBatchResults(aggregatedResults);
-      toast.success('批量富化完成', {
+      toast.success('批量补全完成', {
         description: `成功 ${summary.succeeded}/${summary.total} 条，新增 ${summary.contactsFound} 位联系人。`,
       });
 
@@ -642,7 +642,7 @@ export default function RadarProspectsPage() {
         return next;
       });
     } catch (err) {
-      const message = err instanceof Error ? err.message : '批量富化失败';
+      const message = err instanceof Error ? err.message : '批量补全失败';
       setError(message);
       toast.error(message);
     } finally {
@@ -1666,7 +1666,7 @@ export default function RadarProspectsPage() {
                     disabled={selectedCompanyIds.size === 0 || batchEnrichment.isRunning}
                     className="px-3 py-1.5 rounded-lg bg-[#0B1220] text-[var(--ci-accent)] text-xs font-medium disabled:opacity-50"
                   >
-                    {batchEnrichment.isRunning ? '富化中...' : '批量富化联系人'}
+                    {batchEnrichment.isRunning ? '补全中...' : '批量补全联系人'}
                   </button>
                   <button
                     onClick={handleRetryFailedEnrichment}
@@ -1701,7 +1701,7 @@ export default function RadarProspectsPage() {
                       <div className="mt-2 space-y-1">
                         {batchEnrichment.results.filter((item) => !item.success).slice(0, 3).map((item) => (
                           <p key={item.companyId} className="text-[11px] text-red-500">
-                            {item.companyName}: {item.error || '富化失败'}
+                            {item.companyName}: {item.error || '补全失败'}
                           </p>
                         ))}
                       </div>
@@ -1930,7 +1930,7 @@ export default function RadarProspectsPage() {
                         ) : (
                           <Sparkles size={12} />
                         )}
-                        {isEnriching ? '丰富化中...' : '深度丰富化'}
+                        {isEnriching ? '深度补全中...' : '深度补全'}
                       </button>
                       {enrichResult?.count !== undefined && (
                         <span className="text-[10px] text-emerald-600 font-medium">
@@ -2283,7 +2283,7 @@ export default function RadarProspectsPage() {
                         <div className="flex items-center justify-between gap-3 mb-3">
                           <div>
                             <h4 className="font-bold text-[#0B1B2B]">外联工作台</h4>
-                            <p className="text-xs text-slate-500 mt-1">保存草稿快照、回看历史版本，并沉淀可复用模板。</p>
+                            <p className="text-xs text-slate-500 mt-1">保存草稿快照、回看历史版本，并保存可复用模板。</p>
                           </div>
                           {outreachPack?.version && (
                             <span className="text-[10px] px-2 py-1 rounded-full bg-[var(--ci-accent)]/10 text-[#9A7A1C]">
@@ -2363,7 +2363,7 @@ export default function RadarProspectsPage() {
                                         {template.templateName || '可复用模板'}
                                       </p>
                                       <p className="text-[11px] text-slate-500 mt-1">
-                                        {template.sourceCompanyName || '已沉淀模板'}
+                                        {template.sourceCompanyName || '已保存模板'}
                                       </p>
                                     </div>
                                     <button
@@ -2531,7 +2531,7 @@ export default function RadarProspectsPage() {
                         {/* 提示：无联系人邮箱 */}
                         {emailOutreachContacts.length === 0 && (
                           <p className="text-xs text-slate-500 mt-3 text-center">
-                            暂无可用邮箱，请继续联系人富化或补录联系人
+                            暂无可用邮箱，请补全联系人信息或手动添加
                           </p>
                         )}
                       </div>
