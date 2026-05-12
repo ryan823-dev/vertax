@@ -55,8 +55,6 @@ import {
   type ProspectEnrichmentItemResult,
 } from '@/actions/radar-v2';
 import { ImportWizardDialog } from '@/components/radar/import-wizard-dialog';
-import { executeSkill } from '@/actions/skills';
-import { SKILL_NAMES } from '@/lib/skills/names';
 import { saveContent } from '@/actions/marketing';
 import {
   getOutreachRecords,
@@ -64,7 +62,6 @@ import {
   sendOutreachDraft,
   recordManualOutreach,
   getCompanyOutreachHistory,
-  saveOutreachArtifacts,
   getSavedOutreachArtifacts,
   listOutreachPackVersions,
   listOutreachPackTemplates,
@@ -938,112 +935,58 @@ export default function RadarProspectsPage() {
     setActiveTab('outreach');
     
     try {
-      const latestDossier =
-        selectedCompanyId === company.id && dossierData?.content
-          ? dossierData
-          : await getLatestProspectDossier(company.id).catch(() => null);
-      if (latestDossier && selectedCompanyId === company.id && !dossierData) {
-        setDossierData(latestDossier);
-      }
+      const res = await fetch(`/api/radar/prospects/${company.id}/outreach-pack`, {
+        method: 'POST',
+      });
 
-      const persistedContacts =
-        selectedCompanyId === company.id && contacts.length > 0
-          ? contacts
-          : await getProspectContacts(company.id).catch(() => []);
-      if (selectedCompanyId === company.id && contacts.length === 0 && persistedContacts.length > 0) {
-        setContacts(persistedContacts);
-      }
-
-      const companyContactContext = {
-        id: company.id,
-        name: company.name,
-        email: company.email,
-        phone: company.phone,
-        outreachArtifacts: company.outreachState,
+      let data: {
+        ok: boolean;
+        error?: string;
+        code?: string;
+        versionId?: string | null;
+        pack?: unknown;
       };
-      const mergedContacts = mergeProspectContactsWithSnapshot(
-        companyContactContext,
-        persistedContacts
-      );
-      const contactProfile = getProspectCompanyOutreachContactProfile(companyContactContext);
+      try {
+        data = await res.json();
+      } catch {
+        throw new Error(
+          res.status === 504
+            ? '生成超时，请稍后重试'
+            : `服务端响应异常 (${res.status})`
+        );
+      }
 
-      const result = await executeSkill(
-        SKILL_NAMES.RADAR_GENERATE_OUTREACH_PACK,
-        {
-          input: {
-            persona: {
-              companyName: company.name,
-              industry: company.industry || 'General',
-              country: company.country || 'Unknown',
-              description: company.description || '',
-              website: company.website || '',
-            },
-            tier: (company.tier as 'A' | 'B' | 'C') || 'B',
-            prospectDossier: latestDossier?.content ?? null,
-            contacts: mergedContacts.map((contact) => ({
-              name: contact.name,
-              role: contact.role,
-              seniority: contact.seniority,
-              email: contact.email,
-              phone: contact.phone,
-              linkedInUrl: contact.linkedInUrl,
-              source: contact.source,
-              note: contact.note,
-            })),
-            contactProfile: {
-              email: contactProfile.email,
-              phone: contactProfile.phone,
-              recommendedContact: contactProfile.recommendedContact,
-              complianceNote: contactProfile.complianceNote,
-              primaryEmail: contactProfile.primaryEmail ?? null,
-              primaryPhone: contactProfile.primaryPhone ?? null,
-              completenessScore: contactProfile.snapshot?.completenessScore ?? null,
-              leadQualityScore: contactProfile.snapshot?.leadQualityScore ?? null,
-              informationGaps: contactProfile.snapshot?.informationGaps ?? [],
-              dataSources: contactProfile.snapshot?.dataSources ?? [],
-            },
-            matchReasons: company.matchReasons || [],
-            approachAngle: company.approachAngle || null,
-          },
-          entityType: 'OutreachPack',
-          entityId: company.id,
-          mode: 'generate',
-          useCompanyProfile: true,
-        }
-      );
-      
-      if (result.ok && result.output) {
-        const newEntry = decorateOutreachPack(result.output, {
-          timestamp: new Date().toISOString(),
-        });
-        if (!newEntry) {
-          throw new Error('Generated outreach pack returned an unexpected shape');
-        }
-        setOutreachPack(newEntry);
-        setSelectedOutreachVersionId(result.versionId || null);
-        
-        // Task #130: 持久化保存生成的工具包
-        await saveOutreachArtifacts(company.id, newEntry);
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || `生成失败 (${data.code || res.status})`);
+      }
 
-        // Task #124: 更新本地状态以立即显示版本历史
-        setSelectedCompany((prev) => {
-          if (!prev || prev.id !== company.id) return prev;
-          return {
-            ...prev,
-            outreachArtifacts: [newEntry, ...(prev.outreachArtifacts || [])].slice(0, 10)
-          };
-        });
+      const newEntry = decorateOutreachPack(data.pack, {
+        timestamp: new Date().toISOString(),
+      });
+      if (!newEntry) {
+        throw new Error('Generated outreach pack returned an unexpected shape');
+      }
+      setOutreachPack(newEntry);
+      setSelectedOutreachVersionId(data.versionId || null);
 
-        const [versionsRes, templatesRes] = await Promise.all([
-          listOutreachPackVersions(company.id),
-          listOutreachPackTemplates(),
-        ]);
-        if (versionsRes.success) {
-          setOutreachVersions(versionsRes.versions || []);
-        }
-        if (templatesRes.success) {
-          setOutreachTemplates(templatesRes.templates || []);
-        }
+      // 更新本地状态以立即显示版本历史
+      setSelectedCompany((prev) => {
+        if (!prev || prev.id !== company.id) return prev;
+        return {
+          ...prev,
+          outreachArtifacts: [newEntry, ...(prev.outreachArtifacts || [])].slice(0, 10)
+        };
+      });
+
+      const [versionsRes, templatesRes] = await Promise.all([
+        listOutreachPackVersions(company.id),
+        listOutreachPackTemplates(),
+      ]);
+      if (versionsRes.success) {
+        setOutreachVersions(versionsRes.versions || []);
+      }
+      if (templatesRes.success) {
+        setOutreachTemplates(templatesRes.templates || []);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : '生成外联包失败');
