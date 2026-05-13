@@ -42,12 +42,7 @@ async function main() {
 
     // 查找租户
     const tenant = await prisma.tenant.findFirst({
-      where: {
-        OR: [
-          { slug },
-          { slug: 'tdpaintcell' }, // 兼容旧slug
-        ],
-      },
+      where: { slug },
     });
 
     if (!tenant) {

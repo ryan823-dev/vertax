@@ -10,20 +10,17 @@ export interface TenantEmailDefaults {
 
 const REPLY_TO_BY_TENANT: Record<string, string> = {
   tdpaint: 'engineering@tdpaint.com',
-  tdpaintcell: 'engineering@tdpaint.com',
-  machrio: 'sales@machrio.com',
+  machrio: 'support@machrio.com',
 };
 
 const FROM_EMAIL_BY_TENANT: Record<string, string> = {
   machrio: 'VertaX <noreply@mail.machrio.com>',
   tdpaint: 'TD Painting <noreply@marketing.tdpaint.com>',
-  tdpaintcell: 'TD Painting <noreply@marketing.tdpaint.com>',
 };
 
 const SIGNATURE_BY_TENANT: Record<string, string> = {
   tdpaint: 'Best regards,\nTD Painting Engineering Team\nengineering@tdpaint.com',
-  tdpaintcell: 'Best regards,\nTD Painting Engineering Team\nengineering@tdpaint.com',
-  machrio: 'Best regards,\nMachrio Sales Team\nsales@machrio.com',
+  machrio: 'Best regards,\nMachrio Support Team\nsupport@machrio.com',
 };
 
 export function getTenantEmailDefaults(tenant?: TenantEmailDefaultInput | null): TenantEmailDefaults {

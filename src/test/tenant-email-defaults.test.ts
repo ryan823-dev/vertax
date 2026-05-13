@@ -8,15 +8,10 @@ describe('tenant email defaults', () => {
       fromEmail: 'TD Painting <noreply@marketing.tdpaint.com>',
       signature: 'Best regards,\nTD Painting Engineering Team\nengineering@tdpaint.com',
     });
-    expect(getTenantEmailDefaults({ slug: 'tdpaintcell' })).toEqual({
-      replyToEmail: 'engineering@tdpaint.com',
-      fromEmail: 'TD Painting <noreply@marketing.tdpaint.com>',
-      signature: 'Best regards,\nTD Painting Engineering Team\nengineering@tdpaint.com',
-    });
     expect(getTenantEmailDefaults({ slug: 'machrio' })).toEqual({
-      replyToEmail: 'sales@machrio.com',
+      replyToEmail: 'support@machrio.com',
       fromEmail: 'VertaX <noreply@mail.machrio.com>',
-      signature: 'Best regards,\nMachrio Sales Team\nsales@machrio.com',
+      signature: 'Best regards,\nMachrio Support Team\nsupport@machrio.com',
     });
   });
 
