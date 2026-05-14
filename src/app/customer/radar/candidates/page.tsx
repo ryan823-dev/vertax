@@ -63,7 +63,7 @@ import { getRadarPipelineStatus } from '@/actions/radar-pipeline';
 import type { RadarPipelineStatus } from '@/lib/radar/pipeline';
 import type { RadarCandidate, RadarSource } from '@prisma/client';
 import type { CandidateStatus } from '@prisma/client';
-import { RadarHeader } from '@/components/radar/radar-header';
+
 import {
   formatContactSources,
   getCandidateContactEnrichment,
@@ -774,107 +774,91 @@ export default function RadarCandidatesPage() {
     : null;
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
-      {/* RadarHeader with Stepper */}
-      <RadarHeader
-        title="AI 推荐"
-        description="系统为您筛选的高匹配潜在客户"
-        steps={steps}
-        counts={counts}
-        currentStep={currentStep}
-        primaryCTA={primaryCTA}
-        errors={errors}
-        isRefreshing={isRefreshing}
-        onRefresh={handleRefresh}
-      />
+    <div className="space-y-4">
+      {/* Compact Command Bar - title + stats + filters in one row */}
+      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-[var(--ci-border)] bg-white px-5 py-3 shadow-[var(--ci-shadow-soft)]">
+        <div className="flex items-center gap-2.5">
+          <Sparkles size={16} className="text-[var(--ci-accent)]" />
+          <h1 className="text-sm font-bold text-[#0B1B2B]">AI 推荐</h1>
+          <span className="rounded-md bg-[var(--ci-accent-soft)] px-2 py-0.5 text-[11px] font-semibold text-[#0B1B2B]">{total}</span>
+          {stats?.opportunities ? (
+            <Link
+              href="/customer/radar/opportunities"
+              className="rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700 hover:bg-amber-100 transition-colors"
+            >
+              {stats.opportunities} 条机会 →
+            </Link>
+          ) : null}
+        </div>
 
-      <div className="flex-1 min-h-0 flex flex-col gap-4 p-6 overflow-hidden">
+        <div className="h-4 w-px bg-[var(--ci-border)] hidden sm:block" />
+
+        {/* Inline status filters */}
+        <div className="flex items-center gap-1">
+          {STATUS_FILTERS.map((filter) => (
+            <button
+              key={filter.value}
+              onClick={() => setFilters(prev => ({ ...prev, status: filter.value as CandidateStatus | '' }))}
+              className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                filters.status === filter.value
+                  ? 'bg-[#0B1220] text-[var(--ci-accent)]'
+                  : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
+              }`}
+            >
+              {filter.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex-1" />
+
+        {/* Tier + Search + Refresh */}
+        <div className="flex items-center gap-2">
+          <select
+            value={filters.qualifyTier}
+            onChange={(e) => setFilters(prev => ({ ...prev, qualifyTier: e.target.value }))}
+            className="rounded-md border border-[var(--ci-border)] bg-[var(--ci-surface-strong)] px-2 py-1 text-xs text-slate-600 focus:outline-none focus:ring-1 focus:ring-[var(--ci-accent)]/30"
+          >
+            {TIER_FILTERS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+
+          <div className="relative">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" size={12} />
+            <input
+              type="text"
+              value={filters.search}
+              onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+              placeholder="搜索公司名、行业..."
+              className="w-[180px] rounded-md border border-[var(--ci-border)] bg-[var(--ci-surface-strong)] py-1 pl-7 pr-2 text-xs focus:outline-none focus:ring-1 focus:ring-[var(--ci-accent)]/30"
+            />
+          </div>
+
+          <button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors disabled:opacity-50"
+            title="刷新"
+          >
+            <Filter size={14} className={isRefreshing ? 'animate-spin' : ''} />
+          </button>
+        </div>
+      </div>
+
+      <div className="space-y-4">
         {/* Error Alert */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
-            <AlertCircle className="text-red-500 shrink-0" size={20} />
-            <p className="text-sm text-red-700 flex-1">{error}</p>
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center gap-3">
+            <AlertCircle className="text-red-500 shrink-0" size={16} />
+            <p className="text-xs text-red-700 flex-1">{error}</p>
             <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600">
-              <X size={16} />
+              <X size={14} />
             </button>
           </div>
         )}
-
-        <div className="shrink-0 rounded-xl border border-[var(--ci-border)] bg-[#FFFFFF] p-4">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#9A7A1C]">AI 智能筛选</div>
-              <h2 className="mt-2 text-lg font-bold text-[#0B1B2B]">以下公司由 AI 从全球数据源中为您筛选</h2>
-              <p className="mt-2 text-sm leading-6 text-slate-500">系统持续扫描、评估并推荐最匹配的潜在客户，您只需决定是否跟进。</p>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <div className="rounded-xl border border-[var(--ci-border)] bg-[#FCFAF4] px-4 py-3 text-sm">
-                <div className="text-xs text-slate-500">AI 推荐</div>
-                <div className="mt-1 font-semibold text-[#0B1B2B]">{total}</div>
-              </div>
-              <Link
-                href="/customer/radar/opportunities"
-                className="rounded-xl border border-[var(--ci-accent)]/35 bg-[var(--ci-surface-strong)] px-4 py-3 text-sm transition-colors hover:bg-[#FFF2CE]"
-              >
-                <div className="text-xs text-slate-500">采购机会</div>
-                <div className="mt-1 flex items-center gap-2 font-semibold text-[#0B1B2B]">
-                  {stats?.opportunities ?? 0} 条机会
-                  <ArrowRight size={14} className="text-[#9A7A1C]" />
-                </div>
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        {/* Status Filter Bar */}
-        <div className="flex flex-col gap-3 rounded-xl border border-[var(--ci-border)] bg-[#FFFFFF] p-3 lg:flex-row lg:items-center">
-          <div className="flex flex-wrap gap-2">
-            {STATUS_FILTERS.map((filter) => {
-              const isActive = filters.status === filter.value;
-
-              return (
-                <button
-                  key={filter.value}
-                  onClick={() => setFilters(prev => ({ ...prev, status: filter.value as CandidateStatus | '' }))}
-                  className={`rounded-lg px-4 py-2 text-sm font-medium transition-all ${
-                    isActive
-                      ? 'bg-[#0B1220] text-[var(--ci-accent)]'
-                      : 'bg-[var(--ci-surface-strong)] text-slate-600 hover:bg-[var(--ci-surface-muted)]'
-                  }`}
-                >
-                  {filter.label}
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="flex-1" />
-
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <select
-              value={filters.qualifyTier}
-              onChange={(e) => setFilters(prev => ({ ...prev, qualifyTier: e.target.value }))}
-              className="rounded-lg border border-[var(--ci-border)] bg-[#FCFAF4] px-3 py-2 text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-[var(--ci-accent)]/30"
-            >
-              {TIER_FILTERS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-              <input
-                type="text"
-                value={filters.search}
-                onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-                placeholder="搜索公司名、网站、行业或来源"
-                className="w-full min-w-[240px] rounded-lg border border-[var(--ci-border)] bg-[#FCFAF4] py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ci-accent)]/30"
-              />
-            </div>
-          </div>
-        </div>
 
         {/* Batch Actions Bar */}
         {selectedIds.size > 0 && (
@@ -931,9 +915,9 @@ export default function RadarCandidatesPage() {
         )}
 
         {/* Main Content */}
-        <div className="flex-1 min-h-0 grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(380px,0.9fr)]">
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(380px,0.9fr)] min-h-[calc(100vh-200px)]">
             {/* Candidates List */}
-          <div className="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-[var(--ci-border)] bg-[var(--ci-surface-strong)] shadow-[var(--ci-shadow-soft)]">
+          <div className="flex min-w-0 flex-col overflow-hidden rounded-xl border border-[var(--ci-border)] bg-[var(--ci-surface-strong)] shadow-[var(--ci-shadow-soft)]">
             {/* List Header */}
             <div className="shrink-0 border-b border-[var(--ci-border)] bg-[var(--ci-surface-muted)] px-4 py-3">
               <div className="flex items-center gap-3">
@@ -959,7 +943,7 @@ export default function RadarCandidatesPage() {
             </div>
             
             {/* Scrollable list area */}
-            <div className="flex-1 min-h-0 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto">
             {/* Empty States */}
             {emptyStateType && (
               <div className="text-center py-16 px-6">
@@ -1129,7 +1113,7 @@ export default function RadarCandidatesPage() {
           </div>
 
           {/* Detail Panel */}
-          <div className="min-h-0 overflow-y-auto space-y-4">
+          <div className="xl:sticky xl:top-4 space-y-4 xl:max-h-[calc(100vh-80px)] xl:overflow-y-auto">
             {selectedCandidate ? (
               <>
                 {/* Basic Info Card */}

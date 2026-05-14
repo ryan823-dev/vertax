@@ -142,6 +142,15 @@ interface BatchEnrichmentState {
   } | null;
 }
 
+interface BatchOutreachState {
+  isRunning: boolean;
+  processed: number;
+  total: number;
+  currentLabel: string | null;
+  results: { companyId: string; companyName: string; success: boolean; error?: string }[];
+  summary: { total: number; succeeded: number; failed: number } | null;
+}
+
 const PROSPECT_PAGE_SIZE = 100;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -406,6 +415,14 @@ export default function RadarProspectsPage() {
   const [selectedCompany, setSelectedCompany] = useState<ProspectCompanyView | null>(null);
   const [selectedCompanyIds, setSelectedCompanyIds] = useState<Set<string>>(new Set());
   const [batchEnrichment, setBatchEnrichment] = useState<BatchEnrichmentState>({
+    isRunning: false,
+    processed: 0,
+    total: 0,
+    currentLabel: null,
+    results: [],
+    summary: null,
+  });
+  const [batchOutreach, setBatchOutreach] = useState<BatchOutreachState>({
     isRunning: false,
     processed: 0,
     total: 0,
@@ -693,6 +710,116 @@ export default function RadarProspectsPage() {
   const handleRetryFailedEnrichment = async () => {
     const failedIds = batchEnrichment.results.filter((item) => !item.success).map((item) => item.companyId);
     await runBatchEnrichment(failedIds);
+  };
+
+  // ===================== 批量生成外联方案 =====================
+  const runBatchOutreachGeneration = async (companyIds: string[]) => {
+    const ids = Array.from(new Set(companyIds.filter(Boolean)));
+    if (ids.length === 0) return;
+
+    setBatchOutreach({
+      isRunning: true,
+      processed: 0,
+      total: ids.length,
+      currentLabel: null,
+      results: [],
+      summary: null,
+    });
+
+    const companyMap = new Map(companies.map((c) => [c.id, c.name]));
+    const aggregatedResults: BatchOutreachState['results'] = [];
+
+    try {
+      for (let i = 0; i < ids.length; i++) {
+        const companyId = ids[i];
+        const companyName = companyMap.get(companyId) || companyId;
+
+        setBatchOutreach((prev) => ({
+          ...prev,
+          currentLabel: `${companyName} (${i + 1}/${ids.length})`,
+        }));
+
+        try {
+          const res = await fetch(`/api/radar/prospects/${companyId}/outreach-pack`, {
+            method: 'POST',
+          });
+
+          let data: { ok: boolean; error?: string; code?: string };
+          try {
+            data = await res.json();
+          } catch {
+            throw new Error(res.status === 504 ? '生成超时' : `响应异常 (${res.status})`);
+          }
+
+          if (!res.ok || !data.ok) {
+            throw new Error(data.error || `生成失败 (${data.code || res.status})`);
+          }
+
+          aggregatedResults.push({ companyId, companyName, success: true });
+        } catch (err) {
+          aggregatedResults.push({
+            companyId,
+            companyName,
+            success: false,
+            error: err instanceof Error ? err.message : '未知错误',
+          });
+        }
+
+        setBatchOutreach({
+          isRunning: true,
+          processed: i + 1,
+          total: ids.length,
+          currentLabel: companyName,
+          results: [...aggregatedResults],
+          summary: {
+            total: aggregatedResults.length,
+            succeeded: aggregatedResults.filter((r) => r.success).length,
+            failed: aggregatedResults.filter((r) => !r.success).length,
+          },
+        });
+      }
+
+      await loadData();
+
+      const summary = {
+        total: aggregatedResults.length,
+        succeeded: aggregatedResults.filter((r) => r.success).length,
+        failed: aggregatedResults.filter((r) => !r.success).length,
+      };
+      toast.success('批量生成外联方案完成', {
+        description: `成功 ${summary.succeeded}/${summary.total} 条${summary.failed > 0 ? `，失败 ${summary.failed} 条` : ''}`,
+      });
+
+      setSelectedCompanyIds((prev) => {
+        const next = new Set(prev);
+        ids.forEach((id) => next.delete(id));
+        return next;
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '批量生成外联方案失败';
+      setError(message);
+      toast.error(message);
+    } finally {
+      setBatchOutreach((prev) => ({
+        ...prev,
+        isRunning: false,
+        currentLabel: null,
+        summary: prev.summary ?? {
+          total: prev.results.length,
+          succeeded: prev.results.filter((r) => r.success).length,
+          failed: prev.results.filter((r) => !r.success).length,
+        },
+      }));
+    }
+  };
+
+  const handleBatchGenerateOutreach = async () => {
+    await runBatchOutreachGeneration(Array.from(selectedCompanyIds));
+  };
+
+  const handleRetryFailedOutreach = async () => {
+    const failedIds = batchOutreach.results.filter((r) => !r.success).map((r) => r.companyId);
+    await runBatchOutreachGeneration(failedIds);
   };
 
   const [isExporting, setIsExporting] = useState(false);
@@ -1660,10 +1787,17 @@ export default function RadarProspectsPage() {
                   </span>
                   <button
                     onClick={handleBatchEnrichSelected}
-                    disabled={selectedCompanyIds.size === 0 || batchEnrichment.isRunning}
+                    disabled={selectedCompanyIds.size === 0 || batchEnrichment.isRunning || batchOutreach.isRunning}
                     className="px-3 py-1.5 rounded-lg bg-[#0B1220] text-[var(--ci-accent)] text-xs font-medium disabled:opacity-50"
                   >
                     {batchEnrichment.isRunning ? '补全中...' : '批量补全联系人'}
+                  </button>
+                  <button
+                    onClick={handleBatchGenerateOutreach}
+                    disabled={selectedCompanyIds.size === 0 || batchOutreach.isRunning || batchEnrichment.isRunning}
+                    className="px-3 py-1.5 rounded-lg bg-[var(--ci-accent)] text-white text-xs font-medium disabled:opacity-50"
+                  >
+                    {batchOutreach.isRunning ? '生成中...' : '批量生成外联方案'}
                   </button>
                   <button
                     onClick={handleRetryFailedEnrichment}
@@ -1701,6 +1835,52 @@ export default function RadarProspectsPage() {
                             {item.companyName}: {item.error || '补全失败'}
                           </p>
                         ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {(batchOutreach.isRunning || batchOutreach.summary) && (
+                  <div className="mt-3 rounded-lg border border-[var(--ci-accent)]/20 bg-[var(--ci-accent)]/5 p-3">
+                    <div className="flex items-center justify-between gap-3 text-xs">
+                      <div>
+                        <p className="font-medium text-[#0B1B2B]">
+                          {batchOutreach.isRunning
+                            ? `外联方案生成中 ${batchOutreach.processed}/${batchOutreach.total}`
+                            : `外联方案已完成 ${batchOutreach.summary?.succeeded || 0}/${batchOutreach.summary?.total || 0}`}
+                        </p>
+                        {batchOutreach.currentLabel && (
+                          <p className="text-slate-500 mt-1 truncate">{batchOutreach.currentLabel}</p>
+                        )}
+                      </div>
+                      {batchOutreach.summary && (
+                        <div className="text-right text-slate-500">
+                          <p>成功 {batchOutreach.summary.succeeded} 条</p>
+                          {batchOutreach.summary.failed > 0 && <p>失败 {batchOutreach.summary.failed} 条</p>}
+                        </div>
+                      )}
+                    </div>
+                    {batchOutreach.isRunning && (
+                      <div className="mt-2 h-1.5 rounded-full bg-slate-200 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-[var(--ci-accent)] transition-all duration-300"
+                          style={{ width: `${batchOutreach.total > 0 ? (batchOutreach.processed / batchOutreach.total) * 100 : 0}%` }}
+                        />
+                      </div>
+                    )}
+                    {batchOutreach.results.some((r) => !r.success) && !batchOutreach.isRunning && (
+                      <div className="mt-2 space-y-1">
+                        {batchOutreach.results.filter((r) => !r.success).slice(0, 3).map((r) => (
+                          <p key={r.companyId} className="text-[11px] text-red-500">
+                            {r.companyName}: {r.error || '生成失败'}
+                          </p>
+                        ))}
+                        <button
+                          onClick={handleRetryFailedOutreach}
+                          className="mt-1 text-[11px] text-[var(--ci-accent)] hover:underline"
+                        >
+                          重试失败项
+                        </button>
                       </div>
                     )}
                   </div>
