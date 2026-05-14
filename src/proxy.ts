@@ -4,7 +4,7 @@ import { authConfig } from "@/lib/auth.config";
 import { ensureCronAuthorized } from "@/lib/cron-auth";
 import { isDebugEnabled } from "@/lib/debug-guard";
 import { isPlatformAdmin } from "@/lib/permissions";
-import { getTenantCanonicalRedirectUrl, resolveTenant } from "@/lib/tenant-resolver";
+import { getTenantCanonicalRedirectUrl, normalizeHostname, resolveTenant } from "@/lib/tenant-resolver";
 
 const { auth } = NextAuth(authConfig);
 
@@ -29,6 +29,10 @@ const publicPaths = [
 const CRON_ROUTES = ["/api/cron/"];
 
 const BASE_DOMAIN = process.env.NEXT_PUBLIC_BASE_DOMAIN || "vertax.top";
+
+function getPrimaryHeaderValue(value: string | null): string | null {
+  return value?.split(",")[0]?.trim() || null;
+}
 
 function shouldBlockApiRequest(
   pathname: string,
@@ -93,9 +97,21 @@ function shouldBlockApiRequest(
 
 const proxy = auth((req) => {
   const { pathname } = req.nextUrl;
+  const requestHost =
+    getPrimaryHeaderValue(req.headers.get("x-forwarded-host")) ??
+    getPrimaryHeaderValue(req.headers.get("host")) ??
+    req.nextUrl.host;
+  const requestProtocol =
+    getPrimaryHeaderValue(req.headers.get("x-forwarded-proto")) ??
+    req.nextUrl.protocol.replace(/:$/, "") ??
+    "https";
+  const requestOrigin = `${requestProtocol}://${requestHost}`;
+  const requestUrl = new URL(`${pathname}${req.nextUrl.search}`, requestOrigin);
   const forwardedRequestHeaders = new Headers(req.headers);
   forwardedRequestHeaders.set("x-vertax-current-path", pathname);
   forwardedRequestHeaders.set("x-vertax-current-search", req.nextUrl.search);
+  forwardedRequestHeaders.set("x-vertax-current-host", requestHost);
+  forwardedRequestHeaders.set("x-vertax-current-proto", requestProtocol);
 
   if (pathname.startsWith("/api/")) {
     const blockedResponse = shouldBlockApiRequest(pathname, req);
@@ -106,8 +122,9 @@ const proxy = auth((req) => {
     return NextResponse.next();
   }
 
-  // Get hostname from nextUrl for Vercel compatibility
-  const hostname = req.nextUrl.hostname;
+  // Resolve hostname from forwarded request headers so tenant subdomains are
+  // not overwritten by a static Auth.js origin such as AUTH_URL.
+  const hostname = normalizeHostname(requestHost);
   
   // Resolve tenant and view mode from domain
   const tenantInfo = resolveTenant(hostname);
@@ -119,7 +136,7 @@ const proxy = auth((req) => {
 
   // Helper to create redirect URL preserving the original host
   const createRedirectUrl = (path: string) => {
-    return new URL(path, req.nextUrl.origin);
+    return new URL(path, requestOrigin);
   };
   const continueWithRequestContext = () =>
     NextResponse.next({
@@ -156,7 +173,7 @@ const proxy = auth((req) => {
   const canonicalTenantUrl =
     req.auth && !isPlatformAdminUser
       ? getTenantCanonicalRedirectUrl({
-          currentUrl: req.nextUrl,
+          currentUrl: requestUrl,
           sessionTenantSlug: req.auth.user?.tenantSlug as string | undefined,
         })
       : null;

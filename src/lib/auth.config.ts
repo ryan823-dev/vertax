@@ -1,6 +1,6 @@
 import type { NextAuthConfig } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import { shouldIgnoreStaticAuthOriginInDev } from "@/lib/app-origin";
+import { shouldIgnoreStaticAuthOrigin } from "@/lib/app-origin";
 
 // Cross-platform JWT configuration (shared with Vertax)
 // AUTH_SECRET is the canonical variable; JWT_SECRET is accepted as a backward-compatible alias.
@@ -11,7 +11,7 @@ export const CROSS_PLATFORM_JWT_CONFIG = {
 };
 
 for (const envKey of ["AUTH_URL", "NEXTAUTH_URL"] as const) {
-  if (shouldIgnoreStaticAuthOriginInDev(process.env[envKey])) {
+  if (shouldIgnoreStaticAuthOrigin(process.env[envKey])) {
     delete process.env[envKey];
   }
 }

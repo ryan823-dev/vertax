@@ -1,5 +1,10 @@
 import type { NextRequest } from "next/server";
-import { isLocalDevelopmentHostname } from "@/lib/tenant-resolver";
+import {
+  isLocalDevelopmentHostname,
+  normalizeHostname,
+} from "@/lib/tenant-resolver";
+
+const BASE_DOMAIN = process.env.NEXT_PUBLIC_BASE_DOMAIN || "vertax.top";
 
 function parseOrigin(value: string | null | undefined): string | null {
   if (!value) {
@@ -49,13 +54,28 @@ function getConfiguredAppOrigin(): string | null {
   );
 }
 
+function isConfiguredVertaxHost(hostname: string): boolean {
+  const normalized = normalizeHostname(hostname);
+
+  return (
+    normalized === BASE_DOMAIN ||
+    normalized === `www.${BASE_DOMAIN}` ||
+    normalized.endsWith(`.${BASE_DOMAIN}`)
+  );
+}
+
 function shouldPreferRequestOrigin(requestOrigin: string, configuredOrigin: string | null): boolean {
+  const requestHostname = normalizeHostname(new URL(requestOrigin).hostname);
+
+  if (isConfiguredVertaxHost(requestHostname)) {
+    return true;
+  }
+
   if (!configuredOrigin) {
     return true;
   }
 
   if (process.env.NODE_ENV !== "production") {
-    const requestHostname = new URL(requestOrigin).hostname;
     if (isLocalDevelopmentHostname(requestHostname)) {
       return true;
     }
@@ -87,15 +107,13 @@ export function getAppUrl(pathname: string, request?: NextRequest | URL | string
   return new URL(pathname, resolveAppOrigin(request));
 }
 
-export function shouldIgnoreStaticAuthOriginInDev(value: string | null | undefined): boolean {
-  if (process.env.NODE_ENV === "production") {
-    return false;
-  }
-
+export function shouldIgnoreStaticAuthOrigin(value: string | null | undefined): boolean {
   const origin = parseOrigin(value);
   if (!origin) {
     return false;
   }
 
-  return isLocalDevelopmentHostname(new URL(origin).hostname);
+  const hostname = normalizeHostname(new URL(origin).hostname);
+
+  return isLocalDevelopmentHostname(hostname) || isConfiguredVertaxHost(hostname);
 }

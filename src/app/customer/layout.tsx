@@ -47,10 +47,14 @@ export default async function CustomerLayout({
   try {
     const headersList = await headers();
     const host =
+      headersList.get("x-vertax-current-host") ??
       headersList.get("x-forwarded-host") ??
       headersList.get("host") ??
       "localhost:3000";
-    const protocol = headersList.get("x-forwarded-proto") ?? "https";
+    const protocol =
+      headersList.get("x-vertax-current-proto") ??
+      headersList.get("x-forwarded-proto") ??
+      "https";
     const currentPath =
       headersList.get("x-vertax-current-path") ?? "/customer/home";
     const currentSearch =
