@@ -12,6 +12,7 @@ import {
   Globe,
   Phone,
   Mail,
+  ChevronLeft,
   ChevronRight,
   Search,
   Filter,
@@ -140,6 +141,8 @@ interface BatchEnrichmentState {
     contactsFound: number;
   } | null;
 }
+
+const PROSPECT_PAGE_SIZE = 100;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -443,6 +446,11 @@ export default function RadarProspectsPage() {
     search: '',
   });
   const [showFilters, setShowFilters] = useState(false);
+
+  // 分页
+  const [page, setPage] = useState(1);
+  const totalPages = Math.ceil(total / PROSPECT_PAGE_SIZE) || 1;
+
   const [showImportWizard, setShowImportWizard] = useState(false);
 
   // 外联记录看板（P4）
@@ -685,7 +693,8 @@ export default function RadarProspectsPage() {
           status: filters.status || undefined,
           tier: filters.tier || undefined,
           search: filters.search || undefined,
-          limit: 100,
+          limit: PROSPECT_PAGE_SIZE,
+          offset: (page - 1) * PROSPECT_PAGE_SIZE,
         }),
         getOutreachRecords({ limit: 100, filter: outreachFilter }).catch(() => null),
       ]);
@@ -708,11 +717,14 @@ export default function RadarProspectsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [filters, outreachFilter]);
+  }, [filters, outreachFilter, page]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => { setPage(1); }, [filters.status, filters.tier, filters.search]);
 
   useEffect(() => {
     setSelectedCompanyIds((prev) => {
@@ -1621,7 +1633,7 @@ export default function RadarProspectsPage() {
                     onChange={toggleSelectAllCompanies}
                     className="w-4 h-4 rounded border-slate-300 text-[var(--ci-accent)] focus:ring-[var(--ci-accent)]"
                   />
-                  全选
+                  全选本页
                 </label>
               )}
             </div>
@@ -1702,7 +1714,8 @@ export default function RadarProspectsPage() {
               </div>
             </div>
           ) : (
-            <div className="max-h-[calc(100vh-310px)] space-y-2 overflow-y-auto pr-1">
+            <>
+              <div className="max-h-[calc(100vh-360px)] space-y-2 overflow-y-auto pr-1">
               {companies.map((company) => {
                 const statusInfo = getStatusLabel(company.status);
                 const isSelected = selectedCompany?.id === company.id;
@@ -1800,7 +1813,36 @@ export default function RadarProspectsPage() {
                   </div>
                 );
               })}
-            </div>
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="mt-3 flex items-center justify-between border-t border-[var(--ci-border)] pt-3">
+                  <span className="text-[11px] text-slate-400">
+                    {(page - 1) * PROSPECT_PAGE_SIZE + 1}-{Math.min(page * PROSPECT_PAGE_SIZE, total)} / {total}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setPage(p => Math.max(1, p - 1))}
+                      disabled={page === 1}
+                      className="p-1.5 rounded-lg transition-colors text-slate-400 hover:text-[var(--ci-accent)] disabled:opacity-30"
+                    >
+                      <ChevronLeft size={14} />
+                    </button>
+                    <span className="text-xs text-slate-500 px-2">
+                      {page} / {totalPages}
+                    </span>
+                    <button
+                      onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                      disabled={page === totalPages}
+                      className="p-1.5 rounded-lg transition-colors text-slate-400 hover:text-[var(--ci-accent)] disabled:opacity-30"
+                    >
+                      <ChevronRight size={14} />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
 
