@@ -4,22 +4,62 @@
 import { Resend } from 'resend';
 import { prisma } from '@/lib/prisma';
 import { getTenantEmailDefaults } from '@/lib/email/tenant-email-defaults';
+import {
+  extractSenderDomain,
+  maskResendApiKey,
+  normalizeResendApiKey,
+  resolveTenantResendApiKeyFromEnv,
+} from '@/lib/email/tenant-email-config';
 
 // 平台级客户端（单例）
 let platformClient: Resend | null = null;
 
 // 租户级客户端缓存
 const tenantClients = new Map<string, Resend>();
+const domainAvailabilityCache = new Map<string, { expiresAt: number; result: DomainAvailability }>();
+const DOMAIN_AVAILABILITY_TTL_MS = 5 * 60 * 1000;
+
+type ResendApiKeySource = 'platform_env' | 'tenant_db' | 'tenant_env';
+
+interface DomainAvailability {
+  status: 'available' | 'unavailable' | 'unknown';
+  domain: string;
+  visibleDomains?: string[];
+  error?: string;
+}
+
+function getCachedTenantClient(cacheKey: string, apiKey: string): Resend {
+  const cached = tenantClients.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  const client = new Resend(apiKey);
+  tenantClients.set(cacheKey, client);
+  return client;
+}
+
+function buildApiKeySourceConfig(
+  apiKey: string,
+  source: ResendApiKeySource,
+  sourceName: string
+): Pick<TenantEmailConfig, 'apiKeySource' | 'apiKeySourceName' | 'apiKeyFingerprint'> {
+  return {
+    apiKeySource: source,
+    apiKeySourceName: sourceName,
+    apiKeyFingerprint: maskResendApiKey(apiKey),
+  };
+}
 
 /**
  * 获取平台级 Resend 客户端
  */
 export function getPlatformClient(): Resend | null {
   if (!platformClient) {
-    const apiKey = process.env.RESEND_API_KEY;
+    const apiKey = normalizeResendApiKey(process.env.RESEND_API_KEY);
     
     // 如果没有配置或使用占位符，返回 null
-    if (!apiKey || apiKey.startsWith('re_placeholder') || apiKey === 're_test_placeholder') {
+    if (!apiKey) {
       console.warn('[Resend] API Key not configured or using placeholder. Email sending will fail.');
       return null;
     }
@@ -40,6 +80,88 @@ function getDefaultFromEmail(): string {
   }
   // 否则使用 Resend 默认域名（用于测试）
   return 'VertaX <onboarding@resend.dev>';
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function getDomainRows(data: unknown): Array<{ name: string; status?: string }> {
+  const rows = isRecord(data) && Array.isArray(data.data) ? data.data : Array.isArray(data) ? data : [];
+
+  return rows.flatMap((row) => {
+    if (!isRecord(row) || typeof row.name !== 'string') {
+      return [];
+    }
+
+    return [{
+      name: row.name.trim().toLowerCase(),
+      status: typeof row.status === 'string' ? row.status.trim().toLowerCase() : undefined,
+    }];
+  });
+}
+
+async function checkFromDomainAvailability(
+  client: Resend,
+  fromEmail: string,
+  config?: TenantEmailConfig
+): Promise<DomainAvailability> {
+  const domain = extractSenderDomain(fromEmail);
+  if (!domain || domain === 'resend.dev') {
+    return { status: 'available', domain: domain || '' };
+  }
+
+  const cacheKey = `${config?.apiKeySourceName || 'unknown'}:${config?.apiKeyFingerprint || 'unknown'}:${domain}`;
+  const cached = domainAvailabilityCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.result;
+  }
+
+  let result: DomainAvailability;
+  try {
+    const { data, error } = await client.domains.list();
+    if (error) {
+      result = { status: 'unknown', domain, error: error.message };
+    } else {
+      const rows = getDomainRows(data);
+      const visibleDomains = rows
+        .filter((row) => row.status === 'verified')
+        .map((row) => row.name);
+      const matchingDomain = rows.find((row) => row.name === domain);
+      result = matchingDomain?.status === 'verified'
+        ? { status: 'available', domain, visibleDomains }
+        : { status: 'unavailable', domain, visibleDomains };
+    }
+  } catch (error) {
+    result = {
+      status: 'unknown',
+      domain,
+      error: error instanceof Error ? error.message : 'Unknown domain check error',
+    };
+  }
+
+  domainAvailabilityCache.set(cacheKey, {
+    expiresAt: Date.now() + DOMAIN_AVAILABILITY_TTL_MS,
+    result,
+  });
+  return result;
+}
+
+function formatDomainUnavailableError(
+  result: DomainAvailability,
+  config?: TenantEmailConfig
+): string {
+  const source = config?.apiKeySourceName || 'the configured Resend API key';
+  const fingerprint = config?.apiKeyFingerprint ? ` (${config.apiKeyFingerprint})` : '';
+  const visibleDomains = result.visibleDomains?.length
+    ? result.visibleDomains.join(', ')
+    : 'none';
+
+  return [
+    `Resend API key source ${source}${fingerprint} cannot send from ${result.domain}.`,
+    `Visible verified domains for this key: ${visibleDomains}.`,
+    'Configure a tenant-scoped Resend key for this tenant, such as RESEND_API_KEY_MACHRIO or Tenant.emailConfig.customApiKey.',
+  ].join(' ');
 }
 
 /**
@@ -65,52 +187,58 @@ export async function getTenantClient(tenantId: string): Promise<{
 
     const savedConfig = tenant?.emailConfig as TenantEmailConfig | null;
     const tenantDefaults = getTenantEmailDefaults(tenant);
+    const tenantSlug = tenant?.slug?.trim().toLowerCase();
     const defaultConfig: TenantEmailConfig = {
       usePlatformKey: true,
       fromEmail: tenantDefaults.fromEmail || getDefaultFromEmail(),
       replyToEmail: tenantDefaults.replyToEmail ?? null,
     };
+    const resolvedConfig: TenantEmailConfig = {
+      ...defaultConfig,
+      ...savedConfig,
+      fromEmail: savedConfig?.fromEmail || defaultConfig.fromEmail,
+      replyToEmail: savedConfig?.replyToEmail || defaultConfig.replyToEmail,
+    };
 
-    if (!savedConfig || savedConfig.usePlatformKey) {
-      // 使用平台 Key
+    const savedApiKey = normalizeResendApiKey(savedConfig?.customApiKey);
+    if (savedApiKey) {
       return {
-        client: getPlatformClient(),
+        client: getCachedTenantClient(`db:${tenantId}:${savedApiKey}`, savedApiKey),
         config: {
-          ...defaultConfig,
-          ...savedConfig,
-          fromEmail: savedConfig?.fromEmail || defaultConfig.fromEmail,
-          replyToEmail: savedConfig?.replyToEmail || defaultConfig.replyToEmail,
+          ...resolvedConfig,
+          usePlatformKey: false,
+          customApiKey: savedApiKey,
+          ...buildApiKeySourceConfig(savedApiKey, 'tenant_db', 'Tenant.emailConfig.customApiKey'),
         },
       };
     }
 
-    // 使用租户自定义 Key
-    if (savedConfig.customApiKey) {
-      // 检查缓存
-      if (tenantClients.has(tenantId)) {
-        return {
-          client: tenantClients.get(tenantId)!,
-          config: {
-            ...savedConfig,
-            replyToEmail: savedConfig.replyToEmail || tenantDefaults.replyToEmail || null,
-          },
-        };
-      }
-
-      // 创建新客户端
-      const client = new Resend(savedConfig.customApiKey);
-      tenantClients.set(tenantId, client);
-
+    const tenantEnvApiKey = resolveTenantResendApiKeyFromEnv(tenantSlug);
+    if (tenantEnvApiKey) {
       return {
-        client,
+        client: getCachedTenantClient(
+          `env:${tenantSlug || tenantId}:${tenantEnvApiKey.apiKey}`,
+          tenantEnvApiKey.apiKey
+        ),
         config: {
-          ...savedConfig,
-          replyToEmail: savedConfig.replyToEmail || tenantDefaults.replyToEmail || null,
+          ...resolvedConfig,
+          usePlatformKey: false,
+          ...buildApiKeySourceConfig(tenantEnvApiKey.apiKey, 'tenant_env', tenantEnvApiKey.envName),
         },
       };
     }
 
-    return { client: getPlatformClient(), config: defaultConfig };
+    const platformApiKey = normalizeResendApiKey(process.env.RESEND_API_KEY);
+    return {
+      client: getPlatformClient(),
+      config: {
+        ...resolvedConfig,
+        usePlatformKey: true,
+        ...(platformApiKey
+          ? buildApiKeySourceConfig(platformApiKey, 'platform_env', 'RESEND_API_KEY')
+          : {}),
+      },
+    };
   } catch (error) {
     console.error('[getTenantClient] Error:', error);
     return {
@@ -133,6 +261,9 @@ export interface TenantEmailConfig {
   fromEmail?: string;                // 发件人邮箱
   replyToEmail?: string | null;      // 回复邮箱
   verifiedDomain?: string;           // 已验证的域名
+  apiKeySource?: ResendApiKeySource;
+  apiKeySourceName?: string;
+  apiKeyFingerprint?: string;
 }
 
 export interface EmailAttachment {
@@ -165,23 +296,41 @@ export async function sendEmail(options: EmailOptions): Promise<SendResult> {
   let client: Resend | null;
   let fromEmail: string;
   let replyTo: string | undefined = options.replyTo;
+  let emailConfig: TenantEmailConfig | undefined;
 
   if (options.tenantId) {
     // 使用租户配置
     const { client: tenantClient, config } = await getTenantClient(options.tenantId);
     client = tenantClient;
+    emailConfig = config;
     fromEmail = options.from || config.fromEmail || getDefaultFromEmail();
     replyTo = replyTo || config.replyToEmail || undefined;
   } else {
     // 使用平台配置
     client = getPlatformClient();
     fromEmail = options.from || getDefaultFromEmail();
+    const platformApiKey = normalizeResendApiKey(process.env.RESEND_API_KEY);
+    emailConfig = {
+      usePlatformKey: true,
+      fromEmail,
+      ...(platformApiKey
+        ? buildApiKeySourceConfig(platformApiKey, 'platform_env', 'RESEND_API_KEY')
+        : {}),
+    };
   }
 
   if (!client) {
     return {
       success: false,
       error: 'Resend API key not configured',
+    };
+  }
+
+  const domainAvailability = await checkFromDomainAvailability(client, fromEmail, emailConfig);
+  if (domainAvailability.status === 'unavailable') {
+    return {
+      success: false,
+      error: formatDomainUnavailableError(domainAvailability, emailConfig),
     };
   }
 

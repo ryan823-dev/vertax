@@ -5,6 +5,7 @@ import { isPlatformAdmin } from '@/lib/permissions';
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { getTenantEmailDefaults } from '@/lib/email/tenant-email-defaults';
+import { mergeTenantEmailConfigUpdate } from '@/lib/email/tenant-email-config';
 
 /**
  * 更新租户邮件配置
@@ -41,18 +42,8 @@ export async function updateTenantEmailConfig(
     });
 
     const currentConfig = (tenant?.emailConfig as Record<string, unknown>) || {};
-    const tenantDefaults = getTenantEmailDefaults(tenant);
 
-    // 合并配置
-    const newConfig = {
-      ...currentConfig,
-      website: config.website || currentConfig.website,
-      customApiKey: config.resendApiKey || currentConfig.customApiKey,
-      fromEmail: config.fromEmail || currentConfig.fromEmail,
-      replyToEmail: config.replyToEmail || currentConfig.replyToEmail || tenantDefaults.replyToEmail,
-      usePlatformKey: !config.resendApiKey, // 如果提供了自定义Key，则不使用平台Key
-      customFromDomain: config.fromEmail?.match(/@([^>]+)/)?.[1] || currentConfig.customFromDomain,
-    };
+    const newConfig = mergeTenantEmailConfigUpdate(currentConfig, config, tenant);
 
     await prisma.tenant.update({
       where: { id: tenantId },
@@ -114,9 +105,9 @@ export async function getTenantEmailConfig(tenantId: string): Promise<{
         resendApiKeyPrefix: config?.customApiKey 
           ? `${(config.customApiKey as string).slice(0, 7)}...` 
           : undefined,
-        fromEmail: config?.fromEmail as string | undefined,
+        fromEmail: (config?.fromEmail as string | undefined) || tenantDefaults.fromEmail,
         replyToEmail: (config?.replyToEmail as string | undefined) || tenantDefaults.replyToEmail,
-        usePlatformKey: config?.usePlatformKey as boolean ?? true,
+        usePlatformKey: (config?.usePlatformKey as boolean | undefined) ?? !config?.customApiKey,
       },
     };
   } catch (error) {
